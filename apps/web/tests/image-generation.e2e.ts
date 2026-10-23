@@ -214,7 +214,7 @@ describe('web e2e: image generation', () => {
     await panel.getByRole('switch', { name: '启用 图像生成', exact: true }).click()
     await expect.poll(() => scaffold!.ctx.tools.schemas().map(tool => tool.name), { timeout: PLUGIN_TOGGLE_SETTLE_MS }).not.toContain('generate_image')
     await panel.getByRole('button', { name: '返回插件', exact: true }).click()
-    expect(await tools.getByRole('switch', { name: '启用 图像生成', exact: true }).isChecked()).toBe(false)
+    await expect.poll(() => tools.getByRole('switch', { name: '启用 图像生成', exact: true }).isChecked(), { timeout: PLUGIN_TOGGLE_SETTLE_MS }).toBe(false)
     expect(await tools.getByText('已停用', { exact: true }).count()).toBe(1)
     expect(await tools.getByRole('button', { name: '查看 图像生成', exact: true }).isVisible()).toBe(true)
     expect(consoleWatch.pageErrors).toEqual([])

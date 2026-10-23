@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.1-alpha.2/neurix-rc3/guide.md
+/:
+  en: d1e74ddba1ee93b8
+  zh: d6697a14193f4de6
+/upgrade-neurix-harness-to-0-2-1-rc-3:
+  en: e4000aa1ea4bb6e5
+  zh: a92957f2562247ee
+/upgrade-neurix-harness-to-0-2-1-rc-3/change:
+  en: 30809fc137ff2cd5
+  zh: 1618347363f5ab4f
+/upgrade-neurix-harness-to-0-2-1-rc-3/migration:
+  en: 9a96ecc264e2addf
+  zh: 895c76c4ef9e9684

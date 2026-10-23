@@ -22,7 +22,7 @@ Issues = "https://github.com/henryopencode/neurix-harness/issues"
 Source = "https://github.com/henryopencode/neurix-harness"
 
 [dependency-groups]
-test = ["pytest>=8.0"]
+test = ["pytest>=8.0", "Pillow==12.3.0"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

@@ -13,7 +13,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { ComputerCard } from './ComputerCard.tsx'
 import { COMPUTER_CONTROL_BUNDLE, COMPUTER_CONTROL_ENTRY, ComputerCardController } from './controller.ts'
-import { en, zh, type ComputerControlLocaleKey } from './locales.ts'
+import { en, zh, ja, es, fr, de, ru, pt, type ComputerControlLocaleKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -31,7 +31,7 @@ export const inject = ['slots', 'locale', 'configForms', 'remote']
  */
 function registerSettings(ctx: Context): void {
   const namespace = 'settings.computerControl'
-  ctx.effect(() => ctx.locale.register(namespace, { en, zh }), 'computer-control: dictionary')
+  ctx.effect(() => ctx.locale.register(namespace, { en, zh, ja, es, fr, de, ru, pt }), 'computer-control: dictionary')
   const controller = new ComputerCardController(ctx.configForms.get(COMPUTER_CONTROL_ENTRY))
   ctx.effect(() => () => { controller.dispose() }, 'computer-control: form')
   ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({

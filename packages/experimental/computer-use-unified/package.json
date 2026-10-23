@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-experimental-computer-use-unified",
   "description": "Session-owned browser and macOS control with verified observations",
-  "version": "0.2.1-alpha.2",
+  "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
   },
@@ -27,7 +27,7 @@
   },
   "files": [
     "locale/*.json",
-    "lib/*.js",
+    "lib/index.js",
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",
@@ -71,6 +71,8 @@
     "@deepseek-ai/dsh-session-projection": "workspace:*",
     "@deepseek-ai/dsh-system-prompt": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*",
-    "jsdom": "^29.1.1"
+    "jsdom": "^29.1.1",
+    "@deepseek-ai/dsh-tool-testkit": "workspace:*",
+    "@deepseek-ai/dsh-tool-executor-native": "workspace:*"
   }
 }

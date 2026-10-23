@@ -22,6 +22,7 @@ import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
 import * as Provider from '../src/index.ts'
 import { desktop, resetDesktop, screenshotBase64 } from '../../computer-use-unified/tests/fixtures/native.ts'
@@ -79,6 +80,7 @@ it('loads the configurable bundle from YAML, performs consecutive actions, and r
     ['@deepseek-ai/dsh-llm', LlmRuntime], ['@deepseek-ai/dsh-session', SessionStore],
     ['@deepseek-ai/dsh-session-projection', SessionProjectionRegistry], ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
     ['@deepseek-ai/dsh-tools', ToolRuntime], ['@deepseek-ai/dsh-agent', AgentRegistry],
+    ['@deepseek-ai/dsh-tool-executor-native', NativeToolExecutor],
     ['@deepseek-ai/dsh-agent-loop', AgentLoop], ['@deepseek-ai/dsh-attachment-local', LocalAttachmentStore],
     ['@deepseek-ai/dsh-computer-use', ComputerUseRegistry], ['@deepseek-ai/dsh-browser-use', BrowserUseRegistry],
     ['@deepseek-ai/dsh-typert-registry', TypertRegistry],

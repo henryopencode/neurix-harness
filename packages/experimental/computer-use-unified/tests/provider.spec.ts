@@ -1,3 +1,4 @@
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 /** Provider rollback, direct-call admission, failure reporting, and quiescent unload. */
 
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -30,7 +31,7 @@ it('fails closed without an approver and leaves discovery automatic', async () =
   const agent = await harness.create(SessionId('computer-approval-unavailable'))
   // Tool admission does not grant computer authorization.
   ctx.on('tools/pre-execute', async () => ({ kind: 'allow' }), { prepend: true })
-  const execute = (args: Record<string, unknown>) => ctx.tools.execute({ agent, name: 'computer', arguments: args,
+  const execute = (args: Record<string, unknown>) => executeToolFixture(ctx, { agent, name: 'computer', arguments: args,
     callId: ToolCallId('approval-required'), signal: new AbortController().signal })
   expect((await execute({ action: 'list' })).isError).toBe(false)
   expect((await execute({ action: 'observe', target: 'window-1', screenshot: false })).isError).toBe(false)
@@ -49,7 +50,7 @@ it('logs a separate one-shot approval for each action and honors rejection', asy
   agent.session.append('turn/start', { turn: 1 })
   let allowed = false
   ctx.on('approval/request', async () => allowed ? 'allowed-once' : 'rejected')
-  const execute = () => ctx.tools.execute({ agent, name: 'computer', arguments: { action: 'reset' },
+  const execute = () => executeToolFixture(ctx, { agent, name: 'computer', arguments: { action: 'reset' },
     callId: ToolCallId('approval-decision'), signal: new AbortController().signal })
   expect((await execute()).isError).toBe(true)
   allowed = true
@@ -65,7 +66,7 @@ it('defers native initialization until use and reports its failure without unloa
   await provider
   const harness = await mountAgentLoopTestHarness(ctx)
   const agent = await harness.create(SessionId('unified-native-unavailable'))
-  const result = await ctx.tools.execute({ agent, name: 'computer', arguments: { action: 'list' }, callId: ToolCallId('init-failed'), signal: new AbortController().signal })
+  const result = await executeToolFixture(ctx, { agent, name: 'computer', arguments: { action: 'list' }, callId: ToolCallId('init-failed'), signal: new AbortController().signal })
   expect(JSON.stringify(result.content)).toContain('Native initialization failed')
   expect(ctx.computerUse.providerName).toBe('unified')
   expect(ctx.tools.schemas().some(tool => tool.name === 'computer')).toBe(true)
@@ -80,7 +81,7 @@ it('reads the current user input mode for an existing live Agent', async () => {
   const harness = await mountAgentLoopTestHarness(ctx)
   const agent = await harness.create(SessionId('unified-live-input-mode'))
   ctx.on('tools/pre-execute', async () => ({ kind: 'allow' }), { prepend: true })
-  const execute = (args: Record<string, unknown>) => ctx.tools.execute({ agent, name: 'computer', arguments: args,
+  const execute = (args: Record<string, unknown>) => executeToolFixture(ctx, { agent, name: 'computer', arguments: args,
     callId: ToolCallId('live-input-mode'), signal: new AbortController().signal })
   await execute({ action: 'list' })
   settings.inputMode = 'foreground'
@@ -101,7 +102,7 @@ it('rolls back the first reservation when another browser provider already owns 
 
 it('rejects computer calls outside an exact live Agent even through direct tool execution', async () => {
   await ctx.plugin(Provider, {})
-  const result = await ctx.tools.execute({ name: 'computer', arguments: { action: 'list' }, callId: ToolCallId('no-agent'), signal: new AbortController().signal })
+  const result = await executeToolFixture(ctx, { name: 'computer', arguments: { action: 'list' }, callId: ToolCallId('no-agent'), signal: new AbortController().signal })
   expect(result.isError).toBe(true)
   expect(JSON.stringify(result.content)).toContain('exact live Agent')
   expect(desktop.calls).toEqual([])
@@ -129,7 +130,7 @@ it('rejects missing action-specific arguments before any native input is dispatc
   const harness = await mountAgentLoopTestHarness(ctx)
   const agent = await harness.create(SessionId('unified-invalid-action-arguments'))
   for (const args of [{}, { action: 'type', target: 'window-1' }, { action: 'click' }]) {
-    const result = await ctx.tools.execute({ agent, name: 'computer', arguments: args, callId: ToolCallId('invalid-fields'), signal: new AbortController().signal })
+    const result = await executeToolFixture(ctx, { agent, name: 'computer', arguments: args, callId: ToolCallId('invalid-fields'), signal: new AbortController().signal })
     expect(result.isError).toBe(true)
   }
   expect(desktop.calls).toEqual([])
@@ -139,7 +140,7 @@ it('explains a missing application identifier as a structured failure without ac
   await ctx.plugin(Provider, {})
   const harness = await mountAgentLoopTestHarness(ctx)
   const agent = await harness.create(SessionId('unified-missing-bundle-id'))
-  const result = await ctx.tools.execute({ agent, name: 'computer', arguments: { action: 'open_app' }, callId: ToolCallId('missing-bundle-id'), signal: new AbortController().signal })
+  const result = await executeToolFixture(ctx, { agent, name: 'computer', arguments: { action: 'open_app' }, callId: ToolCallId('missing-bundle-id'), signal: new AbortController().signal })
   expect(result.isError).toBe(true)
   const text = result.content.find(block => block.type === 'text')
   expect(text?.text).toContain('"code":"INVALID_ARGUMENTS"')
@@ -153,7 +154,7 @@ it('recovers a missing target by retaining the native ref without dispatching th
   await ctx.plugin(Provider, { inputMode: 'background', showOverlay: false, screenshots: false })
   const harness = await mountAgentLoopTestHarness(ctx)
   const agent = await harness.create(SessionId('unified-missing-ref-target'))
-  const execute = (args: Record<string, unknown>) => ctx.tools.execute({ agent, name: 'computer', arguments: args,
+  const execute = (args: Record<string, unknown>) => executeToolFixture(ctx, { agent, name: 'computer', arguments: args,
     callId: ToolCallId('ref-target'), signal: new AbortController().signal })
   await execute({ action: 'list' })
   await execute({ action: 'observe', target: 'window-1' })
@@ -173,7 +174,7 @@ it('reports declared and unexpected operation failures and keeps unrelated tools
   await ctx.plugin(Provider, { showOverlay: false, screenshots: false })
   const harness = await mountAgentLoopTestHarness(ctx)
   const agent = await harness.create(SessionId('unified-failures'))
-  const execute = (args: Record<string, unknown>) => ctx.tools.execute({ agent, name: 'computer', arguments: args, callId: ToolCallId('failure'), signal: new AbortController().signal })
+  const execute = (args: Record<string, unknown>) => executeToolFixture(ctx, { agent, name: 'computer', arguments: args, callId: ToolCallId('failure'), signal: new AbortController().signal })
   expect(JSON.stringify((await execute({ action: 'observe', target: 'unknown' })).content)).toContain('TARGET_NOT_FOUND')
   desktop.call = () => Promise.reject(new Error('Native connection failed'))
   expect(JSON.stringify((await execute({ action: 'list' })).content)).toContain('OPERATION_FAILED')
@@ -186,7 +187,7 @@ it('reports declared and unexpected operation failures and keeps unrelated tools
     output: { schema: { type: 'string' }, render: () => [{ type: 'text', text: 'echo' }] },
     execute: () => Promise.resolve('echo'),
   })
-  const other = await ctx.tools.execute({ agent, name: 'echo', arguments: {}, callId: ToolCallId('echo'), signal: new AbortController().signal })
+  const other = await executeToolFixture(ctx, { agent, name: 'echo', arguments: {}, callId: ToolCallId('echo'), signal: new AbortController().signal })
   expect(other.isError).toBe(false)
 })
 
@@ -203,7 +204,7 @@ it('unload aborts a pending native call and awaits it before destroying the SDK'
       signal?.addEventListener('abort', () => { reject(new Error('Native call interrupted')) }, { once: true })
     })
   }
-  const operation = ctx.tools.execute({ agent, name: 'computer', arguments: { action: 'list' }, callId: ToolCallId('pending'), signal: new AbortController().signal })
+  const operation = executeToolFixture(ctx, { agent, name: 'computer', arguments: { action: 'list' }, callId: ToolCallId('pending'), signal: new AbortController().signal })
   await entered.promise
   await provider.dispose()
   expect((await operation).isError).toBe(true)

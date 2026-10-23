@@ -8,7 +8,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { ImageGenerationCard } from './ImageGenerationCard.tsx'
 import { ImageGenerationStatus } from './ImageGenerationStatus.tsx'
 import { IMAGE_GENERATION_ENTRY, ImageGenerationCardController } from './image-generation-controller.ts'
-import { en, zh, type ImageGenerationLocaleKey } from './locales.ts'
+import { en, zh, ja, es, fr, de, ru, pt, type ImageGenerationLocaleKey } from './locales.ts'
 
 export type { ImageGenerationLocaleKey } from './locales.ts'
 export type { ImageGenerationCardProps } from './ImageGenerationCard.tsx'
@@ -30,7 +30,7 @@ export const inject = ['slots', 'locale', 'configForms']
  */
 export function apply(ctx: Context): void {
   const namespace = 'settings.imageGeneration'
-  ctx.effect(() => ctx.locale.register(namespace, { en, zh }), 'image-generation: dictionary')
+  ctx.effect(() => ctx.locale.register(namespace, { en, zh, ja, es, fr, de, ru, pt }), 'image-generation: dictionary')
   const controller = new ImageGenerationCardController(ctx.configForms.get(IMAGE_GENERATION_ENTRY), ctx.configForms.describe())
   ctx.effect(() => () => { controller.dispose() }, 'image-generation: form')
   ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({

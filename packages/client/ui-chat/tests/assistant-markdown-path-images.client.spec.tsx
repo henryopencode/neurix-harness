@@ -5,16 +5,16 @@ import { AttachmentId, type ImageAttachmentRef } from '@deepseek-ai/dsh-attachme
 import { MarkdownDelegateProvider } from '@deepseek-ai/dsh-client-ui-primitives'
 import { AssistantMarkdown, localPathMediaUrl } from '../src/client/chat/AssistantMarkdown.tsx'
 import { useDetailedPresentation } from './presentation-fixture.client.ts'
+import { unusedImageLoader } from './reasoning-component-fixture.tsx'
 import { useDisclosure } from '../src/client/chat/use-disclosure.ts'
 import { useSearchableHidden } from '../src/client/chat/searchable-hidden.ts'
-import type { ChatNodeOwnerProps, ChatViewSlotProps } from '../src/client/contract/slots.ts'
+import type { ChatViewSlotProps } from '../src/client/contract/slots.ts'
 import type { AssistantBlock } from '../src/client/contract/snapshot.ts'
 import type { AssistantMarkdownProps } from '../src/client/chat/AssistantMarkdown.tsx'
 
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
 
 const t = ((_key: string) => 'label') as ChatViewSlotProps['t']
-const renderMessageImages = (() => null) as ChatNodeOwnerProps['renderMessageImages']
 
 function textBlock(text: string): AssistantBlock {
   return { kind: 'text', text }
@@ -24,13 +24,14 @@ const BASE = 'http://127.0.0.1:3080/'
 const MOUNTED_BASE = 'http://127.0.0.1:3080/tools/dsh/'
 
 const imageLabels = { open: 'Open image', loading: 'Loading', failed: 'Unavailable', dialog: 'Image preview', close: 'Close' }
+const fileDrag = { prepare: vi.fn(async () => ({ start: () => true, release: () => {} })), reportFailure: vi.fn() }
 
 function historicalImage(reference: AssistantMarkdownProps['generatedImageReferences'], text = '![portrait](attachment)\n\n`![example](attachment)`') {
-  return <MarkdownDelegateProvider fileImages={{ resolve: path => `${BASE}api/file?path=${encodeURIComponent(path)}`, labels: imageLabels }}>
+  return <MarkdownDelegateProvider fileImages={{ fileDrag, resolve: path => `${BASE}api/file?path=${encodeURIComponent(path)}`, labels: imageLabels }}>
     <AssistantMarkdown renderSlot={() => null} useDisclosure={useDisclosure} useGroupAction={useSearchableHidden}
       usePresentation={useDetailedPresentation}
       blocks={[textBlock(text)]}
-      streaming={false} renderMessageImages={renderMessageImages} generatedImageReferences={reference} t={t} />
+      streaming={false} loadImage={unusedImageLoader} generatedImageReferences={reference} t={t} />
   </MarkdownDelegateProvider>
 }
 
@@ -55,7 +56,7 @@ it('keeps a mismatched placeholder count unresolved instead of displaying an arb
   const load = vi.fn(async (attachment: ImageAttachmentRef) => `blob:${attachment.attachmentId}`)
   const view = render(historicalImage({ attachments, load }))
   await act(async () => { await Promise.resolve() })
-  expect(view.container.querySelector('img')?.getAttribute('src')).toBe(`${BASE}api/file?path=attachment`)
+  expect(view.container.querySelector('img')?.getAttribute('src')).toMatch(/^http:\/\/127\.0\.0\.1:3080\/api\/file\?path=attachment&load=\d+$/u)
 })
 
 it('keeps the other images visible when one attachment cannot be read', async () => {
@@ -90,7 +91,7 @@ it('ignores a late image read after the reference changes', async () => {
   const view = render(historicalImage({ attachments: [attachment], load: () => pending.promise }))
   view.rerender(historicalImage(undefined))
   await act(async () => { pending.resolve('blob:stale-image'); await pending.promise })
-  expect(view.container.querySelector('img')?.getAttribute('src')).toBe(`${BASE}api/file?path=attachment`)
+  expect(view.container.querySelector('img')?.getAttribute('src')).toMatch(/^http:\/\/127\.0\.0\.1:3080\/api\/file\?path=attachment&load=\d+$/u)
 })
 
 it('retains the unavailable-image path when the saved image cannot be read', async () => {
@@ -98,7 +99,7 @@ it('retains the unavailable-image path when the saved image cannot be read', asy
   const load = vi.fn(async () => { throw new Error('attachment missing') })
   const view = render(historicalImage({ attachments: [attachment], load }))
   await act(async () => { await Promise.resolve() })
-  expect(view.container.querySelector('img')?.getAttribute('src')).toBe(`${BASE}api/file?path=attachment`)
+  expect(view.container.querySelector('img')?.getAttribute('src')).toMatch(/^http:\/\/127\.0\.0\.1:3080\/api\/file\?path=attachment&load=\d+$/u)
 })
 
 describe('localPathMediaUrl', () => {
@@ -144,7 +145,7 @@ describe('AssistantMarkdown local-path images', () => {
         usePresentation={useDetailedPresentation}
         blocks={[textBlock('See ![diagram](/tmp/graph.png) for the layout.')]}
         streaming={false}
-        renderMessageImages={renderMessageImages}
+        loadImage={unusedImageLoader}
         t={t}
       />,
     )
@@ -162,7 +163,7 @@ describe('AssistantMarkdown local-path images', () => {
         usePresentation={useDetailedPresentation}
         blocks={[textBlock('See ![diagram](relative.png).')]}
         streaming={false}
-        renderMessageImages={renderMessageImages}
+        loadImage={unusedImageLoader}
         t={t}
       />,
     )

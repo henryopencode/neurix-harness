@@ -23,18 +23,18 @@ const DEPENDENCY_FIELDS = ['dependencies', 'optionalDependencies', 'peerDependen
  * npm's hoisted placement re-checks every internal edge against the incoming
  * edges of its peer target (`canPlacePeers` calls `checkCanPlaceNoCurrent`,
  * which walks `depValid` over that target's edges), so resolution time grows
- * with this product and not with the package count alone. Measured on an idle
- * M-series host: 277 package(s) x 2524 internal edge(s) = 699,148 unit(s) cost
- * 180.7 s of npm time out of 185.1 s end to end. The budget adds 25% headroom
- * for ordinary product growth, so a graph that grows here fails with its own
- * measured counts instead of failing on whichever runner happens to be slow.
+ * with this product and not with the package count alone. On an M1 Pro with
+ * macOS x64 Node 24.18.0, without other owned CPU-heavy jobs, 320 package(s)
+ * x 2842 internal edge(s) = 909,440 unit(s) resolve in 235.66 s. No package
+ * archives are requested and both releases share one Cordis installation.
+ * The budget adds 25% growth headroom, rounded to 10,000 units, so growth
+ * fails with measured counts rather than depending on runner speed.
  * Raising it requires re-measuring the resolution and recording the new counts.
  */
-export const MAX_RESOLUTION_WORK_UNITS = 875_000
+export const MAX_RESOLUTION_WORK_UNITS = 1_140_000
 
 /**
- * Measured npm seconds per resolution work unit on the reference host: 180.66 s
- * for the 699,148 units of the graph the budget was derived from.
+ * Reference npm seconds per resolution work unit: 235.66 s for 909,440 units.
  */
 const SECONDS_PER_WORK_UNIT = 2.6e-4
 

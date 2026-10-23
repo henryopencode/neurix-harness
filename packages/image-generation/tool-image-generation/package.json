@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-image-generation",
   "description": "Generate and save images from OpenAI-compatible or MiniMax APIs",
-  "version": "0.2.1-alpha.2",
+  "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
   },
@@ -52,6 +52,7 @@
     "@deepseek-ai/dsh-attachment-local": "workspace:*",
     "@deepseek-ai/dsh-system-prompt": "workspace:*",
     "@deepseek-ai/dsh-loader-smoke": "workspace:*",
-    "@deepseek-ai/cordis-plugin-loader": "workspace:~"
+    "@deepseek-ai/cordis-plugin-loader": "workspace:~",
+    "@deepseek-ai/dsh-tool-testkit": "workspace:*"
   }
 }

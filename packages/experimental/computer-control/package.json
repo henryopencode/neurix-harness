@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-experimental-computer-control",
   "description": "Optional browser and macOS computer control with editable defaults and testing guidance",
-  "version": "0.2.1-alpha.2",
+  "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
   },
@@ -68,7 +68,6 @@
   },
   "icon": "./icon.svg",
   "dependencies": {
-    "@deepseek-ai/dsh-experimental-computer-use-unified": "workspace:*",
     "@deepseek-ai/dsh-computer-use": "workspace:*",
     "@deepseek-ai/dsh-browser-use": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~",
@@ -76,7 +75,8 @@
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-experimental-computer-use-unified": "workspace:*"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
@@ -88,7 +88,6 @@
     "@deepseek-ai/dsh-client-ui-primitives": "workspace:*",
     "@deepseek-ai/dsh-client-ui-slots": "workspace:*",
     "@deepseek-ai/dsh-client-test-runtime": "workspace:*",
-    "@types/react": "~18.3.1",
     "react": "^18.2.0",
     "@testing-library/react": "^16.3.3",
     "react-dom": "^18.2.0",
@@ -112,8 +111,9 @@
     "@deepseek-ai/dsh-config-editor": "workspace:*",
     "@deepseek-ai/dsh-api-remotes": "workspace:*",
     "@deepseek-ai/dsh-client-ui-conversation": "workspace:*",
-    "@types/react-dom": "~18.3.0",
     "@deepseek-ai/dsh-typert-registry": "workspace:*",
-    "playwright": "1.61.1"
+    "playwright": "1.61.1",
+    "@deepseek-ai/dsh-experimental-computer-use-unified": "workspace:*",
+    "@deepseek-ai/dsh-tool-executor-native": "workspace:*"
   }
 }

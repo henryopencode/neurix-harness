@@ -107,7 +107,8 @@ it.skipIf(webSnapshotMode() === 'record')('validates settings, rejects and appro
     const sessionId = await settled
     const events = active.ctx.sessions.get(sessionId)?.snapshotEvents() ?? []
     expect(events.some(event => event.type === 'approval/decided' && event.data.outcome === 'allowed-once')).toBe(true)
-    expect(events.some(event => event.type === 'tool/result' && !event.data.message.isError)).toBe(true)
+    expect(events.some(event => event.type === 'tool/result' && !event.data.message.isError),
+      JSON.stringify(events.filter(event => event.type === 'tool/result'))).toBe(true)
     await expect.poll(() => requests).toBe(1)
     if (process.platform === 'darwin') await expect.poll(ownedChromeProcesses).toHaveLength(1)
     const preview = page.locator('[data-computer-preview]')

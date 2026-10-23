@@ -4,12 +4,22 @@ import type { ToolCallBlock } from './tool-call-model.ts'
 import { fullyRendered, imageReferences, type ImageCardModel } from './image-card-model.ts'
 import { parsedToolCall } from './raw-tool-call.ts'
 
+/** Saved generated images and their model-visible result text. */
+export interface ImageGenerationCardModel {
+  /** Original generation prompt used as the result label. */
+  label: string
+  /** Durable references in result order. */
+  images: ImageCardModel['images']
+  /** Ordered text blocks returned alongside the images. */
+  text: string
+}
+
 /**
  * Validate a successful generated-image result without deriving attachment URLs or reading host state.
  * @param block - live or replayed tool lifecycle item.
  * @returns complete image-gallery material, or null for the generic row.
  */
-export function imageGenerationCardModel(block: ToolCallBlock): ImageCardModel | null {
+export function imageGenerationCardModel(block: ToolCallBlock): ImageGenerationCardModel | null {
   if (!('kind' in block) || block.isError) return null
   const call = parsedToolCall(block)
   if (call?.name !== 'generate_image' || typeof call.args.prompt !== 'string' || call.args.prompt.trim() === '') return null

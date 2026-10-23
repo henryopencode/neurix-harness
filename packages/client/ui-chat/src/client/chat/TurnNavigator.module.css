@@ -226,9 +226,12 @@
 }
 
 .bookmarkButton,
-.bookmarkButton:hover:not(:disabled),
 .bookmarkButton:active:not(:disabled) {
   background: transparent;
+}
+
+@media (hover: hover) {
+  .bookmarkButton:hover:not(:disabled) { background: transparent; }
 }
 
 .bookmarkButton[aria-pressed='true'] {

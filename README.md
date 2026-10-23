@@ -30,6 +30,8 @@ pnpm dsh web
 
 `pnpm run build` prepares the repository artifacts. `pnpm dsh web` uses those built artifacts without rebuilding.
 
+For an existing installation, follow the [upgrade guide](docs/upgrade-guide/v0.2.1-alpha.2/neurix-rc3/guide.md) for Node.js, model, and Session compatibility.
+
 ## Community and support
 
 - Submit feedback or bug reports through [GitHub Issues](https://github.com/henryopencode/neurix-harness/issues).

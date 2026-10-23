@@ -3,8 +3,10 @@
   - listitem:
     - button "查看 电脑控制": 电脑控制
     - text: 连续操作浏览器与 macOS 应用，提供配置和分步测试指引。
+    - status
     - switch "启用 电脑控制"
   - listitem:
     - button "查看 图像生成": 图像生成
     - text: 已停用 配置生图接口，在对话中生成并保存图片
+    - status
     - switch "启用 图像生成"

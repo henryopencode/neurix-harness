@@ -34,6 +34,8 @@ pnpm dsh web
 
 `pnpm run build` 会准备仓库产物。`pnpm dsh web` 会直接使用这些已构建产物，不会重新构建。
 
+已有安装请按[升级指南](docs/upgrade-guide/v0.2.1-alpha.2/neurix-rc3/guide.zh.md)检查 Node.js、模型和 Session 兼容性。
+
 ## 社区与支持
 
 - 通过 [GitHub Issues](https://github.com/henryopencode/neurix-harness/issues) 提交反馈或 bug 报告。

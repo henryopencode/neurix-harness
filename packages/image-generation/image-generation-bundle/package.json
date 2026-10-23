@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-image-generation-bundle",
   "description": "Enable configurable text-to-image generation in conversations",
-  "version": "0.2.1-alpha.2",
+  "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
   },
@@ -66,7 +66,6 @@
     "@deepseek-ai/dsh-client-ui-primitives": "workspace:*",
     "@deepseek-ai/dsh-client-ui-slots": "workspace:*",
     "@deepseek-ai/dsh-client-test-runtime": "workspace:*",
-    "@types/react": "~18.3.1",
     "react": "^18.2.0",
     "@testing-library/react": "^16.3.3",
     "react-dom": "^18.2.0"

@@ -1,3 +1,4 @@
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 /** Images API acquisition through the real tool registry and durable local attachment store. */
 
 import { createServer, type IncomingMessage, type ServerResponse, type Server } from 'node:http'
@@ -79,7 +80,7 @@ async function mount(config: Options = {}, limits: Parameters<typeof LocalAttach
 }
 
 function call(args: unknown = { prompt: 'A red square' }, signal = new AbortController().signal) {
-  return ctx.tools.execute({ name: 'generate_image', callId: ToolCallId('image-call'), arguments: args, signal })
+  return executeToolFixture(ctx, { name: 'generate_image', callId: ToolCallId('image-call'), arguments: args, signal })
 }
 
 describe('image generation', () => {

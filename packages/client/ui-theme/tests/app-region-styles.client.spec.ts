@@ -82,13 +82,13 @@ const CHROME_ROWS: readonly ChromeRow[] = [
     file: SIDEBAR,
     selector: '.logoRow',
     markup: 'client/ui-sidebar/src/client/SidebarRoot.tsx',
-    height: ['height', '60px'],
+    height: ['height', '48px'],
   },
   {
     file: CONVERSATION,
     selector: '.header',
     markup: 'client/ui-conversation/src/client/skeleton/ConversationHeader.tsx',
-    height: ['min-height', '76px'],
+    height: ['min-height', '84px'],
   },
   {
     file: DOCKKIT,

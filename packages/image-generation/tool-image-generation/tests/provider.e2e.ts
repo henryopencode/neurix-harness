@@ -1,3 +1,4 @@
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 /** Opt-in paid Images API smoke; no automatic retry after a generation request. */
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -32,7 +33,7 @@ it.skipIf(!apiKey || !model)('generates and saves one image from a configured re
       ...process.env.DSH_IMAGE_SIZE === undefined ? {} : { size: process.env.DSH_IMAGE_SIZE },
       ...process.env.DSH_IMAGE_QUALITY === undefined ? {} : { quality: process.env.DSH_IMAGE_QUALITY },
     }).await()
-    const result = await ctx.tools.execute({
+    const result = await executeToolFixture(ctx, {
       name: 'generate_image', callId: ToolCallId('real-image-call'),
       arguments: { prompt: 'A simple red square centered on a plain white background.' },
       signal: AbortSignal.timeout(180_000),
