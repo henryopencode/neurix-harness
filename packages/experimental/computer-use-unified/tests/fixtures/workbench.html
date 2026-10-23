@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Harness Computer Control</title>
+<style>
+  body { max-width: 720px; margin: 60px auto; padding: 32px; font: 18px system-ui; color: #14263d; background: #edf3f9; }
+  main { padding: 32px; border-radius: 16px; background: white; box-shadow: 0 8px 40px #14263d18; }
+  label, input, textarea, button { display: block; box-sizing: border-box; width: 100%; margin: 12px 0; font: inherit; }
+  input, textarea { padding: 12px; border: 1px solid #96a8ba; border-radius: 6px; }
+  button { padding: 12px; color: white; background: #3153b9; border: 0; border-radius: 6px; cursor: pointer; }
+  output { display: block; min-height: 30px; color: #126342; }
+</style>
+<main>
+  <h1>Harness Computer Control</h1>
+  <p>Browser and desktop actions, verified from current state.</p>
+  <form>
+    <label>Task name <input name="title" required></label>
+    <label>Notes <textarea name="notes"></textarea></label>
+    <button>Save task</button>
+  </form>
+  <output aria-live="polite"></output>
+  <button id="dialog">Show confirmation</button>
+  <a href="/" target="_blank">Open another tab</a>
+</main>
+<script>
+  document.querySelector('form').addEventListener('submit', async event => {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(event.currentTarget));
+    await fetch('/save', { method: 'POST', body: JSON.stringify(data) });
+    document.querySelector('output').textContent = 'Saved task: ' + data.title;
+  });
+  document.querySelector('#dialog').onclick = () => {
+    document.querySelector('output').textContent = confirm('Confirm fixture action?') ? 'Confirmed' : 'Canceled';
+  };
+</script>
+</html>

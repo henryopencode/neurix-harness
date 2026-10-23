@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.1-alpha.2/neurix-brand/guide.md
+/:
+  en: c410f9c67a1f403b
+  zh: 83b89b7e244b6e40
+/desktop-application-and-installer-names:
+  en: 5f243bc6ae82888c
+  zh: 7b22ba7c8070566d
+/desktop-application-and-installer-names/change:
+  en: 06e441ae897f5e1b
+  zh: 9ab9f80438afd7d3
+/desktop-application-and-installer-names/migration:
+  en: 73d4acf53d8b3e8c
+  zh: 59c1e30d0dd9255b

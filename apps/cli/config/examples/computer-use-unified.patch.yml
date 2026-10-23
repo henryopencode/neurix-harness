@@ -1,0 +1,13 @@
+# Choose this provider instead of another computer-use or browser-use provider.
+- insert:
+    - id: computer-use
+      name: '@deepseek-ai/dsh-computer-use'
+    - id: browser-use
+      name: '@deepseek-ai/dsh-browser-use'
+    - id: computer-use-unified
+      name: '@deepseek-ai/dsh-experimental-computer-use-unified'
+      config:
+        headless: false
+        screenshots: true
+        inputMode: background
+        nativeBackground: false

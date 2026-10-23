@@ -1,0 +1,23 @@
+- checkbox "启用对话生图" [checked]
+- text: 启用对话生图 生图接口地址
+- textbox "生图接口地址":
+  - /placeholder: ""
+  - text: https://images-fixture.invalid/v1/images/generations
+- paragraph: 填写服务商提供的完整 HTTP(S) 生图接口地址
+- text: 图片模型
+- textbox "图片模型":
+  - /placeholder: ""
+  - text: fixture-image-model
+- paragraph: 填写服务商提供的图片模型名称或部署 ID
+- text: API Key 已配置
+- textbox "API Key"
+- paragraph: 保存在当前主机，留空会保留已保存的密钥
+- text: 默认图片尺寸
+- textbox "默认图片尺寸":
+  - /placeholder: ""
+- paragraph: 可选，如 1024x1024；对话中明确指定的尺寸优先
+- text: 图片质量
+- textbox "图片质量":
+  - /placeholder: ""
+- paragraph: 可选，填写服务支持的值；留空则不指定质量
+- button "保存" [disabled]

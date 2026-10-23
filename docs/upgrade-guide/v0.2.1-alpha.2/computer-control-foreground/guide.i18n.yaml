@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.1-alpha.2/computer-control-foreground/guide.md
+/:
+  en: 2827ae79539895b8
+  zh: 5c4ca04f207ca119
+/computer-control-background-mode-is-browser-only:
+  en: 5d503d7ca96f9366
+  zh: ae4c15934ae5f934
+/computer-control-background-mode-is-browser-only/change:
+  en: 735d5bdba60a8549
+  zh: c4e2e176d87c3c59
+/computer-control-background-mode-is-browser-only/migration:
+  en: 6f9cb2b5c61c335c
+  zh: 1f239837c95c7a57

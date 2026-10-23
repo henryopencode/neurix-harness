@@ -1,0 +1,27 @@
+- checkbox "启用对话生图" [checked]
+- text: 启用对话生图 生图接口地址
+- textbox "生图接口地址":
+  - /placeholder: ""
+  - text: https://minimax-images-fixture.invalid/v1/image_generation
+- paragraph: 填写服务商提供的完整 HTTP(S) 生图接口地址
+- text: 图片模型
+- textbox "图片模型":
+  - /placeholder: ""
+  - text: image-01
+- paragraph: 填写服务商提供的图片模型名称或部署 ID
+- text: API Key 已配置
+- textbox "API Key"
+- paragraph: 保存在当前主机，留空会保留已保存的密钥
+- text: 默认图片比例
+- combobox "默认图片比例":
+  - option "不指定"
+  - option "方形（1:1）"
+  - option "横图（16:9）" [selected]
+  - option "竖图（9:16）"
+  - option "横图（4:3）"
+  - option "竖图（3:4）"
+  - option "横图（3:2）"
+  - option "竖图（2:3）"
+  - option "超宽横图（21:9）"
+- paragraph: 对话未指定比例时使用；选“不指定”时由生图服务决定
+- button "保存" [disabled]

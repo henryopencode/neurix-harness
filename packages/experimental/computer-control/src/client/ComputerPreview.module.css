@@ -1,0 +1,200 @@
+.panel {
+  position: fixed;
+  top: calc(var(--dsh-frame-top-clearance, 0px) + 88px);
+  right: 24px;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 32px));
+  max-height: calc(100vh - var(--dsh-frame-top-clearance, 0px) - 104px);
+  isolation: isolate;
+  overflow: hidden;
+  z-index: 90;
+  pointer-events: auto;
+  border: 0;
+  border-radius: var(--dsw-radius-xl);
+  background: var(--dsw-alias-bg-layer-1);
+  box-shadow: 0 8px 24px light-dark(#0000001a, #00000060), 0 2px 5px light-dark(#00000009, #00000035);
+  color: var(--dsw-static-neutral-00);
+  font-size: 12px;
+  line-height: 18px;
+  animation: appear 180ms ease-out;
+}
+
+.large { max-width: min(640px, calc(100vw - 32px)); }
+.picture { position: relative; display: grid; overflow: hidden; }
+.picture img {
+  display: block;
+  width: auto;
+  max-width: min(320px, calc(100vw - 32px));
+  height: auto;
+  max-height: calc(100vh - var(--dsh-frame-top-clearance, 0px) - 104px);
+}
+.large .picture img { max-width: min(640px, calc(100vw - 32px)); }
+.picture[data-stale] img { opacity: 0.7; }
+
+.handle {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  padding: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+}
+.handle:active { cursor: grabbing; }
+.handle:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: -3px; }
+
+.controls {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--dsw-radius-lg);
+  background: color-mix(in srgb, var(--dsw-static-neutral-1000) 42%, transparent);
+  backdrop-filter: var(--dsw-menu-backdrop-filter);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-3px);
+  transition: opacity 140ms ease-out, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.panel:hover .controls,
+.panel:focus-within .controls {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.collapseControl { left: auto; right: 10px; }
+.iconButton { width: 28px; padding: 0; color: var(--dsw-static-neutral-00); border-radius: var(--dsw-radius-md); }
+.iconButton:hover,
+.iconButton:focus-visible { color: var(--dsw-static-neutral-00); background: color-mix(in srgb, var(--dsw-static-neutral-00) 16%, transparent); }
+
+.caption {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-start;
+  pointer-events: none;
+}
+.caption { transition: opacity 160ms ease-out; }
+.caption[data-active='false'] { opacity: 0; }
+.activity {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 5px 9px;
+  border-radius: var(--dsw-radius-sm);
+  background: color-mix(in srgb, var(--dsw-static-neutral-1000) 58%, transparent);
+  backdrop-filter: var(--dsw-menu-backdrop-filter);
+}
+.dot { width: 5px; height: 5px; flex: none; border-radius: 50%; background: var(--dsw-alias-state-business-primary); }
+
+.empty {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 10px;
+  width: min(320px, calc(100vw - 32px));
+  min-height: 200px;
+  color: var(--dsw-alias-label-secondary);
+}
+.error {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 9px;
+  border-radius: var(--dsw-radius-sm);
+  background: color-mix(in srgb, var(--dsw-static-neutral-1000) 72%, transparent);
+  backdrop-filter: var(--dsw-menu-backdrop-filter);
+}
+.retry { margin-left: auto; padding: 2px 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.retry:hover { text-decoration: underline; }
+
+.cursor {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--dsw-static-neutral-1000) 48%, transparent));
+}
+.cursor path { fill: var(--dsw-static-neutral-900); stroke: var(--dsw-static-neutral-00); stroke-width: 2px; stroke-linejoin: round; }
+.cursor[data-clicked] path { fill: var(--dsw-alias-state-business-primary); }
+.clickRing {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--dsw-alias-state-business-primary);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: clickPulse 450ms ease-out both;
+}
+.typing {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  border-radius: var(--dsw-radius-lg);
+  background: color-mix(in srgb, var(--dsw-static-neutral-1000) 93%, transparent);
+  color: var(--dsw-static-neutral-00);
+  pointer-events: none;
+}
+.keyboardIcon { width: 26px; height: 26px; margin-right: 6px; flex: none; }
+.typing kbd { display: grid; place-items: center; min-width: 26px; height: 27px; padding: 0 5px;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent); border-bottom-width: 3px;
+  border-radius: var(--dsw-radius-sm); font: inherit; }
+.scroll { position: absolute; display: flex; align-items: center; gap: 8px; padding: 6px 9px; pointer-events: none;
+  border-radius: var(--dsw-radius-lg); background: color-mix(in srgb, var(--dsw-static-neutral-1000) 93%, transparent);
+  color: var(--dsw-static-neutral-00); font-size: 20px; }
+.wheel { position: relative; width: 15px; height: 22px; border: 1.5px solid currentColor; border-radius: 7px; }
+.wheel::after { content: ''; position: absolute; width: 3px; height: 5px; left: 4.5px; top: 5px;
+  border-radius: 2px; background: currentColor; }
+@keyframes clickPulse { from { opacity: 0.9; transform: translate(-50%, -50%) scale(1); } to { opacity: 0; transform: translate(-50%, -50%) scale(3); } }
+
+.panel[data-collapsed] { width: auto; border-radius: var(--dsw-radius-xl); color: var(--dsw-alias-label-primary); }
+.collapsedPreview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+@keyframes appear {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .controls { opacity: 1; pointer-events: auto; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel { animation: none; }
+  .controls,
+  .caption,
+  .cursor { transition: none; }
+}

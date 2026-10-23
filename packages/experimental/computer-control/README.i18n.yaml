@@ -1,0 +1,40 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/computer-control/README.md
+/:
+  en: 05d5d0fef0d3017b
+  zh: f47726751a9d195e
+/deepseek-ai-dsh-experimental-computer-control:
+  en: f0c40e4a4e76f831
+  zh: 6dde44ea28746cd4
+/deepseek-ai-dsh-experimental-computer-control/summary:
+  en: e1a1350c5a6afdc4
+  zh: fad5f5bcd9a8cb0d
+/deepseek-ai-dsh-experimental-computer-control/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 01e3cf191d4bd47d
+/deepseek-ai-dsh-experimental-computer-control/use-this-package:
+  en: ea2318d5dcfc6dfe
+  zh: 6d523bb0d98c756c
+/deepseek-ai-dsh-experimental-computer-control/use-this-package/test-from-a-conversation:
+  en: 3a189fbfef0fd2ff
+  zh: 561b7d9a37ff2b8e
+/deepseek-ai-dsh-experimental-computer-control/understand-the-implementation:
+  en: 492483a05b860b1e
+  zh: be4f429bae94637f
+/deepseek-ai-dsh-experimental-computer-control/further-exploration:
+  en: 34cc73de5c07ef7e
+  zh: ac713c54b422c4b6
+/deepseek-ai-dsh-experimental-computer-control/model-experience:
+  en: d81ef51b0b3088fe
+  zh: 8c8f48a713a1016f
+/deepseek-ai-dsh-experimental-computer-control/model-experience/kv-cache-effect:
+  en: e5c75974568f0b26
+  zh: d329f60001d2a571
+/deepseek-ai-dsh-experimental-computer-control/known-limitations-and-deferred-work:
+  en: 900ccc97c4df0a4b
+  zh: b28cddd19ab55f70
+/deepseek-ai-dsh-experimental-computer-control/known-limitations-and-deferred-work/dev-note:
+  en: 279d01435256cd2a
+  zh: 83780964e5de2f54

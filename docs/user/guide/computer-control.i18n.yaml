@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for computer-control.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/user/guide/computer-control.md
+/computer-control:
+  en: 50da7584eed5f2c9
+  zh: 87eb3e9dcc6cd4c1
+/computer-control/prerequisites:
+  en: a527cd47a2435286
+  zh: 0b8833b5f238b3d2
+/computer-control/enable-from-plugins:
+  en: f9aec58f198d842d
+  zh: e6404af48e90e89c
+/computer-control/enable-from-plugins/watch-picture-in-picture:
+  en: b8477edd59dc0954
+  zh: ea70920ef3e8668b
+/computer-control/start-a-session:
+  en: 43372dba9689ac2f
+  zh: aa6bbf2e8b5ee27a
+/computer-control/complete-a-browser-task:
+  en: 2da669a871882935
+  zh: 44f04a655e0d6cc8
+/computer-control/operate-a-macos-application:
+  en: f5c3fb0e86962f68
+  zh: 5cba4f51d27015ae
+/computer-control/recover-and-finish:
+  en: eb4965a97259bd30
+  zh: ce5387ff36624b88

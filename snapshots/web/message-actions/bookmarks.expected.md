@@ -1,0 +1,8 @@
+- navigation "Turn navigation":
+  - button "Jump to bookmarked turn 1"
+  - button "Jump to turn 2"
+  - button "Jump to turn 3"
+  - dialog "Turn 1 preview":
+    - button "Go to turn 1": Use the read tool twice in one assistant message:… I will read both files before answering.
+    - button "Remove bookmark" [pressed]
+    - tooltip "Remove bookmark"

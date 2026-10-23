@@ -1,0 +1,31 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write README.md
+/neurix-harness:
+  en: 0e42bc2764ae2f9e
+  zh: 75e5ae3b3ee7395f
+/neurix-harness/developer-preview:
+  en: 7c5c436d8897f030
+  zh: 0104d4a0a2015164
+/neurix-harness/run:
+  en: 4e0248e4c6474fc6
+  zh: 5491f0aa70750247
+/neurix-harness/run/run-from-source:
+  en: 819e3f7c144d0d64
+  zh: de815f040975dba7
+/neurix-harness/community-and-support:
+  en: cd8d9dd4e224ce1a
+  zh: e6b567f40b2c5106
+/neurix-harness/contributing:
+  en: cabc2d3e9f8898bd
+  zh: 83b6d238bae29ce3
+/neurix-harness/development:
+  en: 803ca2b11b497bed
+  zh: 8b4071eb0e7783ef
+/neurix-harness/citation:
+  en: 6704e9e5a8d49a91
+  zh: 85c9cdd8d56f8e9d
+/neurix-harness/license:
+  en: 926995344fc1c72b
+  zh: c92fab5abf85932f

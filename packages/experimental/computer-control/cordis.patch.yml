@@ -1,0 +1,14 @@
+- insert:
+    - id: optional-computer-control
+      name: cordis:group
+      group: true
+      isolate:
+        computerUse: true
+        browserUse: true
+      config:
+        - id: optional-computer-use
+          name: '@deepseek-ai/dsh-computer-use'
+        - id: optional-browser-use
+          name: '@deepseek-ai/dsh-browser-use'
+        - id: computer-control
+          name: '@deepseek-ai/dsh-experimental-computer-control'

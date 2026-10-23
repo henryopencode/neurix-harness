@@ -1,0 +1,8 @@
+version: 1
+scenario: generate-image-minimax
+profile: headless
+composition: image-generation-minimax
+recording: authored
+header:
+  class: image-generation-minimax
+  pin: true

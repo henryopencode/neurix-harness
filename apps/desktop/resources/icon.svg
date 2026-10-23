@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <linearGradient id="tile" x1="112" y1="80" x2="912" y2="944" gradientUnits="userSpaceOnUse"><stop stop-color="#25202f"/><stop offset="1" stop-color="#141218"/></linearGradient>
+    <linearGradient id="ink" x1="12" y1="20" x2="116" y2="112" gradientUnits="userSpaceOnUse"><stop stop-color="#b9a0ff"/><stop offset=".5" stop-color="#d0b4ef"/><stop offset="1" stop-color="#e879b9"/></linearGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="224" fill="url(#tile)"/>
+  <rect x="66" y="66" width="892" height="892" rx="222" stroke="#3b3148" stroke-width="4"/>
+  <g id="tray-glyph"><path d="M12.68 111L21.2 40C23.12 24 42.84 18 51.28 31L80.64 78C82.28 81 86.4 80 86.88 76L92.04 33L115.6 20L107.44 88C105.52 104 85.8 110 77.36 97L48 50C46.36 47 42.24 48 41.76 52L36.24 98Z" transform="translate(128 128) scale(6)" fill="url(#ink)"/></g>
+</svg>

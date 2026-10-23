@@ -1,0 +1,50 @@
+[
+  {
+    "kind": "chunks",
+    "chunks": [
+      { "type": "block-start", "index": 0, "blockType": "tool-call" },
+      { "type": "block-end", "index": 0, "block": { "type": "tool-call", "id": "computer-open-rejected", "name": "computer", "arguments": "{\"action\":\"open_browser\",\"url\":\"about:blank\",\"screenshot\":false}" } },
+      { "type": "finish", "reason": { "kind": "tool-calls" } }
+    ]
+  },
+  {
+    "kind": "chunks",
+    "chunks": [
+      { "type": "block-start", "index": 0, "blockType": "text" },
+      { "type": "block-end", "index": 0, "block": { "type": "text", "text": "The browser action was rejected." } },
+      { "type": "finish", "reason": { "kind": "stop" } }
+    ]
+  },
+  {
+    "kind": "chunks",
+    "chunks": [
+      { "type": "block-start", "index": 0, "blockType": "tool-call" },
+      { "type": "block-end", "index": 0, "block": { "type": "tool-call", "id": "computer-open-blank", "name": "computer", "arguments": "{\"action\":\"open_browser\",\"url\":\"about:blank\",\"screenshot\":false}" } },
+      { "type": "finish", "reason": { "kind": "tool-calls" } }
+    ]
+  },
+  {
+    "kind": "chunks",
+    "chunks": [
+      { "type": "block-start", "index": 0, "blockType": "text" },
+      { "type": "block-end", "index": 0, "block": { "type": "text", "text": "Opened the blank browser tab." } },
+      { "type": "finish", "reason": { "kind": "stop" } }
+    ]
+  },
+  {
+    "kind": "chunks",
+    "chunks": [
+      { "type": "block-start", "index": 0, "blockType": "tool-call" },
+      { "type": "block-end", "index": 0, "block": { "type": "tool-call", "id": "computer-new-tab", "name": "computer", "arguments": "{\"action\":\"new_tab\",\"target\":\"tab-1\",\"url\":\"about:blank\",\"screenshot\":false}" } },
+      { "type": "finish", "reason": { "kind": "tool-calls" } }
+    ]
+  },
+  {
+    "kind": "chunks",
+    "chunks": [
+      { "type": "block-start", "index": 0, "blockType": "text" },
+      { "type": "block-end", "index": 0, "block": { "type": "text", "text": "Opened the second browser tab without another approval." } },
+      { "type": "finish", "reason": { "kind": "stop" } }
+    ]
+  }
+]

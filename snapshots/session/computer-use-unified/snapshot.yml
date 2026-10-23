@@ -1,0 +1,10 @@
+version: 1
+scenario: computer-use-unified
+profile: headless
+composition: computer-use-unified
+recording: authored
+header:
+  class: computer-use-unified
+  pin: true
+replay:
+  override: true

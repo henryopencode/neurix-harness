@@ -1,0 +1,7 @@
+version: 1
+scenario: generate-image-multiple
+profile: headless
+composition: image-generation
+recording: authored
+header:
+  class: image-generation

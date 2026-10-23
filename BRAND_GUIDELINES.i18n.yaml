@@ -1,0 +1,7 @@
+# Bilingual-pair consistency record for BRAND_GUIDELINES.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write BRAND_GUIDELINES.md
+/neurix-harness-brand-assets:
+  en: 5b0111b41dbb2d0d
+  zh: 011b6a8477fde157

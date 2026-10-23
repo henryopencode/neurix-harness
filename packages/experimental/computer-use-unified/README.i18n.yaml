@@ -1,0 +1,70 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/computer-use-unified/README.md
+/:
+  en: a0e61ac9beb5b622
+  zh: ec83ecf2f0e99286
+/deepseek-ai-dsh-experimental-computer-use-unified:
+  en: 0b501908d31401f1
+  zh: 178b4211fc743cce
+/deepseek-ai-dsh-experimental-computer-use-unified/summary:
+  en: b176fdb2a72baa60
+  zh: 7803e61e7f01dfbb
+/deepseek-ai-dsh-experimental-computer-use-unified/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 01e3cf191d4bd47d
+/deepseek-ai-dsh-experimental-computer-use-unified/use-this-package:
+  en: 79cef80a2e49f23a
+  zh: ee4b76603c4400c6
+/deepseek-ai-dsh-experimental-computer-use-unified/use-this-package/configuration:
+  en: 5d3df76e2f7068cc
+  zh: dde93979d88c1511
+/deepseek-ai-dsh-experimental-computer-use-unified/use-this-package/operations-and-failures:
+  en: 7296740d16fd7dc0
+  zh: 4e819e016dc94318
+/deepseek-ai-dsh-experimental-computer-use-unified/understand-the-implementation:
+  en: cabb71faeecd64f0
+  zh: 4e28ae62628b13c2
+/deepseek-ai-dsh-experimental-computer-use-unified/further-exploration:
+  en: cef667fc8007e5c3
+  zh: fb9cc575d974fcff
+/deepseek-ai-dsh-experimental-computer-use-unified/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-experimental-computer-use-unified/model-experience/computer-guidance:
+  en: a13d7618f0e62f8d
+  zh: 493420726a99f7db
+/deepseek-ai-dsh-experimental-computer-use-unified/model-experience/computer-guidance/what-the-model-sees:
+  en: e85573227f79368a
+  zh: c197cdbefad69517
+/deepseek-ai-dsh-experimental-computer-use-unified/model-experience/computer-guidance/what-the-model-sees/browser-only-scope-guidance:
+  en: c52020b17e93b8ac
+  zh: a15238481b29fe34
+/deepseek-ai-dsh-experimental-computer-use-unified/model-experience/computer-guidance/what-the-model-sees/unified-computer-guidance:
+  en: ec1cfca79ca6cb8b
+  zh: d5916ed38e50f761
+/deepseek-ai-dsh-experimental-computer-use-unified/model-experience/computer-guidance/token-effect:
+  en: 43589805db5665b3
+  zh: 47f9c5f612230be7
+/deepseek-ai-dsh-experimental-computer-use-unified/model-experience/computer-guidance/kv-cache-effect:
+  en: b0faeb3bb63af7ff
+  zh: 9ee4280f36612e74
+/deepseek-ai-dsh-experimental-computer-use-unified/model-experience/tool-calls-and-observations:
+  en: a8fc33fa50d81292
+  zh: 434c14425c39d234
+/deepseek-ai-dsh-experimental-computer-use-unified/model-experience/tool-calls-and-observations/what-the-model-sees:
+  en: 925c9a848c4fc809
+  zh: 9d9464fc9db8432f
+/deepseek-ai-dsh-experimental-computer-use-unified/model-experience/tool-calls-and-observations/token-effect:
+  en: 3397640727de1d5d
+  zh: 0cf801dc9abd8909
+/deepseek-ai-dsh-experimental-computer-use-unified/model-experience/tool-calls-and-observations/kv-cache-effect:
+  en: 779d067f9744bd56
+  zh: 8d7a265102289d9c
+/deepseek-ai-dsh-experimental-computer-use-unified/known-limitations-and-deferred-work:
+  en: f2326b99156e4cbc
+  zh: 9ae1b8454bf7c7bf
+/deepseek-ai-dsh-experimental-computer-use-unified/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

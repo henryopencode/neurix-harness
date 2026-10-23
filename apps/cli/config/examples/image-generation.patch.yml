@@ -1,0 +1,9 @@
+# Copy this template outside the repository and replace the key and model placeholders.
+- insert:
+    - id: tool-image-generation
+      name: '@deepseek-ai/dsh-tool-image-generation'
+      config:
+        enabled: true
+        endpoint: https://api.openai.com/v1/images/generations
+        apiKey: YOUR_IMAGE_API_KEY
+        model: YOUR_IMAGE_MODEL

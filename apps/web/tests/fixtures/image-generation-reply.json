@@ -1,0 +1,16 @@
+{
+  "patches": [
+    {
+      "at": 1,
+      "entry": {
+        "kind": "chunks",
+        "chunks": [
+          { "type": "block-start", "index": 0, "blockType": "text" },
+          { "type": "block-end", "index": 0, "block": { "type": "text", "text": "{{fromRequest:Markdown: ([^\\n]+)}}" } },
+          { "type": "usage", "usage": { "inputTokens": 3, "outputTokens": 3 } },
+          { "type": "finish", "reason": { "kind": "stop" } }
+        ]
+      }
+    }
+  ]
+}

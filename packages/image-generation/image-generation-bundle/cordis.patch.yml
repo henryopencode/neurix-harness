@@ -1,0 +1,7 @@
+- insert:
+    - id: tool-image-generation
+      name: '@deepseek-ai/dsh-tool-image-generation'
+      config:
+        enabled: false
+        endpoint: https://api.openai.com/v1/images/generations
+        model: ''

@@ -1,0 +1,10 @@
+version: 1
+scenario: computer-control-browser-background
+profile: headless
+composition: computer-control-browser-background
+recording: authored
+header:
+  class: computer-control-browser-background
+  pin: true
+replay:
+  override: true

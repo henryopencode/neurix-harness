@@ -1,0 +1,8 @@
+version: 1
+scenario: generate-image-minimax-failures
+profile: headless
+composition: image-generation-minimax-failures
+recording: authored
+header:
+  class: image-generation-minimax-failures
+  pin: true

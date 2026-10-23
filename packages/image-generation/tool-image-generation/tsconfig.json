@@ -1,0 +1,57 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../core/agent"
+    },
+    {
+      "path": "../../core/agent-loop"
+    },
+    {
+      "path": "../../test-support/agent-loop-testkit"
+    },
+    {
+      "path": "../../core/session"
+    },
+    {
+      "path": "../../util/values"
+    },
+    {
+      "path": "../../../vendor/cosmokit"
+    },
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../../vendor/schemastery"
+    },
+    {
+      "path": "../../attachment/attachment"
+    },
+    {
+      "path": "../../llm/llm"
+    },
+    {
+      "path": "../../core/tools"
+    },
+    {
+      "path": "../../attachment/attachment-local"
+    },
+    {
+      "path": "../../core/system-prompt"
+    },
+    {
+      "path": "../../test-support/loader-smoke"
+    },
+    {
+      "path": "../../../vendor/loader"
+    }
+  ]
+}

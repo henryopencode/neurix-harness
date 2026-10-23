@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Complete Computer Workbench</title>
+<style>
+  body { margin: 16px; max-width: 1050px; font: 16px system-ui; background: #f1f5fa; color: #152338; }
+  main { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  section { padding: 16px; background: white; border: 1px solid #acb9c9; border-radius: 8px; }
+  h1 { font-size: 24px; margin: 0 0 16px; }
+  label, input, textarea { display: block; box-sizing: border-box; width: 100%; }
+  label { margin-bottom: 12px; }
+  input, textarea, button { font: inherit; padding: 8px; }
+  button { margin: 4px; }
+  #scroll-box { overflow: auto; width: 360px; height: 105px; border: 2px solid #4779bd; }
+  #scroll-content { width: 900px; height: 800px; background: repeating-linear-gradient(white, #bcd2e9 40px, white 80px); }
+  #drag-source, #drop-target { width: 170px; height: 55px; user-select: none; }
+  #drop-target { border: 2px dashed #4779bd; }
+  output { display: block; margin-top: 12px; padding: 8px; height: 100px; overflow: auto; white-space: pre-wrap; }
+</style>
+<h1>Complete Computer Workbench</h1>
+<main>
+  <section>
+    <form>
+      <label>Task name <input id="title" name="title"></label>
+      <label>Notes <textarea id="notes" name="notes" rows="3"></textarea></label>
+      <button id="save">Save task</button>
+    </form>
+    <button id="increment">Count click</button>
+    <button id="alert">Show alert</button>
+    <button id="confirm">Show confirmation</button>
+    <button id="prompt">Show prompt</button>
+  </section>
+  <section>
+    <div id="scroll-box" aria-label="Scroll area"><div id="scroll-content">Scroll both directions</div></div>
+    <button id="drag-source" type="button">Drag source</button>
+    <button id="drop-target" type="button">Drop target</button>
+    <a id="next-page" href="?page=next">Next page</a>
+  </section>
+</main>
+<output id="status" aria-live="polite"></output>
+<script>
+  const state = { page: new URL(location.href).searchParams.get('page') || 'first', title: '', notes: '', draft: '',
+    clicks: 0, doubleClicks: 0, rightClicks: 0, pointerMoves: 0, drops: 0, scrollX: 0, scrollY: 0, dialog: null };
+  let reports = Promise.resolve(), dragging = false;
+  function report() {
+    state.focus = document.hasFocus(); state.focused = document.activeElement?.id || '';
+    document.querySelector('#status').textContent = JSON.stringify(state);
+    const body = JSON.stringify(state);
+    reports = reports.then(() => fetch('/state', { method: 'POST', body }));
+    return reports;
+  }
+  document.querySelector('form').onsubmit = event => {
+    event.preventDefault();
+    state.title = document.querySelector('#title').value;
+    state.notes = document.querySelector('#notes').value;
+    report();
+  };
+  document.querySelector('#title').oninput = event => { state.draft = event.target.value; report(); };
+  document.querySelector('#increment').onclick = () => { state.clicks++; report(); };
+  document.querySelector('#increment').ondblclick = () => { state.doubleClicks++; report(); };
+  document.querySelector('#increment').oncontextmenu = event => { event.preventDefault(); state.rightClicks++; report(); };
+  document.querySelector('#increment').onmousemove = () => { state.pointerMoves++; report(); };
+  document.querySelector('#scroll-box').onscroll = event => {
+    state.scrollX = event.target.scrollLeft; state.scrollY = event.target.scrollTop; report();
+  };
+  document.querySelector('#drag-source').onmousedown = event => { event.preventDefault(); dragging = true; };
+  document.querySelector('#drop-target').onmouseup = () => { if (dragging) state.drops++; dragging = false; report(); };
+  document.querySelector('#alert').onclick = () => { alert('Computer fixture alert'); state.dialog = 'alert accepted'; report(); };
+  document.querySelector('#confirm').onclick = () => { state.dialog = confirm('Computer fixture confirm'); report(); };
+  document.querySelector('#prompt').onclick = () => { state.dialog = prompt('Computer fixture prompt', 'initial'); report(); };
+  window.addEventListener('blur', report);
+  report();
+</script>
+</html>

@@ -1,0 +1,17 @@
+- id: attachment-local
+  name: '@deepseek-ai/dsh-attachment-local'
+  config:
+    dshHome: !!js process.cwd() + '/.dsh'
+
+- insert:
+    - id: image-provider-fixture
+      name: ../generate-image/provider-fixture.mjs
+    - id: tool-image-generation
+      name: '@deepseek-ai/dsh-tool-image-generation'
+      config:
+        provider: minimax
+        endpoint: https://minimax-images-fixture.invalid/v1/image_generation_failed
+        enabled: true
+        apiKey: fixture-key
+        model: image-01
+        size: 1024x1024
