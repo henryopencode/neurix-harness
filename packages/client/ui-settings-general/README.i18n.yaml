@@ -18,8 +18,11 @@
   en: d427d20b4dab6653
   zh: 84e80592f0a30a9f
 /deepseek-ai-dsh-client-ui-settings-general/use-this-package/the-general-section:
-  en: de35e867b2a56d73
-  zh: 6d4e5c912636f889
+  en: 91b6d0223b5d5483
+  zh: 460ee61b2be5e95e
+/deepseek-ai-dsh-client-ui-settings-general/use-this-package/the-about-section:
+  en: 103cc4faf00a8b1d
+  zh: c794a6c99390aa52
 /deepseek-ai-dsh-client-ui-settings-general/use-this-package/opening-the-configuration-file:
   en: 597df68b5913e8d7
   zh: bc9114f3e877679a
@@ -27,8 +30,8 @@
   en: ba55fe92bf49dc5a
   zh: 9a0e1345496a0ae6
 /deepseek-ai-dsh-client-ui-settings-general/understand-the-implementation:
-  en: 1531b45780d0689f
-  zh: 844548208c08a9c9
+  en: bd1ebe94520280f3
+  zh: e5fc7b6e7266e098
 /deepseek-ai-dsh-client-ui-settings-general/understand-the-implementation/ledger-projections:
   en: 3e3c2c72f87e8b23
   zh: 12b10ba2d37c9077
@@ -54,8 +57,8 @@
   en: ca75c51c89c2c9b0
   zh: de54f3467ef3b9be
 /deepseek-ai-dsh-client-ui-settings-general/known-limitations-and-deferred-work:
-  en: b04b2de0ec3624b9
-  zh: d9b295d415937274
+  en: 27cdf850ee0d2607
+  zh: e5ead8ebd9925025
 /deepseek-ai-dsh-client-ui-settings-general/known-limitations-and-deferred-work/dev-note:
   en: e67f633dc6fe7773
   zh: 3bb0c20c93f16f98

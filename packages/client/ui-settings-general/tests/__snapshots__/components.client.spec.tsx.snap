@@ -1,0 +1,247 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`About > renders the build information and project links in the active language > About 1`] = `
+<div>
+  <section
+    aria-label="About"
+    class="section"
+    data-about-page="true"
+  >
+    <header
+      class="header"
+    >
+      <svg
+        aria-hidden="true"
+        data-content="42eb64b9"
+        fill="none"
+        height="36"
+        viewBox="0 0 128 128"
+        width="36"
+      />
+      <div>
+        <h2
+          class="title"
+        >
+          Neurix Harness
+        </h2>
+        <p
+          class="description"
+        >
+          A modular workspace for AI agents
+        </p>
+      </div>
+    </header>
+    <dl
+      class="details"
+    >
+      <div
+        class="row"
+      >
+        <dt>
+          Version
+        </dt>
+        <dd>
+          1.2.3-rc.4
+        </dd>
+      </div>
+      <div
+        class="row"
+      >
+        <dt>
+          Commit
+        </dt>
+        <dd>
+          abcdef0
+        </dd>
+      </div>
+      <div
+        class="row"
+      >
+        <dt>
+          Build
+        </dt>
+        <dd>
+          Release build
+        </dd>
+      </div>
+      <div
+        class="row"
+      >
+        <dt>
+          License
+        </dt>
+        <dd>
+          <a
+            href="https://github.com/henryopencode/neurix-harness/blob/master/LICENSE"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            MIT
+          </a>
+        </dd>
+      </div>
+    </dl>
+    <nav
+      aria-label="Project links"
+      class="links"
+    >
+      <a
+        aria-label="Source repository"
+        class="iconLink"
+        href="https://github.com/henryopencode/neurix-harness"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <svg
+          aria-hidden="true"
+          data-content="b1f410df"
+          fill="none"
+          height="20"
+          viewBox="-2 -2 28 28"
+          width="20"
+          xmlns="http://www.w3.org/2000/svg"
+        />
+      </a>
+      <a
+        aria-label="Report an issue"
+        class="iconLink"
+        href="https://github.com/henryopencode/neurix-harness/issues"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <svg
+          aria-hidden="true"
+          data-content="4ac8a660"
+          fill="currentColor"
+          height="20"
+          viewBox="-1 -1 18 18"
+          width="20"
+        />
+      </a>
+    </nav>
+  </section>
+</div>
+`;
+
+exports[`About > renders the build information and project links in the active language > 关于 1`] = `
+<div>
+  <section
+    aria-label="关于"
+    class="section"
+    data-about-page="true"
+  >
+    <header
+      class="header"
+    >
+      <svg
+        aria-hidden="true"
+        data-content="42eb64b9"
+        fill="none"
+        height="36"
+        viewBox="0 0 128 128"
+        width="36"
+      />
+      <div>
+        <h2
+          class="title"
+        >
+          Neurix Harness
+        </h2>
+        <p
+          class="description"
+        >
+          模块化的 AI 智能体工作台
+        </p>
+      </div>
+    </header>
+    <dl
+      class="details"
+    >
+      <div
+        class="row"
+      >
+        <dt>
+          版本号
+        </dt>
+        <dd>
+          1.2.3-rc.4
+        </dd>
+      </div>
+      <div
+        class="row"
+      >
+        <dt>
+          提交标识
+        </dt>
+        <dd>
+          abcdef0
+        </dd>
+      </div>
+      <div
+        class="row"
+      >
+        <dt>
+          构建类型
+        </dt>
+        <dd>
+          发行构建
+        </dd>
+      </div>
+      <div
+        class="row"
+      >
+        <dt>
+          开源许可证
+        </dt>
+        <dd>
+          <a
+            href="https://github.com/henryopencode/neurix-harness/blob/master/LICENSE"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            MIT
+          </a>
+        </dd>
+      </div>
+    </dl>
+    <nav
+      aria-label="项目链接"
+      class="links"
+    >
+      <a
+        aria-label="项目仓库"
+        class="iconLink"
+        href="https://github.com/henryopencode/neurix-harness"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <svg
+          aria-hidden="true"
+          data-content="b1f410df"
+          fill="none"
+          height="20"
+          viewBox="-2 -2 28 28"
+          width="20"
+          xmlns="http://www.w3.org/2000/svg"
+        />
+      </a>
+      <a
+        aria-label="问题反馈"
+        class="iconLink"
+        href="https://github.com/henryopencode/neurix-harness/issues"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <svg
+          aria-hidden="true"
+          data-content="4ac8a660"
+          fill="currentColor"
+          height="20"
+          viewBox="-1 -1 18 18"
+          width="20"
+        />
+      </a>
+    </nav>
+  </section>
+</div>
+`;

@@ -18,6 +18,7 @@ import type { DeveloperToolsRowInjected } from '../src/client/DeveloperToolsRow.
 import { HostReleasePrompt, type HostReleasePromptInjected } from '../src/client/HostReleasePrompt.tsx'
 import { CloseLabel, HeaderContent, TriggerContent } from '../src/client/chrome.tsx'
 import { GeneralSection } from '../src/client/GeneralSection.tsx'
+import { AboutSection } from '../src/client/AboutSection.tsx'
 import { SettingsDocumentAction } from '../src/client/SettingsDocumentAction.tsx'
 import type { SettingsDocumentActionInjected } from '../src/client/SettingsDocumentAction.tsx'
 
@@ -85,7 +86,8 @@ function actionInjectedOf(c: TestClient): SettingsDocumentActionInjected {
 
 function expectSeated(c: TestClient): void {
   for (const [name, component] of SEATS) {
-    expect(ownEntries(c, name).map(entry => entry.component)).toEqual([component])
+    expect(ownEntries(c, name).map(entry => entry.component))
+      .toEqual(name === 'settings.section' ? [GeneralSection, AboutSection] : [component])
   }
 }
 
@@ -109,7 +111,7 @@ describe('ui-settings-general apply', () => {
     expect(generalLabel(c)).toBe('通用设置')
     expect(c.ctx.slots.spec('settings.general.item')).toEqual({ kind: 'list', scope: 'root' })
     // The shared developer-tool control belongs to General; onboarding remains feature-owned.
-    expect(c.ctx.slots.entries('settings.general.item').filter(row => row.locale === NS).map(row => row.options.id)).toEqual(['developer-tools', 'current-version'])
+    expect(c.ctx.slots.entries('settings.general.item').filter(row => row.locale === NS).map(row => row.options.id)).toEqual(['developer-tools'])
     expect(c.ctx.slots.entries('settings.onboarding').filter(row => row.locale === NS)).toEqual([])
     const developer = developerToolsRowOf(c)
     expect(developer.hooks.developerTools).toBe(c.ctx.configForms.developerTools.enabled)
@@ -219,7 +221,7 @@ describe('ui-settings-general apply', () => {
     // subscription), not re-registration.
     SEATS.forEach(([name], i) => {
       expect(c.ctx.slots.getVersion(name)).toBe(zhVersions[i]!)
-      expect(ownEntries(c, name)).toHaveLength(1)
+      expect(ownEntries(c, name)).toHaveLength(name === 'settings.section' ? 2 : 1)
     })
     expect(generalLabel(c)).toBe('General')
     await vi.waitFor(() => {
@@ -313,7 +315,7 @@ describe('ui-settings-general apply', () => {
       expect(ownEntries(c, name)[0]).not.toBe(before[index])
     })
     expect(c.ctx.slots.spec('settings.general.item')).toEqual({ kind: 'list', scope: 'root' })
-    expect(c.ctx.slots.entries('settings.general.item').filter(row => row.locale === NS).map(row => row.options.id)).toEqual(['developer-tools', 'current-version'])
+    expect(c.ctx.slots.entries('settings.general.item').filter(row => row.locale === NS).map(row => row.options.id)).toEqual(['developer-tools'])
     // The recovered registrations still ride the locale path.
     const english = localeView('en', 1)
     const chinese = localeView('zh', 2)

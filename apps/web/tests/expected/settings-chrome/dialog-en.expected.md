@@ -5,6 +5,7 @@
     - button "Models"
     - button "Built-in plugins"
     - button "Agent presets"
+    - button "About"
   - button "Open configuration file"
   - button "Close"
   - text: Permission Choose the default permission mode for new sessions
@@ -37,4 +38,3 @@
   - button "Detailed"
   - text: Upload Session Log when using the official model API Help improve DeepSeek models and products.
   - switch "Upload Session Log when using the official model API"
-  - text: "Current version: {{version}}"

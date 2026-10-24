@@ -88,7 +88,7 @@ describe('web e2e: settings modal and General preferences', () => {
     const optionsBox = await dialog.locator('[class*="_options"]').boundingBox()
     const firstSectionBox = await dialog.getByRole('navigation').getByRole('button').first().boundingBox()
     expect(optionsBox!.y - panelBox!.y).toBe(54)
-    expect(firstSectionBox!.y - panelBox!.y).toBe(64)
+    expect(firstSectionBox!.y - panelBox!.y).toBe(76)
     const lastSection = dialog.getByRole('navigation').getByRole('button').last()
     await lastSection.focus()
     await page.keyboard.press('Tab')
@@ -131,10 +131,17 @@ describe('web e2e: settings modal and General preferences', () => {
     } finally {
       await page.unrouteAll({ behavior: 'wait' })
     }
-    await dialog.getByText(`当前版本：${version}`, { exact: true }).waitFor()
+    await dialog.getByRole('button', { name: '关于', exact: true }).waitFor()
     // Golden of the freshly opened dialog (default zh, General active).
     const snapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd, versionCapture)
     await compareOrRefreshGolden(DIALOG_EXPECTED, snapshot, MODE)
+    await dialog.getByRole('button', { name: '关于', exact: true }).click()
+    const about = dialog.locator('[data-about-page]')
+    await about.getByRole('heading', { name: 'Neurix Harness', exact: true }).waitFor()
+    expect(await about.getByText(version, { exact: true }).count()).toBe(1)
+    expect(await about.getByRole('link', { name: '项目仓库', exact: true }).getAttribute('href'))
+      .toBe('https://github.com/henryopencode/neurix-harness')
+    expect(await about.getByRole('button').count()).toBe(0)
     // Section switch: aria-current moves (the Models page itself has its own scenario file).
     await dialog.getByRole('button', { name: '模型', exact: true }).click()
     await expect.poll(() => dialog.getByRole('button', { name: '模型', exact: true }).getAttribute('aria-current'), { timeout: 5_000 }).toBe('true')
@@ -890,7 +897,7 @@ describe('web e2e: settings modal and General preferences', () => {
     // ...and the attribute follows that switch, in the assembled app.
     await expect.poll(() => page.evaluate(() => document.documentElement.lang), { timeout: 5_000 }).toBe('en')
     expect(await enDialog.getByRole('button', { name: 'General' }).getAttribute('aria-current')).toBe('true')
-    await enDialog.getByText(`Current version: ${version}`, { exact: true }).waitFor()
+    await enDialog.getByRole('button', { name: 'About', exact: true }).waitFor()
     await expect.poll(() => enDialog.getByText('Appearance', { exact: true }).count(), { timeout: 5_000 }).toBe(1)
     expect(await page.evaluate(() => localStorage.getItem('dsh.locale'))).toBeNull()
     await expect.poll(async () => readFile(join(scaffold.harnessHome, 'profiles', 'scaffold', 'cordis.patch.yml'), 'utf8'), { timeout: 5_000 })
@@ -1000,9 +1007,16 @@ describe('web e2e: settings modal and General preferences', () => {
       // Golden of the English fallback dialog — the visible output this change
       // produces. The zh golden above covers the detected-locale surface, so
       // the pair pins both directions of the resolution.
-      await dialog.getByText(`Current version: ${version}`, { exact: true }).waitFor()
+      await dialog.getByRole('button', { name: 'About', exact: true }).waitFor()
       const snapshot = await captureStableAria(unsupportedPage, '[role="dialog"]', fresh.workspaceCwd, versionCapture)
       await compareOrRefreshGolden(DIALOG_EN_EXPECTED, snapshot, MODE)
+      await dialog.getByRole('button', { name: 'About', exact: true }).click()
+      const about = dialog.locator('[data-about-page]')
+      await about.getByRole('heading', { name: 'Neurix Harness', exact: true }).waitFor()
+      expect(await about.getByText(version, { exact: true }).count()).toBe(1)
+      expect(await about.getByRole('link', { name: 'Source repository', exact: true }).getAttribute('href'))
+        .toBe('https://github.com/henryopencode/neurix-harness')
+      expect(await about.getByRole('button').count()).toBe(0)
       expect(unsupportedTripwire.pageErrors).toEqual([])
       expect(unsupportedTripwire.warnings).toEqual([])
     } finally {

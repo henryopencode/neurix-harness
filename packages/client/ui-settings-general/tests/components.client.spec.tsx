@@ -2,7 +2,7 @@
 import type { GlobalStandardProps } from '@deepseek-ai/dsh-client-ui-slots'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { allowAllAccess, bindSnapshotSelector, RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
+import { allowAllAccess, bindSnapshotSelector, registerDomSnapshotSerializer, RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
 import type { GeneralSectionComponentProps } from '../src/client/GeneralSection.tsx'
 import { GeneralSection } from '../src/client/GeneralSection.tsx'
 import { CloseLabel, HeaderContent, TriggerContent } from '../src/client/chrome.tsx'
@@ -23,11 +23,12 @@ function derivedDocumentStore(remote: object) {
   return new SettingsDocumentStore(ctx, new SettingsDescribeMirror(ctx))
 }
 import { en, zh } from '../src/client/locales.ts'
-import { CurrentVersionRow } from '../src/client/CurrentVersionRow.tsx'
+import { AboutSection } from '../src/client/AboutSection.tsx'
 import { DesktopUpdateBadge } from '../src/client/DesktopUpdateIndicator.tsx'
 import { HostReleasePrompt, type HostReleasePromptProps } from '../src/client/HostReleasePrompt.tsx'
 import type { DesktopUpdateView } from '../src/types.ts'
 
+registerDomSnapshotSerializer()
 afterEach(() => { cleanup(); vi.unstubAllEnvs() })
 
 // The seat's key domain is settings ∪ common; the stub answers from the
@@ -226,26 +227,47 @@ it('reports a failed developer-tool write and allows retry', async () => {
   expect(screen.queryByRole('alert')).toBeNull()
 })
 
-describe('current version', () => {
-  it.each([
-    ['Current version: 1.2.3-rc.4', en],
-    ['当前版本：1.2.3-rc.4', zh],
-  ])('renders the localized release label %s', (expected, dictionary) => {
+describe('About', () => {
+  it.each([en, zh])('renders the build information and project links in the active language', (dictionary) => {
     vi.stubEnv('DSH_CLIENT_VERSION', '1.2.3-rc.4')
-    const translate: TriggerContentProps['t'] = (key, params) => {
-      let text = (dictionary as Record<string, string>)[key] ?? key
-      for (const [name, value] of Object.entries(params ?? {})) text = text.replace(`{${name}}`, String(value))
-      return text
-    }
-    render(<CurrentVersionRow {...kit} t={translate} />)
-    expect(screen.getByText(expected)).toBeTruthy()
+    vi.stubEnv('DSH_CLIENT_COMMIT_HASH', 'abcdef0')
+    vi.stubEnv('DSH_CLIENT_BUILD_PROFILE', 'official')
+    vi.stubEnv('DSH_CLIENT_GIT_DIRTY', 'false')
+    const translate: TriggerContentProps['t'] = key => (dictionary as Record<string, string>)[key] ?? key
+    const { container } = render(<AboutSection {...kit} close={() => {}} t={translate} />)
+    expect(screen.getByRole('heading', { name: 'Neurix Harness' })).toBeTruthy()
+    expect(screen.getByText('1.2.3-rc.4')).toBeTruthy()
+    expect(screen.getByText('abcdef0')).toBeTruthy()
+    expect(screen.getByText(dictionary['about.release'])).toBeTruthy()
+    const repository = screen.getByRole('link', { name: dictionary['about.repository'] })
+    expect(repository.getAttribute('href')).toBe('https://github.com/henryopencode/neurix-harness')
+    expect(repository.textContent).toBe('')
+    expect(repository.querySelector('svg')).not.toBeNull()
+    const feedback = screen.getByRole('link', { name: dictionary['about.feedback'] })
+    expect(feedback.getAttribute('href')).toBe('https://github.com/henryopencode/neurix-harness/issues')
+    expect(feedback.textContent).toBe('')
+    expect(feedback.querySelector('svg')).not.toBeNull()
     expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.getByRole('link', { name: 'MIT' }).getAttribute('href'))
+      .toBe('https://github.com/henryopencode/neurix-harness/blob/master/LICENSE')
+    expect(container).toMatchSnapshot(dictionary['about.nav'])
   })
 
-  it('omits the row when a partial build has no version metadata', () => {
+  it('keeps product links available when a partial build omits release metadata', () => {
     vi.stubEnv('DSH_CLIENT_VERSION', undefined)
-    const view = render(<CurrentVersionRow {...kit} t={t} />)
-    expect(view.container.textContent).toBe('')
+    vi.stubEnv('DSH_CLIENT_COMMIT_HASH', undefined)
+    render(<AboutSection {...kit} close={() => {}} t={t} />)
+    expect(screen.getAllByText(en['about.unavailable'])).toHaveLength(2)
+    expect(screen.getByRole('link', { name: en['about.feedback'] })).toBeTruthy()
+  })
+
+  it('labels development builds with uncommitted changes', () => {
+    vi.stubEnv('DSH_CLIENT_VERSION', '1.2.3')
+    vi.stubEnv('DSH_CLIENT_COMMIT_HASH', 'abcdef0')
+    vi.stubEnv('DSH_CLIENT_BUILD_PROFILE', 'client')
+    vi.stubEnv('DSH_CLIENT_GIT_DIRTY', 'true')
+    render(<AboutSection {...kit} close={() => {}} t={t} />)
+    expect(screen.getByText(`${en['about.development']} · ${en['about.modified']}`)).toBeTruthy()
   })
 })
 
