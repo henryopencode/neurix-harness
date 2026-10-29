@@ -526,6 +526,19 @@ describe('PluginManagerPage', () => {
     expect(b.actions.loadDetail).toHaveBeenLastCalledWith('dsh-better-sidebar', '0.16.0', 'en', false)
   })
 
+  it.each(['@deepseek-ai/dsh-image-generation-bundle', '@deepseek-ai/dsh-experimental-computer-control'])(
+    'opens %s directly to its configuration without reading a detail document', (name) => {
+      const b = renderTab({ packages: [pkg({ name })] }, { bundles: new Set([name]) }, {
+        [`plugins.bundle.config:${name}`]: () => <form aria-label="tool settings" />,
+      })
+      act(() => { b.navigation.actions.setView({ kind: 'package', name }) })
+      expect(screen.getByRole('form', { name: 'tool settings' })).toBeTruthy()
+      expect(b.actions.loadDetail).not.toHaveBeenCalled()
+      expect(document.querySelector('[data-detail-document]')).toBeNull()
+      expect(screen.getByRole('switch', { name: en.enableToggle.replace('{name}', name) })).toBeTruthy()
+    },
+  )
+
   it('says where a bundle comes from: the spec that installs it, or built in, with its version', () => {
     const b = renderTab({ packages: [
       pkg({ source: 'github:someone/dsh-better-sidebar' }),

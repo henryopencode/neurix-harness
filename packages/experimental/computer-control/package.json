@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-experimental-computer-control",
-  "description": "Optional browser and macOS computer control with editable defaults and testing guidance",
+  "description": "Optional browser and macOS computer control with editable defaults",
   "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"

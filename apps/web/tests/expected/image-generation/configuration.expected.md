@@ -1,3 +1,12 @@
+- button "返回插件": 插件
+- button "卸载 图像生成" [disabled]: 卸载
+- status
+- switch "启用 图像生成" [checked]
+- heading "图像生成" [level=3]
+- text: v0.2.1-rc.3
+- paragraph:
+  - code: "@deepseek-ai/dsh-image-generation-bundle"
+- paragraph: 配置生图接口，在对话中生成并保存图片
 - checkbox "启用对话生图" [checked]
 - text: 启用对话生图 生图接口地址
 - textbox "生图接口地址":
@@ -21,3 +30,17 @@
   - /placeholder: ""
 - paragraph: 可选，填写服务支持的值；留空则不指定质量
 - button "保存" [disabled]
+- heading "包含的组件" [level=4]
+- text: 共 1 个 · 1 运行中
+- list:
+  - listitem:
+    - text: 图像生成 配置生图接口，在对话中生成并保存图片
+    - code: tool-image-generation
+    - code: "@deepseek-ai/dsh-tool-image-generation"
+    - text: 运行中
+    - switch "启用组件 图像生成" [checked]
+- heading "来源信息" [level=4]
+- term: 代码来源
+- definition: 内置
+- term: 当前版本
+- definition: 0.2.1-rc.3

@@ -10,39 +10,3 @@
   line-height: 1.6;
   color: var(--dsw-alias-label-secondary);
 }
-
-.testing {
-  border-top: 0.5px solid var(--dsw-alias-border-l3);
-  padding-top: 20px;
-}
-
-.heading {
-  margin: 0 0 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--dsw-alias-label-primary);
-}
-
-.step {
-  margin-top: 20px;
-}
-
-.prompt {
-  box-sizing: border-box;
-  width: 100%;
-  resize: vertical;
-  min-height: 88px;
-  padding: 12px;
-  border: 0.5px solid var(--dsw-alias-border-l3);
-  border-radius: var(--dsw-radius-md);
-  font: inherit;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--dsw-alias-label-primary);
-  background: var(--dsw-alias-bg-layer-2);
-}
-
-.prompt:focus-visible {
-  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
-  outline-offset: 1px;
-}

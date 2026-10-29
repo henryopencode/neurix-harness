@@ -1,5 +1,5 @@
 ---
-description: "Enable browser and macOS control from Plugins, configure defaults, and follow the built-in manual tests."
+description: "Enable browser and macOS control from Plugins and configure defaults."
 kind: "package-bundle"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Enable computer control from Plugins → Extension tools. Configure a browser, screenshot mode, and timeouts, then follow the three built-in tests in a new conversation. Browser tabs and macOS windows use the same `computer` tool. The plugin is offered disabled and opens a separate browser profile. Native application access requires the launching host’s macOS permissions.
+Enable computer control from Plugins → Extension tools. Configure a browser, screenshot mode, and timeouts, then use computer control in a new conversation. Browser tabs and macOS windows use the same `computer` tool. The plugin is offered disabled and opens a separate browser profile. Native application access requires the launching host’s macOS permissions.
 
 ## Table of Contents
 
@@ -39,7 +39,7 @@ When the agent selects a target, **Computer picture-in-picture** appears in the 
 
 Concurrent viewers share one in-flight capture per Session. A missing target uses `previewIdleIntervalMs` (2000 ms by default); existing and active targets use `previewIntervalMs` and `previewActiveIntervalMs`. Closing the last viewer cancels and joins its capture. Capture failures distinguish missing permissions, timeout, and oversized images while retaining the last image.
 
-The detail page contains selectable instructions for permission/window inspection, a two-tab browser workflow, and typing into a new blank TextEdit document. Run them in order. Expand the process details and inspect the returned state; a delivered click alone does not establish success. The [computer-control guide](../../../docs/user/guide/computer-control.md) explains the expected results and recovery.
+Follow the [computer-control guide](../../../docs/user/guide/computer-control.md) to test permissions, browser tabs, and native application input from a conversation. It explains the expected results and recovery.
 
 -----
 

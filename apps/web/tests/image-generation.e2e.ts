@@ -82,6 +82,7 @@ describe('web e2e: image generation', () => {
     expect(scaffold.ctx.tools.schemas().map(tool => tool.name)).not.toContain('generate_image')
     await panel.getByRole('switch', { name: '启用 图像生成', exact: true }).click()
     await form.getByLabel('生图接口地址', { exact: true }).waitFor({ timeout: 20_000 })
+    expect(await panel.locator('[data-detail-document]').count()).toBe(0)
     expect(scaffold.ctx.tools.schemas().map(tool => tool.name)).not.toContain('generate_image')
     if (provider === 'minimax') {
       await scaffold.ctx.settings.update('tool-image-generation', { provider: 'minimax' })
@@ -111,7 +112,7 @@ describe('web e2e: image generation', () => {
     expect(await form.getByText('已覆盖', { exact: true }).count()).toBe(0)
     expect(await form.getByRole('button', { name: '恢复默认', exact: true }).count()).toBe(0)
     if (provider === 'openai' && reply === 'path') {
-      const snapshot = await captureStableAria(page, '[data-plugin-config]', scaffold.workspaceCwd)
+      const snapshot = await captureStableAria(page, '[data-plugin-detail]', scaffold.workspaceCwd)
       await compareOrRefreshGolden(fileURLToPath(new URL('./expected/image-generation/configuration.expected.md', import.meta.url)), snapshot, webSnapshotMode())
     }
     if (provider === 'minimax' && reply === 'path') {

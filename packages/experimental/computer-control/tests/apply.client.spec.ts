@@ -33,7 +33,7 @@ it('registers a localized configuration after the Plugins slot appears and remov
     await vi.waitFor(() => { expect(slots.entries('plugins.bundle.config')).toHaveLength(1) })
     expect(slots.entries('plugins.bundle.config')[0]?.options.key).toBe('@deepseek-ai/dsh-experimental-computer-control')
     expect(slots.entries('plugins.bundle.config')[0]?.inject?.()).toHaveProperty('hooks.computerCard')
-    expect(locale.bind('settings.computerControl')('testing')).toBe('测试电脑控制')
+    expect(locale.bind('settings.computerControl')('browserChannel')).toBe('浏览器')
     await fiber.dispose()
     expect(slots.entries('plugins.bundle.config')).toHaveLength(0)
   } finally { await ctx.fiber.dispose() }

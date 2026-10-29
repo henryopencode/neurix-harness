@@ -102,7 +102,7 @@ const HIGHLIGHT_MS = 2_400
 /** Optional tools with dedicated configuration cards on the main Plugins page. */
 const TOOL_BUNDLES = new Set([
   '@deepseek-ai/dsh-image-generation-bundle',
-  '@deepseek-ai/dsh-experimental-computer-control',
+  '@deepseek-ai/dsh-experimental-computer-control', '@deepseek-ai/dsh-experimental-browser-control',
 ])
 
 /**
@@ -688,7 +688,7 @@ function PackageDetail({
   readonly pkg: PackageView
   /** The package's version check, when one started. */
   readonly versions: VersionCheck | undefined
-  /** The bundle's detail document section, shown first among the page's sections. */
+  /** The bundle's detail document section, when the page includes one. */
   readonly detail: ReactNode
   readonly t: Translate
   readonly resolveText: ResolveText
@@ -1747,7 +1747,7 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
               configure={configure(openPkg)}
               renderSlot={renderSlot}
               inMore={backToMore}
-              detail={(
+              detail={TOOL_BUNDLES.has(openPkg.name) ? null : (
                 <BundleDetailSection name={openPkg.name} version={openPkg.version} fromNpm={openPkg.availability === 'missing'}
                   language={language} details={bundleDetails} t={t}
                   load={props.loadDetail} retry={props.retryDetail} image={props.detailImage} />

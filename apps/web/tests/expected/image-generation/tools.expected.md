@@ -2,7 +2,7 @@
 - list:
   - listitem:
     - button "查看 电脑控制": 电脑控制
-    - text: 连续操作浏览器与 macOS 应用，提供配置和分步测试指引。
+    - text: 在对话中操作浏览器和 macOS 应用
     - status
     - switch "启用 电脑控制"
   - listitem:

@@ -1,4 +1,4 @@
-/** Configuration and ordered manual tests on the plugin detail page. @module */
+/** Computer-control configuration on the plugin detail page. @module */
 
 import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
 import { useId } from 'react'
@@ -13,9 +13,9 @@ export type ComputerCardProps = PropsRuntime<'plugins.bundle.config'>
   & PropsLocale<'settings.computerControl'> & InjectFace<ComputerCardFace>
 
 /**
- * Render new-Session defaults and copyable testing instructions.
+ * Render new-Session defaults and the live approval policy.
  * @param props - staged controls, localized copy, and form actions.
- * @returns the settings form and manual test sequence.
+ * @returns the settings form.
  */
 export function ComputerCard(props: ComputerCardProps) {
   const { t } = props
@@ -27,6 +27,7 @@ export function ComputerCard(props: ComputerCardProps) {
     <div className={css.page}>
       <SettingsForm labels={formLabels(t)} state={state} onSave={props.save} onDiscard={props.discard}>
         <p className={css.hint}>{t('newSessions')}</p>
+        <p className={css.hint}>{t('permissions')}</p>
         <Checkbox label={t('requireInputApproval')} checked={state.requireInputApproval} disabled={disabled}
           onChange={(checked) => { props.edit('requireInputApproval', String(checked)) }} />
         <p className={css.hint}>{t('approvalHint')}</p>
@@ -60,20 +61,6 @@ export function ComputerCard(props: ComputerCardProps) {
             onEdit={(text) => { props.edit(field, text) }} onReset={() => { props.resetField(field) }} />
         ))}
       </SettingsForm>
-      <section className={css.testing} aria-label={t('testing')}>
-        <h3 className={css.heading}>{t('testing')}</h3>
-        <p className={css.hint}>{t('permissions')}</p>
-        <p className={css.hint}>{t('testIntro')}</p>
-        {(['Inspect', 'Browser', 'Native'] as const).map(step => (
-          <div className={css.step} key={step}>
-            <h4 className={css.heading}>{t(`test${step}Title`)}</h4>
-            {step === 'Native' ? <p className={css.hint}>{t('testNativeHint')}</p> : null}
-            <textarea className={css.prompt} aria-label={t(`test${step}Title`)} value={t(`test${step}`)} readOnly rows={3}
-              onFocus={(event) => { event.currentTarget.select() }} />
-          </div>
-        ))}
-        <p className={css.hint}>{t('testNoModel')}</p>
-      </section>
     </div>
   )
 }

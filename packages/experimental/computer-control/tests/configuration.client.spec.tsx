@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/** Settings persistence, validation, testing instructions, and component teardown. */
+/** Settings persistence, validation, localization, and component teardown. */
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -37,22 +37,17 @@ it.each([['cursorMoveDurationMs', '5001'], ['scrollDurationMs', '5001'], ['typin
   } finally { b.controller.dispose() }
 })
 
-it('shows screenshot-free defaults and three complete tests in both languages', () => {
+it('shows localized settings without a manual test section', () => {
   const b = bench()
   try {
     const view = render(<ComputerCard {...b.props} />)
+    expect(view.container.querySelector('textarea')).toBeNull()
     expect(screen.getByLabelText(en.screenshots)).toHaveProperty('checked', false)
     expect(screen.getByLabelText(en.headless)).toHaveProperty('checked', false)
     expect(screen.getByLabelText(en.browserChannel)).toHaveProperty('value', 'chrome')
-    expect(screen.getByLabelText(en.testBrowserTitle)).toHaveProperty('value', en.testBrowser)
     view.rerender(<ComputerCard {...b.props} t={makeTranslate(zh, commonZh)} />)
-    expect(screen.getByLabelText(zh.testInspectTitle)).toHaveProperty('value', zh.testInspect)
     expect(screen.getByText(zh.permissions)).toBeTruthy()
     expect(screen.getByText(zh.newSessions)).toBeTruthy()
-    expect(screen.getByText(zh.testNoModel)).toBeTruthy()
-    const prompt = screen.getByLabelText(zh.testNativeTitle)
-    fireEvent.focus(prompt)
-    expect(prompt).toHaveProperty('selectionStart', 0)
     view.rerender(<ComputerCard {...b.props} view="summary" />)
     expect(view.container.textContent).toBe(en.description)
   } finally { b.controller.dispose() }

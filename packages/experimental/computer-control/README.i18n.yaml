@@ -3,14 +3,14 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/experimental/computer-control/README.md
 /:
-  en: 05d5d0fef0d3017b
-  zh: f47726751a9d195e
+  en: 1ddf1681dd2d1fdf
+  zh: 0c62a8a8b30edbfb
 /deepseek-ai-dsh-experimental-computer-control:
   en: f0c40e4a4e76f831
   zh: 6dde44ea28746cd4
 /deepseek-ai-dsh-experimental-computer-control/summary:
-  en: e1a1350c5a6afdc4
-  zh: fad5f5bcd9a8cb0d
+  en: 3efe9bc627d4c32d
+  zh: 8bb12a2e9a9bd2f7
 /deepseek-ai-dsh-experimental-computer-control/table-of-contents:
   en: d152484eb41ac6b4
   zh: 01e3cf191d4bd47d
@@ -18,8 +18,8 @@
   en: ea2318d5dcfc6dfe
   zh: 6d523bb0d98c756c
 /deepseek-ai-dsh-experimental-computer-control/use-this-package/test-from-a-conversation:
-  en: 3a189fbfef0fd2ff
-  zh: 561b7d9a37ff2b8e
+  en: 9adaf0496e8697af
+  zh: c1d668cb06cddac5
 /deepseek-ai-dsh-experimental-computer-control/understand-the-implementation:
   en: 492483a05b860b1e
   zh: be4f429bae94637f
