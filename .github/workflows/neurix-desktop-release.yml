@@ -155,4 +155,4 @@ jobs:
             '' 'Windows installers are unsigned. macOS installers use ad-hoc signing without notarization.' \
             'These downloads do not use the upstream automatic-update service.' > ../release-notes.md
           gh release create "$RELEASE_TAG" --verify-tag --target "$RELEASE_COMMIT" \
-            --title "Neurix Harness $RELEASE_TAG" --notes-file ../release-notes.md --latest -- ./*
+            --title "Neurix Harness $RELEASE_TAG" --notes-file ../release-notes.md -- ./*

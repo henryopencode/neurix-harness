@@ -1,0 +1,11 @@
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -1481,7 +1481,7 @@
+ * @returns true when at least one resolution directory holds the package.
+ */
+ function installedPackageExists(name) {
+-	return (require.resolve.paths(name) ?? []).some((directory) => lstatSync(join(directory, name), { throwIfNoEntry: false }) !== void 0);
++	return (require.resolve.paths(name) ?? []).some((directory) => lstatSync(join(directory, name), { throwIfNoEntry: false }) != null);
+ }
+ /**
+ * Return the optional package target for the current process ABI.

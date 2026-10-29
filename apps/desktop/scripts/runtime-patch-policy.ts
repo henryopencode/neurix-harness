@@ -17,6 +17,9 @@ export const DESKTOP_RUNTIME_PATCHES: Readonly<Record<string, DesktopRuntimePatc
   'app-builder-lib@26.17.0': { scope: 'workspace-only', reason: 'DMG format validation executes on the build host.' },
   'exceljs@4.4.0': { scope: 'workspace-only', reason: 'The patched parser is embedded in the client bundle and worker.' },
   'lexical@0.49.0': { scope: 'workspace-only', reason: 'The patched editor is embedded in the client bundle.' },
+  '@deepseek-ai/libreoffice-kit@0.1.5': { scope: 'runtime-only',
+    path: 'apps/desktop/patches/libreoffice-kit-asar-stat.patch',
+    reason: 'Electron ASAR returns null for a missing stat; Linux must retain the WASM fallback.' },
   'node-pty@1.2.0-beta.15': { scope: 'shared', reason: 'Runtime terminals need helper resolution and Windows worker cleanup.' },
 }
 
@@ -24,4 +27,5 @@ export const DESKTOP_RUNTIME_PATCHES: Readonly<Record<string, DesktopRuntimePatc
 export const DESKTOP_RUNTIME_DEPENDENCY_OVERRIDES: Readonly<Record<string, string>> = {
   // The provider declares ^1.3.0; its patch is qualified against 1.3.0.
   '@earendil-works/pi-ai@^1.3.0': '1.3.0',
+  '@deepseek-ai/libreoffice-kit': '0.1.5',
 }

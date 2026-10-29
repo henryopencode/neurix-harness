@@ -1,7 +1,7 @@
 /** Archive the verified Linux application runtime for the normal dsh Web profile. */
 import { execFileSync } from 'node:child_process'
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { desktopTargetBuildPaths } from '../../apps/desktop/scripts/desktop-build-paths.mjs'
 
 if (process.platform !== 'linux' || process.arch !== 'x64') throw new Error('Linux server packaging requires Linux x64')
@@ -13,10 +13,20 @@ mkdirSync(join(paths.root, 'server'), { recursive: true })
 writeFileSync(launcher, `#!/bin/sh
 set -eu
 NEURIX_RELEASE_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
+export PATH="$NEURIX_RELEASE_ROOT/server/bin:$NEURIX_RELEASE_ROOT/runtime/primary-runtime/dependencies/node/bin:$NEURIX_RELEASE_ROOT/runtime/primary-runtime/dependencies/python/bin:$PATH"
 exec "$NEURIX_RELEASE_ROOT/runtime/primary-runtime/dependencies/node/bin/node" \\
   "$NEURIX_RELEASE_ROOT/dsh/node_modules/@deepseek-ai/dsh/lib/bin.js" web "$@"
 `)
 chmodSync(launcher, 0o755)
+const pnpm = join(paths.root, 'server', 'bin', 'pnpm')
+mkdirSync(dirname(pnpm), { recursive: true })
+writeFileSync(pnpm, `#!/bin/sh
+set -eu
+NEURIX_RELEASE_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd -P)
+exec "$NEURIX_RELEASE_ROOT/runtime/primary-runtime/dependencies/node/bin/node" \\
+  "$NEURIX_RELEASE_ROOT/runtime/primary-runtime/dependencies/pnpm/bin/pnpm.mjs" "$@"
+`)
+chmodSync(pnpm, 0o755)
 const archive = join(paths.unsignedArtifacts, `neurix-harness-${version}-linux-x64-server.tar.gz`)
 execFileSync('tar', ['-czf', archive, '-C', paths.root, 'dsh', 'runtime/primary-runtime', 'server'], { stdio: 'inherit' })
 console.log(`Linux Web server archive: ${archive}`)

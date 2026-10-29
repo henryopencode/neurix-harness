@@ -42,7 +42,7 @@ it('classifies the current workspace and shares only runtime patch bytes', () =>
   const repository = resolve(import.meta.dirname, '../../..')
   const before = readFileSync(join(repository, 'pnpm-lock.yaml'))
   const plan = prepareRuntimePatches(project, repository)
-  expect(plan.patches.map(entry => entry.spec)).toEqual(['@earendil-works/pi-ai@1.3.0', 'node-pty@1.2.0-beta.15'])
+  expect(plan.patches.map(entry => entry.spec)).toEqual(['@earendil-works/pi-ai@1.3.0', '@deepseek-ai/libreoffice-kit@0.1.5', 'node-pty@1.2.0-beta.15'])
   expect(plan.workspaceOnly).toHaveLength(8)
   expect(plan.workspaceOnly).toContain('@botiverse/oar')
   expect(plan.workspaceOnly).toContain('lexical')
