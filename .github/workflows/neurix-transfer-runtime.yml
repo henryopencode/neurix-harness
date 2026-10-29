@@ -42,7 +42,7 @@ jobs:
           split -b 8M -a 3 "${archives[0]}" parts/part-
           printf 'LIST\n' | ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes \
             -i "$HOME/.ssh/neurix-runtime" root@101.34.211.31 > uploaded-parts
-          find parts -type f -name 'part-*' -print0 | xargs -0 -P 6 -I '{}' bash -c '
+          find parts -type f -name 'part-*' -print0 | xargs -0 -P 24 -I '{}' bash -c '
             set -euo pipefail
             part="$1"
             name="${part##*/}"
