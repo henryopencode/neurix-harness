@@ -36,6 +36,7 @@ import { desktopUpdateReadyConfirmation, formatDesktopMessage, resolveDesktopLoc
 import { claimDesktopSingleInstance } from './single-instance.ts'
 import { desktopUpdateChannel } from './update-channel.ts'
 import { DesktopUpdateCoordinator } from './update-coordinator.ts'
+import { desktopGithubRepository, GithubReleaseDownloads } from './github-release-downloads.ts'
 import { prepareDesktopUpdateWindow } from './update-window.ts'
 import { DesktopCommandManager } from './command-management.ts'
 import { serveWebDocument, authenticateWebHost, forwardWebRequest } from './web-document.ts'
@@ -614,7 +615,8 @@ async function main(): Promise<void> {
 
   const manifest: unknown = JSON.parse(await readFile(join(app.getAppPath(), 'package.json'), 'utf8'))
   const updateChannel = desktopUpdateChannel(manifest)
-  const updates = new DesktopUpdateCoordinator(
+  const githubRepository = desktopGithubRepository(manifest)
+  const createManagedUpdates = (): DesktopUpdateCoordinator => new DesktopUpdateCoordinator(
     publishUpdate,
     async () => {
       await commandManager.idle()
@@ -670,6 +672,9 @@ async function main(): Promise<void> {
     (success, reason) => { void track('desktop_upgrade_download_result', { is_success: success, ...reason === undefined ? {} : { error_reason: reason } }) },
     updateChannel,
   )
+  const updates = githubRepository === undefined ? createManagedUpdates()
+    : new GithubReleaseDownloads(githubRepository, app.getVersion(), publishUpdate,
+      url => shell.openExternal(url), (url, init) => net.fetch(url, init))
 
   const updateSchedule = new DesktopUpdateSchedule(updates, resolveDesktopUpdateScheduleConfig(process.env))
 
@@ -877,7 +882,7 @@ async function main(): Promise<void> {
         if (manual) {
           const result = await ordinaryMessageBox({ title: locale.messages.updateCheckTitle,
             message: formatDesktopMessage(locale.messages.updateAvailable, { version: state.version ?? '' }),
-            detail: locale.messages.updateDetail,
+            detail: githubRepository === undefined ? locale.messages.updateDetail : locale.messages.updateManualDownloadDetail,
             buttons: [locale.messages.updateDownload], cancelId: 1 })
           if (result.response !== 0) return
         }

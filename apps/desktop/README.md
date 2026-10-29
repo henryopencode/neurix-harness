@@ -269,6 +269,8 @@ Use `node apps/desktop/scripts/test-windows-installer.mjs --uninstall-only --com
 
 ## Updates
 
+This fork checks stable [GitHub Releases](https://github.com/henryopencode/neurix-harness/releases) when its installed manifest declares `dshDesktopGithubRepository`. The existing update entry reports new versions and opens the matching installer download in the browser. Open that installer to update while retaining settings and conversations. Packages without this field retain the managed update flow below. Branches, version numbering, and release retries are documented in the [release workflow guide](../../docs/releasing.md).
+
 On Windows, the downloaded-update confirmation explains that the application closes during installation, reopens automatically, and should not be launched again while updating. An installer restart carrying `--updated` raises and focuses the main window once when startup opens the workspace directly, without enabling always-on-top. Startup into the welcome page discards that request so a later login keeps its normal activation behavior. Ordinary launches and other platforms do not use this foregrounding step.
 
 On macOS, installation preparation waits for the product window to leave fullscreen before displaying the restart confirmation. Cancelling leaves the window in normal mode; destroying it during the native transition cancels installation before task teardown. If macOS does not report completion within five seconds, preparation fails without stopping the Host; the localized error asks the user to exit fullscreen and retry. Installation failure recovery uses the normal window.

@@ -1,0 +1,148 @@
+name: Neurix stable desktop release
+
+on:
+  pull_request:
+    branches: [master]
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      validation_only:
+        description: 'Build test installers without changing versions, tags, or Releases'
+        type: boolean
+        default: true
+      version:
+        description: 'Optional stable version; otherwise start at 1.0.0 and increment the patch'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+env:
+  DSH_TELEMETRY_DISABLED: '1'
+
+jobs:
+  version:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && (inputs.validation_only || github.ref == 'refs/heads/master')) ||
+      (github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'develop' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.release.outputs.version || steps.validation.outputs.version }}
+      tag: ${{ steps.release.outputs.tag || steps.validation.outputs.tag }}
+      commit: ${{ steps.release.outputs.commit || steps.validation.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || 'master' }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v5.0.0
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Reserve stable version and immutable tags
+        if: github.event_name != 'workflow_dispatch' || !inputs.validation_only
+        id: release
+        env:
+          RELEASE_SOURCE: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: pnpm exec tsx scripts/release/desktop-stable.ts --version "$REQUESTED_VERSION"
+      - name: Select validation source without publication
+        if: github.event_name == 'workflow_dispatch' && inputs.validation_only
+        id: validation
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; const p=JSON.parse(fs.readFileSync('package.json','utf8')); fs.appendFileSync(process.env.GITHUB_OUTPUT, 'version='+p.version+'\ntag=validation-'+process.env.GITHUB_RUN_ID+'\ncommit='+process.env.SOURCE_COMMIT+'\n');"
+
+  package:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: win-x64
+            runner: windows-2025
+          - target: mac-arm64
+            runner: macos-latest
+          - target: mac-x64
+            runner: macos-15-intel
+          - target: linux-x64
+            runner: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 180
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DSH_DESKTOP_PACKAGE_CACHE_DIR: ${{ github.workspace }}/.desktop-package-cache
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ needs.version.outputs.commit }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v5.0.0
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '24'
+          cache: pnpm
+      - name: Prepare Linux tools
+        if: runner.os == 'Linux'
+        shell: bash
+        run: sudo apt-get update && sudo apt-get install -y libarchive-tools libfuse2t64 libgtk-3-0 libnss3 libasound2t64
+      - uses: actions/cache@v6.1.0
+        with:
+          path: .desktop-package-cache
+          key: desktop-${{ matrix.target }}-${{ hashFiles('pnpm-lock.yaml', 'scripts/primary-runtime/lock.json') }}
+          restore-keys: desktop-${{ matrix.target }}-
+      - run: pnpm install --frozen-lockfile
+      - name: Build and verify installer
+        env:
+          RELEASE_TARGET: ${{ matrix.target }}
+        run: pnpm --dir apps/desktop exec tsx scripts/package-target.ts "$env:RELEASE_TARGET" --unsigned
+      - name: Package Linux Web server runtime
+        if: matrix.target == 'linux-x64'
+        run: node scripts/release/package-linux-server.mjs
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: neurix-${{ needs.version.outputs.tag }}-${{ matrix.target }}
+          path: |
+            apps/desktop/.desktop-build/targets/${{ matrix.target }}/unsigned-artifacts/*.exe
+            apps/desktop/.desktop-build/targets/${{ matrix.target }}/unsigned-artifacts/*.dmg
+            apps/desktop/.desktop-build/targets/${{ matrix.target }}/unsigned-artifacts/*.AppImage
+            apps/desktop/.desktop-build/targets/${{ matrix.target }}/unsigned-artifacts/*-server.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    if: github.event_name != 'workflow_dispatch' || !inputs.validation_only
+    needs: [version, package]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8.0.1
+        with:
+          pattern: neurix-${{ needs.version.outputs.tag }}-*
+          path: release-assets
+          merge-multiple: true
+      - name: Publish complete platform set
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.version.outputs.tag }}
+          RELEASE_COMMIT: ${{ needs.version.outputs.commit }}
+        run: |
+          cd release-assets
+          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 5
+          sha256sum -- *.exe *.dmg *.AppImage *.tar.gz > SHA256SUMS.txt
+          printf '%s\n' 'Windows x64, macOS Apple Silicon, macOS Intel, and Linux x64 installers.' \
+            '' 'Windows installers are unsigned. macOS installers use ad-hoc signing without notarization.' \
+            'These downloads do not use the upstream automatic-update service.' > ../release-notes.md
+          gh release create "$RELEASE_TAG" --verify-tag --target "$RELEASE_COMMIT" \
+            --title "Neurix Harness $RELEASE_TAG" --notes-file ../release-notes.md --latest -- ./*

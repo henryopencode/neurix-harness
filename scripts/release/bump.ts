@@ -12,7 +12,8 @@
  * repository state.
  *
  * The version lands in the manifests, the lockfile follows, and a human creates
- * the tag after the commit merges. CI never writes to the repository.
+ * the tag after the commit merges. The fork's Desktop automation reserves its
+ * version commits separately through `desktop-stable.ts`.
  */
 
 import { globSync, readFileSync, writeFileSync } from 'node:fs'

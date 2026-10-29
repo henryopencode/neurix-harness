@@ -1,0 +1,25 @@
+# Bilingual-pair consistency record for releasing.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/releasing.md
+/desktop-releases:
+  en: 796c151df0688ceb
+  zh: 0057896b2c57910a
+/desktop-releases/summary:
+  en: 5627a9d3143315b6
+  zh: afaaffe3a59a053d
+/desktop-releases/table-of-contents:
+  en: 813f2900383db0be
+  zh: 156306148ec8721f
+/desktop-releases/development-and-release:
+  en: 8a49af85c8c38e16
+  zh: 1b0cf85380c15aea
+/desktop-releases/versions-and-retries:
+  en: 3ba6be0964f846a7
+  zh: 601386f92d367cd3
+/desktop-releases/installed-update-checks:
+  en: 74c91897509308c4
+  zh: b8d240e24b2da471
+/desktop-releases/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

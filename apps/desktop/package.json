@@ -85,5 +85,6 @@
     "@deepseek-ai/dsh-atomic-write": "workspace:*",
     "@deepseek-ai/dsh-client-product-analytics": "workspace:*",
     "@deepseek-ai/dsh-util-file-drag": "workspace:*"
-  }
+  },
+  "dshDesktopGithubRepository": "henryopencode/neurix-harness"
 }
