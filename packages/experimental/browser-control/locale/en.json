@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Browser control",
+    "description": "Operate an independent hidden browser on Windows, macOS, and Linux. Watch it in picture-in-picture.",
+    "detail": "docs/DETAIL.md"
+  }
+}

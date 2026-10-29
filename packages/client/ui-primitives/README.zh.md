@@ -69,7 +69,7 @@ kind: "package-library"
 | `ImageLightbox` | 共享图片浮层，支持焦点恢复与 Esc 关闭。 |
 | `Toast` | 顶部居中的瞬时横幅，保持时长由所有者的 `holdMs` 决定。 |
 | `SettingsForm`、`SettingsValueField`、`SettingsSecretField` | 插件设置页的框架与控件：框架以 `labels` 接收文案，只在按钮点击时保存，卸载即丢弃；值字段支持带标签的 `choices` 选项，`showOverride` 为 false 时隐藏已覆盖标签和重置；密文字段每次为空，请求浏览器不要自动填入已保存的密码，只报告是否已配置。 |
-| `SettingsFormModel`、`settingsNumberField`、`settingsTextField` | 这类页面背后基于设置 scope 的暂存编辑模型：草稿先暂存、保存时写入，字段是否被覆盖看用户层是否含有它，未落地的保存保留草稿。 |
+| `SettingsFormModel`、`settingsNumberField`、`settingsTextField` | 这类页面背后基于设置 scope 的暂存编辑模型：草稿先暂存、保存时写入，字段是否被覆盖看用户层是否含有它，未落地的保存保留草稿。数字字段可以要求必填，并限定整数、最小值和最大值。 |
 | `JsonTree`、`JsonBlock` | 只读 JSON 查看。 |
 | `MarkdownText`、`MarkdownDelegateProvider`、`CodeBlock` | 不可信 GFM 与 TeX 数学、owner 委托的 HTTP(S) 导航，以及高亮代码。`CodeBlock` 可通过 `lineNumbers` 开启行号；复制的源码不含行号栏，`contentRef` 则向需要把稳定源码包装节点用作滚动区的 owner 提供该节点。调用方提供自己的语言与复制工具栏时，设置 `showHeader={false}`。 |
 | `DetailDocument`、`detailDocumentState`、`useDetailDocumentLabels` | 用于较长 Markdown 描述（例如插件的详细介绍文档）的区块，本身不带标题：加载期间显示三行骨架屏，随后显示文档、owner 提供的失败消息和重试，或在没有文档时不显示任何内容。文档高度超过 `min(560px, 60vh)` 时，在可通过键盘聚焦、由 owner 的标题命名的区域内滚动。文档中的原始 HTML 会被省略。相对链接保持为文本，只加载 owner 的 `images` 解析器接受的图片或绝对 HTTP(S) 地址的图片。`detailDocumentState` 把 owner 的读取结果映射为显示状态，`useDetailDocumentLabels` 根据翻译后的字符串构建引用稳定的标签。 |

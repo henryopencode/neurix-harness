@@ -27,39 +27,37 @@ export function ComputerCard(props: ComputerCardProps) {
     <div className={css.page}>
       <SettingsForm labels={formLabels(t)} state={state} onSave={props.save} onDiscard={props.discard}>
         <p className={css.hint}>{t('newSessions')}</p>
-        <p className={css.hint}>{t('permissions')}</p>
-        <Checkbox label={t('requireInputApproval')} checked={state.requireInputApproval} disabled={disabled}
-          onChange={(checked) => { props.edit('requireInputApproval', String(checked)) }} />
-        <p className={css.hint}>{t('approvalHint')}</p>
-        <SettingsValueField id={`${id}-input-mode`} label={t('inputMode')} hint={t('inputModeHint')}
-          choices={(['foreground', 'background'] as const).map(value => ({ value, label: t(value) }))}
-          overriddenLabel={t('overridden')} resetLabel={t('reset')} invalidLabel={t('invalid')}
-          {...state.inputMode} disabled={disabled} showOverride={false}
-          onEdit={(text) => { props.edit('inputMode', text) }} onReset={() => { props.resetField('inputMode') }} />
-        <Checkbox label={t('showOverlay')} checked={state.showOverlay} disabled={disabled}
-          onChange={(checked) => { props.edit('showOverlay', String(checked)) }} />
-        {(['cursorMoveDurationMs', 'scrollDurationMs', 'typingDelayMs', 'overlayIdleMs', 'nativeTreeTimeoutMs'] as const).map(field => (
-          <SettingsValueField key={field} id={`${id}-${field}`} label={t(field)} hint={t(`${field}Hint`)}
-            overriddenLabel={t('overridden')} resetLabel={t('reset')} invalidLabel={t('invalid')}
-            {...state[field]} disabled={disabled} numeric showOverride={false}
-            onEdit={(text) => { props.edit(field, text) }} onReset={() => { props.resetField(field) }} />
-        ))}
-        <SettingsValueField id={`${id}-browser`} label={t('browserChannel')} hint={t('browserHint')}
-          choices={(['chrome', 'chromium', 'msedge'] as const).map(value => ({ value, label: t(value) }))}
-          overriddenLabel={t('overridden')} resetLabel={t('reset')} invalidLabel={t('invalid')}
-          {...state.browserChannel} disabled={disabled} showOverride={false}
-          onEdit={(text) => { props.edit('browserChannel', text) }} onReset={() => { props.resetField('browserChannel') }} />
-        <Checkbox label={t('headless')} checked={state.headless} disabled={disabled}
-          onChange={(checked) => { props.edit('headless', String(checked)) }} />
-        <Checkbox label={t('screenshots')} checked={state.screenshots} disabled={disabled}
-          onChange={(checked) => { props.edit('screenshots', String(checked)) }} />
-        <p className={css.hint}>{t('screenshotsHint')}</p>
-        {(['operationTimeoutMs', 'navigationTimeoutMs'] as const).map(field => (
-          <SettingsValueField key={field} id={`${id}-${field}`} label={t(field)} hint={t('timeoutHint')}
-            overriddenLabel={t('overridden')} resetLabel={t('reset')} invalidLabel={t('invalid')}
-            {...state[field]} disabled={disabled} numeric showOverride={false}
-            onEdit={(text) => { props.edit(field, text) }} onReset={() => { props.resetField(field) }} />
-        ))}
+        <fieldset className={css.group}>
+          <Checkbox label={t('requireInputApproval')} checked={state.requireInputApproval} disabled={disabled}
+            onChange={(checked) => { props.edit('requireInputApproval', String(checked)) }} />
+          <p className={css.hint}>{t('approvalHint')}</p>
+          <Checkbox label={t('showOverlay')} checked={state.showOverlay} disabled={disabled}
+            onChange={(checked) => { props.edit('showOverlay', String(checked)) }} />
+          <Checkbox label={t('screenshots')} checked={state.screenshots} disabled={disabled}
+            onChange={(checked) => { props.edit('screenshots', String(checked)) }} />
+          <p className={css.hint}>{t('screenshotsHint')}</p>
+        </fieldset>
+        <fieldset className={css.group}>
+          <p className={css.hint}>{t('desktopHint')}</p>
+          <p className={css.hint}>{t('permissions')}</p>
+        </fieldset>
+        <details className={css.advanced}>
+          <summary className={css.heading}>{t('advancedSettings')}</summary>
+          <fieldset className={css.group}>
+            {(['operationTimeoutMs', 'navigationTimeoutMs'] as const).map(field => (
+              <SettingsValueField key={field} id={`${id}-${field}`} label={t(field)} hint={t('timeoutHint')}
+                overriddenLabel={t('overridden')} resetLabel={t('reset')} invalidLabel={t('invalid')}
+                {...state[field]} disabled={disabled} numeric showOverride={false}
+                onEdit={(text) => { props.edit(field, text) }} onReset={() => { props.resetField(field) }} />
+            ))}
+          </fieldset>
+          <fieldset className={css.group}>
+            <SettingsValueField id={`${id}-nativeTreeTimeoutMs`} label={t('nativeTreeTimeoutMs')} hint={t('nativeTreeTimeoutMsHint')}
+              overriddenLabel={t('overridden')} resetLabel={t('reset')} invalidLabel={t('invalid')}
+              {...state.nativeTreeTimeoutMs} disabled={disabled} numeric showOverride={false}
+              onEdit={(text) => { props.edit('nativeTreeTimeoutMs', text) }} onReset={() => { props.resetField('nativeTreeTimeoutMs') }} />
+          </fieldset>
+        </details>
       </SettingsForm>
     </div>
   )

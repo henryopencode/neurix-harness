@@ -458,7 +458,7 @@ export type Config = LocalConfig
 ## `@deepseek-ai/dsh-client-connection`
 
 - `inject`: `credentials`
-- `source`: [`packages/client/connection/src/index.ts:96`](../packages/client/connection/src/index.ts)
+- `source`: [`packages/client/connection/src/index.ts:97`](../packages/client/connection/src/index.ts)
 
 ```ts config-catalog
 /** Browser authentication, request limits, and connection recovery configuration. */
@@ -900,6 +900,50 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-api-speech-to-text -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-browser-control -->
+<a id="deepseek-aidsh-experimental-browser-control"></a>
+
+## `@deepseek-ai/dsh-experimental-browser-control`
+
+- `inject`: `browserUse` · `agents` · `tools` · `systemPrompt`
+- `refs`: `Volatile` (`@deepseek-ai/cordis`)
+- `source`: [`packages/experimental/browser-control/src/index.ts:17`](../packages/experimental/browser-control/src/index.ts)
+
+```ts config-catalog
+/** Saved browser defaults, live approval, and display capture pacing. */
+export interface Config {
+  /** Ask before each browser mutation; changes apply to existing Sessions. */
+  requireInputApproval: Volatile<boolean>
+  /** Installed browser distribution, independent of the user's normal profile. */
+  browserChannel: Volatile<'chrome' | 'chromium' | 'msedge'>
+  /** Viewport width in CSS pixels. */
+  browserViewportWidth: Volatile<number>
+  /** Viewport height in CSS pixels. */
+  browserViewportHeight: Volatile<number>
+  /** Include model-visible images; picture-in-picture remains independent. */
+  screenshots: Volatile<boolean>
+  /** Pointer and drag duration in milliseconds. */
+  cursorMoveDurationMs: Volatile<number>
+  /** Browser scroll duration in milliseconds. */
+  scrollDurationMs: Volatile<number>
+  /** Delay between text characters in milliseconds. */
+  typingDelayMs: Volatile<number>
+  /** Idle lifetime of preview input indicators in milliseconds. */
+  overlayIdleMs: Volatile<number>
+  /** Delay between preview captures in milliseconds. */
+  previewIntervalMs: Volatile<number>
+  /** Delay between captures during input feedback in milliseconds. */
+  previewActiveIntervalMs: Volatile<number>
+  /** Delay between checks without an active target in milliseconds. */
+  previewIdleIntervalMs: Volatile<number>
+  /** Elapsed deadline for input and observation in milliseconds. */
+  operationTimeoutMs: Volatile<number>
+  /** Elapsed deadline for browser startup and navigation in milliseconds. */
+  navigationTimeoutMs: Volatile<number>
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-browser-control -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp -->
 <a id="deepseek-aidsh-experimental-browser-use-chrome-devtools-mcp"></a>
 
@@ -1032,24 +1076,22 @@ export interface CotTranslationPreferences {
 
 ## `@deepseek-ai/dsh-experimental-computer-control`
 
-- `inject`: `computerUse` · `browserUse` · `agents` · `tools` · `systemPrompt`
+- `inject`: `computerUse` · `agents` · `tools` · `systemPrompt`
 - `refs`: `Volatile` (`@deepseek-ai/cordis`)
-- `source`: [`packages/experimental/computer-control/src/index.ts:18`](../packages/experimental/computer-control/src/index.ts)
+- `source`: [`packages/experimental/computer-control/src/index.ts:19`](../packages/experimental/computer-control/src/index.ts)
 
 ```ts config-catalog
-/** Saved runtime defaults, live input mode and approval, and live preview pacing. */
+/** Saved runtime defaults, live approval, and live preview pacing. */
 export interface Config {
   /** One-shot input approval; changes apply to the next operation in every Session. */
   requireInputApproval: Volatile<boolean>
-  /** Browser-only background or explicit foreground system input; changes apply to the next operation. */
-  inputMode: Volatile<'foreground' | 'background'>
   /** Foreground shortcut settling interval in milliseconds. */
   keySettleMs: Volatile<number>
   /** Display the glowing pointer and key indicators. */
   showOverlay: Volatile<boolean>
-  /** Pointer glide and browser drag duration in milliseconds. */
+  /** Foreground pointer glide duration in milliseconds. */
   cursorMoveDurationMs: Volatile<number>
-  /** Target duration of a browser wheel gesture in milliseconds. */
+  /** Target duration of foreground scrolling in milliseconds. */
   scrollDurationMs: Volatile<number>
   /** Delay between visible text characters in milliseconds. */
   typingDelayMs: Volatile<number>
@@ -1061,17 +1103,13 @@ export interface Config {
   previewActiveIntervalMs: Volatile<number>
   /** Delay between preview checks when no target exists, in milliseconds. */
   previewIdleIntervalMs: Volatile<number>
-  /** Installed browser distribution. */
-  browserChannel: Volatile<'chrome' | 'chromium' | 'msedge'>
-  /** Hide browser windows. */
-  headless: Volatile<boolean>
   /** Include screenshots; enable for a model that supports image input. */
   screenshots: Volatile<boolean>
   /** Elapsed deadline for input, observation, and discovery in milliseconds. */
   operationTimeoutMs: Volatile<number>
   /** Time allowed for one native accessibility walk, in milliseconds. */
   nativeTreeTimeoutMs: Volatile<number>
-  /** Elapsed deadline for application launch, browser startup, and navigation in milliseconds. */
+  /** Elapsed deadline for application launch in milliseconds. */
   navigationTimeoutMs: Volatile<number>
 }
 ```
@@ -1107,7 +1145,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-experimental-computer-use-unified`
 
 - `inject`: `computerUse` · `browserUse` · `agents` · `tools` · `systemPrompt`
-- `source`: [`packages/experimental/computer-use-unified/src/index.ts:86`](../packages/experimental/computer-use-unified/src/index.ts)
+- `source`: [`packages/experimental/computer-use-unified/src/index.ts:90`](../packages/experimental/computer-use-unified/src/index.ts)
 
 ```ts config-catalog
 /** Optional profile settings resolved by the plugin schema before execution. */
@@ -1141,6 +1179,10 @@ export interface ResolvedConfig {
   previewTimeoutMs: number
   /** Run owned browsers without visible windows. */
   headless: boolean
+  /** CSS viewport width for hidden browser pages; visible windows retain their native dimensions. */
+  browserViewportWidth: number
+  /** CSS viewport height for hidden browser pages; visible windows retain their native dimensions. */
+  browserViewportHeight: number
   /** Installed browser distribution used when no executable path is supplied. */
   browserChannel: 'chrome' | 'chromium' | 'msedge'
   /** Explicit browser executable, overriding the selected distribution. */
@@ -1254,6 +1296,33 @@ export interface InspectorOptions {
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-inspector -->
+
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-mobile-access -->
+<a id="deepseek-aidsh-experimental-mobile-access"></a>
+
+## `@deepseek-ai/dsh-experimental-mobile-access`
+
+- `inject`: `webServer` · `connection` · `typert` · `credentials`
+- `source`: [`packages/experimental/mobile-access/src/index.ts:15`](../packages/experimental/mobile-access/src/index.ts)
+
+```ts config-catalog
+/** Deployment-owned listener configuration; activation opens no network port. */
+export interface Config {
+  /** Phone access port; zero requests an available port instead of a stable bookmark. */
+  port?: number
+  /** Consecutive failed passwords before a login cooldown. */
+  loginFailedAttempts?: number
+  /** Login cooldown after repeated credential failures. */
+  loginCooldownMs?: number
+  /** Absolute phone login lifetime; reconnecting does not extend it. */
+  sessionMaxAgeMs?: number
+  /** Maximum simultaneous phone browser logins. */
+  maxPhoneSessions?: number
+  /** Maximum queued password operations while a login is being checked. */
+  maxPendingLogins?: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-mobile-access -->
 
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-ptc-runtime-python -->
 <a id="deepseek-aidsh-experimental-ptc-runtime-python"></a>
@@ -1843,7 +1912,7 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-host-webserver`
 
-- `source`: [`packages/host/webserver/src/index.ts:97`](../packages/host/webserver/src/index.ts)
+- `source`: [`packages/host/webserver/src/index.ts:105`](../packages/host/webserver/src/index.ts)
 
 ```ts config-catalog
 /** Web server listen, TLS, and response-compression config. */
@@ -4939,6 +5008,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-experimental-client-ui-agent-team` | — | [`packages/experimental/client-ui-agent-team/src/index.ts`](../packages/experimental/client-ui-agent-team/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-claude-code-mods` | — | [`packages/experimental/client-ui-claude-code-mods/src/index.ts`](../packages/experimental/client-ui-claude-code-mods/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-voice-input` | — | [`packages/experimental/client-ui-voice-input/src/index.ts`](../packages/experimental/client-ui-voice-input/src/index.ts) |
+| `@deepseek-ai/dsh-experimental-computer-preview` | — | [`packages/experimental/computer-preview/src/index.ts`](../packages/experimental/computer-preview/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-computer-use-cua-driver-native` | `computerUse` · `tools` · `systemPrompt` | [`packages/experimental/computer-use-cua-driver-native/src/index.ts`](../packages/experimental/computer-use-cua-driver-native/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-session-inspector` | — | [`packages/experimental/session-inspector/src/index.ts`](../packages/experimental/session-inspector/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-tool-worktree` | `tools` · `worktrees` | [`packages/experimental/tool-worktree/src/index.ts`](../packages/experimental/tool-worktree/src/index.ts) |

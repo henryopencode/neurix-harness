@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Control de aplicaciones",
+    "description": "Opera aplicaciones de macOS en primer plano, incluidos navegadores, con el ratón y teclado del sistema.",
+    "detail": "docs/DETAIL.md"
+  }
+}

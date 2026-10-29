@@ -13,7 +13,7 @@
         "block": {
           "type": "tool-call",
           "id": "browser-only-list",
-          "name": "computer",
+          "name": "browser",
           "arguments": "{\"action\":\"list\"}"
         }
       },
@@ -46,7 +46,7 @@
         "block": {
           "type": "tool-call",
           "id": "browser-only-native-refusal",
-          "name": "computer",
+          "name": "browser",
           "arguments": "{\"action\":\"open_app\",\"bundleId\":\"ai.neurix.fixture\"}"
         }
       },
@@ -79,7 +79,7 @@
         "block": {
           "type": "tool-call",
           "id": "browser-only-open",
-          "name": "computer",
+          "name": "browser",
           "arguments": "{\"action\":\"open_browser\",\"url\":\"https://example.com\",\"screenshot\":true}"
         }
       },

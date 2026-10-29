@@ -56,6 +56,8 @@ Traversal returns 403 rather than an error page. An absent or non-file target in
 <a id="understand-the-implementation"></a>
 ## Understand the implementation
 
+HTTP index rendering uses the credential’s admitted Peer after the file read; a lost admission returns its refusal status without injecting another Peer’s data. In-process reads retain the Peer their caller supplied.
+
 <details>
 <summary>Implementation internals — click to expand</summary>
 
@@ -97,6 +99,7 @@ None, as the SPA dist server answers browser asset requests and registers nothin
 #### KV Cache effect
 
 None; this package neither assembles nor sends a provider request.
+
 
 ## Known Limitations and Deferred Work
 

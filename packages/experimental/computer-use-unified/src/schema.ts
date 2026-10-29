@@ -1,6 +1,8 @@
 /** Model arguments for session-owned browser and macOS operations. @module */
 
 import { z } from 'zod'
+import { assertNever } from '@deepseek-ai/dsh-util-values'
+import type { ComputerSurface } from './types.ts'
 
 const target = z.string().min(1).describe('Required window or tab id returned by list/observe. Send target separately from ref, locator, or coordinates; a native ref identifies an element inside this target. List again after resuming.')
 const screenshot = z.boolean().optional().describe('Include a screenshot; native capture needs Screen Recording permission.')
@@ -59,7 +61,7 @@ for (const option of computerInput.options) {
  * Model-facing object with explicit properties for providers that require an
  * object root. The executor validates each action's required fields separately.
  */
-export const computerParameters = z.object({
+export const computerParameters: z.ZodObject<Record<string, z.ZodType>> = z.object({
   ...modelFields,
   action: z.enum(computerInput.options.map(option => option.shape.action.value))
     .describe('Required operation. list/reset need no other fields; open_app requires bundleId. All other actions except open_browser require target. type requires text; key requires keys; navigate requires url; scroll requires direction and amount; drag prefers locator and toLocator from geometry.elements, or x,y,toX,toY in actual screenshot pixels; menu requires path; dialog requires accept. click/scroll need an observed element or screenshot point. type uses an observed editor, or the verified focused browser editor; foreground native type may continue in the focused editor without another address.'),
@@ -69,3 +71,46 @@ export const computerParameters = z.object({
 
 /** Arguments after tool JSON validation and explicit per-operation defaults. */
 export type ComputerInput = z.infer<typeof computerInput>
+
+const browserActions = ['list', 'open_browser', 'new_tab', 'observe', 'navigate', 'move', 'click', 'type', 'key', 'scroll', 'drag', 'dialog', 'close_tab', 'reset'] as const
+const applicationActions = ['list', 'open_app', 'observe', 'move', 'click', 'type', 'key', 'scroll', 'drag', 'menu', 'reset'] as const
+
+/**
+ * Check the provider's operation set before authority checks or resource acquisition.
+ * @param surface - enabled provider capabilities.
+ * @param action - parsed tool operation.
+ * @returns whether this provider may dispatch the operation.
+ */
+export function admitsComputerAction(surface: ComputerSurface, action: ComputerInput['action']): boolean {
+  switch (surface) {
+    case 'all': return true
+    case 'browser': return browserActions.some(value => value === action)
+    case 'applications': return applicationActions.some(value => value === action)
+    default: return assertNever(surface)
+  }
+}
+
+/**
+ * Describe only operations and addresses available to this provider.
+ * @param surface - enabled provider capabilities.
+ * @returns the model-facing parameter object for this provider.
+ */
+export function parametersForComputerSurface(surface: ComputerSurface): z.ZodObject {
+  switch (surface) {
+    case 'all': return computerParameters
+    case 'browser': return computerParameters.omit({ bundleId: true, ref: true, path: true }).extend({
+      action: z.enum(browserActions).describe('Required browser operation. Start with open_browser. Reuse returned tab targets; list reports owned tabs only.'),
+      target: z.string().optional().describe('Owned tab id returned by this browser tool; never a native window id.'),
+      x: z.number().nonnegative().optional().describe('X in CSS pixels from the latest screenshot of this tab.'),
+      y: z.number().nonnegative().optional().describe('Y in CSS pixels from the latest screenshot of this tab.'),
+    })
+    case 'applications': return computerParameters.omit({ locator: true, toLocator: true, toPosition: true, url: true, accept: true }).extend({
+      action: z.enum(applicationActions).describe('Required native application operation. Start with list or open_app with an exact macOS bundleId.'),
+      target: z.string().optional().describe('Exact native window id returned by this application tool, including browser application windows.'),
+      ref: z.string().optional().describe('Fresh element_token returned by observing this exact native window.'),
+      x: z.number().nonnegative().optional().describe('X in screenshot pixels from a fresh capture of this native window.'),
+      y: z.number().nonnegative().optional().describe('Y in screenshot pixels from a fresh capture of this native window.'),
+    })
+    default: return assertNever(surface)
+  }
+}

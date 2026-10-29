@@ -212,6 +212,12 @@ Web 侧的对应命令是 `pnpm run dev:web` 与 `pnpm run start:web`，见[开�
 
 安装工作区依赖不会自动运行锁定版本 Electron 提供的独立二进制安装程序。直接运行 [Windows 控制台信号测试](tests/windows-cli-signals.spec.ts)前，在仓库根目录执行 `pnpm --filter @deepseek-ai/dsh-desktop exec install-electron`，准备锁定版本的 Electron 二进制。通过代理下载时，为该安装进程启用 `ELECTRON_GET_USE_PROXY=1`。Windows 覆盖率检查要求安装成功后，才启动带覆盖率插桩的单元测试集。
 
+### 从源码更新已安装的 Mac 应用
+
+在仓库根目录双击 [update-neurix.command](../../update-neurix.command)，即可构建并替换已安装的 Mac 应用。脚本通过已安装应用自带的 Node 启动，缺少头文件时获取经过校验的开发工具链，并在独立目录中构建已跟踪源码和未被忽略的新增文件，包括本地修改。安装依赖需要联网及 Xcode 命令行工具。产物为使用 ad-hoc 签名的本地开发构建。更新程序先校验新应用，再请求旧应用正常退出，将旧应用保留在安装目录旁，并在备份目录生成 `rollback.command`。设置、凭证、会话和浏览器数据保留原位置；回滚只恢复应用，不回退新数据格式。
+
+使用 `./update-neurix.command --check` 检查环境。运行 `./update-neurix.command --prepare-only` 可在保持已安装应用运行的情况下打包，输出会给出用于完成替换的 `install.command`。通过 `--app /path/to/Neurix\ Harness.app` 选择其他安装位置。构建输入和产物保留在 `apps/desktop/.desktop-build/local-updates/`，可供检查。
+
 ### 启动引导
 
 API Key 输入框初始为空，并通过 `autocomplete="new-password"` 请求 Chromium 不要自动填入已保存的登录密码。

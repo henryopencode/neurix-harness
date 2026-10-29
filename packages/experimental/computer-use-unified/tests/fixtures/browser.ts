@@ -157,7 +157,7 @@ export class FixtureContext extends EventEmitter {
       }
       if (name === 'SystemInfo.getProcessInfo') return { processInfo: [{ type: 'browser', id: 9 }] }
       if (name === 'Target.getTargetInfo') return { targetInfo: { targetId: 'owned-tab' } }
-      if (name === 'Browser.getWindowForTarget') return { bounds: { left: 100, top: 100, width: 560, height: 320 } }
+      if (name === 'Browser.getWindowForTarget') return { windowId: 7, bounds: { left: 100, top: 100, width: 560, height: 320 } }
       if (name === 'Runtime.evaluate') {
         await operation(name, args)
         return { result: { value: { x: 0, y: 0, width: 1200, height: 919, dpr: 2 } } }
@@ -174,7 +174,7 @@ export class FixtureContext extends EventEmitter {
 export class FixtureBrowser extends EventEmitter {
   readonly context = new FixtureContext(this)
   newBrowserCDPSession(): ReturnType<FixtureContext['newCDPSession']> { return this.context.newCDPSession() }
-  newContext(): Promise<FixtureContext> { return operation('newContext').then(() => this.context) }
+  newContext(options: unknown): Promise<FixtureContext> { return operation('newContext', options).then(() => this.context) }
   close(): Promise<void> {
     if (browserFixture.closeError !== undefined) return Promise.reject(browserFixture.closeError)
     browserFixture.blocked?.reject(new Error('Browser closed'))

@@ -7,15 +7,10 @@ const css = readFileSync(new URL('../src/client/skeleton/ConversationRoot.module
 describe('conversation header geometry', () => {
   it('keeps the conversation header at the Neurix 84px height', () => {
     expect(css.match(/\.header\s*\{([^}]*)\}/)?.[1]).toContain('min-height: 84px')
-    expect(css.match(/\.viewTabs\s*\{([^}]*)\}/)?.[1]).toContain('min-height: 25px')
-    // The tab's 35px press target sits 10px above its 25px row through a negative top margin.
-    expect(css.match(/\.tab\s*\{([^}]*)\}/)?.[1]).toContain('min-height: 35px')
-    expect(css.match(/\.tab\s*\{([^}]*)\}/)?.[1]).toContain('margin: -10px calc(-1 * var(--dsh-tab-hit-inline)) 0')
-    expect(css.match(/\.tab\s*\{([^}]*)\}/)?.[1]).toContain('padding: 10px var(--dsh-tab-hit-inline) 9px')
   })
 
-  it('uses 32px between view labels without changing the action gap', () => {
-    expect(css.match(/\.viewTabs\s*\{([^}]*)\}/)?.[1]).toContain('gap: 32px')
+  it('uses the same gap between view buttons and the More action', () => {
+    expect(css.match(/\.viewTabs\s*\{([^}]*)\}/)?.[1]).toContain('gap: 4px')
     expect(css.match(/\.tabs\s*\{([^}]*)\}/)?.[1]).toContain('gap: 4px')
   })
 })

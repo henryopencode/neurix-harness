@@ -28,7 +28,7 @@ export async function cropBrowserPreview(image: Buffer, bounds: ScreenRect, cont
 }
 
 const viewport = z.object({ result: z.object({ value: z.object({
-  x: z.number(), y: z.number(), width: z.number().positive(), height: z.number().positive(),
+  width: z.number().positive(), height: z.number().positive(),
 }) }) })
 const screenshot = z.object({ data: z.string() })
 const message = z.object({ id: z.number().optional(), result: z.unknown().optional(),
@@ -102,7 +102,7 @@ export async function captureBrowserScreenshot(page: Page, signal: AbortSignal, 
   try {
     active.throwIfAborted()
     const frame = viewport.parse(await session.send('Runtime.evaluate', {
-      expression: '({ x: scrollX, y: scrollY, width: innerWidth, height: innerHeight })',
+      expression: '({ width: innerWidth, height: innerHeight })',
       returnByValue: true,
     })).result.value
     active.throwIfAborted()

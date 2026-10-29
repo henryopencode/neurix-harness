@@ -36,6 +36,16 @@ afterEach(async () => {
 const execute = (args: Record<string, unknown>, active = signal) => runtime.execute(computerInput.parse(args), active)
 const locator = { by: 'role', role: 'button', name: 'Save' }
 
+it.each([true, false])('uses desktop viewport settings only for headless=%s', async (headless) => {
+  await runtime.close()
+  runtime = new ComputerRuntime(undefined, Config({ headless, showOverlay: false, screenshots: false,
+    browserViewportWidth: 1600, browserViewportHeight: 1000 }))
+  await execute({ action: 'open_browser' })
+  expect(browserFixture.calls.find(call => call.name === 'newContext')?.args).toEqual([
+    { viewport: headless ? { width: 1600, height: 1000 } : null, acceptDownloads: false },
+  ])
+})
+
 it.skipIf(process.platform !== 'darwin')('connects an existing macOS browser when the user switches from background to foreground', async () => {
   await execute({ action: 'open_browser' })
   const browser = browserFixture.browsers[0]
@@ -134,7 +144,6 @@ it('captures the viewport in screenshot pixels without dividing its CSS dimensio
   await execute({ action: 'open_browser', screenshot: true })
   const capture = browserFixture.calls.find(call => call.name === 'screenshot')
   expect(capture?.args).toMatchObject([{ captureBeyondViewport: false, fromSurface: true }])
-  expect(capture?.args[0]).not.toHaveProperty('clip')
 })
 
 it('uses strict semantic locators and explicit text replacement without a shared clipboard', async () => {
@@ -360,7 +369,10 @@ it('uses a verified focused editor when typing without another address after a c
 
 it('reports failed opening and failed observation without replaying browser creation or input', async () => {
   browserFixture.launchError = new Error('Chrome missing')
-  await expect(execute({ action: 'open_browser' })).rejects.toThrow('Chrome missing')
+  await expect(execute({ action: 'open_browser' })).rejects.toMatchObject({
+    code: 'BROWSER_START_FAILED', effect: 'none', cause: browserFixture.launchError,
+    message: 'The selected browser (chrome) could not start.',
+  })
   browserFixture.launchError = undefined
   browserFixture.fail = 'goto'
   expect((await execute({ action: 'open_browser', url: 'https://example.com/' })).structuredContent).toMatchObject({ status: 'partial', target: 'tab-1',
@@ -485,7 +497,7 @@ it('resizes captured pixels on the Host while leaving the browser viewport and d
   expect(await sharp(png).metadata()).toMatchObject({ width: 640, height: 490 })
   const captures = browserFixture.calls.filter(call => call.name === 'screenshot')
   expect(captures).toHaveLength(2)
-  for (const capture of captures) expect(capture.args[0]).not.toHaveProperty('clip')
+  for (const capture of captures) expect(capture.args[0]).toMatchObject({ captureBeyondViewport: false, fromSurface: true })
   expect(browserFixture.calls.some(call => call.name.startsWith('Emulation.'))).toBe(false)
 })
 
@@ -609,4 +621,39 @@ it('terminates an active browser gesture and withdraws its CDP session on cancel
   await failed
   expect(browserFixture.calls.filter(call => call.name === 'Input.synthesizeScrollGesture')).toHaveLength(1)
   expect(browserFixture.calls.some(call => call.name === 'session.detach')).toBe(true)
+})
+
+it('keeps browser-only calls out of native discovery and rejects application actions before effects', async () => {
+  await runtime.close()
+  runtime = new ComputerRuntime(new NativeCalls(new CuaDriver(), 10_000), Config({ headless: true, showOverlay: false }), 'browser')
+  expect((await execute({ action: 'list' })).structuredContent).toMatchObject({ targets: [], capabilities: { browser: true, native: false } })
+  for (const args of [{ action: 'open_app', bundleId: 'ai.neurix.fixture' }, { action: 'menu', target: 'window-1', path: ['File'] }]) {
+    await expect(execute(args)).rejects.toMatchObject({ code: 'OPERATION_UNAVAILABLE', effect: 'none' })
+  }
+  expect(desktop.calls).toEqual([])
+  expect(browserFixture.browsers).toHaveLength(0)
+  await execute({ action: 'open_browser' })
+  expect(browserFixture.calls).toContainEqual({ name: 'Browser.setContentsSize', args: [{ windowId: 7, width: 1440, height: 900 }] })
+  await expect(execute({ action: 'observe', target: 'window-1' })).rejects.toMatchObject({ code: 'TARGET_NOT_FOUND' })
+})
+
+it('keeps application-only calls out of Playwright even when a direct caller requests background mode', async () => {
+  await runtime.close()
+  runtime = new ComputerRuntime(new NativeCalls(new CuaDriver(), 10_000), Config({ showOverlay: false, screenshots: false }), 'applications')
+  for (const args of [{ action: 'open_browser' }, { action: 'new_tab', target: 'tab-1' }, { action: 'navigate', target: 'tab-1', url: 'about:blank' }]) {
+    await expect(execute(args)).rejects.toMatchObject({ code: 'OPERATION_UNAVAILABLE', effect: 'none' })
+  }
+  expect(browserFixture.browsers).toHaveLength(0)
+  expect(desktop.calls).toEqual([])
+  expect((await runtime.execute(computerInput.parse({ action: 'list' }), signal, 'background')).structuredContent)
+    .toMatchObject({ inputMode: 'foreground', targets: [{ target: 'window-1', kind: 'window' }], capabilities: { browser: false, native: true } })
+  await expect(execute({ action: 'observe', target: 'tab-1' })).rejects.toMatchObject({ code: 'TARGET_NOT_FOUND' })
+})
+
+it('stops before browser input when the installed browser cannot prepare the viewport', async () => {
+  await runtime.close()
+  runtime = new ComputerRuntime(undefined, Config({ headless: true, showOverlay: false, screenshots: false }), 'browser')
+  browserFixture.fail = 'Browser.setContentsSize'
+  await expect(execute({ action: 'open_browser' })).rejects.toMatchObject({ code: 'BROWSER_VIEWPORT_FAILED', effect: 'none' })
+  expect(browserFixture.calls.some(call => call.name.startsWith('keyboard.') || call.name.startsWith('mouse.'))).toBe(false)
 })

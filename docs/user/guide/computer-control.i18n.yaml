@@ -2,27 +2,24 @@
 # section, a hash of its English and Chinese blocks outside code blocks and generated regions.
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/user/guide/computer-control.md
-/computer-control:
-  en: 50da7584eed5f2c9
-  zh: 87eb3e9dcc6cd4c1
-/computer-control/prerequisites:
-  en: a527cd47a2435286
-  zh: 0b8833b5f238b3d2
-/computer-control/enable-from-plugins:
-  en: 56bad18423c93dd3
-  zh: 67bef7633e90e446
-/computer-control/enable-from-plugins/watch-picture-in-picture:
-  en: b8477edd59dc0954
-  zh: ea70920ef3e8668b
-/computer-control/start-a-session:
-  en: 43372dba9689ac2f
-  zh: aa6bbf2e8b5ee27a
-/computer-control/complete-a-browser-task:
-  en: 2da669a871882935
-  zh: 44f04a655e0d6cc8
-/computer-control/operate-a-macos-application:
-  en: f5c3fb0e86962f68
-  zh: 5cba4f51d27015ae
-/computer-control/recover-and-finish:
-  en: eb4965a97259bd30
-  zh: ce5387ff36624b88
+/browser-and-application-control:
+  en: 8cff86cfc2af9c6b
+  zh: 9480a5c3112c1554
+/browser-and-application-control/choose-a-plugin:
+  en: 56251ec4b45912d7
+  zh: 501324792aab6766
+/browser-and-application-control/configure-and-approve:
+  en: 2cbdc50a04fe84fd
+  zh: c813974d76288455
+/browser-and-application-control/test-browser-control:
+  en: a3aae527e3cd56dd
+  zh: 087aaf02bbfbedfb
+/browser-and-application-control/test-application-control:
+  en: 1ba22a41abc1a67b
+  zh: 312ae7cd7872aa2d
+/browser-and-application-control/watch-picture-in-picture:
+  en: 40f279224aa4ed30
+  zh: c9e997102ec14acb
+/browser-and-application-control/recover-and-finish:
+  en: 8161da26842ab871
+  zh: 2e7c73929800a69c

@@ -1,0 +1,9 @@
+- id: ui-settings-account
+  disabled: true
+- id: session-telemetry-otel
+  disabled: true
+- insert:
+    - id: mobile-access
+      name: '@deepseek-ai/dsh-experimental-mobile-access'
+      config:
+        port: 0

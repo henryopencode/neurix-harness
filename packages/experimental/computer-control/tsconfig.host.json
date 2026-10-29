@@ -28,6 +28,9 @@
     },
     {
       "path": "../../core/session"
+    },
+    {
+      "path": "../computer-preview/tsconfig.host.json"
     }
   ]
 }

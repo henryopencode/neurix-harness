@@ -147,13 +147,26 @@ interface PlannedWrite {
   op?: SettingsFormPathOp
 }
 
+/** Optional numeric validation for a staged settings field. */
+export interface SettingsNumberFieldOptions {
+  /** Reject empty drafts instead of clearing the saved override. */
+  required?: boolean
+  /** Accept only whole numbers. */
+  integer?: boolean
+  /** Inclusive lower bound. */
+  min?: number
+  /** Inclusive upper bound. */
+  max?: number
+}
+
 /**
- * A whole-number field. An empty draft clears the field; any other draft that
- * is not a finite number blocks the save.
+ * A numeric field with optional integer and range validation. Empty optional
+ * drafts clear the override; invalid drafts remain local and block saving.
  * @param field - field name inside the namespace section.
+ * @param options - numeric bounds and whether an empty draft is invalid.
  * @returns the field's conversion spec.
  */
-export function settingsNumberField(field: string): SettingsFieldSpec {
+export function settingsNumberField(field: string, options: SettingsNumberFieldOptions = {}): SettingsFieldSpec {
   return {
     field,
     // A section that carries no number for this field renders empty rather
@@ -161,9 +174,11 @@ export function settingsNumberField(field: string): SettingsFieldSpec {
     format: value => typeof value === 'number' ? String(value) : '',
     parse: (text) => {
       const trimmed = text.trim()
-      if (trimmed === '') return { kind: 'clear' }
+      if (trimmed === '') return options.required ? undefined : { kind: 'clear' }
       const parsed = Number(trimmed)
-      return Number.isFinite(parsed) ? { kind: 'set', value: parsed } : undefined
+      if (!Number.isFinite(parsed) || options.integer && !Number.isInteger(parsed)
+        || options.min !== undefined && parsed < options.min || options.max !== undefined && parsed > options.max) return undefined
+      return { kind: 'set', value: parsed }
     },
   }
 }

@@ -2,6 +2,9 @@
 
 import type { SessionId } from '@deepseek-ai/dsh-session'
 
+/** Operations admitted by one independently enabled control provider. */
+export type ComputerSurface = 'all' | 'browser' | 'applications'
+
 /** Independent cursor position relative to the captured window. */
 export interface ComputerPreviewCursor {
   /** Horizontal fraction of the window width. */

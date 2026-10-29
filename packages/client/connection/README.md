@@ -38,6 +38,8 @@ The browser uses HTTP POST for Remote unary calls. API Gateway owns the `/api/re
 <a id="browser-authentication-and-request-trust"></a>
 ## Browser authentication and request trust
 
+Deployment plugins can register a temporary authority with `registerTrustedHost` and a browser authentication provider with `registerBrowserAuth`. Both return idempotent, calling-fiber-owned withdrawal. Host/Origin checks still precede provider authentication; an absent index answer delegates to the normal launch-token exchange. Providers own their credentials, Peer lifetimes, expiry, and login pages.
+
 Over the Web carrier, every Host RPC method and WebSocket stream requires an authenticated browser or API Peer; there is no method-specific loopback tier. Each process mints a random launch token. `dsh-web-app` prints and opens its application URL with `?token=...`, preserving the caller's authority and mount; `frontend-static` delegates root and index requests to `ctx.connection.authorizeIndex`, which accepts that token only on `GET /`, writes an authority-bound signed cookie, and redirects to clean `./`, which drops the token and keeps the request's directory. A missing, expired, malformed, or wrong-authority cookie returns 401 before RPC dispatch. Static assets remain public. The HTTP carrier accepts query tokens only at the root exchange and `/connect`, and accepts no Authorization-header token.
 
 The cookie signing secret is the owner-scoped `client-connection/browser-session` grant record in `ctx.credentials`. The local provider persists it in `$DSH_HOME/.credentials.yaml`; `BrowserAuth` loads or creates the record during Connection activation and retains the secret in memory, so request authentication is synchronous. Deleting or replacing the record takes effect on the next Connection activation. Cookies carry an absolute issue/expiry interval, defaulting to 30 days through `cookieMaxAgeDays`, and bind the normalized hostname plus port in both their deterministic name and signed payload. They are host-only, `Path=/`, `HttpOnly`, and `SameSite=Strict`, and carry `Secure` exactly when the listener that received the index request serves TLS; only that listener's own protocol decides, never a `publicUrl` announcement or a forwarded header.
@@ -72,6 +74,7 @@ None, as the wire consumer layer moves already-composed messages between browser
 #### KV Cache effect
 
 None; this package neither assembles nor sends a provider request.
+
 
 ## Known Limitations and Deferred Work
 

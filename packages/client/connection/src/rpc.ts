@@ -202,6 +202,14 @@ export interface HostConnectionRpc {
   ): () => Promise<void>
 }
 
+/** A browser authentication provider owned by one plugin activation. */
+export interface ConnectionBrowserAuth {
+  /** Verify a request synchronously; absent credentials delegate to other providers. */
+  authenticate(request: ConnectionTrustRequest): PeerScope | undefined
+  /** Authenticate or answer an index request; undefined delegates to the normal launch-token exchange. */
+  authorizeIndex(request: ConnectionIndexRequest, response: ConnectionIndexResponse): boolean | undefined
+}
+
 /** Host `ctx.connection` members consumed by transport-independent adapters. */
 export interface HostConnectionHandle {
   /** Generic RPC channel registry. */
@@ -216,6 +224,20 @@ export interface HostConnectionHandle {
    * when a validated `trustedHosts` entry names a non-loopback hostname.
    */
   readonly allowsRemoteAuthorities: boolean
+
+  /**
+   * Admit an additional deployment authority without granting authentication.
+   * @param authority - canonical host or host:port.
+   * @returns idempotent withdrawal owned by the calling plugin's lifetime.
+   */
+  registerTrustedHost(authority: string): () => Promise<void>
+
+  /**
+   * Register a browser authentication provider without bypassing Host/Origin admission.
+   * @param provider - credential checks and optional login page owned by one plugin.
+   * @returns withdrawal owned by the calling fiber.
+   */
+  registerBrowserAuth(provider: ConnectionBrowserAuth): () => Promise<void>
 
   /**
    * Compose exact Fetch routes and the shared-channel RPC interceptor.
