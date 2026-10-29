@@ -1,6 +1,6 @@
 /** Unix-only admission checks prevent replacement while requests or Agent work remain. */
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { lstatSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { request } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -64,4 +64,6 @@ test('blocks running work, drains admitted requests, and cleans up the control s
   await admitted
   assert.equal((await pendingLock).body.locked, true)
   assert.equal((await call(socketPath, 'unlock')).body.locked, false)
+  await effects.pop()()
+  assert.equal(lstatSync(socketPath, { throwIfNoEntry: false }), undefined)
 })

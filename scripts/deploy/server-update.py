@@ -91,6 +91,8 @@ def validate_archive(archive):
             path = PurePosixPath(member.name)
             if path.is_absolute() or '..' in path.parts or not path.parts or path.parts[0] not in {'dsh', 'runtime', 'server'}:
                 raise ValueError('Server archive contains an unsafe path')
+            if member.mode & 0o6000:
+                raise ValueError('Server archive cannot install privileged executables')
             if not (member.isfile() or member.isdir() or member.issym() or member.islnk()):
                 raise ValueError('Server archive contains a special file')
             if member.issym() or member.islnk():
@@ -133,9 +135,9 @@ def control(config, operation='status'):
         connection.close()
 
 
-def command(*args):
+def command(*args, input_stream=None):
     """Require command completion before performing dependent mutations."""
-    subprocess.run(args, check=True, timeout=180)
+    subprocess.run(args, check=True, timeout=180, stdin=input_stream)
 
 
 def switch_link(current, target):
@@ -185,8 +187,10 @@ def install(config, archive, version, expected_digest):
     staged = Path(tempfile.mkdtemp(prefix='prepared-', dir=releases))
     # Extract as the unprivileged application user; archive content never executes as root.
     command('chown', config['user'], str(staged))
-    command('runuser', '-u', config['user'], '--', 'tar', '--no-same-owner', '-xzf', str(archive), '-C', str(staged))
+    with open(archive, 'rb') as source:
+        command('runuser', '-u', config['user'], '--', 'tar', '--no-same-owner', '-xzf', '-', '-C', str(staged), input_stream=source)
     command('chown', '-hR', 'root:root', str(staged))
+    os.chmod(staged, 0o755)
     manifest = json.loads((staged / 'dsh/package.json').read_text())
     if manifest.get('version') != version or not (staged / 'server/start.sh').is_file():
         raise ValueError('Prepared runtime does not match the selected release')
@@ -308,7 +312,7 @@ def main():
                 'blocked_version': config.get('_candidate_version'), 'checked_at': int(time.time())}) + '\n')
             raise
         previous_state = json.loads(state.read_text()) if state.exists() else {}
-        blocked = previous_state.get('blocked_version') if result.startswith('failed-release-held-') else None
+        blocked = previous_state.get('blocked_version') if result != 'updated' else None
         state.write_text(json.dumps({'result': result, 'blocked_version': blocked, 'checked_at': int(time.time())}) + '\n')
         print(result)
 

@@ -46,6 +46,16 @@ class ServerUpdateTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     updater.validate_archive(path)
 
+    def test_archive_cannot_supply_setuid_files(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / 'privileged.tar.gz'
+            with tarfile.open(path, 'w:gz') as archive:
+                member = tarfile.TarInfo('server/tool')
+                member.mode = 0o4755
+                archive.addfile(member)
+            with self.assertRaisesRegex(ValueError, 'privileged'):
+                updater.validate_archive(path)
+
     def test_a_failed_release_stays_held_without_stopping_the_application(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -92,7 +102,7 @@ class ServerUpdateTests(unittest.TestCase):
                       'service': 'fixture.service'}
             operations = []
 
-            def command(*args):
+            def command(*args, input_stream=None):
                 operations.append(args)
                 if args[0] == 'runuser':
                     destination = Path(args[-1])
@@ -114,6 +124,7 @@ class ServerUpdateTests(unittest.TestCase):
                 if healthy:
                     self.assertEqual(updater.install(config, archive, '1.0.0', checksum), 'updated')
                     self.assertNotEqual((root / 'current').resolve(), old)
+                    self.assertEqual((root / 'current').resolve().stat().st_mode & 0o777, 0o755)
                     self.assertEqual((home / 'session').read_text(), 'new-format')
                     self.assertEqual(next(backups.glob('*/home/session')).read_text(), 'original')
                 else:
