@@ -35,7 +35,6 @@ jobs:
           printf '%s\n' "$UPLOAD_KEY" > "$HOME/.ssh/neurix-runtime"
           chmod 600 "$HOME/.ssh/neurix-runtime"
           printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          trap 'rm -f "$HOME/.ssh/neurix-runtime"' EXIT
           mapfile -t archives < <(find runtime -maxdepth 1 -type f -name '*-linux-x64-server.tar.gz')
           test "${#archives[@]}" -eq 1
           sha256sum "${archives[0]}"
@@ -47,3 +46,6 @@ jobs:
             { printf "%s\n" "${part##*/}"; cat "$part"; } | \
               ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes -i "$HOME/.ssh/neurix-runtime" root@101.34.211.31
           ' _ '{}'
+      - name: Remove temporary upload key
+        if: always()
+        run: rm -f "$HOME/.ssh/neurix-runtime"
