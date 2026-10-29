@@ -132,6 +132,7 @@ class ServerUpdateTests(unittest.TestCase):
                         updater.install(config, archive, '1.0.0', checksum)
                     self.assertEqual((root / 'current').resolve(), old)
                     self.assertEqual((home / 'session').read_text(), 'original')
+                    self.assertEqual(config['_blocked_version'], '1.0.0')
                 self.assertFalse((root / 'maintenance').exists())
                 self.assertLess(operations.index(('control', 'lock')), operations.index(('systemctl', 'stop', 'fixture.service')))
 

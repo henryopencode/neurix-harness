@@ -9,6 +9,7 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 import shutil
+import signal
 import socket
 import subprocess
 import tarfile
@@ -227,6 +228,7 @@ def install(config, archive, version, expected_digest):
         return 'updated'
     except BaseException:
         if stopped:
+            config['_blocked_version'] = version
             command('systemctl', 'stop', config['service'])
             switch_link(current, previous)
             if saved:
@@ -247,6 +249,8 @@ def install(config, archive, version, expected_digest):
 
 def run(config, args):
     """Check stable Releases, download after validation, and install only when explicitly selected."""
+    if Path(config.get('maintenance_file', '/nonexistent-neurix-maintenance')).exists():
+        raise RuntimeError('A previous update needs recovery; inspect the service and its retained data backup')
     if args.archive:
         if not args.version or not re.fullmatch(r'[a-f0-9]{64}', args.sha256 or ''):
             raise ValueError('Manual archives require --version and --sha256')
@@ -259,7 +263,6 @@ def run(config, args):
     manifest = json.loads((Path(config['root']) / 'current/dsh/package.json').read_text())
     if version_key(version) <= version_key(manifest['version']):
         return 'up-to-date'
-    config['_candidate_version'] = version
     if not args.apply:
         return 'available-' + version
     state_file = Path(config['state_file'])
@@ -305,11 +308,16 @@ def main():
         except BlockingIOError:
             print('An update check is already running')
             return
+        def interrupted(_signum, _frame):
+            raise InterruptedError('Server update was interrupted; the installer will restore the previous runtime')
+
+        signal.signal(signal.SIGTERM, interrupted)
+        previous_state = json.loads(state.read_text()) if state.exists() else {}
         try:
             result = run(config, args)
         except Exception as error:
             state.write_text(json.dumps({'result': 'failed', 'message': str(error),
-                'blocked_version': config.get('_candidate_version'), 'checked_at': int(time.time())}) + '\n')
+                'blocked_version': config.get('_blocked_version', previous_state.get('blocked_version')), 'checked_at': int(time.time())}) + '\n')
             raise
         previous_state = json.loads(state.read_text()) if state.exists() else {}
         blocked = previous_state.get('blocked_version') if result != 'updated' else None
