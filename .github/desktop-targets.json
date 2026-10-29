@@ -1,0 +1,6 @@
+[
+  { "target": "win-x64", "runner": "windows-2025" },
+  { "target": "mac-arm64", "runner": "macos-latest" },
+  { "target": "mac-x64", "runner": "macos-15-intel" },
+  { "target": "linux-x64", "runner": "ubuntu-24.04" }
+]

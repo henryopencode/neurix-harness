@@ -29,7 +29,7 @@ The first release is `1.0.0`; later stable releases increment the patch. A delib
 
 Version reservation uses the latest `master` so a concurrent merge cannot be overwritten. The version commit records the triggering merge; retrying that workflow reuses its immutable tags. If a platform fails, fix the failure before another stable merge, or rerun the failed jobs for a transient infrastructure failure. A reserved version is not reused for different source. A published Release is not overwritten.
 
-For a build rehearsal, run the release workflow manually with **validation_only** enabled. It builds the selected branch and uploads Actions artifacts without writing versions, tags, or Releases. Manual publication requires selecting `master` and disabling **validation_only**. To inspect local version selection without changes, run:
+For a build rehearsal, run the release workflow manually with **validation_only** enabled. Select a platform or all platforms; it builds the selected branch and uploads Actions artifacts without writing versions, tags, or Releases. Manual publication requires selecting `master` and disabling **validation_only**. To inspect local version selection without changes, run:
 
 ```sh
 pnpm exec tsx scripts/release/desktop-stable.ts --plan

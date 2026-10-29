@@ -22,3 +22,9 @@ it('selects a declared Linux native target without an OS-specific policy change'
 it('uses WASM when no native targets are declared', () => {
   expect(selectOfficeEngine({}, { platform: 'darwin', arch: 'x64' })).toBe('wasm')
 })
+
+it('retains the glibc engine selected by Linux LibreOfficeKit releases', () => {
+  expect(selectOfficeEngine({ optionalDependencies: {
+    '@deepseek-ai/libreoffice-kit-linux-x64-glibc': '1', '@deepseek-ai/libreoffice-kit-wasm': '1',
+  } }, { platform: 'linux', arch: 'x64' })).toBe('linux-x64-glibc')
+})

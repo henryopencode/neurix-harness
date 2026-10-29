@@ -5,14 +5,15 @@ import { createRequire } from 'node:module'
 import { isAbsolute, join, relative, sep } from 'node:path'
 
 /**
- * Require the declared native engine, or use WASM on other targets.
+ * Require the declared native engine, using glibc for Linux distributions, or use WASM on other targets.
  * @param {{ optionalDependencies?: Record<string, string> }} manifest - Installed kit manifest.
  * @param {{ platform: string, arch: string }} target - Distribution platform and CPU.
  * @returns {string} Engine package suffix.
  */
 export function selectOfficeEngine(manifest, target) {
   const native = `${target.platform}-${target.arch}`
-  return Object.hasOwn(manifest.optionalDependencies ?? {}, `@deepseek-ai/libreoffice-kit-${native}`) ? native : 'wasm'
+  const candidates = target.platform === 'linux' ? [`${native}-glibc`, native] : [native]
+  return candidates.find(engine => Object.hasOwn(manifest.optionalDependencies ?? {}, `@deepseek-ai/libreoffice-kit-${engine}`)) ?? 'wasm'
 }
 
 /**

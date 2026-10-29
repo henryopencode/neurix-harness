@@ -10,6 +10,11 @@ on:
         description: 'Build test installers without changing versions, tags, or Releases'
         type: boolean
         default: true
+      target:
+        description: 'Validation platform; publication always builds every platform'
+        type: choice
+        options: [all, win-x64, mac-arm64, mac-x64, linux-x64]
+        default: all
       version:
         description: 'Optional stable version; otherwise start at 1.0.0 and increment the patch'
         type: string
@@ -34,6 +39,7 @@ jobs:
       version: ${{ steps.release.outputs.version || steps.validation.outputs.version }}
       tag: ${{ steps.release.outputs.tag || steps.validation.outputs.tag }}
       commit: ${{ steps.release.outputs.commit || steps.validation.outputs.commit }}
+      matrix: ${{ steps.platforms.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -59,21 +65,25 @@ jobs:
           SOURCE_COMMIT: ${{ github.sha }}
         run: |
           node --input-type=module -e "import fs from 'node:fs'; const p=JSON.parse(fs.readFileSync('package.json','utf8')); fs.appendFileSync(process.env.GITHUB_OUTPUT, 'version='+p.version+'\ntag=validation-'+process.env.GITHUB_RUN_ID+'\ncommit='+process.env.SOURCE_COMMIT+'\n');"
+      - name: Select build platforms
+        id: platforms
+        env:
+          VALIDATION_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.validation_only && inputs.target || 'all' }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+          const platforms = JSON.parse(fs.readFileSync('.github/desktop-targets.json', 'utf8'))
+          const target = process.env.VALIDATION_TARGET
+          const include = target === 'all' ? platforms : platforms.filter(platform => platform.target === target)
+          if (include.length === 0) throw new Error('Unknown validation platform')
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'matrix=' + JSON.stringify({ include }) + '\n')
+          NODE
 
   package:
     needs: version
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - target: win-x64
-            runner: windows-2025
-          - target: mac-arm64
-            runner: macos-latest
-          - target: mac-x64
-            runner: macos-15-intel
-          - target: linux-x64
-            runner: ubuntu-24.04
+      matrix: ${{ fromJSON(needs.version.outputs.matrix) }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
     defaults:

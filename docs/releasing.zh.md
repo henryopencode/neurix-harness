@@ -29,7 +29,7 @@
 
 版本预留基于最新的 `master`，不会覆盖并发合并。版本提交记录触发它的合并；重试同一次工作流会复用不可变标签。某个平台失败时，在下一次稳定合并前修复问题；基础设施临时失败则重跑失败任务。已预留版本不用于不同源码，已发布 Release 不被覆盖。
 
-试打包时，手动运行发布工作流并开启 **validation_only**。它构建所选分支并上传 Actions 产物，不写入版本、标签或 Release。手动发布必须选择 `master` 并关闭 **validation_only**。本地查看版本选择且不改文件，可运行：
+试打包时，手动运行发布工作流并开启 **validation_only**。可选择一个平台或全部平台；它构建所选分支并上传 Actions 产物，不写入版本、标签或 Release。手动发布必须选择 `master` 并关闭 **validation_only**。本地查看版本选择且不改文件，可运行：
 
 ```sh
 pnpm exec tsx scripts/release/desktop-stable.ts --plan

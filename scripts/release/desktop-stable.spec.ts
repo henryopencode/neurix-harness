@@ -25,7 +25,7 @@ it('packages only after a same-repository develop merge or an explicit master di
     on: Record<string, unknown>
     jobs: {
       version: { if: string }
-      package: { strategy: { matrix: { include: { target: string; runner: string }[] } } }
+      package: { strategy: { matrix: string } }
       publish: { needs: string[] }
     }
   }
@@ -34,6 +34,8 @@ it('packages only after a same-repository develop merge or an explicit master di
   expect(workflow.jobs.version.if).toContain('github.event.pull_request.merged == true')
   expect(workflow.jobs.version.if).toContain("github.event.pull_request.head.ref == 'develop'")
   expect(workflow.jobs.version.if).toContain('github.event.pull_request.head.repo.full_name == github.repository')
-  expect(workflow.jobs.package.strategy.matrix.include.map(entry => entry.target)).toEqual(['win-x64', 'mac-arm64', 'mac-x64', 'linux-x64'])
+  expect(workflow.jobs.package.strategy.matrix).toBe('${{ fromJSON(needs.version.outputs.matrix) }}')
+  const platforms = JSON.parse(readFileSync(new URL('../../.github/desktop-targets.json', import.meta.url), 'utf8')) as { target: string }[]
+  expect(platforms.map(entry => entry.target)).toEqual(['win-x64', 'mac-arm64', 'mac-x64', 'linux-x64'])
   expect(workflow.jobs.publish.needs).toEqual(['version', 'package'])
 })

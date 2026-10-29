@@ -127,7 +127,8 @@ export class GithubReleaseDownloads {
       if (!gt(version, this.currentVersion)) { this.candidate = undefined; return this.setState({ phase: 'idle' }) }
       const target = this.platform === 'darwin' ? 'mac' : this.platform === 'win32' ? 'win' : this.platform
       const extension = this.platform === 'darwin' ? 'dmg' : this.platform === 'win32' ? 'exe' : 'AppImage'
-      const filename = `neurix-harness-${version}-${target}-${this.arch}-unsigned.${extension}`
+      const artifactArch = this.platform === 'linux' && this.arch === 'x64' ? 'x86_64' : this.arch
+      const filename = `neurix-harness-${version}-${target}-${artifactArch}-unsigned.${extension}`
       if (!Array.isArray(release.assets) || !release.assets.some((asset: unknown) => object(asset).name === filename)) {
         throw new Error(`GitHub release has no installer for ${target}-${this.arch}`)
       }

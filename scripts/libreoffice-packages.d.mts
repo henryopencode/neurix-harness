@@ -1,7 +1,7 @@
 /** Target engine and transitive installed packages for Office process sidecars. */
 
 /**
- * Select the declared native engine, or WASM when the target has no native package.
+ * Select the declared native engine, preferring glibc on Linux, or WASM when no native package is declared.
  * @param manifest - Installed kit manifest.
  * @param target - Distribution platform and CPU.
  * @returns Engine package suffix.

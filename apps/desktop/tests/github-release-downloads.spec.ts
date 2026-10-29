@@ -33,6 +33,16 @@ describe('GitHub release downloads', () => {
       expect((await f.updates.install('1.0.0')).phase).toBe('error')
     } finally { f.updates.dispose() }
   })
+  it('matches electron-builder Linux AppImage architecture names', async () => {
+    const open = vi.fn(async () => {})
+    const updates = new GithubReleaseDownloads('henryopencode/neurix-harness', '0.2.1-rc.3', state => state, open,
+      async () => Response.json({ ...metadata(), assets: [{ name: 'neurix-harness-1.0.0-linux-x86_64-unsigned.AppImage' }] }), 'linux', 'x64')
+    try {
+      expect((await updates.check()).phase).toBe('available')
+      await updates.download('1.0.0')
+      expect(open).toHaveBeenCalledWith(expect.stringContaining('linux-x86_64-unsigned.AppImage'))
+    } finally { updates.dispose() }
+  })
   it('reports no update before the first release and rejects stale download confirmations', async () => {
     const f = fixture()
     try {
