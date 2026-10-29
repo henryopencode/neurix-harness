@@ -48,7 +48,10 @@ const NO_MODEL_EXPERIENCE_SECTION: Readonly<Record<string, string>> = {
  * blocks. A package moves on or off this list with its context behavior.
  */
 const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
+  'packages/experimental/mobile-access': { kind: 'none', reason: 'Account authentication and phone transport add no model-visible context.' },
   'packages/image-generation/image-generation-bundle': { kind: 'indirect', reason: 'The optional layer delegates model-facing tools and results to tool-image-generation.' },
+  'packages/experimental/computer-preview': { kind: 'none', reason: 'Display-only captures and Client presentation never reach model requests.' },
+  'packages/experimental/browser-control': { kind: 'indirect', reason: 'The optional browser layer delegates its tool, guidance, and results to computer-use-unified.' },
   'packages/experimental/computer-control': { kind: 'indirect', reason: 'The optional layer delegates computer tools, guidance, and results to computer-use-unified.' },
   'packages/client/ui-entry-customization': { kind: 'none', reason: 'Controls browser launchers and prepares a reviewable Creator draft without submitting model input.' },
   'packages/experimental/client-ui-cot-translation': { kind: 'indirect', reason: 'The translator owns optional paid queries; normal Session activation delegates startup context to the preset.' },

@@ -56,6 +56,8 @@ kind: "package-reference"
 <a id="understand-the-implementation"></a>
 ## 理解实现
 
+HTTP 首页在文件读取后，使用凭据实际准入的 Peer 渲染；准入失效时返回拒绝状态，不注入其他 Peer 的数据。进程内读取保留调用者提供的 Peer。
+
 <details>
 <summary>实现细节——点击展开</summary>
 
@@ -97,6 +99,7 @@ kind: "package-reference"
 #### KV Cache 影响
 
 无；该包既不组装也不发送提供方请求。
+
 
 ## 已知限制与延期工作
 

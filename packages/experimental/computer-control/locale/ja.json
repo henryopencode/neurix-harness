@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "アプリ操作",
+    "description": "macOS のアプリをシステムのマウスとキーボードで前面操作します。ブラウザーアプリも対象です。",
+    "detail": "docs/DETAIL.md"
+  }
+}

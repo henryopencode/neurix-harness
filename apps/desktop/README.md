@@ -212,6 +212,12 @@ The [native/renderer keyboard tests](tests/keyboard.spec.ts) compile as part of 
 
 Dependency installation does not run the locked Electron package's separate binary installer. Before running the [Windows console-signal tests](tests/windows-cli-signals.spec.ts) directly, prepare the locked Electron binary with `pnpm --filter @deepseek-ai/dsh-desktop exec install-electron` from the repository root. For downloads through a proxy, enable `ELECTRON_GET_USE_PROXY=1` for that installer process. Windows coverage aggregates require successful provisioning before the instrumented unit inventory starts.
 
+### Update an installed Mac app from source
+
+From the repository root, double-click [update-neurix.command](../../update-neurix.command) to build and replace the installed Mac application. It bootstraps with the installed app's Node runtime, obtains a checksum-verified development toolchain when headers are absent, and builds an independent snapshot of tracked source and non-ignored additions, including local edits. Dependency installation requires network access and Xcode command-line tools. The result is an ad-hoc-signed local development build. The updater verifies the replacement before requesting a normal quit, retains the old application beside the installation, and creates a `rollback.command` there. Settings, credentials, sessions, and browser data remain in their existing locations; rollback restores only the application, not newer data formats.
+
+Use `./update-neurix.command --check` to inspect the environment. Run `./update-neurix.command --prepare-only` to build while keeping the installed app running; its output names an `install.command` to finish the replacement. `--app /path/to/Neurix\ Harness.app` selects another installation. Build inputs and artifacts stay under `apps/desktop/.desktop-build/local-updates/` for inspection.
+
 ### Startup onboarding
 
 The API-key input starts empty and uses `autocomplete="new-password"` to ask Chromium not to autofill saved login passwords.

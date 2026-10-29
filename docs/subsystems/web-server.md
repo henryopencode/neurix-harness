@@ -107,6 +107,12 @@ No composition can bind every interface at once: the unspecified address is reje
 
 A request whose handling throws (a malformed %-escape hitting `decodeURIComponent`, a client dropping mid-body) is logged as a warning and answered 400 — or the socket destroyed when headers are already out — never a process exit. Disposal pairs `close()` with `closeAllConnections()` because a handler may hold its response open (SSE) and such connections never end on their own; without the force-close, teardown would hang. A TLS socket counts as a connection only after its handshake, so the server tracks raw TLS sockets beside upgraded ones and destroys both at disposal. The package never prints: the URL line belongs to the shell. Per-package operational detail, including the dev-mode bundle watch pipeline, stays in the [README](../../packages/host/webserver/README.md).
 
+### Additional listeners and account authentication
+
+`webServer.listen({ host, port })` returns a `WebListener` with its bound `origin` and an idempotent `close()` that awaits all of its connections. Additional listeners share the same routing and TLS configuration. They are owned by the calling fiber and establish no browser trust.
+
+`connection.registerTrustedHost(authority)` temporarily admits one canonical authority. `connection.registerBrowserAuth(provider)` registers a `ConnectionBrowserAuth`: `authenticate(request)` returns a credential's live Peer or delegates with `undefined`; `authorizeIndex(request, response)` returns whether the application may serve its index, or delegates with `undefined`. Both registrations withdraw with their calling fiber. Host/Origin admission still runs before a provider, which owns its credential checks, login response, expiry, and Peer revocation.
+
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
 <a id="cordis-surface"></a>
@@ -122,6 +128,20 @@ Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnp
 Host `ctx.connection` members consumed by transport-independent adapters.
 
 ```ts cordis-catalog
+/**
+ * Admit an additional deployment authority without granting authentication.
+ * @param authority - canonical host or host:port.
+ * @returns idempotent withdrawal owned by the calling plugin's lifetime.
+ */
+registerTrustedHost(authority: string): () => Promise<void>
+
+/**
+ * Register a browser authentication provider without bypassing Host/Origin admission.
+ * @param provider - credential checks and optional login page owned by one plugin.
+ * @returns withdrawal owned by the calling fiber.
+ */
+registerBrowserAuth(provider: ConnectionBrowserAuth): () => Promise<void>
+
 /**
  * Compose exact Fetch routes and the shared-channel RPC interceptor.
  * @param channel - shared channel mounted by Connection.
@@ -212,6 +232,14 @@ The browser HTTP carrier service. Activation loads any configured TLS material, 
  * @throws before `listen` binds a port, or when the bind address has no URL form.
  */
 getOrigin(): string
+
+/**
+ * Serve the existing application on another concrete local interface.
+ * This grants no authentication or browser trust. The calling plugin owns closure.
+ * @param options - concrete interface and port; zero requests an OS-assigned port.
+ * @returns bound origin and idempotent closure registered with the calling fiber.
+ */
+async listen(options: { host: string; port: number }): Promise<WebListener>
 
 /**
  * Register a named route. Duplicate (kind, path) throws — route patterns are

@@ -25,6 +25,7 @@ import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
 import * as Provider from '../src/index.ts'
+import * as BrowserProvider from '@deepseek-ai/dsh-experimental-browser-control'
 import { desktop, resetDesktop, screenshotBase64 } from '../../computer-use-unified/tests/fixtures/native.ts'
 import { browserFixture, resetBrowser } from '../../computer-use-unified/tests/fixtures/browser.ts'
 
@@ -40,20 +41,21 @@ class VisualModel extends LlmAdapter {
   async * stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
     const index = this.requests.push(options) - 1
     const actions = [
-      { action: 'open_app', bundleId: 'ai.neurix.fixture' },
-      { action: 'list' },
-      { action: 'open_browser', url: 'https://fixture.test' },
-      { action: 'type', target: 'tab-1', locator: { by: 'css', selector: '#task-name' }, replace: true, text: 'Harness control works' },
-      { action: 'observe', target: 'tab-1', screenshot: true },
+      { tool: 'application', action: 'list' },
+      { tool: 'browser', action: 'open_browser', url: 'https://fixture.test' },
+      { tool: 'browser', action: 'type', target: 'tab-1', locator: { by: 'css', selector: '#task-name' }, replace: true, text: 'Harness control works' },
+      { tool: 'application', action: 'observe', target: 'window-1', screenshot: true },
+      { tool: 'browser', action: 'observe', target: 'tab-1', screenshot: true },
     ]
     const args = actions[index]
     if (args !== undefined) {
+      const { tool, ...input } = args
       yield { type: 'block-start', index: 0, blockType: 'tool-call' }
-      yield { type: 'block-end', index: 0, block: { type: 'tool-call', id: ToolCallId(`computer-${index}`), name: 'computer', arguments: JSON.stringify(args) } }
+      yield { type: 'block-end', index: 0, block: { type: 'tool-call', id: ToolCallId(`computer-${index}`), name: tool, arguments: JSON.stringify(input) } }
       yield { type: 'finish', reason: { kind: 'tool-calls' } }
     } else {
       yield { type: 'block-start', index: 0, blockType: 'text' }
-      yield { type: 'block-end', index: 0, block: { type: 'text', text: 'Desktop input was blocked; browser input was delivered.' } }
+      yield { type: 'block-end', index: 0, block: { type: 'text', text: 'Desktop targets were discovered; browser input was delivered.' } }
       yield { type: 'finish', reason: { kind: 'stop' } }
     }
   }
@@ -69,7 +71,7 @@ afterEach(async () => {
   root = undefined
 })
 
-it('loads the configurable bundle from YAML, performs consecutive actions, and releases both providers', async () => {
+it('loads both bundles from YAML, isolates their tools and previews, and unloads applications without closing the browser', async () => {
   resetDesktop()
   resetBrowser()
   root = await mkdtemp(join(tmpdir(), 'dsh-unified-composition-'))
@@ -85,11 +87,13 @@ it('loads the configurable bundle from YAML, performs consecutive actions, and r
     ['@deepseek-ai/dsh-computer-use', ComputerUseRegistry], ['@deepseek-ai/dsh-browser-use', BrowserUseRegistry],
     ['@deepseek-ai/dsh-typert-registry', TypertRegistry],
     ['@deepseek-ai/dsh-experimental-computer-control', Provider],
+    ['@deepseek-ai/dsh-experimental-browser-control', BrowserProvider],
   ])
   await writeFile(configPath, [...modules.keys()].flatMap(name => [
     `- name: '${name}'`,
     ...name === '@deepseek-ai/dsh-attachment-local' ? ['  config:', `    dshHome: ${JSON.stringify(root)}`] : [],
-    ...name === '@deepseek-ai/dsh-experimental-computer-control' ? ['  config:', '    inputMode: background', '    screenshots: false', '    showOverlay: false', '    typingDelayMs: 0'] : [],
+    ...name === '@deepseek-ai/dsh-experimental-browser-control' ? ['  config:', '    typingDelayMs: 0', '    cursorMoveDurationMs: 0'] : [],
+    ...name === '@deepseek-ai/dsh-experimental-computer-control' ? ['  config:', '    screenshots: false', '    showOverlay: false', '    typingDelayMs: 0'] : [],
   ]).join('\n') + '\n')
   const context = ctx = new Context()
   context.provide('profileContext', {
@@ -120,13 +124,15 @@ it('loads the configurable bundle from YAML, performs consecutive actions, and r
   if (preview === undefined) throw new Error('Computer preview contribution was not mounted')
   expect(await preview.frame(SessionId('missing-preview-owner'), new AbortController().signal)).toMatchObject({ frame: { kind: 'idle' } })
   expect((await preview.frame(agent.session.id, new AbortController().signal)).frame.kind).toBe('frame')
-  expect(desktop.calls).toEqual([])
+  expect(desktop.calls.some(call => call.name === 'list_windows')).toBe(true)
   expect(browserFixture.calls.filter(call => call.name === 'keyboard.insertText')
     .map(call => typeof call.args[0] === 'string' ? call.args[0] : '').join('')).toBe('Harness control works')
-  expect(JSON.stringify(agent.session.deriveMessages())).toContain('NATIVE_FOREGROUND_REQUIRED')
+  expect(agent.session.deriveMessages().some(message => message.role === 'tool' && message.content.some(block =>
+    block.type === 'text' && block.text.includes('"inputMode":"foreground"')))).toBe(true)
   expect(model.requests).toHaveLength(6)
-  expect(JSON.stringify(model.requests[0])).toContain('Use computer for browser tabs and macOS windows.')
-  expect(JSON.stringify(model.requests[0])).toContain('background mode controls browser tabs only')
+  expect(JSON.stringify(model.requests[0])).toContain('Use application to observe and operate macOS applications')
+  expect(JSON.stringify(model.requests[0])).toContain('Use browser for an isolated browser session')
+  expect(JSON.stringify(model.requests[0])).not.toContain('select Foreground system input')
   expect(context.computerUse.providerName).toBe('unified')
   expect(context.browserUse.providerName).toBe('unified')
   const messages = agent.session.deriveMessages()
@@ -136,14 +142,26 @@ it('loads the configurable bundle from YAML, performs consecutive actions, and r
   expect(JSON.stringify(model.requests[5]?.messages)).toContain(JSON.stringify(screenshot.attachment))
   expect(JSON.stringify(messages)).not.toContain(screenshotBase64)
   expect(agent.session.snapshotEvents().filter(event => event.type === 'tool/result')).toHaveLength(5)
+  const browserPreview = context.get('browserPreview')
+  if (browserPreview === undefined) throw new Error('Browser preview was not mounted')
+  expect((await browserPreview.frame(agent.session.id, new AbortController().signal)).frame.kind).toBe('frame')
+  expect(context.tools.schemas().map(tool => tool.name)).toEqual(expect.arrayContaining(['application', 'browser']))
   const provider = [...context.loader.entries()].find(entry => entry.options.name === '@deepseek-ai/dsh-experimental-computer-control')
   if (provider?.fiber === undefined) throw new Error('The unified provider was not loaded')
   await provider.fiber.dispose()
   expect(context.get('computerPreview')).toBeUndefined()
-  expect(context.tools.schemas().some(tool => tool.name === 'computer')).toBe(false)
+  expect(context.tools.schemas().some(tool => tool.name === 'application')).toBe(false)
   expect(context.computerUse.providerName).toBeUndefined()
+  expect(context.browserUse.providerName).toBe('unified')
+  expect(context.tools.schemas().some(tool => tool.name === 'browser')).toBe(true)
+  expect((await browserPreview.frame(agent.session.id, new AbortController().signal)).frame.kind).toBe('frame')
+  const browserProvider = [...context.loader.entries()].find(entry => entry.options.name === '@deepseek-ai/dsh-experimental-browser-control')
+  await browserProvider?.fiber?.dispose()
+  expect(browserFixture.calls.filter(call => call.name === 'browser.close')).toHaveLength(1)
+  expect(context.get('browserPreview')).toBeUndefined()
   expect(context.browserUse.providerName).toBeUndefined()
-  expect(desktop.shutdowns).toBe(0)
-  expect(desktop.destroys).toBe(0)
+  expect(context.tools.schemas().some(tool => tool.name === 'browser')).toBe(false)
+  expect(desktop.shutdowns).toBe(1)
+  expect(desktop.destroys).toBe(1)
   expect('default' in Provider).toBe(false)
 })

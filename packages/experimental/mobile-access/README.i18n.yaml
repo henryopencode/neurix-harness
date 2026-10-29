@@ -1,0 +1,40 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/mobile-access/README.md
+/:
+  en: a349ad34d120ae99
+  zh: e8407948f64d29a2
+/deepseek-ai-dsh-experimental-mobile-access:
+  en: d9ce25e027104f50
+  zh: f3989db0842f4247
+/deepseek-ai-dsh-experimental-mobile-access/summary:
+  en: d243e3e6ac86153b
+  zh: 182a3bbe04e3cf34
+/deepseek-ai-dsh-experimental-mobile-access/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 848f0a1f777c07ac
+/deepseek-ai-dsh-experimental-mobile-access/use-this-package:
+  en: 95aed1877a8d6e2f
+  zh: 8aa0410b363f107b
+/deepseek-ai-dsh-experimental-mobile-access/use-this-package/internet-access:
+  en: 1f7145ce8591e05f
+  zh: c1a35450bcb839a4
+/deepseek-ai-dsh-experimental-mobile-access/understand-the-implementation:
+  en: 2acf4a532f954983
+  zh: 3bd3a0b77c496978
+/deepseek-ai-dsh-experimental-mobile-access/further-exploration:
+  en: 6a817aa2c881a36a
+  zh: 1d1ab0f9eb3da848
+/deepseek-ai-dsh-experimental-mobile-access/model-experience:
+  en: c33ada9809ae271c
+  zh: 5a6695e619b8f2f7
+/deepseek-ai-dsh-experimental-mobile-access/model-experience/kv-cache-effect:
+  en: ca3015e252db0114
+  zh: abf9aa7e3a46df97
+/deepseek-ai-dsh-experimental-mobile-access/known-limitations-and-deferred-work:
+  en: 6f3ebfb51f9c2166
+  zh: 040d00e1e200a5de
+/deepseek-ai-dsh-experimental-mobile-access/known-limitations-and-deferred-work/dev-note:
+  en: 0a1253c6f7b5e8b9
+  zh: 9f56528562c7c914

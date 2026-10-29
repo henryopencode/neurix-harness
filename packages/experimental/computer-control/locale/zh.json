@@ -1,6 +1,7 @@
 {
   "meta": {
-    "title": "电脑控制",
-    "description": "在对话中操作浏览器和 macOS 应用"
+    "title": "应用操作",
+    "description": "仅支持 macOS；在前台使用系统鼠标和键盘操作应用，也支持 Chrome、Safari 等浏览器应用",
+    "detail": "docs/DETAIL.zh.md"
   }
 }

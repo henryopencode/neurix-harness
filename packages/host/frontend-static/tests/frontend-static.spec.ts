@@ -10,7 +10,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
@@ -301,5 +301,32 @@ describe('real Loader composition', () => {
     expect(await html.text()).toBe('<body>preview</body>')
     const index = await loaded.webServer.readResource(new Request(`${base}/`), reader)
     expect([index.status, index.headers.get('cache-control'), index.headers.get('etag')]).toEqual([200, null, null])
+  })
+
+  it('renders browser injections for the credential Peer and refuses a lost admission', async () => {
+    const loaded = await loadComposition()
+    const peer = loaded.connection.createPeer({ principal: { kind: 'owner' }, interactions: 'answer' })
+    loaded.connection.registerBrowserAuth({
+      authenticate: () => peer,
+      authorizeIndex: () => true,
+    })
+    loaded.on('webserver/index-inject', (table, reader) => {
+      table.push({ kind: 'global', name: '__CREDENTIAL_PEER__', value: reader.id })
+    })
+    const url = loaded.webServer.getOrigin() + '/'
+    const accepted = await fetch(url)
+    const html = await accepted.text()
+    expect(accepted.status).toBe(200)
+    expect(accepted.headers.get('cache-control')).toBe('no-store')
+    expect(html).toContain(String(peer.id))
+    expect(html).not.toContain(String(loaded.connection.browserPeer.id))
+    const admission = vi.spyOn(loaded.connection, 'admit').mockReturnValue({ rejection: 401 })
+    try {
+      const refused = await fetch(url)
+      expect(refused.status).toBe(401)
+      expect(await refused.text()).not.toContain('__CREDENTIAL_PEER__')
+      const inProcess = await loaded.webServer.readResource(new Request(url), peer)
+      expect(await inProcess.text()).toContain(String(peer.id))
+    } finally { admission.mockRestore() }
   })
 })
