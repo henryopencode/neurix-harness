@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Neurix Agent stable releases every ten minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=10min
+RandomizedDelaySec=30
+Unit=neurix-agent-update.service
+
+[Install]
+WantedBy=timers.target

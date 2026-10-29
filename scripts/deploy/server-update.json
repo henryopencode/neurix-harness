@@ -1,0 +1,15 @@
+{
+  "repository": "henryopencode/neurix-harness",
+  "root": "/opt/neurix-agent",
+  "home": "/var/lib/neurix-agent/home",
+  "backups": "/opt/neurix-agent/backups",
+  "control_socket": "/run/neurix-agent/control.sock",
+  "service": "neurix-agent.service",
+  "user": "neurix-agent",
+  "maintenance_file": "/run/neurix-agent-maintenance",
+  "state_file": "/opt/neurix-agent/update-status.json",
+  "lock_file": "/run/lock/neurix-agent-update.lock",
+  "health_timeout_seconds": 90,
+  "health_url": "http://127.0.0.1:3082/",
+  "health_host": "agent.henryweb.site"
+}

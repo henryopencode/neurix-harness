@@ -11,6 +11,7 @@ Develop on `develop` and merge a stable change into `master` through a pull requ
 - [Development and release](#development-and-release)
 - [Versions and retries](#versions-and-retries)
 - [Installed update checks](#installed-update-checks)
+- [Server updates](#server-updates)
 - [Dev Note](#dev-note)
 
 <a id="development-and-release"></a>
@@ -18,7 +19,7 @@ Develop on `develop` and merge a stable change into `master` through a pull requ
 
 `develop` is the default development branch. The **Neurix development checks** workflow validates pushes to it and pull requests to either branch. It runs the build, lint, and unit tests. The repository's upstream-specific automated workflows are disabled in this fork; their files remain available for reference.
 
-Open a pull request from this repository's `develop` to `master` when the changes are ready. **Neurix stable desktop release** responds only after that pull request merges. Closing without merging, merging another branch, and direct pushes do not publish installers. All four platform jobs must succeed before a Release appears. Each installer includes the application and its matching runtime. GitHub Releases also contains `SHA256SUMS.txt` for the installers and the Linux Web server archive.
+Open a pull request from this repository's `develop` to `master` when the changes are ready. **Neurix stable desktop release** responds only after that pull request merges. Closing without merging, merging another branch, and direct pushes do not publish installers. All four platform jobs must succeed before a Release appears. Uploads remain a draft until all assets and checksums are present; publication uses GitHub's semantic version ordering so an older build finishing late cannot replace the newest version. Each installer includes the application and its matching runtime. GitHub Releases also contains `SHA256SUMS.txt` for the installers and the Linux Web server archive.
 
 The installers use no release-signing secrets: Windows is unsigned, macOS uses ad-hoc signing without notarization, and Linux uses AppImage. They do not connect to the upstream automatic-update service. Developer ID signing and notarization are prerequisites for reliable unattended macOS replacement.
 
@@ -41,6 +42,15 @@ pnpm exec tsx scripts/release/desktop-stable.ts --plan
 Install a package that includes this update checker once. It checks this repository's latest stable GitHub Release at startup, periodically, and through the existing update menu. Drafts and prereleases are excluded. A new version appears in the existing update indicator; **Download update** opens the installer for the app's operating system and architecture in the browser. Open the downloaded installer to update, retaining settings and conversations.
 
 This download flow leaves the current application running and does not request installation privileges or store a GitHub token. A failed explicit check shows the existing retry action. Before the first Release, no update is offered. Older installations without the checker need one initial manual update.
+
+<a id="server-updates"></a>
+## Server updates
+
+The Linux deployment uses a separate systemd updater from [`scripts/deploy`](../scripts/deploy/server-update.py). Its timer checks this repository's latest published stable Release every ten minutes. It verifies the server archive against `SHA256SUMS.txt`; drafts, prereleases, and incomplete asset sets are rejected. Development builds remain explicitly installed snapshots.
+
+The private update-control plugin reports active Agents, queued input, and background jobs over a mode-0600 Unix socket. An update waits for idle work, locks new API admission, and drains accepted requests. Installation then shows a temporary maintenance response, stops the service, and backs up its Harness home before switching the program directory. The replacement must report its version and readiness before clients reconnect. A failed startup restores the previous program and the saved home; the failed version remains held for operator review. Workspace files remain in their existing directory.
+
+The service, timer, control overlay, and deployment paths are supplied beside the updater. After installing them, run `python3 /etc/neurix-agent/server-update.py` to check without installing, or `systemctl start neurix-agent-update.service` to request the next idle update. `/opt/neurix-agent/update-status.json` and the updater service's journal record the result. The updater downloads and inspects packages as data; it executes no downloaded code as root.
 
 <a id="dev-note"></a>
 ## Dev Note

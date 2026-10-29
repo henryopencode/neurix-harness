@@ -1,0 +1,7 @@
+- insert:
+    - id: server-update-control
+      name: 'file:///etc/neurix-agent/server-update-control.mjs'
+      config:
+        socketPath: /run/neurix-agent/control.sock
+        manifestPath: /opt/neurix-agent/current/dsh/package.json
+        leaseMs: 120000

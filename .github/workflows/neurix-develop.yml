@@ -36,4 +36,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
       - run: pnpm run lint
+      - name: Verify server update admission and rollback
+        run: |
+          node --test scripts/deploy/server-update-control.test.mjs
+          python3 -m unittest discover -s scripts/deploy -p 'test_server_update.py' -v
       - run: pnpm run test

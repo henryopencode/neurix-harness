@@ -11,6 +11,7 @@
 - [开发与发布](#development-and-release)
 - [版本与重试](#versions-and-retries)
 - [已安装应用的更新检查](#installed-update-checks)
+- [服务器更新](#server-updates)
 - [开发备注](#dev-note)
 
 <a id="development-and-release"></a>
@@ -18,7 +19,7 @@
 
 `develop` 是默认开发分支。**Neurix development checks** 工作流检查向该分支的推送，以及向这两个分支的拉取请求，运行构建、lint 和单元测试。本仓库已停用依赖上游专用设施的自动工作流，其文件保留供参考。
 
-改动准备好后，从本仓库的 `develop` 向 `master` 创建拉取请求。**Neurix stable desktop release** 仅在该请求合并后运行。直接关闭请求、合并其他分支以及直接推送均不发布安装包。四个平台任务必须全部成功后才会出现 Release。每个安装包都包含应用及匹配的运行时。GitHub Releases 还提供安装包和 Linux Web 服务器归档的 `SHA256SUMS.txt`。
+改动准备好后，从本仓库的 `develop` 向 `master` 创建拉取请求。**Neurix stable desktop release** 仅在该请求合并后运行。直接关闭请求、合并其他分支以及直接推送均不发布安装包。四个平台任务必须全部成功后才会出现 Release。安装包和校验文件全部上传前保持草稿状态；正式发布使用 GitHub 的语义版本排序，较旧构建即使较晚完成也不会替换最新版本。每个安装包都包含应用及匹配的运行时。GitHub Releases 还提供安装包和 Linux Web 服务器归档的 `SHA256SUMS.txt`。
 
 安装包不使用发布签名凭据：Windows 未签名，macOS 使用未经公证的 ad-hoc 签名，Linux 使用 AppImage，均不连接上游自动更新服务。可靠的 macOS 无人值守替换需要 Developer ID 签名与公证。
 
@@ -41,6 +42,15 @@ pnpm exec tsx scripts/release/desktop-stable.ts --plan
 先安装一次包含更新检查功能的安装包。应用会在启动时、定期以及通过现有更新菜单检查本仓库最新稳定 GitHub Release，排除草稿和预发布版本。有新版本时，现有更新指示器会提示；点击**下载更新**，浏览器会下载与应用系统及架构匹配的安装包。打开下载的安装包即可更新，配置和会话保留。
 
 此下载流程保持当前应用运行，不申请安装权限，也不保存 GitHub token。主动检查失败时显示现有重试操作。首次 Release 发布前不提供更新；尚不包含检查功能的旧版需要先手动更新一次。
+
+<a id="server-updates"></a>
+## 服务器更新
+
+Linux 部署使用 [`scripts/deploy`](../scripts/deploy/server-update.py) 中的独立 systemd 更新器，定时器每十分钟检查本仓库最新已发布的稳定 Release。更新器通过 `SHA256SUMS.txt` 校验服务器运行包，拒绝草稿、预发布版本和缺少产物的 Release。开发构建仍由明确指定的快照安装。
+
+私有更新控制插件通过权限为 0600 的 Unix socket 报告活动 Agent、排队输入和后台任务。更新会等待任务空闲，锁住新的 API 请求，并等待已接受的请求结束；安装时临时返回维护状态，停止服务并备份 Harness home，然后切换程序目录。新版报告版本与就绪状态后，客户端才能重新连接。启动失败会恢复旧程序和备份的数据目录；失败版本会暂停重试，等待管理员检查。工作区文件保留在原目录。
+
+服务、定时器、控制补丁和部署路径配置均与更新器放在一起。安装后，运行 `python3 /etc/neurix-agent/server-update.py` 可仅检查而不安装；运行 `systemctl start neurix-agent-update.service` 可请求下次空闲更新。结果记录在 `/opt/neurix-agent/update-status.json` 及更新服务日志中。更新器将下载包作为数据校验，不以 root 执行下载的代码。
 
 <a id="dev-note"></a>
 ## 开发备注

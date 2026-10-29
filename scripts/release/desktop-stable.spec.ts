@@ -39,3 +39,11 @@ it('packages only after a same-repository develop merge or an explicit master di
   expect(platforms.map(entry => entry.target)).toEqual(['win-x64', 'mac-arm64', 'mac-x64', 'linux-x64'])
   expect(workflow.jobs.publish.needs).toEqual(['version', 'package'])
 })
+
+it('publishes completed assets together and retains GitHub version ordering', () => {
+  const content = readFileSync(new URL('../../.github/workflows/neurix-desktop-release.yml', import.meta.url), 'utf8')
+  expect(content).toContain('--target "$RELEASE_COMMIT" --draft')
+  expect(content).toContain('-F draft=false -f make_latest=legacy')
+  expect(content.indexOf('sha256sum --')).toBeLessThan(content.indexOf('gh release create'))
+  expect(content.indexOf('gh release upload')).toBeLessThan(content.indexOf('-F draft=false'))
+})

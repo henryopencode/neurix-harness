@@ -1,0 +1,10 @@
+[Unit]
+Description=Check and install stable Neurix Agent server releases
+After=network-online.target neurix-agent.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /etc/neurix-agent/server-update.py --apply
+TimeoutStartSec=15min
+UMask=0077

@@ -154,5 +154,15 @@ jobs:
           printf '%s\n' 'Windows x64, macOS Apple Silicon, macOS Intel, and Linux x64 installers.' \
             '' 'Windows installers are unsigned. macOS installers use ad-hoc signing without notarization.' \
             'These downloads do not use the upstream automatic-update service.' > ../release-notes.md
-          gh release create "$RELEASE_TAG" --verify-tag --target "$RELEASE_COMMIT" \
-            --title "Neurix Harness $RELEASE_TAG" --notes-file ../release-notes.md -- ./*
+          if gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft > ../release-is-draft; then
+            if test "$(cat ../release-is-draft)" != true; then
+              echo 'This immutable release is already published.'
+              exit 0
+            fi
+            gh release upload "$RELEASE_TAG" --clobber -- ./*
+          else
+            gh release create "$RELEASE_TAG" --verify-tag --target "$RELEASE_COMMIT" --draft \
+              --title "Neurix Harness $RELEASE_TAG" --notes-file ../release-notes.md -- ./*
+          fi
+          release_id=$(gh api "repos/$GH_REPO/releases/tags/$RELEASE_TAG" --jq .id)
+          gh api --method PATCH "repos/$GH_REPO/releases/$release_id" --silent -F draft=false -f make_latest=legacy
