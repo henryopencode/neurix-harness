@@ -40,11 +40,22 @@ jobs:
           sha256sum "${archives[0]}"
           mkdir parts
           split -b 8M -a 3 "${archives[0]}" parts/part-
-          find parts -type f -name 'part-*' -print0 | xargs -0 -P 16 -I '{}' bash -c '
+          printf 'LIST\n' | ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i "$HOME/.ssh/neurix-runtime" root@101.34.211.31 > uploaded-parts
+          find parts -type f -name 'part-*' -print0 | xargs -0 -P 6 -I '{}' bash -c '
             set -euo pipefail
             part="$1"
-            { printf "%s\n" "${part##*/}"; cat "$part"; } | \
-              ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes -i "$HOME/.ssh/neurix-runtime" root@101.34.211.31
+            name="${part##*/}"
+            sum=$(sha256sum "$part" | cut -d " " -f 1)
+            if grep -Fqx "$name $sum" uploaded-parts; then exit 0; fi
+            size=$(stat -c %s "$part")
+            for attempt in 1 2 3 4; do
+              if { printf "%s %s %s\n" "$name" "$size" "$sum"; cat "$part"; } | \
+                ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+                  -i "$HOME/.ssh/neurix-runtime" root@101.34.211.31; then exit 0; fi
+              sleep "$attempt"
+            done
+            exit 1
           ' _ '{}'
       - name: Remove temporary upload key
         if: always()
