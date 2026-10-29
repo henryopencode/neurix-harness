@@ -6,8 +6,20 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import type { Options } from 'execa'
 import { DetailFailure } from '@deepseek-ai/dsh-plugin-detail'
 import { RepositoryCache, type RepositoryCacheOptions } from '../src/repository-cache.ts'
+
+const gitProbe = vi.hoisted(() => ({ blocked: false }))
+vi.mock('execa', async (load) => {
+  const actual = await load<typeof import('execa')>()
+  return { ...actual, execa: (file: string, args: readonly string[], options: Options) => {
+    if (gitProbe.blocked && file === 'git' && args.at(-1) === '--version') {
+      return actual.execa(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], options)
+    }
+    return actual.execa(file, args, options)
+  } }
+})
 
 /** Await a rejection that matches `fields` and whose message contains `message`. */
 async function expectRejection(promise: Promise<unknown>, fields: object, message: string): Promise<void> {
@@ -29,6 +41,7 @@ beforeEach(() => {
   vi.stubEnv('XDG_CONFIG_HOME', join(root, 'home'))
 })
 afterEach(() => {
+  gitProbe.blocked = false
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
   rmSync(root, { recursive: true, force: true })
@@ -151,7 +164,11 @@ it('reports an unreachable host as a network failure, a failed local command as 
   expect(readdirSync(join(root, 'cache'))).toEqual([])
   // Git that cannot answer `git --version` within the deadline cannot run.
   const other = repository('t2', { 'README.md': 'x' })
-  await expectRejection(cache({ timeoutMs: 1 }).read(other.url, other.commit, 'README.md', 100, signal), { reason: 'git-unavailable' }, 'timed out')
+  gitProbe.blocked = true
+  try {
+    await expectRejection(cache({ timeoutMs: 100 }).read(other.url, other.commit, 'README.md', 100, signal),
+      { reason: 'git-unavailable' }, 'timed out')
+  } finally { gitProbe.blocked = false }
   vi.stubEnv('PATH', join(root, 'no-git'))
   const missing = cache().read(other.url, other.commit, 'README.md', 100, signal)
   await expectRejection(missing, { reason: 'git-unavailable' }, 'git --version')

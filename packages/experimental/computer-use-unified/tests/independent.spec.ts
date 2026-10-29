@@ -25,8 +25,10 @@ it('moves only the software marker and directs input to exact background element
   await execute({ action: 'list' })
   await execute({ action: 'observe', target: 'window-1' })
   await execute({ action: 'move', target: 'window-1', ref: 'field-1' })
-  expect(marker.move).toHaveBeenCalledWith({ x: 378, y: 238 }, 450, 1600, expect.any(AbortSignal), true, 7,
-    { x: 100, y: 100, width: 560, height: 320 })
+  if (process.platform === 'darwin') {
+    expect(marker.move).toHaveBeenCalledWith({ x: 378, y: 238 }, 450, 1600, expect.any(AbortSignal), true, 7,
+      { x: 100, y: 100, width: 560, height: 320 })
+  } else expect(marker.move).not.toHaveBeenCalled()
   expect(await runtime.capturePreview(signal)).toMatchObject({ kind: 'frame',
     cursor: { x: (378 - 100) / 560, y: (238 - 100) / 320 }, active: true })
   await execute({ action: 'click', target: 'window-1', ref: 'field-2' })
