@@ -103,6 +103,7 @@ const HIGHLIGHT_MS = 2_400
 const TOOL_BUNDLES = new Set([
   '@deepseek-ai/dsh-image-generation-bundle',
   '@deepseek-ai/dsh-experimental-computer-control', '@deepseek-ai/dsh-experimental-browser-control',
+  '@deepseek-ai/dsh-experimental-mobile-access',
 ])
 
 /**

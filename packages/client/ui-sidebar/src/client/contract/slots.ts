@@ -1,11 +1,11 @@
 /**
  * Sidebar slot contract: the registrant-side props composition for the
  * layout-owned `sidebar` slot, plus the holes this shell declares. The shell
- * owns column geometry, the brand row, New Session, and global panel rows;
+ * owns column geometry, the brand row, New Session, and the global icon rail;
  * everything between the workspace section header and the list bottom is the
  * `sidebar.workspaces` registrant's (ui-workspace), and the foot is the
- * `sidebar.settings` registrant's (ui-settings), followed by optional footer
- * actions in `sidebar.footer.action`.
+ * `sidebar.settings` registrant's (ui-settings), below optional footer actions
+ * in `sidebar.footer.action`. Settings keeps its expanded feedback in icon mode.
  */
 import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
@@ -19,13 +19,13 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     /** Non-interactive notification inside the collapsed sidebar expand button. */
     'sidebar.toggle.badge': { kind: 'single'; scope: 'root'; owner: Record<never, never> }
     /**
-     * Brand mark rendered in the expanded brand row and collapsed rail.
+     * Brand mark rendered in the Home button at both sidebar widths.
      * Declared by this package's `sidebar` entry; deployments may replace
      * the shell's N-symbol fallback without replacing the surrounding controls.
      */
     'sidebar.brand.mark': { kind: 'single'; scope: 'root'; owner: SidebarBrandMarkOwnerProps }
     /**
-     * Brand name rendered beside the expanded mark. Declared by this
+     * Brand name rendered above the expanded browser. Declared by this
      * package's `sidebar` entry; the shell supplies a generic text fallback.
      */
     'sidebar.brand.name': { kind: 'single'; scope: 'root'; owner: SidebarBrandNameOwnerProps }
@@ -130,17 +130,18 @@ export interface SidebarSectionOwnerProps {
 }
 
 /**
- * Owner share of the sidebar settings seat: the column display state the
- * occupant's trigger row must render against (wide row vs rail icon).
+ * Browser expansion and launcher presentation supplied to the settings seat.
  */
 export interface SidebarSettingsOwnerProps {
-  /** Whether the sidebar renders wide content (false = 56px rail). */
+  /** Whether the sidebar browser is expanded, including its status feedback. */
   wide: boolean
+  /** Keep the Settings launcher icon-only beside the expanded browser. */
+  compact?: boolean
 }
 
 /** Owner share of an action rendered beside Settings at the sidebar foot. */
 export interface SidebarFooterActionOwnerProps {
-  /** Whether the sidebar renders wide content (false = 56px rail). */
+  /** Whether the action includes its label; the shell always supplies false. */
   wide: boolean
 }
 
@@ -157,8 +158,8 @@ export type SidebarRootInjected = {
   startSession: (workspaceId?: WorkspaceId) => void
   /** Toggle the sidebar column through the layout service. */
   toggleSidebar: () => void
-  /** Select the global panel addressed by a sidebar row. */
-  selectPanel: (id: MainPanelId) => void
+  /** Select a global panel, or return to the current conversation with null. */
+  selectPanel: (id: MainPanelId | null) => void
   /**
    * Show or unpin one panel launcher; Plugins is ignored.
    * @param id - Panel id.

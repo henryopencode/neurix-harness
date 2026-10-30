@@ -593,6 +593,19 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'browserPreview',
+    summary: 'Read-only Remote with a namespace independent of application control.',
+    description: 'Read-only Remote with a namespace independent of application control.',
+    methods: [
+      {
+        signature: '@Remote async frame(sessionId: SessionId, signal: AbortSignal): Promise<BrowserPreviewSnapshot>',
+        description: 'Capture an existing browser target without starting an Agent or sending input.',
+        parameters: [{ name: 'sessionId', description: 'Session displayed by the Client.' }, { name: 'signal', description: 'viewing and Remote lifetime.' }],
+        returns: 'bounded image and Host-selected refresh interval.',
+      },
+    ],
+  },
+  {
     key: 'browserUse',
     summary: 'Owns one optional provider registration in the shared browser-use service.',
     description: 'Owns one optional provider registration in the shared browser-use service.',
@@ -821,6 +834,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [],
       },
       {
+        signature: 'registerTrustedHost(authority: string): () => Promise<void>',
+        description: 'Admit an additional deployment authority without granting authentication.',
+        parameters: [{ name: 'authority', description: 'canonical host or host:port.' }],
+        returns: 'idempotent withdrawal owned by the calling plugin\'s lifetime.',
+      },
+      {
+        signature: 'registerBrowserAuth(provider: ConnectionBrowserAuth): () => Promise<void>',
+        description: 'Register a browser authentication provider without bypassing Host/Origin admission.',
+        parameters: [{ name: 'provider', description: 'credential checks and optional login page owned by one plugin.' }],
+        returns: 'withdrawal owned by the calling fiber.',
+      },
+      {
         signature: 'createSharedFetchHandler(channel: \'/api\'): ConnectionFetchHandler',
         description: 'Compose exact Fetch routes and the shared-channel RPC interceptor.',
         parameters: [{ name: 'channel', description: 'shared channel mounted by Connection.' }],
@@ -833,9 +858,9 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'rejection status, or undefined when the route may accept the request.',
       },
       {
-        signature: 'admit(request: ConnectionTrustRequest): PeerAdmission',
+        signature: 'admit(request: ConnectionTrustRequest, purpose?: \'api\' | \'document\'): PeerAdmission',
         description: 'Admit an HTTP request against its signed browser or API credential and live Peer.',
-        parameters: [{ name: 'request', description: 'request headers from the HTTP or upgrade request.' }],
+        parameters: [{ name: 'request', description: 'request headers from the HTTP or upgrade request.' }, { name: 'purpose', description: '`document` permits top-level navigation while retaining Host, Origin, and credential checks; defaults to `api`.' }],
         returns: 'the credential\'s Peer, or the rejection status.',
       },
       {
@@ -3922,6 +3947,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         throws: ['before `listen` binds a port, or when the bind address has no URL form.'],
       },
       {
+        signature: 'async listen(options: { host: string; port: number }): Promise<WebListener>',
+        description: 'Serve the existing application on another concrete local interface. This grants no authentication or browser trust. The calling plugin owns closure.',
+        parameters: [{ name: 'options', description: 'concrete interface and port; zero requests an OS-assigned port.' }],
+        returns: 'bound origin and idempotent closure registered with the calling fiber.',
+      },
+      {
         signature: 'register(route: WebRoute | WebResourceRoute): () => void',
         description: 'Register a named route. Duplicate (kind, path) throws — route patterns are a composition-level contract, so a collision is a misconfiguration.',
         parameters: [{ name: 'route', description: 'kind, path, and the owning handler or resource.' }],
@@ -5258,6 +5289,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type BrandedNumber<B extends string> = number & {\n    readonly [BRAND]: B;\n};',
   },
   {
+    name: 'BrowserPreviewSnapshot',
+    declaration: 'export interface BrowserPreviewSnapshot {\n    frame: ComputerPreviewFrame;\n    refreshMs: number;\n}',
+  },
+  {
     name: 'BrowserUseProviderName',
     declaration: 'export type BrowserUseProviderName = Branded<\'BrowserUseProviderName\'>;',
   },
@@ -5366,10 +5401,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type CompositionRowEnablement = boolean | \'conditional\';',
   },
   {
-    name: 'ComputerPreviewSnapshot',
-    declaration: 'export interface ComputerPreviewSnapshot {\n    frame: ComputerPreviewFrame;\n    refreshMs: number;\n}',
-  },
-  {
     name: 'ComputerUseProviderName',
     declaration: 'export type ComputerUseProviderName = Branded<\'ComputerUseProviderName\'>;',
   },
@@ -5388,6 +5419,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ConnectionAdmission',
     declaration: 'export type ConnectionAdmission = {\n    readonly peer: PeerScope;\n    readonly release: () => Promise<void>;\n} | {\n    readonly rejection: 401 | 403 | 409;\n};',
+  },
+  {
+    name: 'ConnectionBrowserAuth',
+    declaration: 'export interface ConnectionBrowserAuth {\n    authenticate(request: ConnectionTrustRequest): PeerScope | undefined;\n    authorizeIndex(request: ConnectionIndexRequest, response: ConnectionIndexResponse): boolean | undefined;\n}',
   },
   {
     name: 'ConnectionFetchHandler',
@@ -9052,6 +9087,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WebhookSourceId',
     declaration: 'export type WebhookSourceId = Branded<\'WebhookSourceId\'>;',
+  },
+  {
+    name: 'WebListener',
+    declaration: 'export interface WebListener {\n    readonly origin: string;\n    close(): Promise<void>;\n}',
   },
   {
     name: 'WebResource',

@@ -13,6 +13,19 @@
   margin: 8px 0 10px;
 }
 
+.feedback {
+  display: flex;
+  align-items: center;
+}
+
+/* Expanded feedback sits beside the icon rail, above the browser's last row. */
+.feedback.railFeedback {
+  position: absolute;
+  left: calc(100% + 12px);
+  bottom: 4px;
+  z-index: 1;
+}
+
 .trigger {
   flex: 1;
   min-width: 0;

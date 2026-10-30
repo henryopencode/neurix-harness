@@ -526,7 +526,7 @@ describe('PluginManagerPage', () => {
     expect(b.actions.loadDetail).toHaveBeenLastCalledWith('dsh-better-sidebar', '0.16.0', 'en', false)
   })
 
-  it.each(['@deepseek-ai/dsh-image-generation-bundle', '@deepseek-ai/dsh-experimental-computer-control'])(
+  it.each(['@deepseek-ai/dsh-image-generation-bundle', '@deepseek-ai/dsh-experimental-computer-control', '@deepseek-ai/dsh-experimental-mobile-access'])(
     'opens %s directly to its configuration without reading a detail document', (name) => {
       const b = renderTab({ packages: [pkg({ name })] }, { bundles: new Set([name]) }, {
         [`plugins.bundle.config:${name}`]: () => <form aria-label="tool settings" />,

@@ -11,7 +11,7 @@ kind: "package-reference"
 
 ## 概述
 
-dsh Web 客户端的侧边栏让用户识别应用、启动新会话、将导航折叠为 56px 轨道、浏览 Workspace 与 Session，以及打开 Settings。它会将 Settings 入口固定在底部，并在隐藏空闲滚动条时避免浏览器行发生位移。New Session 优先使用显式选择的 Workspace，其次使用当前 Session 所属的 Workspace，再其次使用最近活跃的 Workspace；如果都不存在，则打开空白的 New Session 页面。部署可以替换品牌标记或名称，同时保留导航控件和轨道几何。
+dsh Web 客户端的侧边栏在 Workspace 与 Session 浏览器旁提供 56px 图标导航栏。用户可返回当前对话、打开全局面板、新建会话、收起浏览器，并从导航栏底部打开设置；空闲滚动条会隐藏，列表行位置保持稳定。New Session 依次选择操作明确指定的 Workspace、当前会话的 Workspace、最近活跃的 Workspace；都不存在时打开空白新会话页。部署方可替换品牌图标或名称，并保留导航控件与窄栏几何。
 
 ## 目录
 
@@ -27,17 +27,17 @@ dsh Web 客户端的侧边栏让用户识别应用、启动新会话、将导航
 <a id="use-this-package"></a>
 ## 使用本包
 
-侧边栏是导航外壳：用户看到品牌、启动新会话、折叠轨道并到达 Settings。功能插件填充它的席位——ui-workspace 填充 `sidebar.workspaces`，ui-settings 在 `sidebar.settings` 注册触发行与设置面板。
+侧边栏将全局导航与会话浏览分开：首页和面板图标位于左侧窄栏，设置固定在其底部；品牌、新建会话、Workspace 与 Session 列表位于相邻列。首页返回当前对话，不会新建会话。功能插件填充它的席位——ui-workspace 填充 `sidebar.workspaces`，ui-settings 在 `sidebar.settings` 注册触发行与设置面板。
 
 ### 品牌与 New Session
 
-展开的品牌行把 `sidebar.brand.mark` 与 `sidebar.brand.name` 渲染为两个独立的 single slot；收起轨道则渲染同一个 mark slot。在 Web 和 Windows 桌面端，点击展开态的品牌会新建会话，悬停或聚焦时不显示 tooltip。没有占位者时，外壳使用 Neurix 标记和单行 Neurix Harness 名称。构建信息由[设置 → 关于](../ui-settings-general/README.zh.md#the-about-section)提供。New Session 优先使用作用域操作明确指定的 Workspace，否则使用当前 Session 所属 Workspace，再否则使用最近活跃 Workspace；一个 Workspace 都没有时则清空选择，进入空白 New Session 页面。 展开态的新建会话按钮在键盘聚焦时于右侧以灰色文字显示当前有效绑定，不受设备悬停能力限制；支持悬停的设备也会在悬停时显示。快捷键可见且空间较窄时，居中的图标与文字在快捷键之前渐隐；CSS 为快捷键保留宽度，无需测量按钮。纯图标控件保留使用平台键位样式的 tooltip，侧栏隐藏时常驻的 macOS 头部控件也保持一致。所有控件均提供 `aria-keyshortcuts`。全局访问快照不含 `session/create` 时，品牌行不可点击，New Session 按钮和窗口标题栏中的 New Session 控件都不渲染；每个新建请求仍由 Host 判定。
+首页按钮在两种侧栏宽度下均渲染 `sidebar.brand.mark`；展开的浏览器头部渲染独立的 `sidebar.brand.name` slot。在 Web 和 Windows 桌面端，点击展开态的品牌会新建会话，悬停或聚焦时不显示 tooltip。没有占位者时，外壳使用 Neurix 标记和单行 Neurix Harness 名称。构建信息由[设置 → 关于](../ui-settings-general/README.zh.md#the-about-section)提供。New Session 优先使用作用域操作明确指定的 Workspace，否则使用当前 Session 所属 Workspace，再否则使用最近活跃 Workspace；一个 Workspace 都没有时则清空选择，进入空白 New Session 页面。 展开态的新建会话按钮在键盘聚焦时于右侧以灰色文字显示当前有效绑定，不受设备悬停能力限制；支持悬停的设备也会在悬停时显示。快捷键可见且空间较窄时，居中的图标与文字在快捷键之前渐隐；CSS 为快捷键保留宽度，无需测量按钮。纯图标控件保留使用平台键位样式的 tooltip，侧栏隐藏时常驻的 macOS 头部控件也保持一致。所有控件均提供 `aria-keyshortcuts`。全局访问快照不含 `session/create` 时，品牌行不可点击，New Session 按钮和窗口标题栏中的 New Session 控件都不渲染；每个新建请求仍由 Host 判定。
 
 ### 全局面板入口
 
-插件在 root 作用域的 `sidebar.panellist` list 中注册图标组件，提供 `id`、可选 `order`，以及字符串或 locale-aware 的 `label`。同一个 id 寻址布局中 root 作用域 `main` keyed slot 的组件；选择不存在的主面板条目会抛错，并保留当前选中态。标签提供普通可见文字、无障碍名称和折叠提示。展开态导航行的间距为 2px。每一行通过 `usePanelInfo` 读取自己的选中态；DOM 焦点移到搜索框或目录选择器时，显示的面板及其列表项选中态不变。没有面板注册项时，列表及其间距均不渲染。产品随附的组合不注册示例面板。
+插件在 root 作用域的 `sidebar.panellist` list 中注册图标组件，提供 `id`、可选 `order`，以及字符串或 locale-aware 的 `label`。同一个 id 寻址布局中 root 作用域 `main` keyed slot 的组件；选择不存在的主面板条目会抛错，并保留当前选中态。标签提供无障碍名称，以及两种侧栏宽度下悬停或键盘聚焦时的提示。导航采用居中的 18px 图标、36px 按钮和 12px 条目间距。每一行通过 `usePanelInfo` 读取自己的选中态；DOM 焦点移到搜索框或目录选择器时，显示的面板及其列表项选中态不变。没有面板注册项时，列表及其间距均不渲染。产品随附的组合不注册示例面板。
 
-root 作用域的 `sidebar.panellist.actions` list 有注册项时，导航区域的面板行之后显示面板行样式的**更多**按钮；收起的窄栏以提示框显示其名称。它打开的菜单以该 list 的注册项为菜单行。每个注册项接收 `entries`（按注册顺序的可自定义面板，含 `id`、`label`、`pinned` 与 `active`；不含插件管理）、选中面板的 `onOpen(id)`、`onPinnedChange(id, pinned)`，以及关闭菜单的 `onDismiss()`。侧边栏在内存中保存所有会话共用的已收起面板 id 列表；插件管理入口始终显示。默认更多菜单只提供插件浏览和创建，不列出面板或 Pin 控件。其他注册项仍可调用 Pin 回调，但插件重新加载时选择重置，不读取旧 localStorage 值。收起只隐藏导航行，主面板、其注册和当前选中态不变。未注册面板的 id 保留在内存列表中，直到插件重新加载。
+root 作用域的 `sidebar.panellist.actions` list 有注册项时，导航区域的面板行之后显示面板行样式的**更多**按钮；两种侧栏宽度均通过提示框显示其名称。它打开的菜单以该 list 的注册项为菜单行。每个注册项接收 `entries`（按注册顺序的可自定义面板，含 `id`、`label`、`pinned` 与 `active`；不含插件管理）、选中面板的 `onOpen(id)`、`onPinnedChange(id, pinned)`，以及关闭菜单的 `onDismiss()`。侧边栏在内存中保存所有会话共用的已收起面板 id 列表；插件管理入口始终显示。默认更多菜单只提供插件创建，不列出面板或 Pin 控件；独立的插件入口负责浏览插件。其他注册项仍可调用 Pin 回调，但插件重新加载时选择重置，不读取旧 localStorage 值。收起只隐藏导航行，主面板、其注册和当前选中态不变。未注册面板的 id 保留在内存列表中，直到插件重新加载。
 
 ### 折叠行为
 
@@ -45,9 +45,9 @@ root 作用域的 `sidebar.panellist.actions` list 有注册项时，导航区�
 
 侧栏收起时，顶部展开按钮承载可选、不可交互的 `sidebar.toggle.badge` slot。占用方提供状态和提示内容，不增加操作，也不改变按钮的导航行为。
 
-实时收起时，展开内容在当前宽度淡出，上方控件共用同一段透明度渐变，并向左平移进入 56px 轨道，由布局的栏滑动结束整段动画。页面初始即为收起状态时会静态渲染轨道；减少动态效果模式会禁用两段过渡。固定在底部的 `sidebar.settings` 控件共用相同的透明度渐变时序，但不发生横向位移。
+实时收起时，侧栏在 300ms 内滑动，内容保持展开时的宽度，并淡出、向左轻移。浏览区域淡出完成后才切换紧凑布局；窗口被遮挡时以 300ms 作为兜底。滑动中重新展开会取消待完成的收起，并反向渐显。macOS 窗口控件在关闭期间保持位置，仍可操作。页面初始即为收起状态时静态渲染轨道；减少动态效果模式直接切换，不播放动画。轨道控件的图标在统一的 36px 按钮内居中显示。固定在底部的 `sidebar.settings` 控件仅淡入淡出，不发生横向位移。
 
-在 Windows Electron 中，`html[data-windows-titlebar]` 将两种状态下的侧栏开关固定在顶栏左上角，仅在展开态与新建会话按钮左边缘对齐。展开态品牌位于顶栏下方、新建会话按钮上方，按钮上方额外留出 8px。收起后，品牌和侧栏内容隐藏，新建会话按钮排在侧栏开关与 Desktop 菜单之间。侧栏在收起态将根元素的 `--dsh-windows-menu-start` 设为 84px；Desktop preload 使用它将菜单放在新建会话之后，展开态默认为 48px。顶栏图标按钮采用紧凑控件圆角的 28px 控件，图标为居中 16px，并从窗口拖拽区域中排除。侧栏开关与新建会话的悬停提示在顶栏下方展开，Desktop 菜单文字不会盖住它们；占用 `sidebar.toggle.badge` 的控件自行决定气泡展开方向。
+在 Windows Electron 中，`html[data-windows-titlebar]` 将两种状态下的侧栏开关固定在顶栏左上角，位于图标导航栏上方。展开态品牌位于顶栏下方、新建会话按钮上方，按钮上方额外留出 8px。收起后，品牌和侧栏内容隐藏，新建会话按钮排在侧栏开关与 Desktop 菜单之间。侧栏在收起态将根元素的 `--dsh-windows-menu-start` 设为 84px；Desktop preload 使用它将菜单放在新建会话之后，展开态默认为 48px。顶栏图标按钮采用紧凑控件圆角的 28px 控件，图标为居中 16px，并从窗口拖拽区域中排除。侧栏开关与新建会话的悬停提示在顶栏下方展开，Desktop 菜单文字不会盖住它们；占用 `sidebar.toggle.badge` 的控件自行决定气泡展开方向。
 
 ### macOS 桌面
 
@@ -64,7 +64,7 @@ root 作用域的 `sidebar.panellist.actions` list 有注册项时，导航区�
 - 展开态品牌与新建会话按钮上报 `menu_name=new_session`、`position=sidebar`。Windows 顶栏承载收起态新建会话按钮时，该按钮上报 `position=titlebar`；macOS 红绿灯旁的新建会话控件同样上报 `position=titlebar`。
 - **插件**与**自动化任务**面板行分别上报 `menu_name=plugin` 与 `menu_name=cron`，`position=sidebar`。其他面板行不上报。
 - 每次点击**更多**按钮都上报 `menu_name=more`、`position=sidebar`，无论打开还是关闭菜单。
-- 第三方注册的更多菜单行通过 `onOpen(id)` 打开插件或自动化任务时，上报 `menu_name=plugin` 或 `menu_name=cron`，`position=sidebar_more`。随产品提供的更多菜单只浏览和创建插件，不会调用 `onOpen`。上报先于注册检查，因此所请求的面板已注销时仍会计数，但不会选中任何面板。
+- 第三方注册的更多菜单行通过 `onOpen(id)` 打开插件或自动化任务时，上报 `menu_name=plugin` 或 `menu_name=cron`，`position=sidebar_more`。随产品提供的更多菜单只创建插件，不会调用 `onOpen`。上报先于注册检查，因此所请求的面板已注销时仍会计数，但不会选中任何面板。
 
 -----
 
@@ -78,7 +78,7 @@ root 作用域的 `sidebar.panellist.actions` list 有注册项时，导航区�
 
 ### slot 纪律
 
-声明感知的 `slots.inject()` 让替换包无论先于还是后于侧边栏激活都能生效。页脚承载 `sidebar.settings` 席位：侧边栏只渲染固定在底部的布局 slot，并共享其栏状态（`wide`）。`/client` 导出接口只包含插件主体（`apply`/`inject`）及约定类型；SidebarRoot、行组件与树派生仍由 slot 注册封装在包内。
+声明感知的 `slots.inject()` 让替换包无论先于还是后于侧边栏激活都能生效。页脚承载 `sidebar.settings` 席位：侧边栏只渲染固定在底部的布局 slot，传入浏览器状态（`wide`）和 `compact: true`，保持入口为纯图标，同时在浏览器展开时于旁侧保留连接与更新提示。可选页脚操作接收 `wide: false`。`/client` 导出接口只包含插件主体（`apply`/`inject`）及约定类型；SidebarRoot、行组件与树派生仍由 slot 注册封装在包内。
 
 </details>
 

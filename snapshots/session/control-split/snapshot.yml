@@ -1,0 +1,10 @@
+version: 1
+scenario: control-split
+profile: headless
+composition: control-split
+recording: authored
+header:
+  class: control-split
+  pin: true
+replay:
+  override: true

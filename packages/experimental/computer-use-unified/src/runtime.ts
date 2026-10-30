@@ -12,7 +12,7 @@ import { ComputerError, nativeActionResult } from './native.ts'
 import type { NativeActionResult, NativeCalls, NativeResult } from './native.ts'
 import { compactNativeState, nativeElementIdentity, nativeElementStateChanged, nativeWindowState } from './native-observation.ts'
 import type { NativeElement, NativeWindowState } from './native-observation.ts'
-import type { ComputerInput } from './schema.ts'
+import { admitsComputerAction, type ComputerInput } from './schema.ts'
 import type { ResolvedConfig } from './index.ts'
 import { IndependentFeedback, characterLabel, typeCharacters, type ScreenRect } from './feedback.ts'
 import { connectBrowserDialog, resolveBrowserDialog, type BrowserDialogConnection, type BrowserDialogWindow } from './browser-dialog.ts'
@@ -24,7 +24,7 @@ import { observeBrowserGeometry } from './browser-geometry.ts'
 import { captureBrowserElements, requireBrowserElement, type BrowserObservedElements, type BrowserPinnedElement } from './browser-observation.ts'
 import { foregroundAction } from './foreground.ts'
 import { foregroundBrowserTarget } from './foreground-browser.ts'
-import type { ComputerPreviewFrame } from './types.ts'
+import type { ComputerPreviewFrame, ComputerSurface } from './types.ts'
 
 type TargetId = Branded<'ComputerTargetId'>
 interface Observation {
@@ -56,6 +56,7 @@ interface PendingInput { done: Promise<InputSettlement>; dialog: PromiseWithReso
 interface TabTarget {
   kind: 'tab'
   page: Page
+  rendering?: Promise<{ error?: unknown }>
   dialog?: Dialog
   dialogWindow?: BrowserDialogWindow
   dialogConnection?: Promise<{ connection: BrowserDialogConnection } | { error: unknown }>
@@ -96,8 +97,10 @@ export class ComputerRuntime {
   /**
    * @param native - provider-owned serialized native driver.
    * @param config - resolved deployment choices and resource limits.
+   * @param surface - independently enabled capabilities; omitted retains the combined provider.
    */
-  constructor(private readonly native: NativeCalls | undefined, private readonly config: ResolvedConfig) {
+  constructor(private readonly native: NativeCalls | undefined, private readonly config: ResolvedConfig,
+    private readonly surface: ComputerSurface = 'all') {
     this.feedback = new IndependentFeedback(config)
     this.inputMode = config.inputMode
   }
@@ -112,6 +115,10 @@ export class ComputerRuntime {
    */
   async execute(input: ComputerInput, signal: AbortSignal, inputMode = this.config.inputMode): Promise<NativeResult> {
     signal.throwIfAborted()
+    if (!admitsComputerAction(this.surface, input.action)) throw new ComputerError('OPERATION_UNAVAILABLE',
+      `The ${input.action} operation is unavailable in the ${this.surface} tool.`, 'none',
+      this.surface === 'browser' ? 'Use this tool for its owned browser tabs only. Native applications require the application tool.'
+        : 'Use this tool for native application windows. Isolated browser tabs require the browser tool.')
     if ('target' in input && this.targets.has(input.target as TargetId)) {
       this.preview = { ...this.preview?.target === input.target ? this.preview : {}, target: input.target as TargetId,
         action: input.action === 'scroll' ? `scroll-${input.direction}` : input.action, active: true, feedbackUntil: 0 }
@@ -136,7 +143,7 @@ export class ComputerRuntime {
     }
     active.addEventListener('abort', abort, { once: true })
     const run = async () => {
-      this.inputMode = inputMode
+      this.inputMode = this.surface === 'applications' ? 'foreground' : this.surface === 'browser' ? 'background' : inputMode
       try { return await this.executeOperation(input, active) } catch (error) {
         await this.feedback.close()
         throw error
@@ -219,10 +226,11 @@ export class ComputerRuntime {
       const target = this.target(id)
       this.preview = { target: id, action: input.action, active: true }
       try {
-        if (target.kind === 'tab') await this.dialogConnection(target)
+        if (target.kind === 'tab') { await this.prepareBrowser(target); await this.dialogConnection(target) }
         if (input.url !== undefined) await this.runBrowserAction(this.tab(target), { action: 'navigate', target: id, url: input.url }, signal)
         return await this.observe(id, target, input.screenshot ?? this.config.screenshots, signal)
       } catch (error) {
+        if (error instanceof ComputerError && error.code === 'BROWSER_VIEWPORT_FAILED') throw error
         if (page.isClosed()) throw new ComputerError('BROWSER_CLOSED', `The browser closed after creating ${id}: ${this.message(error)}`, 'possible', 'Report that the browser closed. Do not repeatedly reopen it or try other sites automatically.')
         if (!signal.aborted || signal.reason instanceof DOMException && signal.reason.name === 'TimeoutError') {
           return this.result({ status: 'partial', target: id, kind: 'tab', browserStatus: 'open', url: page.url(),
@@ -240,7 +248,7 @@ export class ComputerRuntime {
       && (input.x !== undefined || input.y !== undefined)) {
       throw new ComputerError('BACKGROUND_PIXEL_UNAVAILABLE',
         'The native pixel click and typing route can activate the application, so it is unavailable in background mode.',
-        'none', 'Use an element_token as ref from this window. If its accessibility route is unsupported, stop and ask the user to select Foreground system input explicitly.')
+        'none', 'Use an element_token as ref from this window. If its accessibility route is unsupported, stop and ask the user to configure inputMode: foreground for this provider.')
     }
     if (input.action === 'observe') return this.observe(id, target, input.screenshot ?? this.config.screenshots, signal, input.query)
     if (input.action === 'close_tab') {
@@ -262,7 +270,7 @@ export class ComputerRuntime {
       else {
         if (this.inputMode === 'background' && target.unconfirmedClick !== undefined) throw new ComputerError(
           'BACKGROUND_EFFECT_UNCONFIRMED', 'The previous background click has no confirmed effect. Further input to this window is blocked.',
-          'none', 'Select Foreground system input in Computer Control settings, save, and continue this conversation. Observation remains available.')
+          'none', 'Ask the user to configure inputMode: foreground for this provider before continuing. Observation remains available.')
         action = nativeActionResult(await this.windowAction(target, grounded, signal))
         if (this.inputMode === 'background' && action !== undefined && action.effect !== 'confirmed'
           && grounded.action === 'click' && grounded.ref !== undefined) {
@@ -330,6 +338,7 @@ export class ComputerRuntime {
     })
     try {
       active.throwIfAborted()
+      if (target.kind === 'tab') await this.prepareBrowser(target)
       const source = native === undefined ? 'page' : `window-${native.pid}-${native.windowId}-${target.kind === 'tab' ? JSON.stringify('bounds' in native ? native.bounds : undefined) : ''}`
       const retained = this.previewImage
       if (!refreshNative && !current.active && current.dialogWindow !== undefined && indicatorActive
@@ -393,17 +402,25 @@ export class ComputerRuntime {
   }
 
   private async browserContext(signal: AbortSignal): Promise<BrowserContext> {
+    if (this.surface === 'applications') throw new ComputerError('OPERATION_UNAVAILABLE', 'Application control cannot start Playwright.', 'none', 'Use native window operations.')
     if (this.context !== undefined) return this.context
     signal.throwIfAborted()
-    const browser = await chromium.launch({
-      headless: this.config.headless,
-      args: ['--force-renderer-accessibility'],
-      ...this.config.browserExecutablePath === undefined
-        ? { channel: this.config.browserChannel }
-        : { executablePath: this.config.browserExecutablePath },
-      timeout: this.config.navigationTimeoutMs,
-      env: scrubbedParentEnv(),
-    })
+    let browser: Browser
+    try {
+      browser = await chromium.launch({
+        headless: this.config.headless,
+        args: ['--force-renderer-accessibility'],
+        ...this.config.browserExecutablePath === undefined
+          ? { channel: this.config.browserChannel }
+          : { executablePath: this.config.browserExecutablePath },
+        timeout: this.config.navigationTimeoutMs,
+        env: scrubbedParentEnv(),
+      })
+    } catch (error) {
+      signal.throwIfAborted()
+      throw new ComputerError('BROWSER_START_FAILED', `The selected browser (${this.config.browserChannel}) could not start.`,
+        'none', 'Stop browser attempts and report this failure. Ask the user to install or unblock the selected browser, or select an installed browser in Browser control and start a new conversation. Do not operate other applications, run terminal commands, or install software as a workaround.', { cause: error })
+    }
     this.browser = browser
     browser.on('disconnected', () => {
       this.browserDisconnected(browser)
@@ -411,7 +428,9 @@ export class ComputerRuntime {
     try {
       signal.throwIfAborted()
       if (this.nativeDialogFeedback()) this.dialogCDP = Promise.resolve(await browser.newBrowserCDPSession())
-      const context = await browser.newContext({ viewport: null, acceptDownloads: false })
+      const context = await browser.newContext({ viewport: this.config.headless
+        ? { width: this.config.browserViewportWidth, height: this.config.browserViewportHeight } : null,
+      acceptDownloads: false })
       signal.throwIfAborted()
       context.setDefaultTimeout(this.config.operationTimeoutMs)
       context.setDefaultNavigationTimeout(this.config.navigationTimeoutMs)
@@ -438,6 +457,7 @@ export class ComputerRuntime {
     for (const [id, target] of this.targets) if (target.kind === 'tab' && target.page === page) return id
     const id = `tab-${++this.nextId}` as TargetId
     const target: TabTarget = { kind: 'tab', page }
+    if (this.config.headless) target.rendering = this.sizeHiddenBrowser(page).then(() => ({}), (error: unknown) => ({ error }))
     if (this.dialogCDP !== undefined) target.dialogConnection = this.dialogCDP.then(cdp => connectBrowserDialog(page, cdp))
       .then(connection => ({ connection }), (error: unknown) => ({ error }))
     this.targets.set(id, target)
@@ -449,9 +469,25 @@ export class ComputerRuntime {
     return id
   }
 
+  private async sizeHiddenBrowser(page: Page): Promise<void> {
+    const session = await page.context().newCDPSession(page)
+    try {
+      const { windowId } = z.object({ windowId: z.number().int() }).parse(await session.send('Browser.getWindowForTarget'))
+      await session.send('Browser.setContentsSize', { windowId,
+        width: this.config.browserViewportWidth, height: this.config.browserViewportHeight })
+    } finally { await session.detach() }
+  }
+
+  private async prepareBrowser(target: TabTarget): Promise<void> {
+    const result = await target.rendering
+    if (result !== undefined && 'error' in result) throw new ComputerError('BROWSER_VIEWPORT_FAILED',
+      'The hidden browser could not create the configured viewport.', 'none',
+      'Stop browser input. Ask the user to update or select a supported installed browser, then start a new conversation.', { cause: result.error })
+  }
+
   private async list(query: string | undefined, signal: AbortSignal): Promise<NativeResult> {
     const [permissions, windows] = !this.nativeEnabled() ? [
-      { structuredContent: { status: 'unavailable', reason: this.native === undefined
+      { structuredContent: { status: 'unavailable', reason: this.surface === 'browser' ? 'Native application access is outside this browser tool.' : this.native === undefined
         ? 'Native desktop access requires macOS.' : 'Browser background mode does not include desktop applications. Select Foreground system input to use them.' } },
       { structuredContent: { windows: [] } },
     ] : await Promise.all([
@@ -497,6 +533,7 @@ export class ComputerRuntime {
     const observedAt = Date.now()
     delete target.observation
     if (target.kind === 'tab') {
+      await this.prepareBrowser(target)
       await target.observedElements?.dispose()
       delete target.observedElements
     }
@@ -951,10 +988,10 @@ export class ComputerRuntime {
     const render = () => this.result({ status: blocked ? 'failed' : 'observed', target: id, kind: 'window', state,
       ...actionResult === undefined ? {} : { actionResult,
         ...actionResult.effect === 'confirmed' ? {} : { nextAction:
-          'Input delivery does not confirm the intended result. Verify the target change in this observation. If it did not occur, stop repeating input and select Foreground system input in Computer Control settings before continuing.' } },
+          'Input delivery does not confirm the intended result. Verify the target change in this observation. If it did not occur, stop repeating input and ask the user to configure inputMode: foreground for this provider before continuing.' } },
       ...!blocked ? {} : { code: 'BACKGROUND_EFFECT_UNCONFIRMED', effect: 'possible',
         message: 'The clicked control remains unchanged. Further background input to this window is blocked.',
-        nextAction: 'Select Foreground system input in Computer Control settings, save, and continue this conversation. Observation remains available.' },
+        nextAction: 'Ask the user to configure inputMode: foreground for this provider before continuing. Observation remains available.' },
     }, images)
     let result = render()
     while (JSON.stringify(result.structuredContent).length > this.config.maxSnapshotChars && state.elements.length > 0) {
@@ -1014,7 +1051,7 @@ export class ComputerRuntime {
   private result(data: Record<string, unknown>, images: Content = []): NativeResult {
     const tabs = data.kind === 'tab' ? [...this.targets].flatMap(([id, target]) => target.kind === 'tab'
       ? [{ target: id, url: target.page.url() }] : []) : undefined
-    const result = { ...data, ...tabs === undefined ? {} : { tabs }, capabilities: { browser: true, native: this.nativeEnabled(),
+    const result = { ...data, ...tabs === undefined ? {} : { tabs }, capabilities: { browser: this.surface !== 'applications', native: this.nativeEnabled(),
       nativeForeground: this.native !== undefined, nativeBackground: this.native !== undefined && this.config.nativeBackground },
     inputMode: this.inputMode, ...this.closedPopups === 0 ? {} : { closedPopups: this.closedPopups } }
     return { content: [{ type: 'text', text: JSON.stringify(result) }, ...images], structuredContent: result }
@@ -1028,14 +1065,14 @@ export class ComputerRuntime {
   }
 
   private nativeEnabled(): boolean {
-    return this.native !== undefined && (this.inputMode === 'foreground' || this.config.nativeBackground)
+    return this.surface !== 'browser' && this.native !== undefined && (this.inputMode === 'foreground' || this.config.nativeBackground)
   }
 
   private requireNativeMode(): void {
     this.requireNative()
     if (!this.nativeEnabled()) throw new ComputerError('NATIVE_FOREGROUND_REQUIRED',
       'Browser background mode does not support desktop application operations.', 'none',
-      'Stop desktop attempts. Explain that this mode supports browser tabs only. Desktop applications require the user to select Foreground system input and save before continuing.')
+      'Stop desktop attempts. Explain that this mode supports browser tabs only. Ask the user to configure inputMode: foreground for this provider before continuing.')
   }
 
   private readNativeWindow(args: Record<string, unknown>, signal: AbortSignal, timeoutMs: number): Promise<NativeResult> {

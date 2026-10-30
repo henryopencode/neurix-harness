@@ -49,6 +49,9 @@
     },
     {
       "path": "../computer-use-unified"
+    },
+    {
+      "path": "../computer-preview/tsconfig.client.json"
     }
   ]
 }

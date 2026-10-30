@@ -8,7 +8,7 @@ import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import { en as commonEn } from '@deepseek-ai/dsh-client-locale/src/locales/en.ts'
 import { ComputerPreview, type ComputerPreviewProps } from '../src/client/ComputerPreview.tsx'
 import { en } from '../src/client/locales.ts'
-import type { ComputerPreviewSnapshot } from '../src/preview-types.ts'
+import type { ComputerPreviewSnapshot } from '../src/types.ts'
 
 /** Fake time waits for React's image and feedback commit before assertions. */
 async function advance(ms: number): Promise<void> {
@@ -18,13 +18,13 @@ async function advance(ms: number): Promise<void> {
 const decode = vi.fn<() => Promise<void>>()
 beforeEach(() => {
   decode.mockReset().mockResolvedValue(undefined)
-  vi.stubGlobal('Image', class { src = ''; decode = decode })
+  vi.stubGlobal('Image', class { src = ''; naturalWidth = 640; naturalHeight = 400; decode = decode })
 })
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals() })
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 const frame: ComputerPreviewSnapshot = { refreshMs: 750, frame: { kind: 'frame', imageUrl: 'data:image/png;base64,AA==',
   title: 'Owned window', action: 'type', active: true, capturedAt: 1, cursor: { x: 0.4, y: 0.3 } } }
 const props = (loadPreview: ComputerPreviewProps['loadPreview']): ComputerPreviewProps => ({ sessionId: SessionId('one'),
-  loadPreview, t: makeTranslate(en, commonEn) }) as ComputerPreviewProps
+  surface: 'applications', loadPreview, t: makeTranslate(en, commonEn) }) as ComputerPreviewProps
 
 it.each(['a', 'A', 'ß', 'é', '👩🏽‍💻', '中'])('shows the exact current character %s beside the keyboard icon', async (character) => {
   const typing = structuredClone(frame)
@@ -46,27 +46,73 @@ it('shows only the keyboard icon while no delivered key is available', async () 
   expect(view.container.ownerDocument.body.textContent).not.toContain('•••')
 })
 
-it('shows actual captures, stops refresh on close, and can reopen the panel', async () => {
+it('shows captures automatically without header controls, pauses when collapsed, and resumes when expanded', async () => {
+  vi.useFakeTimers()
   const load = vi.fn(async () => frame)
-  render(<ComputerPreview {...props(load)} />)
-  await vi.waitFor(() => { expect(screen.getByRole('img', { name: en.previewImage })).toBeTruthy() })
+  const view = render(<ComputerPreview {...props(load)} />)
+  await advance(0)
+  expect(screen.getByRole('img', { name: en.previewImage })).toBeTruthy()
+  expect(view.container.childElementCount).toBe(0)
+  expect(screen.queryByRole('button', { name: 'Close preview' })).toBeNull()
   expect(screen.getByText(en.previewType)).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: en.previewClose }))
+  fireEvent.click(screen.getByRole('button', { name: en.previewCollapse }))
   expect(screen.queryByRole('img')).toBeNull()
   const calls = load.mock.calls.length
-  fireEvent.click(screen.getByRole('button', { name: en.previewShow }))
-  await vi.waitFor(() => { expect(load.mock.calls.length).toBeGreaterThan(calls) })
+  await advance(5000)
+  expect(load.mock.calls.length).toBe(calls)
+  fireEvent.click(screen.getByRole('button', { name: en.previewExpand }))
+  await advance(0)
+  expect(load.mock.calls.length).toBeGreaterThan(calls)
+  expect(screen.getByRole('img')).toBeTruthy()
 })
 
-it('keeps automatic preview enabled when Show is clicked before a target exists', async () => {
+it('waits for a target without adding a header button', async () => {
+  vi.useFakeTimers()
   const load = vi.fn(async () => frame).mockResolvedValueOnce({ refreshMs: 2000, frame: { kind: 'idle' } })
-  render(<ComputerPreview {...props(load)} />)
-  await vi.waitFor(() => { expect(load).toHaveBeenCalledTimes(1) })
-  const show = screen.getByRole('button', { name: en.previewShow })
-  expect(show.getAttribute('aria-pressed')).toBe('false')
-  fireEvent.click(show)
+  const view = render(<ComputerPreview {...props(load)} />)
+  await advance(0)
+  expect(screen.queryByRole('complementary')).toBeNull()
+  expect(view.container.childElementCount).toBe(0)
+  await advance(2000)
+  expect(screen.getByRole('img')).toBeTruthy()
+})
+
+it('switches the maximize icon and restores the previous floating position with Escape', async () => {
+  render(<ComputerPreview {...props(async () => frame)} />)
   await vi.waitFor(() => { expect(screen.getByRole('img')).toBeTruthy() })
-  expect(screen.getByRole('button', { name: en.previewHide }).getAttribute('aria-pressed')).toBe('true')
+  const panel = screen.getByRole('complementary')
+  vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue(new DOMRect(200, 180, 640, 400))
+  fireEvent.keyDown(screen.getByRole('button', { name: en.previewDrag }), { key: 'ArrowLeft' })
+  expect(panel.style.left).toBe('176px')
+  const maximize = screen.getByRole('button', { name: en.previewEnlarge })
+  const icon = maximize.querySelector('svg')?.getAttribute('data-icon')
+  maximize.focus()
+  fireEvent.click(maximize)
+  expect(panel.hasAttribute('data-maximized')).toBe(true)
+  const restore = screen.getByRole('button', { name: en.previewRestore })
+  expect(restore).toBe(maximize)
+  expect(restore.querySelector('svg')?.getAttribute('data-icon')).not.toBe(icon)
+  expect(panel.style.left).toBe('')
+  vi.stubGlobal('innerWidth', 390)
+  fireEvent.resize(window)
+  vi.stubGlobal('innerWidth', 1024)
+  fireEvent.resize(window)
+  fireEvent.keyDown(restore, { key: 'Escape' })
+  expect(panel.hasAttribute('data-maximized')).toBe(false)
+  expect(panel.style.left).toBe('176px')
+  expect(panel.style.getPropertyValue('--preview-width')).toBe('640px')
+  expect(document.activeElement).toBe(maximize)
+})
+
+it('retains maximization when collapsing and expanding', async () => {
+  render(<ComputerPreview {...props(async () => frame)} />)
+  await vi.waitFor(() => { expect(screen.getByRole('img')).toBeTruthy() })
+  fireEvent.click(screen.getByRole('button', { name: en.previewEnlarge }))
+  fireEvent.click(screen.getByRole('button', { name: en.previewCollapse }))
+  expect(screen.getByRole('complementary').hasAttribute('data-maximized')).toBe(false)
+  fireEvent.click(screen.getByRole('button', { name: en.previewExpand }))
+  expect(screen.getByRole('complementary').hasAttribute('data-maximized')).toBe(true)
+  expect(screen.getByRole('button', { name: en.previewRestore })).toBeTruthy()
 })
 
 it('commits a decoded image and its drag cursor together instead of putting a new cursor over an old image', async () => {

@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Controle de aplicativos",
+    "description": "Controle aplicativos do macOS em primeiro plano, incluindo navegadores, com mouse e teclado do sistema.",
+    "detail": "docs/DETAIL.md"
+  }
+}

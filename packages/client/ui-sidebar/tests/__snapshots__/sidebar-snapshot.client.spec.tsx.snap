@@ -54,7 +54,38 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
       </span>
     </button>
     <div
+      class="navigationRail"
+      data-sidebar-navigation="true"
+    >
+      <button
+        aria-current="page"
+        aria-label="Home"
+        class="panelRow panelActive"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="brandMark"
+        >
+          <div
+            data-slot="sidebar.brand.mark"
+            style="display: contents;"
+          >
+            <svg
+              aria-hidden="true"
+              data-content="42eb64b9"
+              fill="none"
+              height="24"
+              viewBox="0 0 128 128"
+              width="24"
+            />
+          </div>
+        </span>
+      </button>
+    </div>
+    <div
       class="regionArea"
+      data-sidebar-browser="true"
     >
       <div
         data-slot="sidebar.workspaces"
@@ -63,6 +94,7 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
     </div>
     <div
       class="footArea"
+      data-sidebar-footer="true"
     >
       <div
         class="footerActions"
@@ -108,23 +140,6 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
           class="brandIdentity"
         >
           <span
-            class="brandMark"
-          >
-            <div
-              data-slot="sidebar.brand.mark"
-              style="display: contents;"
-            >
-              <svg
-                aria-hidden="true"
-                data-content="42eb64b9"
-                fill="none"
-                height="24"
-                viewBox="0 0 128 128"
-                width="24"
-              />
-            </div>
-          </span>
-          <span
             class="brandName"
           >
             <div
@@ -182,7 +197,38 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
       </span>
     </button>
     <div
+      class="navigationRail"
+      data-sidebar-navigation="true"
+    >
+      <button
+        aria-current="page"
+        aria-label="Home"
+        class="panelRow panelActive"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="brandMark"
+        >
+          <div
+            data-slot="sidebar.brand.mark"
+            style="display: contents;"
+          >
+            <svg
+              aria-hidden="true"
+              data-content="42eb64b9"
+              fill="none"
+              height="24"
+              viewBox="0 0 128 128"
+              width="24"
+            />
+          </div>
+        </span>
+      </button>
+    </div>
+    <div
       class="regionArea"
+      data-sidebar-browser="true"
     >
       <div
         data-slot="sidebar.workspaces"
@@ -191,6 +237,7 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
     </div>
     <div
       class="footArea"
+      data-sidebar-footer="true"
     >
       <div
         class="footerActions"
@@ -231,24 +278,6 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
         class="iconButton toggle"
         type="button"
       >
-        <span
-          aria-hidden="true"
-          class="railMark"
-        >
-          <div
-            data-slot="sidebar.brand.mark"
-            style="display: contents;"
-          >
-            <svg
-              aria-hidden="true"
-              data-content="42eb64b9"
-              fill="none"
-              height="24"
-              viewBox="0 0 128 128"
-              width="24"
-            />
-          </div>
-        </span>
         <svg
           aria-hidden="true"
           class="panelIcon"
@@ -285,7 +314,38 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
       </span>
     </button>
     <div
+      class="navigationRail"
+      data-sidebar-navigation="true"
+    >
+      <button
+        aria-current="page"
+        aria-label="Home"
+        class="panelRow panelActive"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="brandMark"
+        >
+          <div
+            data-slot="sidebar.brand.mark"
+            style="display: contents;"
+          >
+            <svg
+              aria-hidden="true"
+              data-content="42eb64b9"
+              fill="none"
+              height="24"
+              viewBox="0 0 128 128"
+              width="24"
+            />
+          </div>
+        </span>
+      </button>
+    </div>
+    <div
       class="regionArea"
+      data-sidebar-browser="true"
     >
       <div
         data-slot="sidebar.workspaces"
@@ -294,6 +354,7 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
     </div>
     <div
       class="footArea"
+      data-sidebar-footer="true"
     >
       <div
         class="footerActions"
@@ -339,23 +400,6 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
           class="brandIdentity"
         >
           <span
-            class="brandMark"
-          >
-            <div
-              data-slot="sidebar.brand.mark"
-              style="display: contents;"
-            >
-              <svg
-                aria-hidden="true"
-                data-content="42eb64b9"
-                fill="none"
-                height="24"
-                viewBox="0 0 128 128"
-                width="24"
-              />
-            </div>
-          </span>
-          <span
             class="brandName"
           >
             <div
@@ -413,7 +457,38 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
       </span>
     </button>
     <div
+      class="navigationRail"
+      data-sidebar-navigation="true"
+    >
+      <button
+        aria-current="page"
+        aria-label="Home"
+        class="panelRow panelActive"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="brandMark"
+        >
+          <div
+            data-slot="sidebar.brand.mark"
+            style="display: contents;"
+          >
+            <svg
+              aria-hidden="true"
+              data-content="42eb64b9"
+              fill="none"
+              height="24"
+              viewBox="0 0 128 128"
+              width="24"
+            />
+          </div>
+        </span>
+      </button>
+    </div>
+    <div
       class="regionArea"
+      data-sidebar-browser="true"
     >
       <div
         data-slot="sidebar.workspaces"
@@ -422,6 +497,7 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
     </div>
     <div
       class="footArea"
+      data-sidebar-footer="true"
     >
       <div
         class="footerActions"
@@ -466,23 +542,6 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
           aria-hidden="true"
           class="brandIdentity"
         >
-          <span
-            class="brandMark"
-          >
-            <div
-              data-slot="sidebar.brand.mark"
-              style="display: contents;"
-            >
-              <svg
-                aria-hidden="true"
-                data-content="42eb64b9"
-                fill="none"
-                height="24"
-                viewBox="0 0 128 128"
-                width="24"
-              />
-            </div>
-          </span>
           <span
             class="brandName"
           >
@@ -541,7 +600,38 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
       </span>
     </button>
     <div
+      class="navigationRail"
+      data-sidebar-navigation="true"
+    >
+      <button
+        aria-current="page"
+        aria-label="首页"
+        class="panelRow panelActive"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="brandMark"
+        >
+          <div
+            data-slot="sidebar.brand.mark"
+            style="display: contents;"
+          >
+            <svg
+              aria-hidden="true"
+              data-content="42eb64b9"
+              fill="none"
+              height="24"
+              viewBox="0 0 128 128"
+              width="24"
+            />
+          </div>
+        </span>
+      </button>
+    </div>
+    <div
       class="regionArea"
+      data-sidebar-browser="true"
     >
       <div
         data-slot="sidebar.workspaces"
@@ -550,6 +640,7 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
     </div>
     <div
       class="footArea"
+      data-sidebar-footer="true"
     >
       <div
         class="footerActions"

@@ -1,0 +1,2 @@
+- menu:
+  - menuitem "Create your plugin"

@@ -1879,7 +1879,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     occupants: [
       'client-ui-open-in-app SessionOpenInAppAction id \'open-in-app\'',
       'client-ui-schedule ScheduleCatalogAction id \'schedule-catalog\'',
-      'experimental-computer-control ComputerPreview id \'computer-control.preview\'',
+      'experimental-computer-preview ComputerPreview',
       'session-log-export SessionLogDownloadHeaderAction id \'session-log-download\'',
     ],
     replaceRisk: 'none',
@@ -2433,15 +2433,17 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       'useSessionAccess: (sessionId: SessionId, action: RemoteEndpoint) => boolean',
       'useWorkspaceAccess: (workspaceId: WorkspaceId, action: RemoteEndpoint) => boolean',
     ],
-    keyDomain: 'open: any string the owner dispatches (no compile-time key set), already taken: @deepseek-ai/dsh-cua-bundle, @deepseek-ai/dsh-experimental-cot-translation-bundle, @deepseek-ai/dsh-experimental-voice-input-bundle, @deepseek-ai/dsh-image-generation-bundle',
+    keyDomain: 'open: any string the owner dispatches (no compile-time key set), already taken: @deepseek-ai/dsh-cua-bundle, @deepseek-ai/dsh-experimental-cot-translation-bundle, @deepseek-ai/dsh-experimental-mobile-access, @deepseek-ai/dsh-experimental-voice-input-bundle, @deepseek-ai/dsh-image-generation-bundle',
     hookContext: '',
     slotInject: '',
     declaredBy: 'an entry in \'main\' (client-ui-plugin-manager), so it exists while that entry is mounted',
     occupants: [
+      'experimental-browser-control BrowserCard',
       'experimental-client-ui-cot-translation TranslationSettings key \'@deepseek-ai/dsh-experimental-cot-translation-bundle\'',
       'experimental-client-ui-voice-input VoicePreparation key \'@deepseek-ai/dsh-experimental-voice-input-bundle\'',
       'experimental-computer-control ComputerCard',
       'cua PermissionPanel key \'@deepseek-ai/dsh-cua-bundle\'',
+      'experimental-mobile-access MobileAccessRow key \'@deepseek-ai/dsh-experimental-mobile-access\'',
       'image-generation-bundle ImageGenerationCard key \'@deepseek-ai/dsh-image-generation-bundle\'',
     ],
     replaceRisk: 'shadows-shipped-ui',
@@ -3117,6 +3119,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     declaredBy: 'an entry in \'sidebar.settings\' (client-ui-settings-general), so it exists while that entry is mounted',
     occupants: [
       'client-ui-settings-account AccountMenu',
+      'experimental-mobile-access NeurixMenu',
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'settings.launcher\', () => ctx.slots.register(\n      { name: \'settings.launcher\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
@@ -3558,6 +3561,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       'client-ui-workspace SessionArchiveConfirmDialog id \'workspace.session-archive\'',
       'client-ui-workspace RowActionToast id \'workspace.row-toast\'',
       'cua PermissionToast id \'cua-permission-outcome\'',
+      'experimental-mobile-access ConnectionToast id \'phone-connection-notice\'',
       'session-log-export SessionMarkdownCopyToast id \'session-log-download.copy-toast\'',
     ],
     replaceRisk: 'none',
@@ -3643,8 +3647,8 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     key: 'sidebar.brand.mark',
     kind: 'single',
     scope: 'root',
-    summary: 'Brand mark rendered in the expanded brand row and collapsed rail.',
-    doc: 'Brand mark rendered in the expanded brand row and collapsed rail.\nDeclared by this package\'s `sidebar` entry; deployments may replace\nthe shell\'s N-symbol fallback without replacing the surrounding controls.',
+    summary: 'Brand mark rendered in the Home button at both sidebar widths.',
+    doc: 'Brand mark rendered in the Home button at both sidebar widths.\nDeclared by this package\'s `sidebar` entry; deployments may replace\nthe shell\'s N-symbol fallback without replacing the surrounding controls.',
     registerOptions: [],
     ownerProps: [
       '/** Geometry supplied to the sidebar brand-mark occupant. */\nexport interface SidebarBrandMarkOwnerProps {\n  /** Requested square edge in pixels. */\n  size: number\n}',
@@ -3676,8 +3680,8 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     key: 'sidebar.brand.name',
     kind: 'single',
     scope: 'root',
-    summary: 'Brand name rendered beside the expanded mark.',
-    doc: 'Brand name rendered beside the expanded mark. Declared by this\npackage\'s `sidebar` entry; the shell supplies a generic text fallback.',
+    summary: 'Brand name rendered above the expanded browser.',
+    doc: 'Brand name rendered above the expanded browser. Declared by this\npackage\'s `sidebar` entry; the shell supplies a generic text fallback.',
     registerOptions: [],
     ownerProps: [
       '/** Empty owner share for the sidebar brand-name occupant. */\nexport interface SidebarBrandNameOwnerProps {\n  /** Marker field: the occupant owns its own content and width. */\n  children?: never\n}',
@@ -3772,7 +3776,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       },
     ],
     ownerProps: [
-      '/** Owner share of an action rendered beside Settings at the sidebar foot. */\nexport interface SidebarFooterActionOwnerProps {\n  /** Whether the sidebar renders wide content (false = 56px rail). */\n  wide: boolean\n}',
+      '/** Owner share of an action rendered beside Settings at the sidebar foot. */\nexport interface SidebarFooterActionOwnerProps {\n  /** Whether the action includes its label; the shell always supplies false. */\n  wide: boolean\n}',
     ],
     ownerPropsReferences: [],
     standardProps: [
@@ -3791,6 +3795,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     slotInject: '',
     declaredBy: 'an entry in \'sidebar\' (client-ui-sidebar), so it exists while that entry is mounted',
     occupants: [
+      'client-ui-settings-general DesktopUpdateFooter id \'desktop-update\'',
       'client-ui-cordis CordisPanel id \'cordis-panel\'',
     ],
     replaceRisk: 'none',
@@ -4727,7 +4732,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     doc: 'The settings seat at the sidebar foot. Declared by this package\'s\n\'sidebar\' entry; ui-settings registers its trigger row + modal panel.\nThe sidebar passes only its column state — it holds no settings state.',
     registerOptions: [],
     ownerProps: [
-      '/**\n * Owner share of the sidebar settings seat: the column display state the\n * occupant\'s trigger row must render against (wide row vs rail icon).\n */\nexport interface SidebarSettingsOwnerProps {\n  /** Whether the sidebar renders wide content (false = 56px rail). */\n  wide: boolean\n}',
+      '/**\n * Browser expansion and launcher presentation supplied to the settings seat.\n */\nexport interface SidebarSettingsOwnerProps {\n  /** Whether the sidebar browser is expanded, including its status feedback. */\n  wide: boolean\n  /** Keep the Settings launcher icon-only beside the expanded browser. */\n  compact?: boolean\n}',
     ],
     ownerPropsReferences: [],
     standardProps: [

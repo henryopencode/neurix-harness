@@ -39,7 +39,7 @@ pnpm exec tsx scripts/release/desktop-stable.ts --plan
 <a id="installed-update-checks"></a>
 ## Installed update checks
 
-Install a package that includes this update checker once. It checks this repository's latest stable GitHub Release at startup, periodically, and through the existing update menu. Drafts and prereleases are excluded. A new version appears in the existing update indicator; **Download update** opens the installer for the app's operating system and architecture in the browser. Open the downloaded installer to update, retaining settings and conversations.
+Install a package with the in-app update controls once. It checks this repository’s latest stable GitHub Release at startup, periodically, and through the update menu; drafts and prereleases are excluded. A download icon above Settings starts the matching installer transfer. Its ring shows byte progress and its stop action cancels the transfer and removes partial files. The complete installer must match the release asset size and `SHA256SUMS.txt` before installation becomes available. Windows confirms task interruption before starting the per-user installer and reopening the app. macOS opens the downloaded DMG for manual replacement; Linux Desktop reveals its AppImage. Settings and conversations stay in their existing data directories.
 
 This download flow leaves the current application running and does not request installation privileges or store a GitHub token. A failed explicit check shows the existing retry action. Before the first Release, no update is offered. Older installations without the checker need one initial manual update.
 

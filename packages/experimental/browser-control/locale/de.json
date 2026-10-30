@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Browsersteuerung",
+    "description": "Steuere einen eigenen unsichtbaren Browser unter Windows, macOS und Linux mit Bild-in-Bild-Vorschau.",
+    "detail": "docs/DETAIL.md"
+  }
+}

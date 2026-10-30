@@ -168,6 +168,9 @@
     { "path": "./packages/context/file-reference" },
     { "path": "./apps/web" },
     { "path": "./packages/experimental/computer-control/tsconfig.client.json" },
-    { "path": "./packages/image-generation/image-generation-bundle/tsconfig.client.json" }
+    { "path": "./packages/experimental/browser-control/tsconfig.client.json" },
+    { "path": "./packages/experimental/computer-preview/tsconfig.client.json" },
+    { "path": "./packages/image-generation/image-generation-bundle/tsconfig.client.json" },
+    { "path": "./packages/experimental/mobile-access/tsconfig.client.json" }
   ]
 }

@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Controle do navegador",
+    "description": "Controle um navegador independente e oculto no Windows, macOS e Linux com pré-visualização.",
+    "detail": "docs/DETAIL.md"
+  }
+}
