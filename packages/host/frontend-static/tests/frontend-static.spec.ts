@@ -8,6 +8,7 @@
 
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { request as httpRequest } from 'node:http'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -329,4 +330,32 @@ describe('real Loader composition', () => {
       expect(await inProcess.text()).toContain(String(peer.id))
     } finally { admission.mockRestore() }
   })
+})
+
+it('serves signed browser navigation from an external page while retaining the API cross-site fence', async () => {
+  const loaded = await loadComposition()
+  const port = loaded.webServer.port
+  if (port === undefined) throw new Error('Frontend listener is unavailable')
+  const exchange = await fetch(loaded.connection.authenticatedUrl(`http://127.0.0.1:${port}`), { redirect: 'manual' })
+  const cookie = exchange.headers.get('set-cookie')?.split(';', 1)[0]
+  if (cookie === undefined) throw new Error('Frontend exchange did not issue its signed cookie')
+  const headers = { cookie, host: `127.0.0.1:${port}`, 'sec-fetch-site': 'cross-site',
+    'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document' }
+  expect(loaded.connection.admit({ headers })).toEqual({ rejection: 403 })
+  for (const [mode, destination, expected] of [
+    ['navigate', 'document', 200], ['navigate', 'iframe', 403], ['cors', 'empty', 403], ['no-cors', 'image', 403],
+  ] as const) {
+    const result = await new Promise<{ status: number | undefined; body: string }>((resolve, reject) => {
+      const request = httpRequest({ host: '127.0.0.1', port, path: '/',
+        headers: { ...headers, 'sec-fetch-mode': mode, 'sec-fetch-dest': destination } }, (response) => {
+        let body = ''
+        response.on('data', (chunk: Buffer) => { body += chunk.toString() })
+        response.on('end', () => { resolve({ status: response.statusCode, body }) })
+      })
+      request.on('error', reject)
+      request.end()
+    })
+    expect(result.status).toBe(expected)
+    if (expected === 200) expect(result.body).toContain('shell')
+  }
 })

@@ -486,6 +486,27 @@ Local grant removal has completed.
 ```
 
 Source: [`packages/credentials/deepseek-account/src/index.ts`](../../packages/credentials/deepseek-account/src/index.ts)
+
+<a id="neurix-account-events"></a>
+
+### `neurix-account/*` events
+
+<a id="neurix-accountchanged--emit"></a>
+
+#### `neurix-account/changed` — emit
+
+Publish committed computer-account state for connection management.
+
+```ts cordis-catalog
+/**
+ * Publish committed computer-account state for connection management.
+ * @param state - safe account state after local registration, sign-in, or sign-out.
+ * @mode emit
+ */
+'neurix-account/changed'(state: NeurixAccountState): void
+```
+
+Source: [`packages/experimental/mobile-access/src/account.ts`](../../packages/experimental/mobile-access/src/account.ts)
 <!-- END GENERATED cordis-surface -->
 
 The account Service Definition exposes getState, getProfile, getBalance, getUnnotifiedBonuses, ackBonusNotified, startSignIn, cancelSignIn, signOut, watch, and Host-only resolveToken and getPlatformSession. The platform provider implements it with an AuthorizationFlow and a private GrantRecord. AccountView distinguishes stored presence from server validation; attempt IDs bind cancellation to one local flow. See [the account package](../../packages/credentials/deepseek-account/README.md).

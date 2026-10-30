@@ -245,6 +245,7 @@ export const EVENT_SCOPE_PAGE: Record<string, string> = {
   'authorization': 'credentials.md',
   'credentials': 'credentials.md',
   'deepseek-account': 'credentials.md',
+  'neurix-account': 'credentials.md',
   'domain': 'storage.md',
   'fs': 'filesystem.md',
   'goal': 'goal.md',
@@ -916,6 +917,7 @@ export const FOUNDATION_TYPE_NAMES: ReadonlySet<string> = new Set([
 
 /** Project types deliberately documented outside the subsystems catalog. */
 export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
+  NeurixAccountState: 'packages/experimental/mobile-access/README.md',
   ActionCardDecision: 'packages/experimental/action-cards/README.md',
   ActionCardKind: 'packages/experimental/action-cards/README.md',
   ActionCardResult: 'packages/experimental/action-cards/README.md',

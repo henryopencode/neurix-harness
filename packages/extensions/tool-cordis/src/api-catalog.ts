@@ -858,9 +858,9 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'rejection status, or undefined when the route may accept the request.',
       },
       {
-        signature: 'admit(request: ConnectionTrustRequest): PeerAdmission',
+        signature: 'admit(request: ConnectionTrustRequest, purpose?: \'api\' | \'document\'): PeerAdmission',
         description: 'Admit an HTTP request against its signed browser or API credential and live Peer.',
-        parameters: [{ name: 'request', description: 'request headers from the HTTP or upgrade request.' }],
+        parameters: [{ name: 'request', description: 'request headers from the HTTP or upgrade request.' }, { name: 'purpose', description: '`document` permits top-level navigation while retaining Host, Origin, and credential checks; defaults to `api`.' }],
         returns: 'the credential\'s Peer, or the rejection status.',
       },
       {
@@ -4637,6 +4637,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'options', description: 'the full request. A LOOP-built request carries the process-local {@link markAgentLoopRequest} identity and arrives deep-frozen (mutation throws): its content is a pure function of the session log (the reconstructability Agent Note), so listeners read it, never rewrite it. Hand-built calls do not carry that marker; callers own their request inputs and must keep them unchanged until the stream settles.' }],
   },
   {
+    name: 'neurix-account/changed',
+    mode: 'emit',
+    signature: '\'neurix-account/changed\'(state: NeurixAccountState): void',
+    summary: 'Publish committed computer-account state for connection management.',
+    description: 'Publish committed computer-account state for connection management.',
+    parameters: [{ name: 'state', description: 'safe account state after local registration, sign-in, or sign-out.' }],
+  },
+  {
     name: 'permission-presets/catalog-changed',
     mode: 'emit',
     signature: '\'permission-presets/catalog-changed\'(): void',
@@ -6643,6 +6651,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'NativeFileApplication',
     declaration: 'export interface NativeFileApplication {\n    readonly id: string;\n    readonly name: string;\n    readonly default: boolean;\n    readonly icon: string | null;\n}',
+  },
+  {
+    name: 'NeurixAccountState',
+    declaration: 'export interface NeurixAccountState {\n    configured: boolean;\n    signedIn: boolean;\n    username?: string;\n    phone?: boolean;\n}',
   },
   {
     name: 'NotFutureError',
