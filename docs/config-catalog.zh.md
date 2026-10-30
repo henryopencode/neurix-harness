@@ -1308,10 +1308,14 @@ export interface InspectorOptions {
 - `source`: [`packages/experimental/mobile-access/src/index.ts:15`](../packages/experimental/mobile-access/src/index.ts)
 
 ```ts config-catalog
-/** Deployment-owned listener configuration; activation opens no network port. */
+/** Deployment-owned listener, public endpoint, and authentication limits. */
 export interface Config {
   /** Phone access port; zero requests an available port instead of a stable bookmark. */
   port?: number
+  /** HTTPS origin of the reverse proxy; configures a loopback-only backend. */
+  publicUrl?: string
+  /** Restore remote access at startup and after local sign-in; requires publicUrl. */
+  autoConnect?: boolean
   /** Consecutive failed passwords before a login cooldown. */
   loginFailedAttempts?: number
   /** Login cooldown after repeated credential failures. */
