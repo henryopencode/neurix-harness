@@ -158,8 +158,8 @@ export class HostConnectionService extends Service implements HostConnectionHand
   }
 
   /** Browser requests share an owner Peer; API HTTP does not depend on an attached socket. */
-  admit(request: ConnectionTrustRequest): PeerAdmission {
-    if (!this.isTrusted(request)) return { rejection: 403 }
+  admit(request: ConnectionTrustRequest, purpose: 'api' | 'document' = 'api'): PeerAdmission {
+    if (!this.isTrusted(request, purpose)) return { rejection: 403 }
     if (this.disposed) return { rejection: 401 }
     for (const provider of this.browserProviders) {
       const peer = provider.authenticate(request)
@@ -197,10 +197,10 @@ export class HostConnectionService extends Service implements HostConnectionHand
     }
   }
 
-  private isTrusted(request: ConnectionTrustRequest): boolean {
+  private isTrusted(request: ConnectionTrustRequest, purpose: 'api' | 'document' = 'api'): boolean {
     const carrier = this.owner.get('webServer')
     const authorities = [...this.trustedHosts, ...this.registeredAuthorities.values()]
-    return isTrustedApiRequest(request, authorities, carrier?.host, carrier?.protocol ?? 'http:')
+    return isTrustedApiRequest(request, authorities, carrier?.host, carrier?.protocol ?? 'http:', purpose)
   }
 
   private publishPeer(interactions: ConnectionInteractions): PeerId {

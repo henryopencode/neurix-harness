@@ -160,7 +160,7 @@ export function apply(ctx: Context, config: Config): void {
       // none and passes Connection's browser authentication instead.
       () => peer === undefined ? authorizeIndex(request) : undefined,
       (html) => {
-        const reader = peer === undefined ? ctx.connection.admit(request) : { peer }
+        const reader = peer === undefined ? ctx.connection.admit(request, 'document') : { peer }
         if ('rejection' in reader) return new Response('unauthorized', { status: reader.rejection })
         const rendered = ctx.webServer.renderIndex(html, reader.peer)
           .replace(/<head(?:\s[^>]*)?>/i, open => `${open}<base href="./">`)
