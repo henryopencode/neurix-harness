@@ -53,6 +53,7 @@ const useSessionStatus: SettingsRootComponentProps['useSessionStatus'] = selecto
 function mount({
   shortcuts = [],
   wide = true,
+  compact = false,
   dictionary = en,
   connectionState = 'connected',
   desktopUpdate = { failed: false, opening: false },
@@ -70,6 +71,7 @@ function mount({
 }: {
   shortcuts?: readonly ShortcutCatalogEntry[]
   wide?: boolean
+  compact?: boolean
   dictionary?: typeof en | typeof zh
   connectionState?: ConnectionSnapshot
   desktopUpdate?: DesktopUpdateView
@@ -116,9 +118,8 @@ function mount({
     usePanelInfo, useSessionRetainInfo: () => undefined, useResource,
     useWorkspaces: unusedHook,
     ...allowAllAccess,
-    wide,
+    wide, compact,
     reconnect,
-    openDesktopUpdate: () => {},
     useDesktopUpdate: select => select(desktopUpdate),
     t: makeTranslate(dictionary),
     useConnectionState: (select) => {
@@ -185,7 +186,7 @@ describe('SettingsRoot trigger', () => {
     const presentation = { phase: 'installing' as const, version: '1.0.1' }
     const f = mount({ dictionary: zh, connectionState: 'connecting',
       desktopUpdate: { failed: false, opening: false, presentation } })
-    expect(screen.getByRole('button', { name: '正在准备重启…' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: '正在准备重启…' })).toBeNull()
     expect(screen.queryByText('重新连接中')).toBeNull()
     f.setDesktopUpdate({ failed: false, opening: false,
       presentation: { phase: 'error', version: presentation.version, failure: 'install' } })
@@ -282,6 +283,16 @@ describe('SettingsRoot trigger', () => {
   it('keeps the reconnect indicator out of the collapsed rail', () => {
     mount({ wide: false, connectionState: 'disconnected' })
     expect(screen.queryByRole('button', { name: 'Disconnected, reconnect now' })).toBeNull()
+  })
+
+  it('keeps connection feedback beside Settings and reserves update actions for the footer slot', () => {
+    const mounted = mount({ compact: true, connectionState: 'disconnected' })
+    expect(mounted.renderSlot).toHaveBeenCalledWith('settings.trigger', { wide: false })
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnected, reconnect now' }))
+    expect(mounted.reconnect).toHaveBeenCalledOnce()
+    cleanup()
+    mount({ compact: true, desktopUpdate: { failed: true, opening: false } })
+    expect(screen.queryByRole('button', { name: en['desktop.update.retry'] })).toBeNull()
   })
 })
 

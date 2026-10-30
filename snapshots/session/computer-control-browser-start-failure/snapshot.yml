@@ -1,0 +1,10 @@
+version: 1
+scenario: computer-control-browser-start-failure
+profile: headless
+composition: computer-control-browser-start-failure
+recording: authored
+header:
+  class: computer-control-browser-start-failure
+  pin: true
+replay:
+  override: true

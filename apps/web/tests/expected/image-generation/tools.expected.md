@@ -2,7 +2,7 @@
 - list:
   - listitem:
     - button "查看 电脑控制": 电脑控制
-    - text: 在对话中操作浏览器和 macOS 应用
+    - text: Windows、macOS 和 Linux 支持浏览器操作；macOS 还支持前台操作桌面应用。
     - status
     - switch "启用 电脑控制"
   - listitem:

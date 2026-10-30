@@ -2,7 +2,7 @@
 
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { expect, it } from 'vitest'
-import { ComputerPreviewSources } from '../src/preview.ts'
+import { ComputerPreviewSources } from '../src/preview-sources.ts'
 
 it('reads only an existing exact Session and does not activate missing owners', async () => {
   const sources = new ComputerPreviewSources()

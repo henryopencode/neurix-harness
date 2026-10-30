@@ -18,6 +18,8 @@ export interface DesktopUpdatePresentation {
   readonly phase: 'idle' | 'checking' | 'available' | 'downloading' | 'verifying' | 'installing' | 'ready' | 'error'
   readonly version?: string
   readonly percent?: number
+  readonly canCancel?: boolean
+  readonly installMode?: 'restart' | 'installer'
   readonly failure?: DesktopUpdateFailureKind
 }
 
@@ -25,6 +27,8 @@ export interface DesktopUpdatePresentation {
 export interface DesktopUpdateBridge {
   status(): Promise<DesktopUpdatePresentation>
   open(): Promise<void>
+  /** Stop an active transfer; optional for compatibility with older Desktop carriers. */
+  cancel?(): Promise<void>
   subscribe(listener: (state: DesktopUpdatePresentation) => void): () => void
 }
 

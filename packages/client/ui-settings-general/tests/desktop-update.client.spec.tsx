@@ -24,9 +24,11 @@ function fixture() {
   const status = Promise.withResolvers<DesktopUpdatePresentation>()
   const unsubscribe = vi.fn()
   const open = vi.fn(async () => {})
+  const cancel = vi.fn(async () => {})
   const bridge: DesktopUpdateBridge = {
     status: () => status.promise,
     open,
+    cancel,
     subscribe: (next) => { listener = next; return unsubscribe },
   }
   const source = new DesktopUpdateSource(bridge)
@@ -38,12 +40,13 @@ function fixture() {
     dictionary?: typeof zh | typeof en
   }) {
     const state = useSyncExternalStore(subscribe, snapshot)
-    return <DesktopUpdateIndicator wide={wide} hidden={hidden} t={translate(dictionary)} view={state} onOpen={() => { source.open() }} />
+    return <DesktopUpdateIndicator wide={wide} hidden={hidden} t={translate(dictionary)} view={state}
+      onOpen={() => { source.open() }} onStop={() => { source.stop() }} />
   }
   const view = render(<Indicator />)
   const unmount = view.unmount
   view.unmount = () => { source.dispose(); unmount() }
-  return { open, status, unsubscribe, view, Indicator, source, emit: async (state: DesktopUpdatePresentation) => {
+  return { open, cancel, status, unsubscribe, view, Indicator, source, emit: async (state: DesktopUpdatePresentation) => {
     await act(async () => { listener?.(state) })
   } }
 }
@@ -64,7 +67,7 @@ it('keeps the newest event, hides for connection priority, and invokes only the 
   try {
     await f.emit(available)
     await act(async () => { f.status.resolve({ phase: 'idle' }) })
-    fireEvent.click(screen.getByRole('button', { name: '新版本' }))
+    fireEvent.click(screen.getByRole('button', { name: '下载更新' }))
     await act(async () => {})
     expect(f.open).toHaveBeenCalledOnce()
     f.view.rerender(<f.Indicator hidden />)
@@ -78,7 +81,7 @@ it('keeps the newest event, hides for connection priority, and invokes only the 
     fireEvent.focus(retry)
     expect((await screen.findByRole('tooltip')).textContent).toBe('下载更新失败，请重试。')
     f.view.rerender(<f.Indicator wide={false} />)
-    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.getByRole('button', { name: '重试更新' })).toBeTruthy()
   } finally { f.view.unmount(); f.status.resolve(available) }
   expect(f.unsubscribe).toHaveBeenCalledOnce()
 })
@@ -101,7 +104,7 @@ it('accepts initial status, coalesces actions, and ignores late events and actio
   const pending = Promise.withResolvers<undefined>()
   try {
     await act(async () => { f.status.resolve(available) })
-    expect(screen.getByRole('button', { name: '新版本' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '下载更新' })).toBeTruthy()
     await f.emit({ phase: 'verifying', version: available.version })
     f.source.open()
     expect(f.open).not.toHaveBeenCalled()
@@ -131,10 +134,49 @@ it('renders the same semantic update in the active Web locale', async () => {
   const f = fixture()
   try {
     await f.emit(available)
-    expect(screen.getByRole('button', { name: '新版本' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '下载更新' })).toBeTruthy()
     f.view.rerender(<f.Indicator dictionary={en} />)
-    expect(screen.getByRole('button', { name: 'Update' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Download update' })).toBeTruthy()
   } finally { f.view.unmount(); f.status.resolve(available) }
+})
+
+it('keeps the stop action enabled during an in-flight download and exposes ring progress at both sidebar widths', async () => {
+  const f = fixture()
+  const pending = Promise.withResolvers<undefined>()
+  try {
+    await f.emit(available)
+    f.open.mockImplementationOnce(() => pending.promise)
+    fireEvent.click(screen.getByRole('button', { name: '下载更新' }))
+    await f.emit({ phase: 'downloading', version: available.version, percent: 58, canCancel: true })
+    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('58')
+    const stop = screen.getByRole('button', { name: '停止下载' })
+    expect(stop.getAttribute('aria-disabled')).toBe('false')
+    fireEvent.click(stop)
+    await act(async () => {})
+    expect(f.cancel).toHaveBeenCalledOnce()
+    f.view.rerender(<f.Indicator wide={false} />)
+    expect(screen.getByRole('button', { name: '停止下载' })).toBe(stop)
+    expect(stop.textContent).toBe('')
+    await f.emit({ phase: 'ready', version: available.version, installMode: 'installer' })
+    expect(screen.getByRole('button', { name: '打开安装包' })).toBeTruthy()
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    await f.emit({ phase: 'ready', version: available.version, installMode: 'restart' })
+    expect(screen.getByRole('button', { name: '安装并重启' })).toBeTruthy()
+  } finally { pending.resolve(undefined); f.view.unmount(); f.status.resolve(available) }
+})
+
+it('coalesces stop requests and keeps a failed stop actionable without losing progress', async () => {
+  const f = fixture()
+  const pending = Promise.withResolvers<undefined>()
+  try {
+    await f.emit({ phase: 'downloading', version: available.version, percent: 35, canCancel: true })
+    f.cancel.mockImplementationOnce(() => pending.promise)
+    f.source.stop(); f.source.stop()
+    expect(f.cancel).toHaveBeenCalledOnce()
+    await act(async () => { pending.reject(new Error('IPC unavailable')) })
+    expect(f.source.store.getSnapshot().failed).toBe(true)
+    expect(f.source.store.getSnapshot().presentation?.percent).toBe(35)
+  } finally { pending.resolve(undefined); f.view.unmount(); f.status.resolve(available) }
 })
 
 it('shows fallback progress and error details when the shell omits optional fields', async () => {

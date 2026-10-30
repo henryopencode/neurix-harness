@@ -1,17 +1,17 @@
-/* Sidebar column (figma 133:7629): vertical stack, padding 12/6, sidebar
-   fill + 1px right border painted by the layout column. Collapse is a
-   slide + crossfade, not a morph: the content holds its frozen expanded
-   layout (inline width set by the component) and fades in place (.fading)
-   while the sliding column (AppFrame grid tracks) clips it; the rail layout
-   (.collapsed) only applies after the fade settles, so nothing reflows
-   mid-slide. */
+/* The 56px navigation rail and the workspace browser share the resizable
+   sidebar column. Collapsing keeps the existing compact control stack. */
 
 .root {
-  --dsh-sidebar-inline-padding: 10px;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'navigation logo'
+    'navigation new'
+    'navigation browser'
+    'foot browser';
   height: 100%;
-  padding: 6px var(--dsh-sidebar-inline-padding);
+  padding: 6px 0;
   box-sizing: border-box;
   background: var(--dsw-specific-sidebar-fill);
   color: var(--dsw-alias-label-primary);
@@ -32,14 +32,45 @@
    rail (10px side padding), 12px vertical rhythm, 18px from the rail top to
    the N symbol's 24px square. */
 .root.collapsed {
+  display: flex;
+  flex-direction: column;
   padding: 18px 10px 6px;
+}
+
+.root:has(.topStrip) {
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'caption caption'
+    'navigation logo'
+    'navigation new'
+    'navigation browser'
+    'foot browser';
+}
+
+.navigationRail {
+  grid-area: navigation;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 6px 10px 0;
+  border-right: 0.5px solid var(--dsw-alias-border-l3);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.collapsed .navigationRail {
+  flex: none;
+  max-height: 50%;
+  padding: 0;
+  border-right: none;
 }
 
 /* The brand stays in the sidebar; fixed caption controls survive zero-width collapse. */
 :global([data-windows-titlebar]) .root .logoRow {
   height: 40px;
-  margin: 0;
-  padding: 0;
+  margin: 0 10px;
+  padding: 0 2px 0 8px;
 }
 
 :global([data-windows-titlebar]) .toggle {
@@ -76,10 +107,10 @@
 
 :global([data-windows-titlebar]) .root:not(.collapsed) .newSession {
   margin-top: 8px;
-  margin-left: 0;
+  margin-left: 12px;
 }
 
-:global([data-windows-titlebar]) .collapsed .panelList,
+:global([data-windows-titlebar]) .collapsed .navigationRail,
 :global([data-windows-titlebar]) .collapsed .regionArea,
 :global([data-windows-titlebar]) .collapsed .footArea {
   display: none;
@@ -130,12 +161,31 @@
   --dsh-scrollbar-thumb-hover: transparent;
 }
 
-/* Collapse phase 1: the whole frozen-width content fades out in place over
-   150ms; at settle the children unmount/snap to the rail layout. */
+/* Frozen-width content follows the frame's 300ms collapse before changing
+   to the compact layout. Reversing the toggle reverses these transitions. */
+.root > * {
+  opacity: 1;
+  transition: opacity var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}
+
+.root > .regionArea,
+.root > .navigationRail {
+  transform: translateX(0);
+  transition: opacity var(--ds-transition-duration-slow) var(--ds-ease-in-out),
+    transform var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}
+
 .fading > * {
   opacity: 0;
-  transition: opacity 150ms var(--ds-ease-in-out);
 }
+
+.fading > .regionArea,
+.fading > .navigationRail {
+  transform: translateX(-8px);
+}
+
+/* Window controls retain their anchor and remain available while closing. */
+.fading > .topStrip { opacity: 1; transform: none; }
 
 /* Wide-only content fades back in on expand remount. */
 .wide {
@@ -146,8 +196,7 @@
   from { opacity: 0; }
 }
 
-/* At the 150ms rail settle, the upper controls enter from the former
-   rail right edge over the remaining 150ms of the AppFrame track transition.
+/* Once the browser is hidden, compact controls fade into their rail positions.
    The bottom-pinned settings seat shares their opacity timeline but stays
    horizontally fixed. Only a live collapse gets .railIn; a cold collapsed
    render stays static. */
@@ -179,13 +228,14 @@
    its own run is the column's draggable geometry and no frame band has to match
    the strip's height; the toggle inside subtracts via the base.css rule. */
 .topStrip {
+  grid-area: caption;
   flex: none;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   height: 52px;
   box-sizing: border-box;
-  margin: -6px calc(-1 * var(--dsh-sidebar-inline-padding)) 0;
+  margin: -6px 0 0;
   /* The 2px foot centres the 28px toggle at y 25, level with the collapsed
      seat (ui-layout .leadingSeat, top 11) and the conversation title row, so
      collapse/expand never shifts it vertically. */
@@ -198,25 +248,10 @@
   justify-content: flex-start;
 }
 
-/* The strip's full 52px foot leaves the wordmark too low; the content column
-   tucks 12px back under it, still clear of the toggle (28px control centered
-   in the strip ends at y 40). */
-.topStrip + .logoRow {
-  margin-top: -12px;
-}
-
-/* Logo row (figma pad (4,8,4,8)): expanded keeps the panel toggle at the
-   right edge; the rail gives every control the same base left anchor before
-   the shared entry translation is applied. macOS hiddenInset titlebar: the row
-   is marked `data-window-drag` in markup (SidebarRoot), so ui-web base.css's
-   single darwin rule carries the drag over its own box — below the top strip
-   (40–100px: the strip's 52px foot with the row's -12px tuck). The brand rides
-   that box (SidebarRoot renders the wordmark as a plain span there, so the
-   global interactive no-drag rule never subtracts it); the dedicated New
-   Session button below keeps the pointer and keyboard paths. Safe as a drag
-   source: it precedes the sidebar's overlay slots in document order, so their
-   no-drag still wins. */
+/* The expanded name and toggle share a row. On macOS the inert wordmark
+   remains draggable; interactive controls subtract their own hit areas. */
 .logoRow {
+  grid-area: logo;
   flex: none;
   display: flex;
   align-items: center;
@@ -224,7 +259,7 @@
   gap: 8px;
   height: 48px;
   padding: 6px 2px 6px 8px;
-  margin-bottom: 2px;
+  margin: 0 10px 2px;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -232,7 +267,7 @@
 .collapsed .logoRow {
   height: 36px;
   padding: 0;
-  margin-bottom: 12px;
+  margin: 0 0 12px;
   justify-content: flex-start;
   /* The settled rail's 36px toggle is wider than this 35px row; the base row's clip would cut
      the control's right edge, so the rail stops clipping once the slide has settled. */
@@ -333,29 +368,6 @@
   border-radius: var(--dsw-radius-md);
 }
 
-/* Rail logo swap: collapsed, the toggle rests as the N symbol (brand ink,
-   no hover circle) and hovering reveals the panel icon — the expand
-   affordance (figma sidebar-hover flow). Expanded it is a plain panel icon. */
-.collapsed .toggle .panelIcon {
-  display: none;
-}
-
-@media (hover: hover) {
-  .collapsed .toggle:hover .panelIcon {
-    display: inline;
-  }
-
-  .collapsed .toggle:hover .railMark {
-    display: none;
-  }
-}
-
-.railMark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
 /* Rail icons ride the primary ink (figma rail spec); expanded keeps the
    secondary icon-button ink. */
 .collapsed .iconButton {
@@ -364,6 +376,7 @@
 
 /* The New Session action shares the global navigation row geometry. */
 .newSession {
+  grid-area: new;
   container-type: inline-size;
   position: relative;
   flex: none;
@@ -373,7 +386,7 @@
   gap: 0;
   height: 34px;
   padding: 6px 10px;
-  margin: 0 2px 6px;
+  margin: 0 12px 6px;
   box-sizing: border-box;
   border: none;
   border-radius: var(--dsw-radius-sm);
@@ -456,6 +469,7 @@
   }
 }
 .newSessionContent { display: flex; width: 100cqw; align-items: center; justify-content: flex-start; gap: 8px; }
+.collapsed .newSessionContent { justify-content: center; }
 .newSessionContent > svg { flex: none; }
 
 .newSessionShortcut {
@@ -480,19 +494,20 @@
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
-/* Panel entries share the New Session bar's 12px radius and 2px inset, the
-   session rows' hover/selected surface, and the primary ink. */
+/* Navigation controls keep the same icon geometry at either sidebar width. */
 .panelRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 2px;
-  min-height: 34px;
-  padding: 6px 10px;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
   border: none;
   border-radius: var(--dsw-radius-sm);
@@ -542,38 +557,16 @@
   justify-content: center;
 }
 
-.panelTitle {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.collapsed .panelList {
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.collapsed .panelRow {
-  width: 36px;
-  height: 36px;
-  justify-content: center;
-  margin: 0;
-  padding: 0;
-  color: var(--dsw-alias-label-primary);
-}
-
-/* Region seat: always mounted so the foot never moves. Its trailing margin
-   cancels the wide shell inset so the nested scrollbar can sit at the sidebar
-   edge; the browser restores that inset inside its own rows. */
+/* The browser owns its scrolling region and remains mounted across collapse. */
 .regionArea {
+  grid-area: browser;
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  margin-left: -4px;
-  margin-right: calc(-1 * var(--dsh-sidebar-inline-padding));
-  padding-left: 4px;
+  margin-left: 6px;
+  margin-right: 0;
+  padding-left: 0;
   overflow: hidden;
 }
 
@@ -586,35 +579,33 @@
 /* Footer seats: additive actions stack above Settings. Each occupant owns its
    button geometry and hover chrome. */
 .footArea {
+  grid-area: foot;
   flex: none;
   display: flex;
   flex-direction: column;
-  padding-top: 8px;
+  align-items: center;
+  padding: 8px 10px 0;
+  border-right: 0.5px solid var(--dsw-alias-border-l3);
 }
 
 .settingsArea,
 .footerActions {
   flex: none;
   min-width: 0;
-  width: 100%;
-}
-
-.footerActions {
-  display: flex;
-}
-
-.collapsed .footArea {
-  align-items: center;
-}
-
-.collapsed .settingsArea,
-.collapsed .footerActions {
   display: flex;
   justify-content: center;
   width: auto;
 }
 
+.collapsed .footArea {
+  padding: 8px 0 0;
+  border-right: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .root > *,
+  .root > .regionArea,
+  .root > .navigationRail,
   .wide,
   .fading > *,
   .railIn .iconButton,

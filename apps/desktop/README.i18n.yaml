@@ -44,6 +44,9 @@
 /neurix-harness-desktop/develop:
   en: faf7676ba18bbf2f
   zh: f1d7b75ad348c548
+/neurix-harness-desktop/develop/update-an-installed-mac-app-from-source:
+  en: 8eea87e453f7ff6e
+  zh: ce1447df8ce1dafa
 /neurix-harness-desktop/develop/startup-onboarding:
   en: 67dc7ef3e293236a
   zh: 1b224db684a2d1d7
@@ -57,8 +60,8 @@
   en: 9b90a2651a6d2b52
   zh: 86d4d9c4358aad80
 /neurix-harness-desktop/updates:
-  en: e8a0c8bd6560c357
-  zh: 738234e8c45f61ca
+  en: 5320fa3c49c2ead7
+  zh: 6da344c2f634b0cb
 /neurix-harness-desktop/updates/local-desktop-settings:
   en: 2e57457c44c85b5f
   zh: 5b8510a3dc4c6c9d

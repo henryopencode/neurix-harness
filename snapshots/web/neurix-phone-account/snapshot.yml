@@ -1,0 +1,8 @@
+version: 1
+scenario: neurix-phone-account
+profile: web
+composition: neurix-phone-account
+recording: authored
+header:
+  class: neurix-phone-account
+  pin: true

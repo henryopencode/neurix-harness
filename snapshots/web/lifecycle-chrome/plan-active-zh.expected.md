@@ -1,6 +1,7 @@
 - button "新建会话"
 - button "收起侧边栏"
 - button "新建会话": 新会话
+- button "首页"
 - navigation "全局面板":
   - button "插件"
   - button "自动化任务"
@@ -13,7 +14,7 @@
 - tree "会话":
   - treeitem "workspace" [expanded]
   - treeitem "新会话" [selected]
-- button "账号菜单": 更多
+- button "账号菜单"
 - banner:
   - button "打开右侧边栏"
 - text: 今天想做些什么？

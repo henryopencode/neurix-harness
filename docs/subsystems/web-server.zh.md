@@ -107,6 +107,12 @@ interface TlsConfig {
 
 处理过程中抛出异常的请求（畸形的 % 转义撞上 `decodeURIComponent`、客户端在请求体中途断开）会记录为警告并应答 400（响应头已发出时则销毁 socket），绝不导致进程退出。dispose（资源释放）把 `close()` 与 `closeAllConnections()` 配对使用，因为处理器可能像 SSE（Server-Sent Events）那样保持响应打开，而这类连接永远不会自行结束；没有强制关闭，拆卸就会挂起。TLS socket 只有完成握手后才计入连接，因此服务器会把原始 TLS socket 与升级后的 socket 一并跟踪，并在 dispose 时销毁两者。该包从不打印输出：URL 行归 shell 所有。逐包运维细节（含开发模式的 bundle 监视流水线）留在 [README](../../packages/host/webserver/README.zh.md) 中。
 
+### 额外监听器与账号认证
+
+`webServer.listen({ host, port })` 返回 `WebListener`，包含绑定后的 `origin`，以及等待所有连接关闭的幂等 `close()`。额外监听器共享同一套路由与 TLS 配置，由调用 fiber 持有，本身不建立浏览器信任。
+
+`connection.registerTrustedHost(authority)` 临时允许一个规范访问地址。`connection.registerBrowserAuth(provider)` 注册 `ConnectionBrowserAuth`：`authenticate(request)` 返回凭据对应的有效 Peer，或通过 `undefined` 委托；`authorizeIndex(request, response)` 返回是否允许应用提供首页，或通过 `undefined` 委托。两项注册均随调用 fiber 撤回。Host／Origin 准入仍先于提供方执行；提供方拥有凭据校验、登录响应、到期与 Peer 撤销。
+
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
 <a id="cordis-surface"></a>
@@ -122,6 +128,20 @@ Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnp
 Host `ctx.connection` members consumed by transport-independent adapters.
 
 ```ts cordis-catalog
+/**
+ * Admit an additional deployment authority without granting authentication.
+ * @param authority - canonical host or host:port.
+ * @returns idempotent withdrawal owned by the calling plugin's lifetime.
+ */
+registerTrustedHost(authority: string): () => Promise<void>
+
+/**
+ * Register a browser authentication provider without bypassing Host/Origin admission.
+ * @param provider - credential checks and optional login page owned by one plugin.
+ * @returns withdrawal owned by the calling fiber.
+ */
+registerBrowserAuth(provider: ConnectionBrowserAuth): () => Promise<void>
+
 /**
  * Compose exact Fetch routes and the shared-channel RPC interceptor.
  * @param channel - shared channel mounted by Connection.
@@ -140,9 +160,10 @@ requestRejection(request: ConnectionTrustRequest): ConnectionRequestRejection
 /**
  * Admit an HTTP request against its signed browser or API credential and live Peer.
  * @param request - request headers from the HTTP or upgrade request.
+ * @param purpose - `document` permits top-level navigation while retaining Host, Origin, and credential checks; defaults to `api`.
  * @returns the credential's Peer, or the rejection status.
  */
-admit(request: ConnectionTrustRequest): PeerAdmission
+admit(request: ConnectionTrustRequest, purpose?: 'api' | 'document'): PeerAdmission
 
 /**
  * Create an independent in-process Peer, disposed with the Context that read `ctx.connection`.
@@ -212,6 +233,14 @@ The browser HTTP carrier service. Activation loads any configured TLS material, 
  * @throws before `listen` binds a port, or when the bind address has no URL form.
  */
 getOrigin(): string
+
+/**
+ * Serve the existing application on another concrete local interface.
+ * This grants no authentication or browser trust. The calling plugin owns closure.
+ * @param options - concrete interface and port; zero requests an OS-assigned port.
+ * @returns bound origin and idempotent closure registered with the calling fiber.
+ */
+async listen(options: { host: string; port: number }): Promise<WebListener>
 
 /**
  * Register a named route. Duplicate (kind, path) throws — route patterns are

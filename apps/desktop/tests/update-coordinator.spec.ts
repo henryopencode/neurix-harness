@@ -8,7 +8,8 @@ import { DesktopUpdatePreparationError } from '../src/update-error.ts'
 import { zh } from '../src/locale.ts'
 
 vi.mock('electron', () => ({ app: { isPackaged: false } }))
-vi.mock('electron-updater', () => ({
+vi.mock('electron-updater', async original => ({
+  CancellationToken: (await original<typeof import('electron-updater')>()).CancellationToken,
   default: { autoUpdater: { autoDownload: true, autoInstallOnAppQuit: true } },
 }))
 
@@ -73,6 +74,27 @@ function fixture(channel: 'nightly' | 'latest' = 'nightly', version = '1.1.0-alp
 }
 
 describe('desktop update coordinator', () => {
+  it('cancels a live managed download, joins cleanup, and permits a fresh user download', async () => {
+    const f = fixture()
+    await f.coordinator.check()
+    const started = Promise.withResolvers<undefined>()
+    f.downloadUpdate.mockImplementationOnce((token?: import('electron-updater').CancellationToken) => {
+      if (token === undefined) throw new Error('Transfer has no cancellation owner')
+      return token.createPromise<string[]>((_resolve, reject, onCancel) => {
+        onCancel(() => { reject(new Error('cancelled')) })
+        f.events.emit('download-progress', { percent: 41 })
+        started.resolve(undefined)
+      })
+    })
+    const download = f.coordinator.download('1.1.0-rc.2')
+    await started.promise
+    expect(f.coordinator.state).toMatchObject({ phase: 'downloading', canCancel: true, percent: 41 })
+    await f.coordinator.cancel()
+    expect((await download).phase).toBe('available')
+    expect(f.downloadResult).not.toHaveBeenCalled()
+    expect((await f.coordinator.download('1.1.0-rc.2')).phase).toBe('ready')
+    expect(f.quitAndInstall).not.toHaveBeenCalled()
+  })
   it.each(['stop-failed', 'fullscreen-timeout'] as const)('keeps safe %s diagnostics separate and clears them on an explicit retry', async (kind) => {
     const f = fixture()
     await f.coordinator.check()

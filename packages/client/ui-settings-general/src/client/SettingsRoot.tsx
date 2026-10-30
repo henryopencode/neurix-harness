@@ -24,7 +24,6 @@ import {
 import type { ConnectionIndicatorState } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SettingsRootComponentProps, SettingsSectionRow } from './shell-contract.ts'
 import css from './SettingsRoot.module.css'
-import { DesktopUpdateIndicator } from './DesktopUpdateIndicator.tsx'
 
 const RECOVERY_CONFIRMATION_MS = 2_000
 
@@ -117,8 +116,8 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
  */
 export function SettingsRoot(props: SettingsRootComponentProps) {
   const {
-    wide, reconnect, useConnectionState, useSections, useOnboardingSteps, useSessions, renderSlot, t,
-    useDesktopUpdate, openDesktopUpdate, useStore, actions, useShortcuts,
+    wide, compact, reconnect, useConnectionState, useSections, useOnboardingSteps, useSessions, renderSlot, t,
+    useDesktopUpdate, useStore, actions, useShortcuts,
   } = props
   const { open, activeId } = useStore(state => state)
   const shortcut = useShortcuts(rows => rows.find(row => row.id === 'settings.open'))
@@ -219,35 +218,35 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
 
   return (
     <>
-      <div className={clsx(css.triggerRow, !wide && css.railRow)}>
+      <div className={clsx(css.triggerRow, (!wide || compact) && css.railRow)}>
         {renderSlot('settings.launcher', {
-          wide, settingsOpen: open, openSettings: actions.open,
+          wide: wide && !compact, settingsOpen: open, openSettings: actions.open,
           ...(shortcut?.keys.length ? { settingsShortcut: { keys: shortcut.keys, aria: shortcut.aria } } : {}),
           openOnboarding: (id) => { close(); setRequestedOnboarding(id) },
         }, { fallback: <Tooltip disabled={open} label={t('trigger')} shortcutKeys={shortcut?.keys}>
           <button
             type="button"
-            className={clsx(css.trigger, !wide && css.rail)}
+            className={clsx(css.trigger, (!wide || compact) && css.rail)}
             aria-label={t('trigger')}
             aria-keyshortcuts={shortcut?.aria}
             aria-haspopup="dialog"
             aria-expanded={open}
             onClick={() => { actions.open() }}
           >
-            {renderSlot('settings.trigger', { wide })}
+            {renderSlot('settings.trigger', { wide: wide && !compact })}
           </button>
         </Tooltip> })}
-        <ConnectionIndicator
-          state={wide && desktopUpdate.presentation?.phase !== 'installing' ? connectionIndicator : undefined}
-          disconnectedLabel={t('connection.error')}
-          connectingLabel={t('connection.connecting')}
-          recoveredLabel={t('connection.connected')}
-          reconnectActionLabel={t('connection.reconnect')}
-          restartActionLabel={t('connection.restart')}
-          onReconnect={reconnect}
-        />
-        <DesktopUpdateIndicator wide={wide} hidden={connectionIndicator !== undefined && desktopUpdate.presentation?.phase !== 'installing'}
-          t={t} view={desktopUpdate} onOpen={openDesktopUpdate} />
+        <div className={clsx(css.feedback, compact && css.railFeedback)}>
+          <ConnectionIndicator
+            state={wide && desktopUpdate.presentation?.phase !== 'installing' ? connectionIndicator : undefined}
+            disconnectedLabel={t('connection.error')}
+            connectingLabel={t('connection.connecting')}
+            recoveredLabel={t('connection.connected')}
+            reconnectActionLabel={t('connection.reconnect')}
+            restartActionLabel={t('connection.restart')}
+            onReconnect={reconnect}
+          />
+        </div>
       </div>
       {open && (
         <SettingsPanel

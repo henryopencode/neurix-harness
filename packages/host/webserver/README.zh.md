@@ -77,6 +77,8 @@ index 启动输入分两层，按页面所代表的 Peer 计算。`collectIndexI
 <a id="understand-the-implementation"></a>
 ## 理解实现
 
+`listen({ host, port })` 在具体网卡上增加监听器，共享已有路由、升级、压缩和 TLS 配置。它返回源地址与幂等的 `close()`，后者等待连接关闭。调用插件通过 Cordis effect 持有它；浏览器访问地址与认证仍由 Connection 管理。
+
 <details>
 <summary>实现细节——点击展开</summary>
 
@@ -120,6 +122,7 @@ index 启动输入分两层，按页面所代表的 Peer 计算。`collectIndexI
 #### KV Cache 影响
 
 无；该包既不组装也不发送提供方请求。
+
 
 ## 已知限制与延期工作
 

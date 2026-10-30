@@ -58,4 +58,4 @@
     - id: native-computer-use-fixture
       name: '../computer-use-unified/native-fixture.mjs'
       config:
-        browserOnly: true
+        browserControl: true

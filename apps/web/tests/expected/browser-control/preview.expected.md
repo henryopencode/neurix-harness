@@ -1,0 +1,7 @@
+- complementary "浏览器画中画":
+  - img "Agent 当前操作窗口的实时预览"
+  - button "拖动画中画"
+  - button "从左下角调整画中画大小"
+  - button "从右下角调整画中画大小"
+  - button "最大化"
+  - button "收起"

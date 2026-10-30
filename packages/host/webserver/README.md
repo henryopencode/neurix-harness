@@ -77,6 +77,9 @@ A listen failure (for example EADDRINUSE) rejects plugin initialization with the
 <a id="understand-the-implementation"></a>
 ## Understand the implementation
 
+The `listen({ host, port })` method adds a concrete-interface listener over the same routes, upgrades, compression, and TLS configuration. It returns its origin and an idempotent `close()` that awaits socket closure. The calling plugin owns it through Cordis effects; browser authority and authentication remain Connection-owned.
+
+
 <details>
 <summary>Implementation internals — click to expand</summary>
 
@@ -120,6 +123,7 @@ None, as the HTTP carrier bridges browser and API handler and registers nothing 
 #### KV Cache effect
 
 None; this package neither assembles nor sends a provider request.
+
 
 ## Known Limitations and Deferred Work
 

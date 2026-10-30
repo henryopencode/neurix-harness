@@ -1,0 +1,2 @@
+- button "Install and restart"
+- button "Account menu"

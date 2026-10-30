@@ -13,7 +13,7 @@ import { en } from '../src/client/locales.ts'
 afterEach(cleanup)
 
 describe('image-generation card status', () => {
-  it('hides configured status and flags missing settings or disabled activation', () => {
+  it('hides configured or unavailable status and flags incomplete settings or disabled activation', () => {
     const entry = { ns: 'tool-image-generation', schema: {}, value: { enabled: true, endpoint: 'https://images.example/generate', model: 'image-01' },
       revision: 0, applies: 'live' as const, autoGenerate: true, secrets: [{ path: ['apiKey'], set: true }] }
     const store = createSnapshotStore<SettingsMirrorSnapshot>({ status: 'ready', error: null,
@@ -33,6 +33,16 @@ describe('image-generation card status', () => {
       act(() => { store.set({ ...store.getSnapshot(), view: { writable: true, hasDocument: true, namespaces: [changed] } }) })
       expect(screen.getByText(en.statusNeedsSetup)).toBeTruthy()
     }
+    act(() => { store.set({ status: 'ready', error: null, view: { writable: true, hasDocument: true, namespaces: [entry] } }) })
+    expect(view.container.textContent).toBe('')
+    // The settings namespace disappears before the inventory publishes deactivation.
+    act(() => { store.set({ status: 'ready', error: null, view: { writable: true, hasDocument: true, namespaces: [] } }) })
+    expect(view.container.textContent).toBe('')
+    view.rerender(<ImageGenerationStatus {...props} pkg={{ ...props.pkg, enabled: false }} />)
+    expect(screen.getByText(en.statusDisabled)).toBeTruthy()
+    view.rerender(<ImageGenerationStatus {...props} />)
+    act(() => { store.set({ status: 'ready', error: null, view: undefined }) })
+    expect(view.container.textContent).toBe('')
     act(() => { store.set({ status: 'loading', error: null, view: undefined }) })
     expect(view.container.textContent).toBe('')
     view.rerender(<ImageGenerationStatus {...props} pkg={{ ...props.pkg, enabled: false }} />)

@@ -9,6 +9,8 @@
 
 ```mermaid
 flowchart LR
+  pkg_experimental_browser_control["experimental-browser-control"]
+  svc_browserPreview["ctx.browserPreview<br/>Hidden browser preview Remote"]
   pkg_experimental_computer_control["experimental-computer-control"]
   svc_computerPreview["ctx.computerPreview<br/>Computer target preview Remote"]
   pkg_action_cards["action-cards"]
@@ -355,6 +357,7 @@ flowchart LR
   pkg_deepseek_llm_api_extensions --> svc_deepseekLlmApiExtensions
   pkg_experimental_agent_team --> svc_agentTeams
   pkg_experimental_api_speech_to_text --> svc_speechController
+  pkg_experimental_browser_control --> svc_browserPreview
   pkg_experimental_browser_use_chrome_devtools_mcp --> svc_browserUse
   pkg_experimental_browser_use_playwright_mcp --> svc_browserUse
   pkg_experimental_browser_use_stagehand_native --> svc_browserUse
@@ -636,6 +639,7 @@ flowchart LR
 
 | ctx 键 | 角色 | 所属包 | 实现 | 直接消费方 | 配套插件 | 说明 |
 | --- | --- | --- | --- | --- | --- | --- |
+| `ctx.browserPreview` | `core` | [`experimental-browser-control`](../packages/experimental/browser-control) | - | - | - | 返回会话自有标签页的纯展示截图，不访问原生应用。 |
 | `ctx.computerPreview` | `core` | [`experimental-computer-control`](../packages/experimental/computer-control) | - | - | - | 返回所选 Session 的只读截图，不激活 Agent，也不发送输入。 |
 | `ctx.actionCards` | `service` | [`action-cards`](../packages/experimental/action-cards) | - | [`creation-recommendations`](../packages/experimental/creation-recommendations), [`client-ui-action-cards`](../packages/experimental/client-ui-action-cards) | - | 负责卡片工具、卡片状态、用户操作和状态通知；各卡片种类注册自己的动作和处理器。 |
 | `ctx.pluginRecommendations` | `service` | [`plugin-recommendations`](../packages/experimental/plugin-recommendations) | - | [`client-ui-plugin-recommendations`](../packages/experimental/client-ui-plugin-recommendations) | - | 读取官方插件卡片的当前目录文本，并在用户点击后通过配置插件管理器启用该插件。 |

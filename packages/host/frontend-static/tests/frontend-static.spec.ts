@@ -8,9 +8,10 @@
 
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { request as httpRequest } from 'node:http'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
@@ -302,4 +303,59 @@ describe('real Loader composition', () => {
     const index = await loaded.webServer.readResource(new Request(`${base}/`), reader)
     expect([index.status, index.headers.get('cache-control'), index.headers.get('etag')]).toEqual([200, null, null])
   })
+
+  it('renders browser injections for the credential Peer and refuses a lost admission', async () => {
+    const loaded = await loadComposition()
+    const peer = loaded.connection.createPeer({ principal: { kind: 'owner' }, interactions: 'answer' })
+    loaded.connection.registerBrowserAuth({
+      authenticate: () => peer,
+      authorizeIndex: () => true,
+    })
+    loaded.on('webserver/index-inject', (table, reader) => {
+      table.push({ kind: 'global', name: '__CREDENTIAL_PEER__', value: reader.id })
+    })
+    const url = loaded.webServer.getOrigin() + '/'
+    const accepted = await fetch(url)
+    const html = await accepted.text()
+    expect(accepted.status).toBe(200)
+    expect(accepted.headers.get('cache-control')).toBe('no-store')
+    expect(html).toContain(String(peer.id))
+    expect(html).not.toContain(String(loaded.connection.browserPeer.id))
+    const admission = vi.spyOn(loaded.connection, 'admit').mockReturnValue({ rejection: 401 })
+    try {
+      const refused = await fetch(url)
+      expect(refused.status).toBe(401)
+      expect(await refused.text()).not.toContain('__CREDENTIAL_PEER__')
+      const inProcess = await loaded.webServer.readResource(new Request(url), peer)
+      expect(await inProcess.text()).toContain(String(peer.id))
+    } finally { admission.mockRestore() }
+  })
+})
+
+it('serves signed browser navigation from an external page while retaining the API cross-site fence', async () => {
+  const loaded = await loadComposition()
+  const port = loaded.webServer.port
+  if (port === undefined) throw new Error('Frontend listener is unavailable')
+  const exchange = await fetch(loaded.connection.authenticatedUrl(`http://127.0.0.1:${port}`), { redirect: 'manual' })
+  const cookie = exchange.headers.get('set-cookie')?.split(';', 1)[0]
+  if (cookie === undefined) throw new Error('Frontend exchange did not issue its signed cookie')
+  const headers = { cookie, host: `127.0.0.1:${port}`, 'sec-fetch-site': 'cross-site',
+    'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document' }
+  expect(loaded.connection.admit({ headers })).toEqual({ rejection: 403 })
+  for (const [mode, destination, expected] of [
+    ['navigate', 'document', 200], ['navigate', 'iframe', 403], ['cors', 'empty', 403], ['no-cors', 'image', 403],
+  ] as const) {
+    const result = await new Promise<{ status: number | undefined; body: string }>((resolve, reject) => {
+      const request = httpRequest({ host: '127.0.0.1', port, path: '/',
+        headers: { ...headers, 'sec-fetch-mode': mode, 'sec-fetch-dest': destination } }, (response) => {
+        let body = ''
+        response.on('data', (chunk: Buffer) => { body += chunk.toString() })
+        response.on('end', () => { resolve({ status: response.statusCode, body }) })
+      })
+      request.on('error', reject)
+      request.end()
+    })
+    expect(result.status).toBe(expected)
+    if (expected === 200) expect(result.body).toContain('shell')
+  }
 })

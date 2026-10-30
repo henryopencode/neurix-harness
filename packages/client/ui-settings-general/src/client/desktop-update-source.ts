@@ -8,6 +8,7 @@ export class DesktopUpdateSource {
   readonly store = createSnapshotStore<DesktopUpdateView>({ failed: false, opening: false })
   private live = true
   private received = false
+  private stopping = false
   private readonly unsubscribe: (() => void) | undefined
 
   /** @param bridge - Optional isolated Electron API, absent in ordinary browsers. */
@@ -36,6 +37,16 @@ export class DesktopUpdateSource {
     }).finally(() => {
       if (this.live) this.store.set({ ...this.store.getSnapshot(), opening: false })
     })
+  }
+
+  /** Stop a shell-owned transfer; older carriers retain their non-cancellable progress display. */
+  stop(): void {
+    if (!this.live || this.stopping || this.bridge?.cancel === undefined
+      || this.store.getSnapshot().presentation?.canCancel !== true) return
+    this.stopping = true
+    void this.bridge.cancel().catch(() => {
+      if (this.live) this.store.set({ ...this.store.getSnapshot(), failed: true })
+    }).finally(() => { this.stopping = false })
   }
 
   /** Detach the carrier and ignore any pending status or action completion. */

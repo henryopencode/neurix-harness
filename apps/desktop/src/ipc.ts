@@ -31,6 +31,7 @@ export const DESKTOP_IPC = {
   localeChanged: 'dsh-desktop:locale-changed',
   updatesStatus: 'dsh-desktop:updates-status',
   updatesOpen: 'dsh-desktop:updates-open',
+  updatesCancel: 'dsh-desktop:updates-cancel',
   updatesPresentation: 'dsh-desktop:updates-presentation',
   nativeThemeSet: 'dsh-desktop:native-theme-set',
   windowFullscreen: 'dsh-desktop:window-fullscreen',
@@ -48,6 +49,8 @@ export interface DesktopUpdateState {
   /** Main-owned diagnostics without subprocess output or credentials; hidden until expanded. */
   readonly technicalDetails?: string
   readonly percent?: number
+  readonly canCancel?: boolean
+  readonly installMode?: 'restart' | 'installer'
   readonly failedOperation?: 'check' | 'download' | 'install'
   /** Main-owned preparation cause; UI wording is selected by the active locale. */
   readonly preparationFailure?: DesktopUpdatePreparationFailureKind
@@ -71,6 +74,8 @@ export interface DesktopUpdatePresentation {
   readonly phase: DesktopUpdateState['phase']
   readonly version?: string
   readonly percent?: number
+  readonly canCancel?: boolean
+  readonly installMode?: 'restart' | 'installer'
   readonly failure?: DesktopUpdateFailureKind
 }
 
@@ -89,6 +94,7 @@ export interface DshDesktopProductApi {
   readonly updates: {
     status(): Promise<DesktopUpdatePresentation>
     open(): Promise<void>
+    cancel(): Promise<void>
     subscribe(listener: (state: DesktopUpdatePresentation) => void): () => void
   }
 }

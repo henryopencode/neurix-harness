@@ -1,6 +1,7 @@
 - button "New session"
 - button "Collapse sidebar"
 - button "New session": New Session
+- button "Home"
 - navigation "Global panels":
   - button "Plugins"
   - button "Automation tasks"
@@ -13,7 +14,7 @@
 - tree "Sessions":
   - treeitem "workspace" [expanded]
   - treeitem "New Session" [selected]
-- button "Account menu": More
+- button "Account menu"
 - banner:
   - button "Open right sidebar"
 - text: What would you like to do today?

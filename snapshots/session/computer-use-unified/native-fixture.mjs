@@ -29,6 +29,14 @@ export async function apply(ctx, config = {}) {
     })
     return () => hooks.deregister()
   }, 'unified-computer-fixture.module')
+  if (config.browserUnavailable === true) {
+    const { browserFixture } = await import('../../../packages/experimental/computer-use-unified/tests/fixtures/browser.ts')
+    ctx.effect(() => {
+      const previous = browserFixture.launchError
+      browserFixture.launchError = new Error('Browser executable is missing. Run an installer to recover.')
+      return () => { browserFixture.launchError = previous }
+    }, 'unified-computer-fixture.browser-startup')
+  }
   const { desktop } = await import(fixture)
   ctx.effect(() => {
     const previous = desktop.call
@@ -48,8 +56,14 @@ export async function apply(ctx, config = {}) {
     }
     return () => { desktop.call = previous; desktop.extraElements = previousElements; desktop.elementsComplete = previousComplete }
   }, 'unified-computer-fixture.action-evidence')
-  const provider = config.browserOnly === true
+  const provider = config.browserControl === true
+    ? await import('@deepseek-ai/dsh-experimental-browser-control')
+    : config.computerControl === true
     ? await import('@deepseek-ai/dsh-experimental-computer-control')
     : await import('@deepseek-ai/dsh-experimental-computer-use-unified')
-  await ctx.plugin(provider, { inputMode: 'background', requireInputApproval: true, screenshots: false, showOverlay: false, cursorMoveDurationMs: 0 })
+  const providers = config.splitControl === true
+    ? [await import('@deepseek-ai/dsh-experimental-computer-control'), await import('@deepseek-ai/dsh-experimental-browser-control')]
+    : [provider]
+  for (const active of providers) await ctx.plugin(active, { requireInputApproval: true, screenshots: false, showOverlay: false, cursorMoveDurationMs: 0,
+    ...config.computerControl === true || config.browserControl === true ? {} : { inputMode: 'background', nativeBackground: config.browserOnly !== true } })
 }

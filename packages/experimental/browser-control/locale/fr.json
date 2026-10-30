@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Contrôle du navigateur",
+    "description": "Pilotez un navigateur indépendant et masqué sur Windows, macOS et Linux, visible en aperçu.",
+    "detail": "docs/DETAIL.md"
+  }
+}

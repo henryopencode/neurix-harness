@@ -237,6 +237,7 @@
     "@deepseek-ai/dsh-computer-use": "workspace:*",
     "@deepseek-ai/dsh-experimental-computer-use-cua-driver-mcp": "workspace:*",
     "@deepseek-ai/dsh-experimental-computer-use-cua-driver-native": "workspace:*",
+    "@deepseek-ai/dsh-experimental-mobile-access": "workspace:*",
     "@deepseek-ai/dsh-cua": "workspace:*",
     "@deepseek-ai/dsh-experimental-claude-code-mods": "workspace:*",
     "@deepseek-ai/dsh-llm-replay": "workspace:*",
