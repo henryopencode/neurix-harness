@@ -196,5 +196,8 @@ jobs:
             gh release create "$RELEASE_TAG" --verify-tag --target "$RELEASE_COMMIT" --draft \
               --title "Neurix Harness $RELEASE_TAG" --notes-file ../release-notes.md -- ./*
           fi
-          release_id=$(gh api "repos/$GH_REPO/releases/tags/$RELEASE_TAG" --jq .id)
+          # Draft releases are discoverable in the list before tag lookup can resolve them.
+          release_id=$(gh api --paginate "repos/$GH_REPO/releases?per_page=100" \
+            --jq ".[] | select(.tag_name == \"$RELEASE_TAG\") | .id")
+          [[ "$release_id" =~ ^[1-9][0-9]*$ ]]
           gh api --method PATCH "repos/$GH_REPO/releases/$release_id" --silent -F draft=false -f make_latest=legacy
