@@ -37,6 +37,7 @@ import { claimDesktopSingleInstance } from './single-instance.ts'
 import { desktopUpdateChannel } from './update-channel.ts'
 import { DesktopUpdateCoordinator } from './update-coordinator.ts'
 import { desktopGithubRepository, GithubReleaseDownloads } from './github-release-downloads.ts'
+import { GithubReleaseRequests } from './github-release-requests.ts'
 import { openGithubReleaseInstaller, readGithubReleaseInstallationFailure } from './github-release-installer.ts'
 import { resolveDurationMs } from './duration-env.ts'
 import { prepareDesktopUpdateWindow } from './update-window.ts'
@@ -674,10 +675,11 @@ async function main(): Promise<void> {
     (success, reason) => { void track('desktop_upgrade_download_result', { is_success: success, ...reason === undefined ? {} : { error_reason: reason } }) },
     updateChannel,
   )
+  const githubRequests = new GithubReleaseRequests()
   const updates = githubRepository === undefined ? createManagedUpdates()
     : new GithubReleaseDownloads(githubRepository, app.getVersion(), publishUpdate, {
       directory: join(app.getPath('userData'), 'updates', 'github'),
-      request: (url, init) => net.fetch(url, init),
+      request: githubRequests.request,
       beforeRestart: beforeUpdateRestart,
       installMode: process.platform === 'win32' || (app.isPackaged && (process.platform === 'darwin' || process.env.APPIMAGE !== undefined)) ? 'restart' : 'installer',
       platform: process.platform, arch: process.arch,
@@ -976,6 +978,7 @@ async function main(): Promise<void> {
     updateSchedule.dispose()
     powerMonitor.off('resume', automaticCheck)
     updates.dispose()
+    void githubRequests.dispose().catch((error: unknown) => { console.error(error) })
   })
 
   const applicationIconPath = development ? join(app.getAppPath(), 'resources', 'icon-windows.png')
