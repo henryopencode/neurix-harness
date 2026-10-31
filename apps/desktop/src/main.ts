@@ -427,6 +427,7 @@ async function main(): Promise<void> {
   const applicationUrl = `${SCHEME}://app/`
   let hostUrl: string | undefined
   let hostCookie: string | undefined
+  let hostRequests = new AbortController()
   const browserGuests = new DesktopBrowserGuests(() => hostUrl)
   let injections: readonly unknown[] = []
   let welcomeBackend: DesktopWelcomeBackend | undefined
@@ -480,6 +481,7 @@ async function main(): Promise<void> {
         const ready = await host.start()
         hostCookie = await authenticateWebHost(ready.url)
         hostUrl = ready.url
+        if (hostRequests.signal.aborted) hostRequests = new AbortController()
         if (ready.injections === undefined) throw new Error('Desktop Host did not provide boot injections')
         injections = ready.injections
         welcomeBackend = await connectDesktopWelcome(ready.url, (input, init) => net.fetch(input, init), async () => (await session.defaultSession.cookies.get({ url: ready.url })).map(cookie => `${cookie.name}=${cookie.value}`).join('; '))
@@ -646,7 +648,9 @@ async function main(): Promise<void> {
     await track('desktop_upgrade_install_restart_click', {})
     if (backend.host !== host) throw new DesktopUpdatePreparationError('tasks-unavailable', locale.messages.updateTasksUnavailable)
     try {
-      const stillActive = await host.updateTasks('lock')
+      const locking = host.updateTasks('lock')
+      hostRequests.abort()
+      const stillActive = await locking
       if (stillActive && !active) throw new DesktopUpdatePreparationError('tasks-changed', locale.messages.updateTasksChanged)
       mandatoryUI?.preparingRestart(stillActive)
       // The embedded Platform document holds credentials issued by the Host that is about to stop.
@@ -662,7 +666,10 @@ async function main(): Promise<void> {
       updateJournal?.action('install-confirmed')
       shellInstallerOwnsQuit = true
     } catch (error) {
-      if (!updateStoppedHost) await host.updateTasks('unlock').catch((unlockError: unknown) => { console.error(unlockError) })
+      if (!updateStoppedHost) {
+        await host.updateTasks('unlock').catch((unlockError: unknown) => { console.error(unlockError) })
+        hostRequests = new AbortController()
+      }
       throw error
     } finally {
       requireCleanStop = false
@@ -720,10 +727,10 @@ async function main(): Promise<void> {
         || ['/favicon.svg', '/manifest.webmanifest'].includes(url.pathname)) {
         return serveWebDocument(request, join(resources.dsh, 'node_modules', '@deepseek-ai', 'dsh-web-frontend', 'dist'))
       }
-      if (backend.host === undefined || hostUrl === undefined || hostCookie === undefined) {
+      if (backend.host === undefined || hostUrl === undefined || hostCookie === undefined || hostRequests.signal.aborted) {
         return Promise.resolve(new Response(null, { status: 503 }))
       }
-      return forwardWebRequest(request, hostUrl, hostCookie)
+      return forwardWebRequest(request, hostUrl, hostCookie, hostRequests.signal)
     }
     return Promise.resolve(new Response(null, { status: 404 }))
   })
@@ -975,6 +982,7 @@ async function main(): Promise<void> {
   }
   powerMonitor.on('resume', automaticCheck)
   app.on('will-quit', () => {
+    hostRequests.abort()
     updateSchedule.dispose()
     powerMonitor.off('resume', automaticCheck)
     updates.dispose()

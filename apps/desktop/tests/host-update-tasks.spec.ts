@@ -3,9 +3,13 @@ import { JobId, JobRegistry } from '@deepseek-ai/dsh-jobs'
 import type { JobStatus, JobView } from '@deepseek-ai/dsh-jobs'
 import { SessionId } from '@deepseek-ai/dsh-session/types'
 import { Readable } from 'node:stream'
+import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { installDesktopUpdateTaskControl } from '../../desktop-host/src/update-tasks.ts'
+import { forwardWebRequest } from '../src/web-document.ts'
+import { bridge } from '../../../packages/client/connection/src/http-bridge.ts'
+import { SessionSkillCatalog } from '../../../packages/api/session-controller/src/skill-catalog.ts'
 
 type AgentState = { id: SessionId; status: 'idle' | 'running'; inbox: { nextTurn: object[]; nextStep: object[] } }
 
@@ -43,7 +47,7 @@ beforeEach(() => {
   jobs.clear()
   ctx = new Context()
   // Narrow service doubles exercise the inspector against a real Cordis event lifecycle.
-  ctx.provide('agents', { list: () => agents } as unknown as Context['agents'])
+  ctx.provide('agents', { list: () => agents, get: () => undefined } as unknown as Context['agents'])
   new RosterOnlyJobRegistry(ctx)
   inspect = installDesktopUpdateTaskControl(ctx)
 })
@@ -59,6 +63,74 @@ function request(next: () => Promise<void>) {
 }
 
 describe('Desktop Host update task protection', () => {
+  it('drains a real skill-catalog HTTP request when the approved shell cancels its forwarding lifetime', async () => {
+    const started = Promise.withResolvers<undefined>()
+    const release = Promise.withResolvers<never[]>()
+    const owner = new AbortController()
+    let discoverySignal: AbortSignal | undefined
+    ctx.provide('sessionQuery', { observeSession: async () => ({
+      header: { cwd: '/fixture' }, projections: { values: { workingDirectory: '/fixture' } },
+      [Symbol.dispose]: () => {},
+    }) } as never)
+    ctx.provide('skills', { list: async (options: Parameters<Context['skills']['list']>[0]) => {
+      discoverySignal = options?.signal
+      discoverySignal?.addEventListener('abort', () => { release.reject(new Error('catalog cancelled')) }, { once: true })
+      started.resolve(undefined)
+      return release.promise
+    } } as never)
+    const catalog = new SessionSkillCatalog(ctx)
+    const requests: Promise<void>[] = []
+    const failures: unknown[] = []
+    const server = createServer((incoming, response) => {
+      const task = ctx.waterfall('connection/request', incoming, response, () => bridge(incoming, response, {
+        requestBodyMode: () => 'buffered',
+        fetch: async (request) => {
+          try {
+            return Response.json(await catalog.list({ sessionId: SessionId('catalog-update') }, request.signal))
+          } catch (error) {
+            if (!request.signal.aborted) throw error
+            return new Response(null, { status: 499 })
+          }
+        },
+      }, { principal: { kind: 'owner' } } as never)).catch((error: unknown) => {
+        failures.push(error)
+        response.destroy()
+      })
+      requests.push(task)
+    })
+    let forwarding: Promise<unknown> | undefined
+    try {
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject)
+        server.listen(0, '127.0.0.1', () => { server.off('error', reject); resolve() })
+      })
+      const address = server.address()
+      if (address === null || typeof address === 'string') throw new Error('HTTP fixture has no TCP address')
+      forwarding = forwardWebRequest(new Request('dsh-app://app/api/skills/list', { method: 'POST', body: '{}' }),
+        `http://127.0.0.1:${address.port}/`, 'fixture=owned', owner.signal).catch((error: unknown) => error)
+      await started.promise
+      expect(discoverySignal).toBeInstanceOf(AbortSignal)
+      const locking = inspect('lock')
+      owner.abort()
+      await forwarding
+      await expect(locking).resolves.toBe(false)
+      expect(discoverySignal?.aborted).toBe(true)
+      expect(failures).toEqual([])
+    } finally {
+      owner.abort()
+      release.resolve([])
+      await forwarding
+      server.closeAllConnections()
+      if (server.listening) await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error === undefined) resolve()
+          else reject(error)
+        })
+      })
+      await Promise.all(requests)
+    }
+  })
+
   it.each(['running', 'nextTurn', 'nextStep'] as const)('counts %s agent work without stopping it', async (kind) => {
     const agent = idleAgent()
     if (kind === 'running') agent.status = 'running'
