@@ -129,7 +129,7 @@ export const en = {
   settingsPathUnresolvable: 'unresolvable settings path',
   create: 'Create provider',
   creating: 'Creating\u2026',
-  welcomeTitle: 'Preview Notice',
+  welcomeTitle: 'Preview notice',
   welcomeBody: 'Neurix Harness features and plugin APIs are in preview and may change. Advanced developer features are available in settings.',
   welcomeContinue: 'Continue',
   welcomeError: 'The acknowledgement could not be saved. Please try again.',

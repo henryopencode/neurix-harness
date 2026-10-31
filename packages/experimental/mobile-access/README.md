@@ -25,7 +25,7 @@ Continue this computer's Agent conversations from your phone using a private lin
 <a id="use-this-package"></a>
 ## Use this package
 
-Enable the bundle in Plugins → Extension tools → Phone connection, or load its [overlay](cordis.patch.yml) in an existing Web or Desktop profile. The bundle removes the sidebar's DeepSeek account UI and disables the Session feedback exporter. The bottom Settings gear opens the local Settings and Feedback menu; Feedback opens no external form. Model API-key configuration remains in Models. Unloading the bundle restores the underlying profile's contributions.
+Enable the bundle in Plugins → Extension tools → Phone connection, or load its [overlay](cordis.patch.yml) in an existing Web or Desktop profile. The bundle removes the sidebar's DeepSeek account UI and disables the Session feedback exporter. The bottom Settings gear opens the local Settings and Feedback menu; Feedback opens no external form. Model API-key configuration remains in Models. Unloading the bundle restores the underlying profile's contributions. The panel and its messages follow the interface language.
 
 Open the plugin's configuration page and enable the connection. Scan its QR code or copy the complete link to your phone. LAN mode requires the same network; a configured internet endpoint works on cellular data or any Wi-Fi. The link contains a 256-bit random bearer secret in its fragment, which the browser exchanges in a same-origin request body for an HttpOnly session cookie, then removes from browser history. Anyone holding the complete link can control the Agent; keep it private.
 
