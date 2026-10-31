@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-/** First-run DeepSeek prompt behavior over the shared Models join. */
+/** First-run model-service setup over the shared Models join. */
 import type { GlobalStandardProps } from '@deepseek-ai/dsh-client-ui-slots'
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import Schema from '@deepseek-ai/schemastery'
 import type { SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
@@ -63,7 +63,22 @@ function deepSeekNamespace(apiKeyEnv: string | null): SettingsNamespaceView {
   }
 }
 
+function customNamespace(): SettingsNamespaceView {
+  const config = Schema.object({
+    providers: Schema.dict(Schema.object({
+      apiKeyEnv: Schema.string().role('credential-ref'),
+      baseURL: Schema.string(),
+      api: Schema.union(['openai-completions', 'openai-responses', 'anthropic-messages']),
+    })),
+  })
+  return {
+    ns: 'llm-pi-ai', schema: JSON.parse(JSON.stringify(config.toJSON())) as JsonValue,
+    value: {}, base: {}, user: {}, autoGenerate: true, applies: 'live', secrets: [], revision: 0,
+  }
+}
+
 function harness(options: {
+  custom?: boolean
   provider?: boolean
   providerSettingsNs?: string
   providerActive?: boolean
@@ -116,7 +131,10 @@ function harness(options: {
       describe: () => Promise.resolve(remoteOk({
         writable: options.settingsWritable ?? true,
         hasDocument: false,
-        namespaces: options.settingsNamespace === false ? [] : [deepSeekNamespace(apiKeyEnv)],
+        namespaces: [
+          ...options.settingsNamespace === false ? [] : [deepSeekNamespace(apiKeyEnv)],
+          ...options.custom === true ? [customNamespace()] : [],
+        ],
       })),
       mutate,
     },
@@ -283,6 +301,70 @@ describe('DeepSeekOnboardingDialog', () => {
     await waitFor(() => { expect(screen.queryByRole('dialog')).toBeNull() })
     expect(h.complete).toHaveBeenCalledOnce()
   })
+})
+
+it('defaults to third-party setup and retains drafts when switching services', async () => {
+  const h = harness({ custom: true })
+  render(<DeepSeekOnboardingDialog {...h.props} />)
+  const custom = await screen.findByRole<HTMLSelectElement>('combobox', { name: en.provider })
+  expect(custom.value).toBe('custom')
+  expect(screen.queryByRole('tab')).toBeNull()
+  expect(screen.queryByLabelText(en.customRoute)).toBeNull()
+  expect(screen.getByText(en.onboardingDescription)).toBeTruthy()
+  fireEvent.change(screen.getByLabelText(en.baseUrl), { target: { value: 'https://gateway.example/v1' } })
+  fireEvent.change(screen.getByLabelText(`${en.modelId} 1`), { target: { value: 'my-model' } })
+  fireEvent.change(custom, { target: { value: 'provider:deepseek-official' } })
+  const official = within(screen.getByRole('group', { name: 'DeepSeek' }))
+  fireEvent.change(official.getByLabelText(en.keyInput), { target: { value: 'sk-official' } })
+  fireEvent.change(custom, { target: { value: 'custom' } })
+  expect(screen.getByLabelText<HTMLInputElement>(en.baseUrl).value).toBe('https://gateway.example/v1')
+  expect(screen.getByLabelText<HTMLInputElement>(`${en.modelId} 1`).value).toBe('my-model')
+  fireEvent.change(custom, { target: { value: 'provider:deepseek-official' } })
+  expect(within(screen.getByRole('group', { name: 'DeepSeek' })).getByLabelText<HTMLInputElement>(en.keyInput).value).toBe('sk-official')
+  expect(h.mutate).not.toHaveBeenCalled()
+  expect(h.set).not.toHaveBeenCalled()
+})
+
+it('creates a third-party route without requiring the official adapter', async () => {
+  const h = harness({ custom: true, provider: false, settingsNamespace: false })
+  render(<DeepSeekOnboardingDialog {...h.props} />)
+  await screen.findByRole('dialog')
+  expect(screen.queryByRole('tab')).toBeNull()
+  const save = screen.getByRole<HTMLButtonElement>('button', { name: en.onboardingSave })
+  fireEvent.change(screen.getByLabelText(en.baseUrl), { target: { value: 'invalid-url' } })
+  fireEvent.change(screen.getByLabelText(`${en.modelId} 1`), { target: { value: 'my-model' } })
+  expect(save.disabled).toBe(true)
+  expect(screen.getByText(en.customBaseUrlInvalid)).toBeTruthy()
+  fireEvent.change(screen.getByLabelText(en.baseUrl), { target: { value: 'https://gateway.example/v1' } })
+  fireEvent.change(screen.getByLabelText(en.keyInput), { target: { value: ' sk-private ' } })
+  fireEvent.click(save)
+  await waitFor(() => { expect(h.complete).toHaveBeenCalled() })
+  expect(h.mutate).toHaveBeenCalledWith('llm-pi-ai', [{
+    op: 'set', path: ['providers', 'custom-api'], value: {
+      displayName: en.onboardingThirdParty, apiKeyEnv: 'CUSTOM_API_API_KEY',
+      api: 'openai-completions', baseURL: 'https://gateway.example/v1', models: [{ id: 'my-model' }],
+    },
+  }], 0)
+  expect(h.set).toHaveBeenCalledWith('CUSTOM_API_API_KEY', 'sk-private')
+})
+
+it('keeps a failed third-party credential write retryable and permits configuring it later', async () => {
+  const h = harness({ custom: true, setFailure: 'credential was rejected' })
+  render(<DeepSeekOnboardingDialog {...h.props} />)
+  await screen.findByRole('dialog')
+  fireEvent.change(screen.getByLabelText(en.baseUrl), { target: { value: 'https://gateway.example/v1' } })
+  fireEvent.change(screen.getByLabelText(`${en.modelId} 1`), { target: { value: 'my-model' } })
+  fireEvent.change(screen.getByLabelText(en.keyInput), { target: { value: 'sk-private' } })
+  fireEvent.click(screen.getByRole('button', { name: en.onboardingSave }))
+  await screen.findByText('credential was rejected')
+  expect(h.complete).not.toHaveBeenCalled()
+  expect(screen.getByRole<HTMLButtonElement>('button', { name: en.onboardingSave }).disabled).toBe(false)
+  fireEvent.click(screen.getByRole('button', { name: en.onboardingSave }))
+  await waitFor(() => { expect(h.set).toHaveBeenCalledTimes(2) })
+  expect(h.mutate).toHaveBeenCalledOnce()
+  await waitFor(() => { expect(screen.getByRole<HTMLButtonElement>('button', { name: en.onboardingLater }).disabled).toBe(false) })
+  fireEvent.click(screen.getByRole('button', { name: en.onboardingLater }))
+  expect(h.complete).toHaveBeenCalled()
 })
 
 it('offers account choice before reusing the existing API key editor', async () => {

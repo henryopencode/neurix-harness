@@ -32,11 +32,13 @@ export function desktopGithubRepository(manifest: unknown): string | undefined {
 export interface GithubReleaseDownloadOptions {
   readonly directory: string
   readonly request: (url: string, init: { signal: AbortSignal }) => Promise<Response>
-  readonly install: (file: string) => Promise<void>
+  readonly install: (file: string, version: string) => Promise<void>
   readonly beforeRestart: () => Promise<boolean>
   readonly installMode: 'restart' | 'installer'
   readonly platform: NodeJS.Platform
   readonly arch: string
+  readonly metadataTimeoutMs: number
+  readonly idleTimeoutMs: number
 }
 
 type Candidate = { version: string; filename: string; size: number; base: string }
@@ -103,7 +105,7 @@ export class GithubReleaseDownloads {
   /** Stop the active transfer and await file cleanup before permitting another download. */
   async cancel(): Promise<void> {
     const transfer = this.transfer
-    if (transfer === undefined || this.current.phase !== 'downloading') return
+    if (transfer === undefined || this.current.phase === 'verifying') return
     transfer.cancelled = true
     transfer.controller.abort()
     await transfer.done
@@ -130,10 +132,10 @@ export class GithubReleaseDownloads {
           this.prepared = undefined
           throw new Error('The local installer checksum changed; download the update again')
         }
+        if (this.options.installMode === 'restart') this.setState({ phase: 'installing', version })
         if (this.options.installMode === 'restart' && !await this.options.beforeRestart()) return this.setState({ phase: 'ready', version })
         this.lifetime.signal.throwIfAborted()
-        if (this.options.installMode === 'restart') this.setState({ phase: 'installing', version })
-        await this.options.install(prepared.file)
+        await this.options.install(prepared.file, version)
         return this.options.installMode === 'installer' ? this.setState({ phase: 'ready', version }) : this.current
       } catch (error) {
         return this.setState({ phase: 'error', version, failedOperation: this.prepared === undefined ? 'download' : 'install', message: String(error),
@@ -155,8 +157,8 @@ export class GithubReleaseDownloads {
 
   private async readLatest(): Promise<DesktopUpdateState> {
     try {
-      const response = await this.options.request(`https://api.github.com/repos/${this.repository}/releases/latest`, {
-        signal: AbortSignal.any([this.lifetime.signal, AbortSignal.timeout(30_000)]),
+      const response = await this.options.request(`https://github.com/${this.repository}/releases/latest/download/desktop-update.json`, {
+        signal: AbortSignal.any([this.lifetime.signal, AbortSignal.timeout(this.options.metadataTimeoutMs)]),
       })
       if (response.status === 404) { this.candidate = undefined; return this.setState({ phase: 'idle' }) }
       if (!response.ok) throw new Error(`GitHub release check returned HTTP ${response.status}`)
@@ -194,7 +196,7 @@ export class GithubReleaseDownloads {
     const signal = AbortSignal.any([controller.signal, this.lifetime.signal])
     const refresh = (): void => {
       clearTimeout(idle)
-      idle = setTimeout(() => { controller.abort(new Error('Update download timed out')) }, 60_000)
+      idle = setTimeout(() => { controller.abort(new Error('Update download timed out')) }, this.options.idleTimeoutMs)
     }
     let outcome: DesktopUpdateState
     try {

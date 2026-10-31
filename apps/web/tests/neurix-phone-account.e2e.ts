@@ -19,7 +19,6 @@ it('connects by link from the phone plugin, continues the same session, and revo
     paceMs: 2,
   })
   const browser = await chromium.launch()
-  const failures: unknown[] = []
   try {
     const desktop = await newEnglishPage(browser)
     const errors = watchConsole(desktop)
@@ -78,11 +77,8 @@ it('connects by link from the phone plugin, continues the same session, and revo
     expect(errors.pageErrors).toEqual([])
     expect(phoneErrors.pageErrors).toEqual([])
     expect(webSnapshotMode()).not.toBe('record')
-  } catch (error) {
-    failures.push(error)
   } finally {
-    try { await browser.close() } catch (error) { failures.push(error) }
-    try { await scaffold.close() } catch (error) { failures.push(error) }
-    if (failures.length > 0) throw new AggregateError(failures, 'Phone connection scenario or cleanup failed')
+    await browser.close()
+    await scaffold.close()
   }
 })

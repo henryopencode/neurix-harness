@@ -37,7 +37,8 @@ import { claimDesktopSingleInstance } from './single-instance.ts'
 import { desktopUpdateChannel } from './update-channel.ts'
 import { DesktopUpdateCoordinator } from './update-coordinator.ts'
 import { desktopGithubRepository, GithubReleaseDownloads } from './github-release-downloads.ts'
-import { openGithubReleaseInstaller } from './github-release-installer.ts'
+import { openGithubReleaseInstaller, readGithubReleaseInstallationFailure } from './github-release-installer.ts'
+import { resolveDurationMs } from './duration-env.ts'
 import { prepareDesktopUpdateWindow } from './update-window.ts'
 import { DesktopCommandManager } from './command-management.ts'
 import { serveWebDocument, authenticateWebHost, forwardWebRequest } from './web-document.ts'
@@ -678,9 +679,11 @@ async function main(): Promise<void> {
       directory: join(app.getPath('userData'), 'updates', 'github'),
       request: (url, init) => net.fetch(url, init),
       beforeRestart: beforeUpdateRestart,
-      installMode: process.platform === 'win32' ? 'restart' : 'installer',
+      installMode: process.platform === 'win32' || (app.isPackaged && (process.platform === 'darwin' || process.env.APPIMAGE !== undefined)) ? 'restart' : 'installer',
       platform: process.platform, arch: process.arch,
-      install: file => openGithubReleaseInstaller(file, process.platform),
+      metadataTimeoutMs: resolveDurationMs(process.env, 'DSH_DESKTOP_UPDATE_CHECK_TIMEOUT_MS', 30_000),
+      idleTimeoutMs: resolveDurationMs(process.env, 'DSH_DESKTOP_UPDATE_HTTP_IDLE_TIMEOUT_MS', 60_000),
+      install: (file, version) => openGithubReleaseInstaller(file, process.platform, version),
     })
 
   const updateSchedule = new DesktopUpdateSchedule(updates, resolveDesktopUpdateScheduleConfig(process.env))
@@ -1385,6 +1388,11 @@ async function main(): Promise<void> {
     window.webContents.openDevTools({ mode: 'detach' })
   }
   publishUpdate(updateState)
+  if (githubRepository !== undefined && backendReady) {
+    const failed = await readGithubReleaseInstallationFailure(join(app.getPath('userData'), 'updates', 'github'), app.getVersion())
+      .catch((error: unknown): DesktopUpdateState => ({ phase: 'error', failedOperation: 'install', message: String(error) }))
+    if (failed !== undefined) await showUpdateFailure(failed)
+  }
 }
 
 const ownsDesktopInstance = claimDesktopSingleInstance(app, () => { focusPrimaryWindow() })

@@ -4,7 +4,7 @@ import type { MobileAccessOutcome } from './MobileAccessRow.tsx'
 
 /** Completed connection actions remain visible after leaving the plugin page. */
 export class ConnectionNotice {
-  /** Completed operation state consumed by the root toast, including its dismissal sequence. */
+  /** Latest completed action, or null after its notice is dismissed. */
   readonly source = createSnapshotStore<{ outcome: MobileAccessOutcome; seq: number } | null>(null)
   private seq = 0
 

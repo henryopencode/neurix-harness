@@ -31,6 +31,8 @@ kind: "package-bundle"
 
 启动 GUI、打开浏览器，然后开始与 agent（智能体）对话。flag 用于微调本次调用。
 
+Web 组合使用不偏向厂商的配置入口与排序。可选的 `ui-deepseek-model-label-1017` 条目默认禁用；可通过 profile overlay 设置 `disabled: false` 启用其版本徽标。
+
 ### 启动 Web GUI
 
 ```sh

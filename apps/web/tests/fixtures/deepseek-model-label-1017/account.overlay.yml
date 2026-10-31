@@ -5,3 +5,5 @@
   config:
     provider: deepseek-official
     model: deepseek-flash
+- id: ui-deepseek-model-label-1017
+  disabled: false
