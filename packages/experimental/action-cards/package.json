@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-action-cards",
   "description": "Optional action cards below answers: one shared proposal tool, card state, user actions and status notices",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publishConfig": {
     "access": "public"
   },

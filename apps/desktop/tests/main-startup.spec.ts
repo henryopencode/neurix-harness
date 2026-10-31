@@ -1870,6 +1870,51 @@ describe('desktop main startup', () => {
     expect(host.stop).not.toHaveBeenCalled()
   })
 
+  it('cancels UI-owned requests after approval so admitted requests can drain', async () => {
+    const host = await readyForUpdate()
+    const { forwardWebRequest } = await import('../src/web-document.ts')
+    vi.mocked(forwardWebRequest).mockResolvedValue(new Response('body'))
+    const handler = harness.protocolHandle.mock.calls[0]![1]
+    await handler(new Request('dsh-app://app/api/skills/list'))
+    const signal = vi.mocked(forwardWebRequest).mock.calls.at(-1)?.[3]
+    expect(signal).toBeInstanceOf(AbortSignal)
+    if (signal === undefined) throw new Error('Forwarding requires its shell lifetime')
+    const cancelled = Promise.withResolvers<undefined>()
+    host.updateTasks.mockResolvedValueOnce(false).mockImplementationOnce(async () => {
+      signal.addEventListener('abort', () => { cancelled.resolve(undefined) }, { once: true })
+      await cancelled.promise
+      return false
+    })
+    harness.dialog.showMessageBox.mockResolvedValueOnce({ response: 0 })
+    const preparing = harness.prepareUpdate()
+    try {
+      await host.stopping.promise
+      expect(signal.aborted).toBe(true)
+      expect((await handler(new Request('dsh-app://app/api/skills/list'))).status).toBe(503)
+      host.exited.resolve()
+      await expect(preparing).resolves.toBe(true)
+    } finally { host.exited.resolve(); await preparing.catch(() => undefined) }
+  })
+
+  it('restores a fresh forwarding lifetime after an installation drain fails', async () => {
+    const host = await readyForUpdate()
+    const { forwardWebRequest } = await import('../src/web-document.ts')
+    vi.mocked(forwardWebRequest).mockResolvedValue(new Response('body'))
+    const handler = harness.protocolHandle.mock.calls[0]![1]
+    await handler(new Request('dsh-app://app/api/skills/list'))
+    const previous = vi.mocked(forwardWebRequest).mock.calls.at(-1)?.[3]
+    host.updateTasks.mockResolvedValueOnce(false).mockRejectedValueOnce(new Error('drain failed'))
+    harness.dialog.showMessageBox.mockResolvedValueOnce({ response: 0 })
+    await expect(harness.prepareUpdate()).rejects.toThrow('drain failed')
+    expect(previous?.aborted).toBe(true)
+    await handler(new Request('dsh-app://app/api/skills/list'))
+    const resumed = vi.mocked(forwardWebRequest).mock.calls.at(-1)?.[3]
+    expect(resumed).toBeInstanceOf(AbortSignal)
+    expect(resumed).not.toBe(previous)
+    expect(resumed?.aborted).toBe(false)
+    expect(host.stop).not.toHaveBeenCalled()
+  })
+
   it.each([false, true])('waits for macOS to leave fullscreen before installation confirmation, mandatory: %s', async (mandatory) => {
     vi.stubGlobal('process', { ...process, platform: 'darwin' })
     if (mandatory) {

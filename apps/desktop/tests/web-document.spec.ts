@@ -67,6 +67,22 @@ it('drops connection-level headers the Host wrote for its own transport', async 
   expect(response.headers.get('etag')).toBe('"1"')
 })
 
+it.each(['renderer', 'restart'] as const)('cancels forwarded Host requests with the %s lifetime', async (source) => {
+  const renderer = new AbortController()
+  const restart = new AbortController()
+  let forwarded: AbortSignal | null | undefined
+  const fetch = vi.fn<typeof globalThis.fetch>(async (_input, init) => {
+    forwarded = init?.signal
+    return new Response('body')
+  })
+  vi.stubGlobal('fetch', fetch)
+  const request = new Request('dsh-app://app/api/read', { signal: renderer.signal })
+  await forwardWebRequest(request, 'http://127.0.0.1:1234/', 'session=owned', restart.signal)
+  expect(forwarded?.aborted).toBe(false)
+  ;(source === 'renderer' ? renderer : restart).abort()
+  expect(forwarded?.aborted).toBe(true)
+})
+
 it('replaces the immutable cache header of plugin bundles with no-store and leaves other routes alone', async () => {
   const immutable = 'public, max-age=31536000, immutable'
   const fetch = vi.fn().mockImplementation(async () => new Response('js', { headers: { 'cache-control': immutable } }))

@@ -52,7 +52,7 @@ HTTPS cookie 名称与签名 audience 包含 `https:` scheme，因此即使 host
 
 仅供 API 使用的 `GET /connect?token=...&interactions=answer|none` 立即创建 principal 为 owner 的 Peer，返回 302、Mux 目标地址与签名 API Cookie。API 连接默认 `none`，非法或重复声明返回 400。HTTP 可先于 WebSocket 建立。一条 API socket 负责清理：重复关联返回 409，关闭时移除其 Peer，之后使用该 Cookie 的 HTTP 被拒绝。已受理 unary 调用保留请求级取消，但 Peer 释放后 `invocation.peer.ctx` 不再接受新的 effect 注册。API 调用方将 Cookie 与浏览器存储分开；两者使用相同的 authority 专属 Cookie 名称。
 
-通过认证的共享 HTTP 请求在传输请求体之前经过 `connection/request` waterfall。监听器可以拒绝新请求，或等待 `next()` 直到响应完成；释放所属 fiber 会移除准入行为。Desktop 使用此扩展点，在已批准的安装期间锁住新的 API 工作，而不取消已接纳的工作。客户端断开会中止处理函数的信号；桥接器停止写入 socket，并排空剩余响应块。WebSocket 流仍由 API Gateway 负责。
+通过认证的共享 HTTP 请求在传输请求体之前经过 `connection/request` waterfall。监听器可以拒绝新请求，或等待 `next()` 直到响应完成；释放所属 fiber 会移除准入行为。Desktop 使用此扩展点锁住新的 API 准入，并等待已接受的处理函数结束后再停止 Host。调用者取消遵循各请求的生命周期。客户端断开会中止处理函数的信号；桥接器停止写入 socket，并排空剩余响应块。WebSocket 流仍由 API Gateway 负责。
 
 <a id="connection-generation"></a>
 ## Connection generation

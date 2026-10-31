@@ -89,7 +89,7 @@ describe('SessionSkillCatalog', () => {
     expect(resume).not.toHaveBeenCalled()
     expect(ensureDirectory).not.toHaveBeenCalled()
     expect(ctx.agents.list()).toEqual([])
-    expect(list).toHaveBeenCalledWith({ cwd: '/cold/project', scope: undefined })
+    expect(list).toHaveBeenCalledWith({ cwd: '/cold/project', scope: undefined, signal: expect.any(AbortSignal) })
   })
 
   it.each([
@@ -113,7 +113,7 @@ describe('SessionSkillCatalog', () => {
       const resume = vi.spyOn(ctx.agents, 'resume')
       await expect(new SessionSkillCatalog(ctx).list({ sessionId }, new AbortController().signal))
         .resolves.toEqual({ skills: [] })
-      expect(list).toHaveBeenCalledWith({ cwd: expected, scope: undefined })
+      expect(list).toHaveBeenCalledWith({ cwd: expected, scope: undefined, signal: expect.any(AbortSignal) })
       expect(ensure).not.toHaveBeenCalled()
       expect(resume).not.toHaveBeenCalled()
     } finally {
@@ -150,7 +150,7 @@ describe('SessionSkillCatalog', () => {
         modelInvocable: false,
       }],
     })
-    expect(scopedList).toHaveBeenCalledWith({ cwd: '/live/current', scope: agent })
+    expect(scopedList).toHaveBeenCalledWith({ cwd: '/live/current', scope: agent, signal: expect.any(AbortSignal) })
     expect(ensureDirectory).toHaveBeenCalledWith(agent, expect.any(AbortSignal))
     expect(session.header.cwd).toBe('/live/project')
     expect(acquireScope).not.toHaveBeenCalled()
@@ -174,8 +174,51 @@ describe('SessionSkillCatalog', () => {
 
     await expect(catalog.list({ sessionId }, new AbortController().signal)).resolves.toEqual({ skills: [] })
     expect(acquireScope).toHaveBeenCalledWith('minimal')
-    expect(list).toHaveBeenCalledWith({ cwd: '/cold/project', scope })
+    expect(list).toHaveBeenCalledWith({ cwd: '/cold/project', scope, signal: expect.any(AbortSignal) })
     expect(ctx.agents.list()).toEqual([])
+  })
+
+  it('cancels discovery with the caller and releases its standing scope after settlement', async () => {
+    const ctx = await context()
+    const controller = new AbortController()
+    const started = Promise.withResolvers<undefined>()
+    const release = Promise.withResolvers<never[]>()
+    let discoverySignal: AbortSignal | undefined
+    let discoverySettled = false
+    let scopeReleased = false
+    const sessionId = SessionId('cancelled-cold-skills')
+    ctx.provide('sessionQuery', {
+      observeSession: () => Promise.resolve(observation(sessionId, { cwd: '/cold/project' })),
+    } as never)
+    ctx.provide('agentPresets', {
+      acquireScope: async () => ({ key: { preset: 'standard' }, [Symbol.asyncDispose]: async () => {
+        expect(discoverySettled).toBe(true)
+        scopeReleased = true
+      } }),
+    } as never)
+    const list = vi.fn(async (options: Parameters<Context['skills']['list']>[0]) => {
+      discoverySignal = options?.signal
+      discoverySignal?.addEventListener('abort', () => { release.reject(new Error('cancel discovery')) }, { once: true })
+      started.resolve(undefined)
+      try { return await release.promise }
+      finally { discoverySettled = true }
+    })
+    ctx.provide('skills', { list } as never)
+    const request = new SessionSkillCatalog(ctx).list({ sessionId }, controller.signal)
+    const outcome = request.then(value => ({ kind: 'value' as const, value }), (error: unknown) => ({ kind: 'error' as const, error }))
+    try {
+      await started.promise
+      expect(discoverySignal).toBe(controller.signal)
+      expect(scopeReleased).toBe(false)
+      controller.abort()
+      expect(await outcome).toMatchObject({ kind: 'error', error: expect.objectContaining({ message: expect.stringContaining('cancel discovery') }) })
+      expect(discoverySettled).toBe(true)
+      expect(scopeReleased).toBe(true)
+    } finally {
+      release.resolve([])
+      await outcome
+      await ctx.fiber.dispose()
+    }
   })
 
   it('falls back to the global registry when the recorded preset is unavailable', async () => {
@@ -195,7 +238,7 @@ describe('SessionSkillCatalog', () => {
     const catalog = new SessionSkillCatalog(ctx)
 
     await expect(catalog.list({ sessionId }, new AbortController().signal)).resolves.toEqual({ skills: [] })
-    expect(list).toHaveBeenCalledWith({ cwd: '/cold/project', scope: undefined })
+    expect(list).toHaveBeenCalledWith({ cwd: '/cold/project', scope: undefined, signal: expect.any(AbortSignal) })
   })
 
   it.each([
