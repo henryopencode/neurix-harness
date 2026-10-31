@@ -13,7 +13,7 @@ import { MobileAccessRow } from './MobileAccessRow.tsx'
 import { NeurixMenu } from './NeurixMenu.tsx'
 import { ConnectionNotice } from './notice.ts'
 import { ConnectionToast } from './ConnectionToast.tsx'
-import { en, zh, type MobileAccessLocaleKey } from './locales.ts'
+import { en, zh, ja, es, fr, de, ru, pt, type MobileAccessLocaleKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -36,7 +36,7 @@ export const inject = ['remote', 'slots', 'locale', 'resources']
  * @returns quiescent withdrawal of the Client contribution.
  */
 export async function mountMobileAccess(ctx: Context, contribution: TypertRemoteContribution): Promise<() => Promise<void>> {
-  ctx.effect(() => ctx.locale.register('settings.mobileAccess', { en, zh }))
+  ctx.effect(() => ctx.locale.register('settings.mobileAccess', { en, zh, ja, es, fr, de, ru, pt }))
   const unmount = await ctx.remote.$mount(contribution)
   const notice = new ConnectionNotice()
   const onOutcome = (outcome: Parameters<ConnectionNotice['report']>[0]) => { notice.report(outcome) }

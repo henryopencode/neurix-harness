@@ -9,6 +9,7 @@ import { Context } from '@deepseek-ai/cordis'
 import Include from '@deepseek-ai/cordis-plugin-include'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import WebServer from '@deepseek-ai/dsh-host-webserver'
+import { Peer } from '@deepseek-ai/dsh-client-connection'
 import { apply, internals } from '../src/index.ts'
 
 const contexts: Context[] = []
@@ -81,10 +82,15 @@ describe('web app browser startup', () => {
       __dshConnection: {
         authenticatedUrl(baseUrl: string): string
         authorizeIndex(): boolean
+        browserPeer: Peer
+        admit(): { peer: Peer }
         requestRejection(): undefined
         rpc: object
       }
     }
+    const ctx = new Context()
+    contexts.push(ctx)
+    const browserPeer = new Peer(ctx, { principal: { kind: 'owner' } })
     globals.__dshWebAppApply = apply
     globals.__dshWebServer = WebServer
     globals.__dshConnection = {
@@ -94,6 +100,8 @@ describe('web app browser startup', () => {
         return url.href
       },
       authorizeIndex: () => true,
+      browserPeer,
+      admit: () => ({ peer: browserPeer }),
       requestRejection: () => undefined,
       rpc: {},
     }
@@ -108,8 +116,6 @@ describe('web app browser startup', () => {
       resolveOpened()
     }
 
-    const ctx = new Context()
-    contexts.push(ctx)
     await ctx.plugin(Loader)
     ctx.loader.builtins.include = Include
     await ctx.loader.create({
