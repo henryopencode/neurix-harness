@@ -11,7 +11,7 @@ import type {
 } from '@deepseek-ai/dsh-api-remotes/client'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import {
-  ModelsSection, needsSetup, providerCopy, providerTargetLabel, removeProviderProfile,
+  ModelsSection, providerCopy, providerTargetLabel, removeProviderProfile,
 } from '../src/client/ModelsSection.tsx'
 import type { ModelsSectionInjected, ModelsSectionProps } from '../src/client/ModelsSection.tsx'
 import { ProviderEditor, pathOps } from '../src/client/ProviderEditor.tsx'
@@ -24,7 +24,6 @@ import { SettingsDescribeMirror } from '@deepseek-ai/dsh-client-ui-settings/src/
 import { deriveKeyRef, ModelsSettingsStore } from '../src/client/store.ts'
 import { createModelsOperations } from '../src/client/operations.ts'
 import type { ModelsOperations } from '../src/client/operations.ts'
-import type { ProviderRow } from '../src/client/store.ts'
 import { en } from '../src/client/locales.ts'
 import { settingsSchema } from './settings-schema.client.ts'
 
@@ -338,7 +337,7 @@ async function mountSection(overrides: Parameters<typeof scriptedFace>[0] = {}) 
 
 /**
  * Mount for a user who cannot reach any provider yet: no credential is stored
- * anywhere, so the whole-section DeepSeek route owns the first-run setup card.
+ * anywhere, so every provider remains unconfigured.
  */
 async function mountFirstRun(overrides: Parameters<typeof scriptedFace>[0] = {}) {
   const scripted = scriptedFace(overrides)
@@ -372,7 +371,7 @@ describe('ModelsSection', () => {
     expect(row.queryByText(en.keyFallbackMissing.replace('{hint}', 'OPENAI_API_KEY'))).toBeNull()
   })
 
-  it('waits for the current snapshot when a setup surface remounts during refresh', async () => {
+  it('waits for the current snapshot before editing after a remount during refresh', async () => {
     const { view, controller, face, mirror, mutate } = await mountFirstRun()
     view.unmount()
     const before = controller.store.getSnapshot().namespaces.get('llm-deepseek')!
@@ -403,6 +402,7 @@ describe('ModelsSection', () => {
     } finally {
       await act(async () => { read.resolve(remoteOk({})); await refreshing })
     }
+    fireEvent.click(await screen.findByRole('button', { name: deepSeekCopy(en.editProvider) }))
     await screen.findByLabelText(en.keyInput)
     fireEvent.click(screen.getByText(en.customized))
     const url = screen.getByLabelText<HTMLInputElement>(en.baseUrl)
@@ -415,8 +415,9 @@ describe('ModelsSection', () => {
     await screen.findByRole('status')
   })
 
-  it('waits for the current snapshot before remounting setup after a failed page load', async () => {
+  it('waits for the current snapshot before reopening an editor after a failed page load', async () => {
     const { controller, face, mirror, mutate } = await mountFirstRun()
+    fireEvent.click(screen.getByRole('button', { name: deepSeekCopy(en.editProvider) }))
     const oldKey = screen.getByLabelText<HTMLInputElement>(en.keyInput)
     fireEvent.change(oldKey, { target: { value: 'sk-discarded-on-error' } })
     face.llm.listProviders.mockResolvedValueOnce(remoteFail('directory unavailable', 'gateway/internal'))
@@ -464,8 +465,9 @@ describe('ModelsSection', () => {
     await screen.findByRole('status')
   })
 
-  it('preserves a mounted setup draft while its current refresh is pending', async () => {
+  it('preserves an explicitly opened draft while its current refresh is pending', async () => {
     const { controller, face } = await mountFirstRun()
+    fireEvent.click(screen.getByRole('button', { name: deepSeekCopy(en.editProvider) }))
     const key = screen.getByLabelText<HTMLInputElement>(en.keyInput)
     fireEvent.change(key, { target: { value: 'sk-unsaved-setup-draft' } })
     const read = Promise.withResolvers<RemoteResult<Record<string, CredentialInfo>>>()
@@ -642,7 +644,7 @@ describe('ModelsSection', () => {
     expect(document.body.textContent).toBe('')
   })
 
-  it('shows a configuration diagnostic inside the first-run setup card', async () => {
+  it('keeps an unconfigured provider diagnostic beside its edit action', async () => {
     const scripted = scriptedFace()
     const failure = 'The provider configuration needs repair'
     scripted.face.llm.listProviders.mockResolvedValue(remoteOk([
@@ -658,8 +660,9 @@ describe('ModelsSection', () => {
 
     const card = screen.getByRole('listitem')
     expect(within(card).getByRole('alert').textContent).toBe(failure)
+    expect(within(card).queryByLabelText(en.keyInput)).toBeNull()
+    fireEvent.click(within(card).getByRole('button', { name: deepSeekCopy(en.editProvider) }))
     expect(within(card).getByLabelText(en.keyInput)).toBeTruthy()
-    expect(within(card).queryByRole('button', { name: deepSeekCopy(en.editProvider) })).toBeNull()
   })
 
   it('dispatches the provider-card seat per rendered row, keyed by the owning namespace', async () => {
@@ -673,7 +676,7 @@ describe('ModelsSection', () => {
     ])
   })
 
-  it('dispatches the provider-card seat inside the first-run setup card', async () => {
+  it('dispatches the provider-card seat for an unconfigured row', async () => {
     const { renderSlot } = await mountFirstRun()
     expect(cardSeatCalls(renderSlot)).toContainEqual(['deepseek-official', true, false, 'llm-deepseek'])
   })
@@ -715,12 +718,11 @@ describe('ModelsSection', () => {
     expect(screen.getByLabelText(en.keyInput)).toBeTruthy()
     expect(cardSeatCalls(renderSlot).some(([provider]) => provider === 'anthropic')).toBe(false)
   })
-  it('renders the unkeyed whole-section provider as an open setup card in the first-run posture', async () => {
+  it('keeps every unconfigured provider collapsed until explicitly edited', async () => {
     await mountFirstRun()
-    // Nothing is reachable yet, and DeepSeek has no configured credential and
-    // no stored apiKey → setup card.
     expect(screen.getByText('DeepSeek')).toBeTruthy()
-    expect(screen.getByLabelText(en.keyInput)).toBeTruthy()
+    expect(screen.queryByLabelText(en.keyInput)).toBeNull()
+    expect(screen.getByRole('button', { name: deepSeekCopy(en.editProvider) })).toBeTruthy()
     expect(screen.getByText('openai')).toBeTruthy()
     expect(screen.queryByText('Active')).toBeNull()
     expect(screen.queryByText('Inactive')).toBeNull()
@@ -759,7 +761,7 @@ describe('ModelsSection', () => {
       renderSlot={() => null}
     />)
 
-    const missing = screen.getByRole('img', { name: en.credentialMissing })
+    const missing = within(screen.getByText('openai').closest('li')!).getByRole('img', { name: en.credentialMissing })
     expect(missing.getAttribute('title')).toBe(en.credentialMissing)
     expect(missing.className).toContain('credentialDotMissing')
     expect(missing.closest('li')?.textContent).toContain('openai')
@@ -767,7 +769,7 @@ describe('ModelsSection', () => {
     expect(screen.getByText('zombie').closest('li')?.querySelector('[role="img"]')).toBeNull()
   })
 
-  it('turns the setup card into a row once the credential reports configured', async () => {
+  it('keeps configured credentials in collapsed provider rows', async () => {
     const { face } = await mountFirstRun()
     face.credentials.describe.mockImplementation((refs: string[]) => Promise.resolve(remoteOk(
       Object.fromEntries(refs.map(ref => [ref, { configured: true, writable: true }])),
@@ -786,24 +788,6 @@ describe('ModelsSection', () => {
     // Now a row with an Edit button, not an open card.
     expect(screen.getAllByText(en.edit).length).toBeGreaterThan(1)
     expect(screen.queryByLabelText(en.keyInput)).toBeNull()
-  })
-
-  it('decides setup need from the joined credential state and the first-run posture', () => {
-    const entry = { provider: 'p', displayName: 'p', settingsNs: 'llm-deepseek', settingsPath: [], active: true }
-    const row = (credential: ProviderRow['credential']): ProviderRow => ({
-      entry,
-      configured: true,
-      removable: false,
-      apiKeyEnv: 'X',
-      credential,
-    })
-    expect(needsSetup(row(undefined), false)).toBe(true)
-    expect(needsSetup(row({ configured: true, writable: true }), false)).toBe(false)
-    const nested = { ...row(undefined), entry: { ...entry, settingsPath: ['providers', 'x'] } }
-    expect(needsSetup(nested, false)).toBe(false)
-    // A user who can already reach some provider is not in the first-run
-    // posture, so nothing on the page opens itself.
-    expect(needsSetup(row(undefined), true)).toBe(false)
   })
 
   it('derives conventional credential references from route ids', () => {
@@ -827,8 +811,9 @@ describe('ModelsSection', () => {
     expect(pathOps([], { a: 1 }, { a: 1 })).toEqual([])
   })
 
-  it('stores a typed key write-only from the setup card without touching settings', async () => {
+  it('stores a typed key write-only after explicitly opening the provider', async () => {
     const { set, mutate, face } = await mountFirstRun()
+    fireEvent.click(screen.getByRole('button', { name: deepSeekCopy(en.editProvider) }))
     const key = screen.getByLabelText<HTMLInputElement>(en.keyInput)
     fireEvent.change(key, { target: { value: '  sk-live  ' } })
     fireEvent.click(screen.getByText(en.apply))
@@ -1590,6 +1575,7 @@ describe('ModelsSection', () => {
       t={t}
       renderSlot={() => null}
     />)
+    fireEvent.click(screen.getByRole('button', { name: deepSeekCopy(en.editProvider) }))
     const key = await screen.findByLabelText<HTMLInputElement>(en.keyInput)
     expect(key.placeholder).toBe(en.keyPlaceholderFallback.replace('{hint}', 'DEEPSEEK_API_KEY'))
   })
@@ -1625,6 +1611,7 @@ describe('ModelsSection', () => {
         'credentials-local: invalid document at /home/user/.dsh/.credentials.yaml: BAD_INDENT at line 3, column 1',
       ))),
     })
+    fireEvent.click(screen.getByRole('button', { name: deepSeekCopy(en.editProvider) }))
     const key = screen.getByLabelText<HTMLInputElement>(en.keyInput)
     fireEvent.change(key, { target: { value: 'sk-live' } })
     fireEvent.click(screen.getByText(en.apply))
@@ -2025,24 +2012,12 @@ describe('ModelsSection', () => {
     expect(screen.queryByLabelText(en.provider)).toBeNull()
   })
 
-  it('collapses the setup card on cancel without disturbing another open card', async () => {
-    // The regression: the setup card shared the row/add/declare close handler,
-    // so cancelling it discarded the add card's draft while staying open itself.
+  it('opens the add card without automatically opening an unconfigured vendor', async () => {
     await mountFirstRun()
-    expect(screen.getAllByLabelText(en.keyInput)).toHaveLength(1)
+    expect(screen.queryByLabelText(en.keyInput)).toBeNull()
     fireEvent.click(screen.getByText(en.add))
     await screen.findByLabelText(en.provider)
-    expect(screen.getAllByLabelText(en.keyInput)).toHaveLength(2)
-
-    // The setup card is the first one on the page, above the add block.
-    fireEvent.click(screen.getAllByText(en.cancel)[0] as HTMLElement)
-    // The add card kept its draft…
-    expect(screen.getByLabelText(en.provider)).toBeTruthy()
-    // …and DeepSeek collapsed to an ordinary row carrying the missing-key dot.
     expect(screen.getAllByLabelText(en.keyInput)).toHaveLength(1)
-    expect(screen.getAllByRole('img', { name: en.credentialMissing })
-      .some(dot => dot.closest('li')?.textContent?.includes('DeepSeek') === true)).toBe(true)
-    // Its card reopens through Edit, which closes the add card as any row does.
     fireEvent.click(screen.getByRole('button', { name: deepSeekCopy(en.editProvider) }))
     expect(screen.getAllByLabelText(en.keyInput)).toHaveLength(1)
     expect(screen.queryByLabelText(en.provider)).toBeNull()
@@ -2416,7 +2391,7 @@ it('keeps an inherited profile endpoint ahead of dynamic provider configuration'
 it('renders the localized account row as signed in without an edit action', async () => {
   const scripted = scriptedFace({})
   const { controller } = await mountFace(scripted)
-  const row = controller.store.getSnapshot().rows[0]!
+  const row = controller.store.getSnapshot().rows.find(candidate => candidate.entry.provider === 'deepseek-official')!
   await act(async () => { controller.store.update((state) => {
     state.rows = [{ ...row, accountAvailable: true, entry: { ...row.entry, provider: 'deepseek-account' } }]
   }) })

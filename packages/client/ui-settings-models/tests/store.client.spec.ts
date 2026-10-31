@@ -37,13 +37,13 @@ it.each([false, true])('retains configuration diagnostics when the route is acti
   }])
 })
 
-it('places account and official before third-party providers', () => {
+it('orders providers by id without preferring a vendor', () => {
   const providers = ['custom', 'deepseek-official', 'deepseek-account', 'openai']
   const directory = providers.map(provider => ({
     provider, displayName: provider, settingsNs: 'fixture', settingsPath: [],
   }))
   expect(joinProviderDirectory([], directory).map(row => row.provider))
-    .toEqual(['deepseek-account', 'deepseek-official', 'custom', 'openai'])
+    .toEqual(['custom', 'deepseek-account', 'deepseek-official', 'openai'])
   expect(directory.map(row => row.provider)).toEqual(providers)
 })
 
@@ -172,7 +172,7 @@ describe('ModelsSettingsStore', () => {
     await store.load()
     expect(seenRefs.map(refs => refs.length)).toEqual([64, 64, 2])
     expect(seenRefs.flat()).toContain('NATIVE_64')
-    expect(store.store.getSnapshot().rows[64]!.credentialChecks)
+    expect(store.store.getSnapshot().rows.find(row => row.entry.provider === 'fixture-64')!.credentialChecks)
       .toEqual({ NATIVE_64: { configured: false, writable: true } })
   })
 
@@ -186,7 +186,8 @@ describe('ModelsSettingsStore', () => {
     expect(state.credentialError).toBeNull()
     // Named references first (rows order), then the derived <ROUTE>_API_KEY
     // of every row whose profile names none — one batched describe.
-    expect(seenRefs).toEqual([['DEEPSEEK_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GHOST_API_KEY']])
+    expect(seenRefs).toHaveLength(1)
+    expect(new Set(seenRefs[0])).toEqual(new Set(['DEEPSEEK_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GHOST_API_KEY']))
     const byProvider = new Map(state.rows.map(row => [row.entry.provider, row]))
     expect(byProvider.get('deepseek-official')).toMatchObject({
       configured: true,
@@ -562,12 +563,12 @@ it('removes the account row after sign-out and restores it after sign-in', async
   const { ctx, mirror } = api(overrides)
   const store = new ModelsSettingsStore(ctx, settingsSchema, mirror)
   await store.load()
-  expect(store.store.getSnapshot().rows[0]?.entry.provider).toBe('deepseek-account')
+  expect(store.store.getSnapshot().rows.some(row => row.entry.provider === 'deepseek-account')).toBe(true)
   overrides.accountAvailable = false
   await store.load()
   expect(store.store.getSnapshot().rows.map(row => row.entry.provider)).not.toContain('deepseek-account')
   expect(store.store.getSnapshot().rows).toHaveLength(DIRECTORY.length)
   overrides.accountAvailable = true
   await store.load()
-  expect(store.store.getSnapshot().rows[0]?.entry.provider).toBe('deepseek-account')
+  expect(store.store.getSnapshot().rows.some(row => row.entry.provider === 'deepseek-account')).toBe(true)
 })

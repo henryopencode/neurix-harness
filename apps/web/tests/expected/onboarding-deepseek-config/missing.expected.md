@@ -1,9 +1,73 @@
-- dialog "添加一个 API Key 开始使用":
-  - heading "添加一个 API Key 开始使用" [level=2]
-  - paragraph: 配置 DeepSeek 官方模型，即可开始使用。
-  - text: API 密钥
-  - button "认证说明": "?"
-  - textbox "API 密钥":
-    - /placeholder: 输入 API 密钥
-  - button "稍后配置"
-  - button "保存并继续" [disabled]
+- dialog "连接模型服务":
+  - heading "连接模型服务" [level=2]
+  - text: 提供商
+  - combobox "提供商":
+    - option "自定义模型 API" [selected]
+    - option "amazon-bedrock"
+    - option "ant-ling"
+    - option "anthropic"
+    - option "azure"
+    - option "baseten"
+    - option "cerebras"
+    - option "cloudflare-ai-gateway"
+    - option "cloudflare-workers-ai"
+    - option "deepseek"
+    - option "DeepSeek"
+    - option "fireworks"
+    - option "github-copilot"
+    - option "google"
+    - option "google-vertex"
+    - option "groq"
+    - option "huggingface"
+    - option "kimi-coding"
+    - option "meta"
+    - option "minimax"
+    - option "minimax-cn"
+    - option "mistral"
+    - option "moonshotai"
+    - option "moonshotai-cn"
+    - option "nvidia"
+    - option "openai"
+    - option "openai-codex"
+    - option "opencode"
+    - option "opencode-go"
+    - option "openrouter"
+    - option "qwen-token-plan"
+    - option "qwen-token-plan-cn"
+    - option "qwen-token-plan-individual"
+    - option "radius"
+    - option "together"
+    - option "vercel-ai-gateway"
+    - option "xai"
+    - option "xiaomi"
+    - option "xiaomi-token-plan-ams"
+    - option "xiaomi-token-plan-cn"
+    - option "xiaomi-token-plan-sgp"
+    - option "zai"
+    - option "zai-coding-cn"
+  - paragraph: 填写服务商的 API 地址和密钥，并添加要使用的模型
+  - group "自定义模型 API":
+    - text: API 地址
+    - textbox "API 地址":
+      - /placeholder: https://gateway.example/v1
+    - text: API 协议
+    - combobox "API 协议":
+      - option "OpenAI Chat Completions" [selected]
+      - option "OpenAI Responses"
+      - option "Anthropic Messages"
+    - text: API 密钥
+    - textbox "API 密钥":
+      - /placeholder: 输入 API 密钥
+    - region "模型目录":
+      - text: 模型目录
+      - button "获取可用模型" [disabled]
+      - button "调整模型顺序 1"
+      - textbox "模型 ID 1":
+        - /placeholder: 模型 ID
+      - textbox "显示名称 1":
+        - /placeholder: 显示名称
+      - button "模型选项 1"
+      - button "删除模型 1"
+      - button "添加模型"
+    - button "稍后配置"
+    - button "保存并继续" [disabled]

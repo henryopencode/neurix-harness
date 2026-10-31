@@ -65,6 +65,8 @@ function isHttpUrl(value: string): boolean {
 
 /** Props of {@link CustomProviderCard}. */
 export interface CustomProviderCardProps {
+  /** First-run presentation with an available route id supplied by the owner. */
+  onboarding?: { provider: string }
   /** Route ids already declared, so the card refuses to shadow one. */
   taken: readonly string[]
   /** Wire protocols the adapter can serve, in the order it reports them. */
@@ -101,12 +103,13 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
   const { taken, protocols, reasoningLevels, operations, t, onBusyChange } = props
   // The write is checked against the revision on which this draft was opened.
   const [openedAt] = useState(() => props.revision)
-  const [route, setRoute] = useState('')
-  const [displayName, setDisplayName] = useState('')
+  const [route, setRoute] = useState(props.onboarding?.provider ?? '')
+  const [displayName, setDisplayName] = useState(props.onboarding === undefined ? '' : t('onboardingThirdParty'))
   const [baseURL, setBaseURL] = useState('')
-  const [protocol, setProtocol] = useState(protocols[0] ?? '')
+  const [protocol, setProtocol] = useState(props.onboarding !== undefined && protocols.includes('openai-completions')
+    ? 'openai-completions' : protocols[0] ?? '')
   const [keyDraft, setKeyDraft] = useState('')
-  const [models, setModels] = useState<readonly ModelDraft[]>([])
+  const [models, setModels] = useState<readonly ModelDraft[]>(props.onboarding === undefined ? [] : [{ id: '' }])
   const [busy, setBusy] = useState(false)
   const [listBusy, setListBusy] = useState(false)
   useEffect(() => { onBusyChange?.(busy || listBusy) }, [busy, listBusy, onBusyChange])
@@ -122,7 +125,7 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
   const profileDisabled = disabled || committed
 
   const routeInvalid = route.length > 0 && !ROUTE_PATTERN.test(route)
-  const routeTaken = taken.includes(route)
+  const routeTaken = !committed && taken.includes(route)
   const normalizedBaseURL = baseURL.trim()
   const baseUrlInvalid = baseURL.length > 0 && !isHttpUrl(normalizedBaseURL)
   // Rows are checked by the same per-row validator the editor cards use, so a
@@ -141,6 +144,7 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
   // The one blocked gate worth a line under the form. A satisfied card says
   // nothing at all rather than printing an empty paragraph.
   const hint = failure !== undefined || ready
+    || (props.onboarding !== undefined && (baseURL.length === 0 || modelFailure?.key === 'modelIdRequired'))
     // The key field prints its own failure directly beneath itself, so a card
     // blocked only by the key stays silent here rather than answering with the
     // next unmet gate — which is satisfied, and reads as a second, false fault.
@@ -214,36 +218,39 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
   }
 
   return (
-    <div className={styles['editor']}>
-      <div className={styles['field']}>
-        <span className={styles['fieldLabel']}>{t('customRoute')}</span>
-        <input
-          className={styles['input']}
-          type="text"
-          value={route}
-          placeholder="acme-gateway"
-          aria-label={t('customRoute')}
-          disabled={profileDisabled}
-          onChange={(event) => { setRoute(event.target.value) }}
-        />
-      </div>
-      {/* A rejected id reads as a fault, not as guidance — the same split the
+    <div className={styles['editor']} data-onboarding={props.onboarding === undefined ? undefined : true}>
+      {props.onboarding === undefined ? <>
+        <div className={styles['field']}>
+          <span className={styles['fieldLabel']}>{t('customRoute')}</span>
+          <input
+            className={styles['input']}
+            type="text"
+            value={route}
+            placeholder="acme-gateway"
+            aria-label={t('customRoute')}
+            disabled={profileDisabled}
+            onChange={(event) => { setRoute(event.target.value) }}
+          />
+        </div>
+        {/* A rejected id reads as a fault, not as guidance — the same split the
           key field below already makes between its failure and its hint. */}
-      {routeInvalid || routeTaken
-        ? <p className={styles['error']}>{t(routeInvalid ? 'customRouteInvalid' : 'customRouteTaken')}</p>
-        : <p className={styles['advancedHint']}>{t('customRouteHint')}</p>}
-      <div className={styles['field']}>
-        <span className={styles['fieldLabel']}>{t('customDisplayName')}</span>
-        <input
-          className={styles['input']}
-          type="text"
-          value={displayName}
-          placeholder={route.length === 0 ? t('customDisplayName') : route}
-          aria-label={t('customDisplayName')}
-          disabled={profileDisabled}
-          onChange={(event) => { setDisplayName(event.target.value) }}
-        />
-      </div>
+        {routeInvalid || routeTaken
+          ? <p className={styles['error']}>{t(routeInvalid ? 'customRouteInvalid' : 'customRouteTaken')}</p>
+          : <p className={styles['advancedHint']}>{t('customRouteHint')}</p>}
+        <div className={styles['field']}>
+          <span className={styles['fieldLabel']}>{t('customDisplayName')}</span>
+          <input
+            className={styles['input']}
+            type="text"
+            value={displayName}
+            placeholder={route.length === 0 ? t('customDisplayName') : route}
+            aria-label={t('customDisplayName')}
+            disabled={profileDisabled}
+            onChange={(event) => { setDisplayName(event.target.value) }}
+          />
+        </div>
+      </> : null}
+      {props.onboarding !== undefined && routeTaken ? <p className={styles['error']}>{t('conflict')}</p> : null}
       <div className={styles['field']}>
         <span className={styles['fieldLabel']}>{t('baseUrl')}</span>
         <input
@@ -315,8 +322,9 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
         t={t}
         busy={busy}
         submitDisabled={disabled || !ready}
-        submitLabelKey="create"
-        submitBusyLabelKey="creating"
+        cancelLabelKey={props.onboarding === undefined ? 'cancel' : 'onboardingLater'}
+        submitLabelKey={props.onboarding === undefined ? 'create' : 'onboardingSave'}
+        submitBusyLabelKey={props.onboarding === undefined ? 'creating' : 'onboardingSaving'}
         onCancel={() => { props.onClose(committed) }}
         onSubmit={() => { void create() }}
       />

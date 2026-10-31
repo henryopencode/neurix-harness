@@ -244,7 +244,7 @@ describe('ui-model-selection dual entry', () => {
       : { placeholder: 'Search models…', empty: 'No models available.', noResults: 'No matching models.' })
   })
 
-  it('orders popup provider groups account-first while retaining third-party catalog order', async () => {
+  it('orders popup provider groups by id without preferring a vendor', async () => {
     const b = await bench()
     try {
       b.setGroups([

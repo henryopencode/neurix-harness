@@ -18,7 +18,7 @@ kind: "package-bundle"
 - [进一步探索](#further-exploration)
 - [模型体验](#model-experience)
 - [已知限制与后续工作](#known-limitations-and-deferred-work)
-- [开发备注](#dev-note)
+- [开发笔记](#dev-note)
 
 -----
 

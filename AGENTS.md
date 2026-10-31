@@ -12,6 +12,8 @@ Record each externally perceptible breaking change immediately in an [upgrade gu
 
 **Application launch.** Only `dsh` profiles launch supported Node apps; package bins, demos, and public SDK argv escapes are forbidden ([rule](docs/architecture.md#application-launch)).
 
+**Production releases and online deployments MUST follow the [release SOP](docs/releasing.md#production-release-sop).** Require complete builds, updater checks, immutable assets, and verified backup, health, and rollback; record pending verification.
+
 ## Repository layout
 
 ```

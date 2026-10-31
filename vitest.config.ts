@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { resolvePwshPath } from './packages/shell/pwsh-local/src/resolve.ts'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 import { standardDecoratorPlugin, vitestExecArgv } from './vitest.shared.ts'
 import { COVERAGE_EXEMPT_ENV, coverageExemptHeavySuites } from './scripts/coverage-exempt.ts'
 import { COVERAGE_PARTITION_MODE_ENV, COVERAGE_TEST_TIMEOUT_ENV, coverageTestTimeoutOptions } from './scripts/coverage-partitions.ts'
@@ -132,6 +132,15 @@ const testIncludes = [
   'website/tests/**/*.spec.ts',
 ]
 
+// Build outputs and retained deployment checkouts contain dependencies and copies of source specs.
+const testDiscoveryExcludes = [
+  ...configDefaults.exclude,
+  '**/.desktop-build/**',
+  '**/.desktop-package-cache/**',
+  'scripts/deploy/local/**',
+  'native/**/target/**',
+]
+
 // The instrumented coverage gate sets this env; the exempt heavy suites then
 // run beside it uninstrumented (membership contract in scripts/coverage-exempt.ts).
 // A set-but-not-'1' value is a misconfiguration, not a silent no-op.
@@ -187,7 +196,7 @@ export default defineConfig({
     ],
     // .tsx: client component specs (jsdom via per-file @vitest-environment pragma).
     include: testIncludes,
-    exclude: platformUnsupportedTests,
+    exclude: [...testDiscoveryExcludes, ...platformUnsupportedTests],
     // One coverage invocation aggregates both projects. Every suite forks for
     // Node stability; process-bound suites stay separate for inventory control.
     projects: [
@@ -207,6 +216,7 @@ export default defineConfig({
           ],
           include: testIncludes,
           exclude: [
+            ...testDiscoveryExcludes,
             ...platformUnsupportedTests,
             ...processBoundTests,
             ...coverageExemptExcludes,
@@ -226,6 +236,7 @@ export default defineConfig({
           ],
           include: processBoundTests,
           exclude: [
+            ...testDiscoveryExcludes,
             ...platformUnsupportedTests,
             ...coverageExemptExcludes,
           ],

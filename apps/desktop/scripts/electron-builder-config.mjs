@@ -139,6 +139,7 @@ export function createElectronBuilderConfig(
     },
     files: [
       'lib/main.js',
+      'lib/github-release-worker.js',
       'lib/welcome/**/*',
       'lib/preload-app.cjs',
       'lib/preload-mandatory.cjs',

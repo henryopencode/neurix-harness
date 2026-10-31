@@ -31,6 +31,8 @@ Run `dsh --profile web` for browser chat, model and settings management, and ses
 
 Start the GUI, open your browser, and start talking to the agent. The flags fine-tune the invocation.
 
+The Web composition uses provider-neutral setup and ordering. The optional `ui-deepseek-model-label-1017` entry is disabled by default; a profile overlay can set `disabled: false` to enable its release badge.
+
 ### Starting the Web GUI
 
 ```sh

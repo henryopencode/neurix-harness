@@ -102,15 +102,17 @@ describe('installer preparation preserves application dependencies', () => {
     expect(config.artifactName).toBe('neurix-harness-${version}-${os}-${arch}-unsigned.${ext}')
   })
 
-  it('packages every preload entry point the shell loads', async () => {
+  it('packages every preload and standalone update worker the shell loads', async () => {
     const { readdirSync, readFileSync } = await import('node:fs')
     const sourceDirectory = new URL('../src/', import.meta.url)
     const referenced = new Set<string>()
     for (const entry of readdirSync(sourceDirectory, { withFileTypes: true })) {
       if (!entry.isFile()) continue
-      for (const match of readFileSync(new URL(entry.name, sourceDirectory), 'utf8').matchAll(/preload-[a-z-]+\.cjs/gu)) referenced.add(match[0])
+      const source = readFileSync(new URL(entry.name, sourceDirectory), 'utf8')
+      for (const match of source.matchAll(/preload-[a-z-]+\.cjs|github-release-worker\.js/gu)) referenced.add(match[0])
     }
     expect(referenced.size).toBeGreaterThan(0)
+    expect(referenced.has('github-release-worker.js')).toBe(true)
     const { createElectronBuilderConfig } = await import('../scripts/electron-builder-config.mjs')
     const config = createElectronBuilderConfig({
       DSH_DESKTOP_APP_ID: 'com.example.installer',

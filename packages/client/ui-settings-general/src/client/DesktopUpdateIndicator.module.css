@@ -49,5 +49,8 @@
 @media (hover: hover) {
   .indicator:hover { background: var(--dsw-alias-interactive-bg-hover); }
 }
-.indicator:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.indicator:focus-visible {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color);
+  outline-offset: 2px;
+}
 .indicator[aria-disabled="true"] { cursor: default; }

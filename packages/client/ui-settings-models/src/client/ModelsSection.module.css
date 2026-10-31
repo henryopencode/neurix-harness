@@ -391,8 +391,7 @@
   display: none;
 }
 
-.addCard,
-.setupCard {
+.addCard {
   border-radius: var(--dsw-radius-lg);
   background: var(--dsw-alias-bg-module-platform);
   padding: 14px 16px;
@@ -403,8 +402,7 @@
 }
 
 /* Nested in a card that already carries the module chrome. */
-.addCard .editor,
-.setupCard .editor {
+.addCard .editor {
   background: none;
   padding: 0;
 }
@@ -518,6 +516,32 @@
   grid-template-columns: auto minmax(0, 1.4fr) minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 6px;
+}
+
+@media (max-width: 560px) {
+  .editor[data-onboarding] .modelRow {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+  }
+
+  .editor[data-onboarding] .modelRow > .input:first-of-type {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .editor[data-onboarding] .modelRow > .input:last-of-type {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .editor[data-onboarding] .modelRow > button {
+    grid-row: 2;
+  }
+}
+
+@media (pointer: coarse) {
+  .editor[data-onboarding] .input {
+    font-size: 16px;
+  }
 }
 
 .modelDragHandle:not(:disabled) {
