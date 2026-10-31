@@ -40,8 +40,8 @@
   },
   "files": [
     "icon.svg",
-    "docs",
     "locale/*.json",
+    "docs",
     "lib/index.js",
     "lib/client.js",
     "cordis.patch.yml",
@@ -63,7 +63,7 @@
         "@deepseek-ai/dsh-client-ui-plugin-manager",
         "@deepseek-ai/dsh-api-remotes",
         "@deepseek-ai/dsh-client-ui-conversation",
-        "@deepseek-ai/dsh-experimental-computer-preview"
+        "@deepseek-ai/dsh-client-ui-computer-preview"
       ],
       "platform": "web"
     }
@@ -78,7 +78,7 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/dsh-experimental-computer-use-unified": "workspace:*",
-    "@deepseek-ai/dsh-experimental-computer-preview": "workspace:*"
+    "@deepseek-ai/dsh-client-ui-computer-preview": "workspace:*"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
@@ -117,6 +117,6 @@
     "playwright": "1.61.1",
     "@deepseek-ai/dsh-experimental-computer-use-unified": "workspace:*",
     "@deepseek-ai/dsh-tool-executor-native": "workspace:*",
-    "@deepseek-ai/dsh-experimental-computer-preview": "workspace:*"
+    "@deepseek-ai/dsh-client-ui-computer-preview": "workspace:*"
   }
 }

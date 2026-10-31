@@ -1,5 +1,5 @@
 /** Display-only isolated-browser records shared by Host and Client. @module */
-import type { ComputerPreviewFrame } from '@deepseek-ai/dsh-experimental-computer-use-unified/types'
+import type { ComputerPreviewFrame } from '@deepseek-ai/dsh-client-ui-computer-preview/types'
 
 /** Browser image and pacing independent of model-visible screenshots. */
 export interface BrowserPreviewSnapshot {

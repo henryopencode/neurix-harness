@@ -4,8 +4,8 @@ import { Context } from '@deepseek-ai/cordis'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import type { ComputerPreviewSnapshot } from './preview-types.ts'
-import { ComputerPreviewSources } from '@deepseek-ai/dsh-experimental-computer-preview'
-export { ComputerPreviewSources } from '@deepseek-ai/dsh-experimental-computer-preview'
+import { ComputerPreviewSources } from '@deepseek-ai/dsh-client-ui-computer-preview'
+export { ComputerPreviewSources } from '@deepseek-ai/dsh-client-ui-computer-preview'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {

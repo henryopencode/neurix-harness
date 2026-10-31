@@ -53,6 +53,7 @@ The kernel packages boot and serve the page; the UI feature packages present it.
 | [`ui-brand-official/`](ui-brand-official/README.md) | Fills the generic browser-brand slots with the official name and marks | — |
 | [`ui-workspace/`](ui-workspace/README.md) | Provides workspace selection and creation surfaces | — |
 | [`ui-conversation/`](ui-conversation/README.md) | Presents the active conversation and its input surface | — |
+| [`ui-computer-preview/`](ui-computer-preview/README.md) | Shares display-only browser and application previews | `ctx.computerPreviewUi` |
 | [`ui-chat/`](ui-chat/README.md) | Projects and renders the Chat conversation target | — |
 | [`ui-approval/`](ui-approval/README.md) | Presents approval requests and returns user decisions | — |
 | [`ui-tool/`](ui-tool/README.md) | Composes Tool call trees and keyed per-Tool views | — |

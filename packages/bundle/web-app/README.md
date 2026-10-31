@@ -94,6 +94,8 @@ Each browser session selects a shipped preset (`standard` by default). The Agent
 
 -----
 
+The Web layer mounts the shared browser and application preview renderer; optional control bundles supply its preview sources.
+
 <a id="understand-the-implementation"></a>
 ## Understand the implementation
 

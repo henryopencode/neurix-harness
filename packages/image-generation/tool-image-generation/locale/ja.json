@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "画像生成",
+    "description": "OpenAI互換APIまたはMiniMax APIで画像を生成して保存します。"
+  }
+}

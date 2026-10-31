@@ -6,7 +6,7 @@ import { TestRemote } from '@deepseek-ai/dsh-client-test-runtime'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import * as settings from '@deepseek-ai/dsh-client-ui-settings/client'
-import * as PreviewUi from '@deepseek-ai/dsh-experimental-computer-preview/client'
+import * as PreviewUi from '@deepseek-ai/dsh-client-ui-computer-preview/client'
 import { inject, mountComputerControlUi } from '../src/client/mount.ts'
 import type { TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
 

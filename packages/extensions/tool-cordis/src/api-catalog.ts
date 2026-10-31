@@ -5401,6 +5401,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type CompositionRowEnablement = boolean | \'conditional\';',
   },
   {
+    name: 'ComputerPreviewCursor',
+    declaration: 'export interface ComputerPreviewCursor {\n    x: number;\n    y: number;\n    clickAt?: number;\n    pressed?: boolean;\n}',
+  },
+  {
+    name: 'ComputerPreviewFrame',
+    declaration: 'export type ComputerPreviewFrame = {\n    kind: \'idle\';\n} | {\n    kind: \'unavailable\';\n    title: string;\n    code: \'CAPTURE_FAILED\' | \'IMAGE_TOO_LARGE\' | \'PERMISSION_REQUIRED\' | \'CAPTURE_TIMEOUT\';\n} | {\n    kind: \'frame\';\n    title: string;\n    imageUrl: string;\n    action: string;\n    active: boolean;\n    capturedAt: number;\n    cursor?: ComputerPreviewCursor;\n    keyboard?: {\n        kind: \'typing\';\n        key?: string;\n    } | {\n        kind: \'shortcut\';\n        keys: readonly string[];\n    };\n    scroll?: \'up\' | \'down\' | \'left\' | \'right\';\n};',
+  },
+  {
     name: 'ComputerUseProviderName',
     declaration: 'export type ComputerUseProviderName = Branded<\'ComputerUseProviderName\'>;',
   },

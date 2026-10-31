@@ -53,6 +53,7 @@ kind: "package-group"
 | [`ui-brand-official/`](ui-brand-official/README.zh.md) | 用官方名称与标记填充通用浏览器品牌 slot | — |
 | [`ui-workspace/`](ui-workspace/README.zh.md) | 提供工作区选择与创建界面 | — |
 | [`ui-conversation/`](ui-conversation/README.zh.md) | 展示当前对话及其输入界面 | — |
+| [`ui-computer-preview/`](ui-computer-preview/README.zh.md) | 共享仅用于显示的浏览器与应用预览 | `ctx.computerPreviewUi` |
 | [`ui-chat/`](ui-chat/README.zh.md) | 投影并渲染 Chat 对话 target | — |
 | [`ui-approval/`](ui-approval/README.zh.md) | 展示批准请求并返回用户决策 | — |
 | [`ui-tool/`](ui-tool/README.zh.md) | 编排工具调用树与按工具键控的视图 | — |

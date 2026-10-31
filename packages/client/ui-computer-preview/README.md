@@ -3,13 +3,13 @@ description: "Shared display-only previews for independently enabled browser and
 kind: package-reference
 ---
 
-# @deepseek-ai/dsh-experimental-computer-preview
+# @deepseek-ai/dsh-client-ui-computer-preview
 
 English | [中文](README.zh.md)
 
 ## Summary
 
-Watch browser and application activity in independently movable and resizable picture-in-picture panels. The owning control bundles mount this internal UI plugin automatically. It starts no operating runtime and provides no model tool.
+Watch browser and application activity in independently movable and resizable picture-in-picture panels. The Web profile mounts the shared renderer automatically. It starts no operating runtime and provides no model tool.
 
 ## Table of Contents
 
@@ -25,7 +25,7 @@ Watch browser and application activity in independently movable and resizable pi
 <a id="use-this-package"></a>
 ## Use this package
 
-Enable Browser control or Application control from Plugins. Each bundle includes this carrier; users do not enable it separately. The Client provides `computerPreviewUi`, and each source registers a capture callback with its own lifetime and source identity. The Host body has no settings, tools, or capture side effects.
+Enable Browser control or Application control from Plugins. The Web profile includes this carrier; users do not enable it separately. The Client provides `computerPreviewUi`, and each source registers a capture callback with its own lifetime and source identity. The Host body has no settings, tools, or capture side effects.
 
 Previews appear automatically when a target is available. Drag the picture to move it within the application window, or drag either bottom corner to resize it. Maximize fills the available window while preserving the image proportions; Restore returns to the previous floating size and position. Collapse pauses capture and leaves an Expand button.
 
@@ -46,8 +46,8 @@ The Host exports a capture registry that each control plugin mounts with its own
 <a id="further-exploration"></a>
 ## Further Exploration
 
-- [Browser control](../browser-control/README.md) — hidden browser source.
-- [Application control](../computer-control/README.md) — native foreground source.
+- [Browser control](../../experimental/browser-control/README.md) — hidden browser source.
+- [Application control](../../experimental/computer-control/README.md) — native foreground source.
 
 -----
 

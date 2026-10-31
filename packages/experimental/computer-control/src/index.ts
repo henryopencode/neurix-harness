@@ -3,7 +3,7 @@
 import type { Context, Volatile } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
 import { Config as ProviderConfig, mountComputerControl } from '@deepseek-ai/dsh-experimental-computer-use-unified'
-import { ComputerPreviewSources } from '@deepseek-ai/dsh-experimental-computer-preview'
+import { ComputerPreviewSources } from '@deepseek-ai/dsh-client-ui-computer-preview'
 import type {} from '@deepseek-ai/dsh-settings'
 import { ComputerPreviewController } from './preview.ts'
 export { ComputerPreviewController } from './preview.ts'

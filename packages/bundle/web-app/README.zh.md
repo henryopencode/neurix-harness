@@ -94,6 +94,8 @@ dsh --profile web --no-open --host "$(hostname -i | awk '{print $1}')" --public-
 
 -----
 
+Web 层挂载浏览器与应用共享的预览渲染器；可选控制包向其提供预览来源。
+
 <a id="understand-the-implementation"></a>
 ## 理解实现
 

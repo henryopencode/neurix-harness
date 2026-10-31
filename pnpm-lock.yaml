@@ -2985,6 +2985,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-commands':
         specifier: workspace:*
         version: link:../../client/ui-commands
+      '@deepseek-ai/dsh-client-ui-computer-preview':
+        specifier: workspace:*
+        version: link:../../client/ui-computer-preview
       '@deepseek-ai/dsh-client-ui-conversation':
         specifier: workspace:*
         version: link:../../client/ui-conversation
@@ -4007,6 +4010,42 @@ importers:
       react:
         specifier: ^18.2.0
         version: 18.3.1
+
+  packages/client/ui-computer-preview:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:~
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-client-locale':
+        specifier: workspace:*
+        version: link:../locale
+      '@deepseek-ai/dsh-client-test-runtime':
+        specifier: workspace:*
+        version: link:../../test-support/client-runtime
+      '@deepseek-ai/dsh-client-ui-conversation':
+        specifier: workspace:*
+        version: link:../ui-conversation
+      '@deepseek-ai/dsh-client-ui-primitives':
+        specifier: workspace:*
+        version: link:../ui-primitives
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: workspace:*
+        version: link:../ui-renderer
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: workspace:*
+        version: link:../ui-slots
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:*
+        version: link:../../core/session
+      '@testing-library/react':
+        specifier: ^16.3.3
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.3.1(react@18.3.1)
 
   packages/client/ui-conversation:
     dependencies:
@@ -8393,6 +8432,9 @@ importers:
       '@deepseek-ai/dsh-client-test-runtime':
         specifier: workspace:*
         version: link:../../test-support/client-runtime
+      '@deepseek-ai/dsh-client-ui-computer-preview':
+        specifier: workspace:*
+        version: link:../../client/ui-computer-preview
       '@deepseek-ai/dsh-client-ui-conversation':
         specifier: workspace:*
         version: link:../../client/ui-conversation
@@ -8417,9 +8459,6 @@ importers:
       '@deepseek-ai/dsh-config-editor':
         specifier: workspace:*
         version: link:../../boot/config-editor
-      '@deepseek-ai/dsh-experimental-computer-preview':
-        specifier: workspace:*
-        version: link:../computer-preview
       '@deepseek-ai/dsh-experimental-computer-use-unified':
         specifier: workspace:*
         version: link:../computer-use-unified
@@ -9270,6 +9309,9 @@ importers:
       '@deepseek-ai/dsh-client-test-runtime':
         specifier: workspace:*
         version: link:../../test-support/client-runtime
+      '@deepseek-ai/dsh-client-ui-computer-preview':
+        specifier: workspace:*
+        version: link:../../client/ui-computer-preview
       '@deepseek-ai/dsh-client-ui-conversation':
         specifier: workspace:*
         version: link:../../client/ui-conversation
@@ -9294,9 +9336,6 @@ importers:
       '@deepseek-ai/dsh-experimental-browser-control':
         specifier: workspace:*
         version: link:../browser-control
-      '@deepseek-ai/dsh-experimental-computer-preview':
-        specifier: workspace:*
-        version: link:../computer-preview
       '@deepseek-ai/dsh-experimental-computer-use-unified':
         specifier: workspace:*
         version: link:../computer-use-unified
@@ -9333,45 +9372,6 @@ importers:
       playwright:
         specifier: 1.61.1
         version: 1.61.1
-      react:
-        specifier: ^18.2.0
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.2.0
-        version: 18.3.1(react@18.3.1)
-
-  packages/experimental/computer-preview:
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: workspace:~
-        version: link:../../../vendor/cordis
-      '@deepseek-ai/dsh-client-locale':
-        specifier: workspace:*
-        version: link:../../client/locale
-      '@deepseek-ai/dsh-client-test-runtime':
-        specifier: workspace:*
-        version: link:../../test-support/client-runtime
-      '@deepseek-ai/dsh-client-ui-conversation':
-        specifier: workspace:*
-        version: link:../../client/ui-conversation
-      '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: workspace:*
-        version: link:../../client/ui-primitives
-      '@deepseek-ai/dsh-client-ui-renderer':
-        specifier: workspace:*
-        version: link:../../client/ui-renderer
-      '@deepseek-ai/dsh-client-ui-slots':
-        specifier: workspace:*
-        version: link:../../client/ui-slots
-      '@deepseek-ai/dsh-experimental-computer-use-unified':
-        specifier: workspace:*
-        version: link:../computer-use-unified
-      '@deepseek-ai/dsh-session':
-        specifier: workspace:*
-        version: link:../../core/session
-      '@testing-library/react':
-        specifier: ^16.3.3
-        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -9555,6 +9555,9 @@ importers:
       '@deepseek-ai/dsh-browser-use':
         specifier: workspace:*
         version: link:../../browser-use/browser-use
+      '@deepseek-ai/dsh-client-ui-computer-preview':
+        specifier: workspace:*
+        version: link:../../client/ui-computer-preview
       '@deepseek-ai/dsh-computer-use':
         specifier: workspace:*
         version: link:../../computer-use/computer-use
@@ -10226,6 +10229,9 @@ importers:
       '@deepseek-ai/dsh-brand':
         specifier: workspace:*
         version: link:../../util/brand
+      '@deepseek-ai/dsh-credentials':
+        specifier: workspace:*
+        version: link:../../credentials/credentials
       '@deepseek-ai/dsh-typert-protocol':
         specifier: workspace:*
         version: link:../../typert/protocol
@@ -10281,9 +10287,6 @@ importers:
       '@deepseek-ai/dsh-client-ui-slots':
         specifier: workspace:*
         version: link:../../client/ui-slots
-      '@deepseek-ai/dsh-credentials':
-        specifier: workspace:*
-        version: link:../../credentials/credentials
       '@deepseek-ai/dsh-credentials-local':
         specifier: workspace:*
         version: link:../../credentials/credentials-local

@@ -16,6 +16,9 @@ export interface ProductPackagePolicy {
  * Optional integrations may be reached by an optional bundle without becoming default capabilities.
  */
 export const PRODUCT_PACKAGE_POLICY: Readonly<Record<string, ProductPackagePolicy>> = {
+  'packages/client/ui-deepseek-model-label-1017': {
+    category: 'optional', reason: 'Optional model-label badge selected through an explicit profile overlay.',
+  },
   'packages/image-generation/tool-image-generation': { category: 'optional', reason: 'Text-to-image generation requires explicitly configured external credentials and a model.' },
   'packages/core/agent-tool-presentation': { category: 'optional', reason: 'Deprecated selector retained for existing executor configurations.' },
   'packages/browser-use/browser-use': { category: 'optional', reason: 'Service definition used by explicitly selected browser providers.' },

@@ -42,7 +42,7 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
     await scaffold?.close()
   })
 
-  it('closes the setup card without discarding the add card beside it', async () => {
+  it('starts provider rows collapsed and opens another provider without repeating onboarding', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-onboarding-setup-card-cancel'))
     const signIn = page.getByRole('dialog', { name: '开始使用', exact: true })
     await signIn.waitFor({ timeout: 15_000 })
@@ -55,11 +55,8 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
     await openSettings(page, 'zh')
     const settings = page.getByRole('dialog', { name: '设置' })
     await settings.waitFor({ timeout: 10_000 })
-    // Dismissing the onboarding step leaves Settings closed, so enter the
-    // Models section explicitly before exercising its normal cards.
     await settings.getByRole('button', { name: '模型', exact: true }).click()
-    const setupKey = settings.getByRole('textbox', { name: 'API 密钥', exact: true })
-    await setupKey.waitFor({ timeout: 10_000 })
+    expect(await settings.getByRole('textbox', { name: 'API 密钥', exact: true }).count()).toBe(0)
 
     const add = settings.getByRole('button', { name: '添加模型提供商' })
     await expect.poll(async () => add.isEnabled(), { timeout: 10_000 }).toBe(true)
@@ -67,19 +64,8 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
     const pick = settings.getByLabel('提供商', { exact: true })
     await pick.waitFor({ timeout: 10_000 })
     await pick.selectOption('minimax-cn')
-    await expect.poll(
-      async () => settings.getByRole('textbox', { name: 'API 密钥', exact: true }).count(),
-      { timeout: 10_000 },
-    ).toBe(2)
-
-    // Cancelling the setup card must not close the independent add-provider
-    // draft beside it.
-    await settings.getByRole('button', { name: '取消', exact: true }).first().click()
-    expect(await settings.getByLabel('提供商', { exact: true }).count()).toBe(1)
-    await expect.poll(
-      async () => settings.getByRole('textbox', { name: 'API 密钥', exact: true }).count(),
-      { timeout: 10_000 },
-    ).toBe(1)
+    await settings.getByRole('textbox', { name: 'API 密钥', exact: true }).waitFor({ timeout: 10_000 })
+    expect(await page.getByRole('dialog', { name: CREDENTIAL_STEP }).count()).toBe(0)
     await settings.getByRole('button', { name: '编辑 DeepSeek (deepseek-official)' }).waitFor({ timeout: 10_000 })
     const dismissed = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(DISMISSED_EXPECTED, dismissed, MODE)
