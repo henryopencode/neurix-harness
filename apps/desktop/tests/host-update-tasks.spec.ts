@@ -122,7 +122,10 @@ describe('Desktop Host update task protection', () => {
       await forwarding
       server.closeAllConnections()
       if (server.listening) await new Promise<void>((resolve, reject) => {
-        server.close(error => error === undefined ? resolve() : reject(error))
+        server.close((error) => {
+          if (error === undefined) resolve()
+          else reject(error)
+        })
       })
       await Promise.all(requests)
     }
