@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-web-fetch-http",
   "description": "Anonymous HTTP(S) fetch provider for the Neurix Harness web capability seam (ctx.web)",
-  "version": "0.2.1-rc.3",
+  "version": "1.0.0",
   "publishConfig": {
     "access": "public"
   },

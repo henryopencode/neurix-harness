@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-image-generation-bundle",
   "description": "Enable configurable text-to-image generation in conversations",
-  "version": "0.2.1-rc.3",
+  "version": "1.0.0",
   "publishConfig": {
     "access": "public"
   },
