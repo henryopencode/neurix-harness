@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-experimental-mobile-access",
   "description": "Connect a phone to the running Desktop or Web Agent and its existing conversations",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publishConfig": {
     "access": "public"
   },

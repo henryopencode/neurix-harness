@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-experimental-computer-use-unified",
   "description": "Session-owned browser and macOS control with verified observations",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publishConfig": {
     "access": "public"
   },

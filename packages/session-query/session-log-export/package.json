@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-session-log-export",
   "description": "Web Session-log ZIP export and Session Markdown copy",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publishConfig": {
     "access": "public"
   },

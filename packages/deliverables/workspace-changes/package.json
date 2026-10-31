@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-workspace-changes",
   "description": "Per-turn workspace file changes recorded from git working-tree snapshots and whole-file captures, with per-file comparisons, for the Neurix Harness",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publishConfig": {
     "access": "public"
   },
