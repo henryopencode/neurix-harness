@@ -32,7 +32,10 @@ export class GithubReleaseRequests {
   async dispose(): Promise<void> {
     this.lifetime.abort()
     const results = await Promise.allSettled(this.sessions.map(network => network.closeAllConnections()))
-    const failures = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+    const failures: unknown[] = []
+    for (const result of results) {
+      if (result.status === 'rejected') failures.push(result.reason)
+    }
     if (failures.length > 0) throw new AggregateError(failures, 'Updater connections could not all be closed')
   }
 }
