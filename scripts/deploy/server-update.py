@@ -192,6 +192,8 @@ def install(config, archive, version, expected_digest):
         command('runuser', '-u', config['user'], '--', 'tar', '--no-same-owner', '--same-permissions', '-xzf', '-', '-C', str(staged), input_stream=source)
     command('chown', '-hR', 'root:root', str(staged))
     os.chmod(staged, 0o755)
+    # The archive starts at runtime/primary-runtime; tar creates its parent without a stored mode.
+    os.chmod(staged / 'runtime', 0o755)
     manifest = json.loads((staged / 'dsh/package.json').read_text())
     if manifest.get('version') != version or not (staged / 'server/start.sh').is_file():
         raise ValueError('Prepared runtime does not match the selected release')
