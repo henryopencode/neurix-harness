@@ -6,6 +6,7 @@ import { TestRemote } from '@deepseek-ai/dsh-client-test-runtime'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import * as settings from '@deepseek-ai/dsh-client-ui-settings/client'
+import * as PreviewUi from '@deepseek-ai/dsh-client-ui-computer-preview/client'
 import { inject, mountComputerControlUi } from '../src/client/mount.ts'
 import type { TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
 
@@ -24,6 +25,7 @@ it('registers a localized configuration after the Plugins slot appears and remov
       ok: true, value: { writable: true, hasDocument: true, namespaces: [] },
     }) } })
     await ctx.plugin(settings)
+    await ctx.plugin(PreviewUi)
     const contribution: TypertRemoteContribution = { package: '@deepseek-ai/dsh-experimental-computer-control', descriptors: [] }
     const fiber = ctx.plugin({ inject, async apply(child) { return await mountComputerControlUi(child, contribution) } })
     await fiber
@@ -33,7 +35,7 @@ it('registers a localized configuration after the Plugins slot appears and remov
     await vi.waitFor(() => { expect(slots.entries('plugins.bundle.config')).toHaveLength(1) })
     expect(slots.entries('plugins.bundle.config')[0]?.options.key).toBe('@deepseek-ai/dsh-experimental-computer-control')
     expect(slots.entries('plugins.bundle.config')[0]?.inject?.()).toHaveProperty('hooks.computerCard')
-    expect(locale.bind('settings.computerControl')('browserChannel')).toBe('浏览器')
+    expect(locale.bind('settings.computerControl')('description')).toContain('仅支持 macOS')
     await fiber.dispose()
     expect(slots.entries('plugins.bundle.config')).toHaveLength(0)
   } finally { await ctx.fiber.dispose() }

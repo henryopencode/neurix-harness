@@ -93,7 +93,7 @@ function bytesBody(bytes: Uint8Array): ReadableStream<Uint8Array> {
 async function serveStatic(
   request: Request, distRoot: string, distIndex: string,
   authorizeIndex: () => Response | undefined,
-  renderIndex: (html: string) => string,
+  renderIndex: (html: string) => string | Response,
 ): Promise<Response> {
   const target = resolve(normalize(join(distRoot, decodeURIComponent(new URL(request.url).pathname))))
   // Traversal rejection: the target must be distRoot itself (`/`) or stay under
@@ -106,7 +106,9 @@ async function serveStatic(
     if (target === distRoot || target === distIndex) {
       const refusal = authorizeIndex()
       if (refusal !== undefined) return refusal
-      body = renderIndex(await readFile(distIndex, 'utf8'))
+      const rendered = renderIndex(await readFile(distIndex, 'utf8'))
+      if (rendered instanceof Response) return rendered
+      body = rendered
       headers = { 'content-type': HTML_MIME }
     } else {
       body = await readFile(target)
@@ -157,11 +159,14 @@ export function apply(ctx: Context, config: Config): void {
       // A read with a Peer was admitted by its caller; an HTTP request carries
       // none and passes Connection's browser authentication instead.
       () => peer === undefined ? authorizeIndex(request) : undefined,
-      // The browser authentication admits the owner's shared browser Peer. The
-      // base goes in after all index transforms, so it precedes every resource
-      // reference they insert.
-      html => ctx.webServer.renderIndex(html, peer ?? ctx.connection.browserPeer)
-        .replace(/<head(?:\s[^>]*)?>/i, open => `${open}<base href="./">`),
+      (html) => {
+        const reader = peer === undefined ? ctx.connection.admit(request, 'document') : { peer }
+        if ('rejection' in reader) return new Response('unauthorized', { status: reader.rejection })
+        const rendered = ctx.webServer.renderIndex(html, reader.peer)
+          .replace(/<head(?:\s[^>]*)?>/i, open => `${open}<base href="./">`)
+        return peer === undefined && reader.peer !== ctx.connection.browserPeer
+          ? new Response(rendered, { headers: { 'content-type': HTML_MIME, 'cache-control': 'no-store' } }) : rendered
+      },
     ),
   }), 'frontend-static: fallback seat')
 }

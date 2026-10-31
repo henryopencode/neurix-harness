@@ -41,7 +41,7 @@ Tools use the normal execution pipeline and Session log. Image-capable model rou
 
 Unified control reports browser-only capabilities on Windows and Linux and initializes its macOS native driver on first desktop use. Its optional input-approval setting uses the existing one-shot approval service. Browser input requires elements from the latest observation; coordinate input has a separate screenshot lifetime. The [provider reference](../../packages/experimental/computer-use-unified/README.md) owns these settings and failures.
 
-The optional [Computer Control bundle](../../packages/experimental/computer-control/README.md) displays the current target of the selected Session. Its [`ComputerPreviewFrame`](../../packages/experimental/computer-use-unified/src/types.ts) distinguishes `idle`, `unavailable`, and `frame`; images carry their original Unix-millisecond capture time and current action status. `ComputerPreviewSnapshot` pairs that result with the Host-selected refresh interval. `ComputerPreviewCursor` uses window-relative fractions. The carrier registers one `ComputerPreviewCapture` per live Session, and withdrawal cancels and awaits accepted captures. Display-only previews preserve actionable observations and add no model input or Session events.
+The optional [Application control bundle](../../packages/experimental/computer-control/README.md) displays the selected native window through `computerPreview`; [Browser control](../../packages/experimental/browser-control/README.md) independently displays its hidden tab through `browserPreview`. The bundles expose `application` and `browser` respectively and can run together. Its [`ComputerPreviewFrame`](../../packages/client/ui-computer-preview/src/types.ts) distinguishes `idle`, `unavailable`, and `frame`; images carry their original Unix-millisecond capture time and current action status. `ComputerPreviewSnapshot` and `BrowserPreviewSnapshot` pair that result with the Host-selected refresh interval. `ComputerPreviewCursor` uses window-relative fractions. The carrier registers one `ComputerPreviewCapture` per live Session, and withdrawal cancels and awaits accepted captures. Display-only previews preserve actionable observations and add no model input or Session events.
 
 The [decision record](../../.agents/notes/implemented/architecture/2026-09-12-computer-use-provider-registration.md) explains the registration-only service and the two Cua Driver integrations.
 
@@ -52,6 +52,26 @@ The [decision record](../../.agents/notes/implemented/architecture/2026-09-12-co
 ## Cordis API
 
 Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
+
+<a id="ctxbrowserpreview--browserpreviewcontroller"></a>
+
+### `ctx.browserPreview` — `BrowserPreviewController`
+
+Read-only Remote with a namespace independent of application control.
+
+```ts cordis-catalog
+/**
+ * Capture an existing browser target without starting an Agent or sending input.
+ * @param sessionId - Session displayed by the Client.
+ * @param signal - viewing and Remote lifetime.
+ * @returns bounded image and Host-selected refresh interval.
+ */
+@Remote async frame(sessionId: SessionId, signal: AbortSignal): Promise<BrowserPreviewSnapshot>
+```
+
+Types: [SessionId](core.md)
+
+Source: [`packages/experimental/browser-control/src/preview.ts`](../../packages/experimental/browser-control/src/preview.ts)
 
 <a id="ctxcomputerpreview--computerpreviewcontroller"></a>
 

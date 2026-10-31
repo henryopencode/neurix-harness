@@ -79,12 +79,15 @@ describe.skipIf(MODE === 'record')('web e2e: first-run DeepSeek credential setup
     await compareOrRefreshGolden(SIGN_IN_EXPECTED,
       await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd), MODE)
     await signIn.getByRole('button', { name: '添加 API Key', exact: true }).click()
-    const credentialStep = page.getByRole('dialog', { name: '添加一个 API Key 开始使用' })
+    const credentialStep = page.getByRole('dialog', { name: '连接模型服务' })
     await credentialStep.waitFor({ timeout: 15_000 })
-    const keyInput = credentialStep.getByLabel('API 密钥', { exact: true })
-    await keyInput.waitFor({ timeout: 10_000 })
+    await credentialStep.getByLabel('API 地址', { exact: true }).waitFor({ timeout: 10_000 })
     const initial = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(MISSING_EXPECTED, initial, MODE)
+
+    expect(await credentialStep.getByRole('combobox', { name: '提供商', exact: true }).inputValue()).toBe('custom')
+    await credentialStep.getByRole('combobox', { name: '提供商', exact: true }).selectOption('provider:deepseek-official')
+    const keyInput = credentialStep.getByRole('group', { name: 'DeepSeek', exact: true }).getByLabel('API 密钥', { exact: true })
 
     const secret = `dsh_onboarding_${randomBytes(12).toString('hex')}`
     await keyInput.fill(secret)
@@ -122,7 +125,7 @@ describe.skipIf(MODE === 'record')('web e2e: first-run DeepSeek credential setup
     acknowledgeReloadConnectionLoss(tripwire, secondReloadWarnings)
     await page.waitForSelector('[class*="frame"]', { timeout: 15_000 })
     expect(await page.getByRole('dialog', { name: WELCOME_NOTICE_COPY.zh.title }).count()).toBe(0)
-    expect(await page.getByRole('dialog', { name: '添加一个 API Key 开始使用' }).count()).toBe(0)
+    expect(await page.getByRole('dialog', { name: '连接模型服务' }).count()).toBe(0)
 
     // An old acknowledgement means materially revised copy: welcome returns,
     // while the already-configured provider step remains complete.
@@ -135,7 +138,7 @@ describe.skipIf(MODE === 'record')('web e2e: first-run DeepSeek credential setup
     await welcome.waitFor({ timeout: 15_000 })
     await welcome.getByRole('button', { name: WELCOME_NOTICE_COPY.zh.continueLabel }).click()
     await welcome.waitFor({ state: 'detached', timeout: 15_000 })
-    expect(await page.getByRole('dialog', { name: '添加一个 API Key 开始使用' }).count()).toBe(0)
+    expect(await page.getByRole('dialog', { name: '连接模型服务' }).count()).toBe(0)
 
     expect((await page.content()).includes(secret)).toBe(false)
     expect((await page.locator('body').ariaSnapshot()).includes(secret)).toBe(false)
@@ -164,7 +167,7 @@ describe.skipIf(MODE === 'record')('web e2e: first-run DeepSeek credential setup
         if (document.querySelector(
           '[role="dialog"][aria-label="预览版说明"], '
           + '[role="dialog"][aria-label="开始使用"], '
-          + '[role="dialog"][aria-label="添加一个 API Key 开始使用"]',
+          + '[role="dialog"][aria-label="连接模型服务"]',
         ) !== null) {
           sightings.push('chrome')
         }
@@ -196,7 +199,7 @@ describe.skipIf(MODE === 'record')('web e2e: first-run DeepSeek credential setup
     expect(await page.evaluate(() =>
       (window as unknown as { __takeoverSightings: string[] }).__takeoverSightings)).toEqual([])
     expect(await page.getByRole('dialog', { name: WELCOME_NOTICE_COPY.zh.title }).count()).toBe(0)
-    expect(await page.getByRole('dialog', { name: '添加一个 API Key 开始使用' }).count()).toBe(0)
+    expect(await page.getByRole('dialog', { name: '连接模型服务' }).count()).toBe(0)
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
 
@@ -317,4 +320,67 @@ describe.skipIf(MODE === 'record')('web e2e: first-run DeepSeek credential setup
       ['welcome.expected.md', 'sign-in.expected.md', 'missing.expected.md', 'models.expected.md', 'default-models.expected.md', 'empty.expected.md'],
     )
   })
+})
+
+describe.skipIf(MODE === 'record')('web e2e: third-party first-run connection', () => {
+  let scaffold: WebScaffold
+  let browser: Browser
+
+  beforeAll(async () => {
+    scaffold = await launchWebScaffold({ deepSeekMissingCredential: true })
+    browser = await chromium.launch()
+  }, 120_000)
+
+  afterAll(async () => {
+    await browser?.close()
+    await scaffold?.close()
+  })
+
+  it('saves a custom connection at phone width and keeps it usable after reload', async () => {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: ZH_BROWSER_LOCALE })
+    const tripwire = watchConsole(page)
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-third-party-onboarding'))
+    await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
+    await page.getByRole('dialog', { name: '开始使用', exact: true }).getByRole('button', { name: '添加 API Key', exact: true }).click()
+    const setup = page.getByRole('dialog', { name: '连接模型服务', exact: true })
+    await setup.waitFor()
+    expect(await setup.getByRole('combobox', { name: '提供商', exact: true }).inputValue()).toBe('custom')
+    expect(await setup.getByRole('tab').count()).toBe(0)
+    expect(await setup.getByLabel('提供商 ID', { exact: true }).count()).toBe(0)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    await setup.getByLabel('API 地址', { exact: true }).fill('https://gateway.example/v1')
+    await setup.getByLabel('模型 ID 1', { exact: true }).fill('private-model')
+    const modelBox = await setup.getByLabel('模型 ID 1', { exact: true }).boundingBox()
+    expect(modelBox !== null && modelBox.width >= 200).toBe(true)
+    const secret = `dsh_third_party_${randomBytes(12).toString('hex')}`
+    await setup.getByLabel('API 密钥', { exact: true }).fill(secret)
+    const save = setup.getByRole('button', { name: '保存并继续', exact: true })
+    await save.scrollIntoViewIfNeeded()
+    const box = await save.boundingBox()
+    expect(box !== null && box.x >= 0 && box.x + box.width <= 390).toBe(true)
+    await page.screenshot({ path: '.artifacts/third-party-onboarding-mobile.png', animations: 'disabled' })
+    await save.click()
+    await setup.waitFor({ state: 'detached' })
+    await expect.poll(() => scaffold.ctx.llm.listProviders().map(provider => provider.id)).toContain('custom-api')
+    await expect(scaffold.ctx.llm.resolveModelInfo('custom-api', 'private-model')).resolves.toMatchObject({ id: 'private-model' })
+    const credentials = await readFile(join(scaffold.harnessHome, '.credentials.yaml'), 'utf8')
+    expect(credentials).toContain(`CUSTOM_API_API_KEY: ${secret}`)
+    const patch = await readFile(join(scaffold.harnessHome, 'profiles', 'scaffold', 'cordis.patch.yml'), 'utf8')
+    expect(patch).toContain('https://gateway.example/v1')
+    expect(patch).toContain('private-model')
+    expect(patch).not.toContain(secret)
+    expect(await page.content()).not.toContain(secret)
+    await page.setViewportSize({ width: 1440, height: 960 })
+    const warningCount = tripwire.warnings.length
+    await page.reload({ waitUntil: 'load' })
+    await page.waitForSelector('[class*="frame"]')
+    await openSettings(page, 'zh')
+    const settings = page.getByRole('dialog', { name: '设置' })
+    await settings.getByRole('button', { name: '模型', exact: true }).click()
+    await settings.getByText('第三方服务', { exact: true }).waitFor()
+    expect(await setup.count()).toBe(0)
+    acknowledgeReloadConnectionLoss(tripwire, warningCount)
+    expect(tripwire.pageErrors).toEqual([])
+    expect(tripwire.warnings).toEqual([])
+  }, 60_000)
 })

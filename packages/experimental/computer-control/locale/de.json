@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "App-Steuerung",
+    "description": "Bediene macOS-Apps im Vordergrund, auch Browser-Apps, mit Systemmaus und Tastatur.",
+    "detail": "docs/DETAIL.md"
+  }
+}

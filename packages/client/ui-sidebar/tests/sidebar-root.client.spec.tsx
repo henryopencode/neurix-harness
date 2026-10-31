@@ -229,9 +229,9 @@ describe('SidebarRoot shell', () => {
   it('hands the region its wide flag and clamps expandSidebar to the collapsed state', () => {
     const b = mountShell()
     expect(b.regionOwner().wide).toBe(true)
-    // The settings seat rides the same wide flag (ui-settings renders the row).
-    expect(b.settingsOwner().wide).toBe(true)
-    expect(b.footerActionOwner().wide).toBe(true)
+    // Footer controls remain icons beside the expanded workspace browser.
+    expect(b.settingsOwner()).toEqual({ wide: true, compact: true })
+    expect(b.footerActionOwner().wide).toBe(false)
     // Expanded: the request is a no-op (no accidental collapse).
     b.regionOwner().expandSidebar()
     expect(b.toggleSidebar).not.toHaveBeenCalled()
@@ -245,11 +245,36 @@ describe('SidebarRoot shell', () => {
     expect(b.regionOwner().wide).toBe(true)
     vi.advanceTimersByTime(200)
     b.rerender({})
+    expect(b.regionOwner().wide).toBe(true)
+    act(() => { vi.advanceTimersByTime(100) })
     expect(b.regionOwner().wide).toBe(false)
     expect(b.footerActionOwner().wide).toBe(false)
     expect(screen.getByTestId('region')).toBeTruthy()
     b.regionOwner().expandSidebar()
     expect(b.toggleSidebar).toHaveBeenCalledOnce()
+  })
+
+  it('finishes collapse when its own browser fade ends and ignores descendant transitions', () => {
+    vi.useFakeTimers()
+    const b = mountShell()
+    b.rerender({ collapsed: true })
+    fireEvent.transitionEnd(screen.getByTestId('region'), { propertyName: 'opacity' })
+    expect(b.regionOwner().wide).toBe(true)
+    const browser = screen.getByTestId('region').closest('[data-sidebar-browser]')
+    if (browser === null) throw new Error('Sidebar browser is missing')
+    fireEvent.transitionEnd(browser, { propertyName: 'opacity' })
+    expect(b.regionOwner().wide).toBe(false)
+  })
+
+  it('cancels the previous collapse when the user immediately reopens the sidebar', () => {
+    vi.useFakeTimers()
+    const b = mountShell()
+    b.rerender({ collapsed: true })
+    act(() => { vi.advanceTimersByTime(120) })
+    b.rerender({ collapsed: false })
+    act(() => { vi.advanceTimersByTime(400) })
+    expect(b.regionOwner().wide).toBe(true)
+    expect(b.settingsOwner().wide).toBe(true)
   })
 
   it('renders statically collapsed on a cold start (no crossfade classes)', () => {

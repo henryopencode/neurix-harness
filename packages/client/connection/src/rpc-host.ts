@@ -11,7 +11,7 @@ import {
 } from './rpc.ts'
 import { clientRequestSchema } from './rpc-schema.ts'
 import { bridge } from './http-bridge.ts'
-import { isRemoteAuthority, isTrustedApiRequest } from './api-request-trust.ts'
+import { assertTrustedAuthority, isRemoteAuthority, isTrustedApiRequest } from './api-request-trust.ts'
 import { API_PATH } from './api-path.ts'
 import type { BrowserAuth } from './browser-auth.ts'
 import { Peer } from './peer.ts'
@@ -31,6 +31,7 @@ import type {
   ConnectionTrustRequest,
   HostConnectionHandle,
   HostConnectionRpc,
+  ConnectionBrowserAuth,
 } from './rpc.ts'
 
 const INVALID_REQUEST_RPC_ID = RpcId('invalid-request')
@@ -76,7 +77,13 @@ export class HostConnectionService extends Service implements HostConnectionHand
   private readonly interceptors = new Map<string, ConnectionRpcInterceptor>()
   private readonly fetchRoutes = new Map<string, RegisteredFetchRoute>()
 
-  readonly allowsRemoteAuthorities: boolean
+  private readonly registeredAuthorities = new Map<symbol, string>()
+  private readonly browserProviders = new Set<ConnectionBrowserAuth>()
+
+  /** Whether a configured or currently registered authority is remote. */
+  get allowsRemoteAuthorities(): boolean {
+    return [...this.trustedHosts, ...this.registeredAuthorities.values()].some(isRemoteAuthority)
+  }
 
   /**
    * Provide the Host half over the active HTTP server.
@@ -98,7 +105,32 @@ export class HostConnectionService extends Service implements HostConnectionHand
       this.peers.clear()
       await Promise.all(peers.map(peer => peer.dispose()))
     }, 'client-connection: Peer scopes')
-    this.allowsRemoteAuthorities = trustedHosts.some(isRemoteAuthority)
+  }
+
+  /**
+   * Admit an additional deployment authority without granting authentication.
+   * @param authority - canonical host or host:port.
+   * @returns idempotent withdrawal owned by the calling plugin's lifetime.
+   */
+  registerTrustedHost(authority: string): () => Promise<void> {
+    assertTrustedAuthority(authority)
+    const key = Symbol()
+    return this.ctx.effect(() => {
+      this.registeredAuthorities.set(key, authority)
+      return () => { this.registeredAuthorities.delete(key) }
+    }, 'client-connection: trusted authority')
+  }
+
+  /**
+   * Register browser authentication while retaining the shared request trust checks.
+   * @param provider - synchronous credential check and optional index response.
+   * @returns idempotent withdrawal owned by the calling plugin.
+   */
+  registerBrowserAuth(provider: ConnectionBrowserAuth): () => Promise<void> {
+    return this.ctx.effect(() => {
+      this.browserProviders.add(provider)
+      return () => { this.browserProviders.delete(provider) }
+    }, 'client-connection: browser authentication')
   }
 
   /** Generic channel registry scoped to the Context reading this service. */
@@ -126,9 +158,13 @@ export class HostConnectionService extends Service implements HostConnectionHand
   }
 
   /** Browser requests share an owner Peer; API HTTP does not depend on an attached socket. */
-  admit(request: ConnectionTrustRequest): PeerAdmission {
-    if (!this.isTrusted(request)) return { rejection: 403 }
+  admit(request: ConnectionTrustRequest, purpose: 'api' | 'document' = 'api'): PeerAdmission {
+    if (!this.isTrusted(request, purpose)) return { rejection: 403 }
     if (this.disposed) return { rejection: 401 }
+    for (const provider of this.browserProviders) {
+      const peer = provider.authenticate(request)
+      if (peer !== undefined) return { peer }
+    }
     const secure = this.owner.get('webServer')?.protocol === 'https:'
     if (this.browserAuth.isAuthenticated(request, secure)) return { peer: this.browserPeer }
     const id = this.browserAuth.authenticateApi(request, secure)
@@ -161,9 +197,10 @@ export class HostConnectionService extends Service implements HostConnectionHand
     }
   }
 
-  private isTrusted(request: ConnectionTrustRequest): boolean {
+  private isTrusted(request: ConnectionTrustRequest, purpose: 'api' | 'document' = 'api'): boolean {
     const carrier = this.owner.get('webServer')
-    return isTrustedApiRequest(request, this.trustedHosts, carrier?.host, carrier?.protocol ?? 'http:')
+    const authorities = [...this.trustedHosts, ...this.registeredAuthorities.values()]
+    return isTrustedApiRequest(request, authorities, carrier?.host, carrier?.protocol ?? 'http:', purpose)
   }
 
   private publishPeer(interactions: ConnectionInteractions): PeerId {
@@ -191,6 +228,12 @@ export class HostConnectionService extends Service implements HostConnectionHand
    * Authenticate an index request; native TLS listeners mint Secure cookies.
    */
   authorizeIndex(request: ConnectionIndexRequest, response: ConnectionIndexResponse): boolean {
+    if (this.isTrusted(request) && !this.disposed) {
+      for (const provider of this.browserProviders) {
+        const accepted = provider.authorizeIndex(request, response)
+        if (accepted !== undefined) return accepted
+      }
+    }
     return this.browserAuth.authorizeIndex(request, response, this.ctx.get('webServer')?.protocol === 'https:')
   }
 

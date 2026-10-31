@@ -1,0 +1,37 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/browser-control/README.md
+/:
+  en: 9afff83c9c9b37ee
+  zh: 403b2b64fd7af08a
+/deepseek-ai-dsh-experimental-browser-control:
+  en: c644debba9f7851a
+  zh: d8c22200670969b5
+/deepseek-ai-dsh-experimental-browser-control/summary:
+  en: 101c3af683f766d8
+  zh: 518b2cd50340b9c8
+/deepseek-ai-dsh-experimental-browser-control/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: ef6805c80e17a904
+/deepseek-ai-dsh-experimental-browser-control/use-this-package:
+  en: 098ae31484ae319e
+  zh: dfd683232c0fc1c8
+/deepseek-ai-dsh-experimental-browser-control/understand-the-implementation:
+  en: d0c28c13ac0f2f49
+  zh: 1634ef1143772590
+/deepseek-ai-dsh-experimental-browser-control/further-exploration:
+  en: 95787226161f788f
+  zh: 664e84e222caa943
+/deepseek-ai-dsh-experimental-browser-control/model-experience:
+  en: 9ccd5761338d312e
+  zh: 53857473b311d23e
+/deepseek-ai-dsh-experimental-browser-control/model-experience/kv-cache-effect:
+  en: d4e86abd4019d176
+  zh: d8ff88d06c8ea099
+/deepseek-ai-dsh-experimental-browser-control/known-limitations-and-deferred-work:
+  en: cda98adc95ec940f
+  zh: c2868a98166a495c
+/deepseek-ai-dsh-experimental-browser-control/known-limitations-and-deferred-work/dev-note:
+  en: 279d01435256cd2a
+  zh: 1d73b033eb65ad72

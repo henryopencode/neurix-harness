@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Bilderzeugung",
+    "description": "Bilder über OpenAI-kompatible oder MiniMax-APIs erzeugen und speichern."
+  }
+}

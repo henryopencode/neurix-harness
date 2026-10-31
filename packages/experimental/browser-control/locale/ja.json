@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "ブラウザー操作",
+    "description": "Windows、macOS、Linux の独立した非表示ブラウザーを操作し、プレビューで確認できます。",
+    "detail": "docs/DETAIL.md"
+  }
+}

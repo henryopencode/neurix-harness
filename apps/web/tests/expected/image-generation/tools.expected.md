@@ -1,10 +1,20 @@
 - heading "扩展工具" [level=3]
 - list:
   - listitem:
-    - button "查看 电脑控制": 电脑控制
-    - text: 在对话中操作浏览器和 macOS 应用
+    - button "查看 浏览器操作": 浏览器操作
+    - text: 在 Windows、macOS 和 Linux 上操作独立的隐藏浏览器，通过画中画查看页面
     - status
-    - switch "启用 电脑控制"
+    - switch "启用 浏览器操作"
+  - listitem:
+    - button "查看 应用操作": 应用操作
+    - text: 仅支持 macOS；在前台使用系统鼠标和键盘操作应用，也支持 Chrome、Safari 等浏览器应用
+    - status
+    - switch "启用 应用操作"
+  - listitem:
+    - button "查看 手机连接": 手机连接
+    - text: 通过专属链接或二维码连接手机。
+    - status
+    - switch "启用 手机连接"
   - listitem:
     - button "查看 图像生成": 图像生成
     - text: 已停用 配置生图接口，在对话中生成并保存图片

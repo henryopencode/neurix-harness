@@ -1,31 +1,35 @@
 .indicator {
-  display: inline-grid;
-  grid-template-columns: 14px max-content;
-  align-items: center;
-  column-gap: 4px;
+  position: relative;
+  display: grid;
+  place-items: center;
   flex: none;
-  height: 28px;
-  padding: 0 8px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   box-sizing: border-box;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary-new-colorprimary-new-color) 20%, transparent);
+  border: none;
   border-radius: var(--dsw-radius-sm);
   color: var(--dsw-alias-brand-primary-new-colorprimary-new-color);
-  background: color-mix(in srgb, var(--dsw-alias-brand-primary-new-colorprimary-new-color) 8%, transparent);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 18px;
-  text-align: left;
-  white-space: nowrap;
+  background: transparent;
   cursor: pointer;
 }
 
-.icon {
-  display: grid;
-  place-items: center;
-  width: 14px;
-  height: 14px;
+.icon { display: grid; place-items: center; }
+
+.progress {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  pointer-events: none;
 }
+
+.track { opacity: 0.16; }
 
 .badge {
   position: absolute;
@@ -38,11 +42,15 @@
   background: var(--dsw-alias-brand-primary-new-colorprimary-new-color);
 }
 
-.errorDot { background: currentColor; width: 6px; height: 6px; border-radius: 50%; corner-shape: round; }
 .spinner { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
 
-.indicator[aria-disabled="true"] {
-  cursor: default;
+@media (hover: hover) {
+  .indicator:hover { background: var(--dsw-alias-interactive-bg-hover); }
 }
+.indicator:focus-visible {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color);
+  outline-offset: 2px;
+}
+.indicator[aria-disabled="true"] { cursor: default; }

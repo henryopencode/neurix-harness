@@ -40,7 +40,7 @@ export interface ProviderDirectoryEntry {
  * Join declared configurable providers with the currently registered routes.
  * @param registered - live provider routes in registration order.
  * @param directory - declared configurable providers in declaration order.
- * @returns account and official routes first, then other routes in their original order.
+ * @returns provider rows in ascending provider-id order.
  */
 export function joinProviderDirectory(
   registered: readonly LlmProviderInfo[],
@@ -70,9 +70,7 @@ export function joinProviderDirectory(
       active: true,
     })
   }
-  return rows.toSorted((left, right) =>
-    (left.provider === 'deepseek-account' ? 0 : left.provider === 'deepseek-official' ? 1 : 2)
-      - (right.provider === 'deepseek-account' ? 0 : right.provider === 'deepseek-official' ? 1 : 2))
+  return rows.toSorted((left, right) => left.provider.localeCompare(right.provider, 'en'))
 }
 
 /** One provider row the page renders. */
@@ -364,15 +362,13 @@ export type OnboardingReadiness =
 /**
  * Project first-run readiness from the provider/settings/credential join used
  * by the Models page. The step exists to leave the user with a model to talk
- * to, so ANY usable provider ends it; only when none exists does the official
- * DeepSeek route — the one route the prompt can offer a key field for — decide
- * whether prompting can help. A missing official configurable-provider
- * declaration means the adapter is not repairable by navigating to Models.
+ * to, so any usable provider ends it. A writable custom-provider namespace
+ * offers setup independently of the optional official DeepSeek adapter.
  * @param state - current shared Models join snapshot.
  * @returns the onboarding state without reading a parallel fact source.
  */
 export function onboardingReadiness(state: ModelsSettingsState): OnboardingReadiness {
-  if ((state.status === 'idle' || state.status === 'loading') && state.rows.length === 0) {
+  if ((state.status === 'idle' || state.status === 'loading') && state.rows.length === 0 && state.namespaces.size === 0) {
     return { kind: 'loading' }
   }
   if (state.status === 'error') {
@@ -382,6 +378,9 @@ export function onboardingReadiness(state: ModelsSettingsState): OnboardingReadi
     }
   }
   if (state.rows.some(providerUsable)) return { kind: 'provider-ready' }
+  if (state.namespaces.has('llm-pi-ai') && state.writable && state.credentialError === null) {
+    return { kind: 'credential-missing' }
+  }
   const row = state.rows.find(candidate =>
     candidate.entry.provider === 'deepseek-official'
     && candidate.entry.settingsNs === 'llm-deepseek'

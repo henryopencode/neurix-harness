@@ -108,6 +108,13 @@ const GROUP_ORDER = [
 
 const SERVICE_ROLES: ServiceRole[] = [
   {
+    key: 'browserPreview',
+    pkg: 'experimental-browser-control',
+    title: 'Hidden browser preview Remote',
+    mode: 'core',
+    note: 'Returns display-only captures of Session-owned tabs without native application access.',
+  },
+  {
     key: 'computerPreview',
     pkg: 'experimental-computer-control',
     title: 'Computer target preview Remote',

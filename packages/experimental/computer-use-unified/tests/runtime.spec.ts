@@ -135,7 +135,7 @@ it.each(['unverifiable', 'partial', 'suspected_noop', 'confirmed'])('returns bac
   if (effect === 'confirmed') expect(result.structuredContent).not.toHaveProperty('nextAction')
   else {
     expect(result.structuredContent?.nextAction).toContain('stop repeating input')
-    expect(result.structuredContent?.nextAction).toContain('Foreground system input')
+    expect(result.structuredContent?.nextAction).toContain('inputMode: foreground')
   }
   expect(desktop.calls.filter(call => call.name === 'click')).toHaveLength(1)
   expect(desktop.calls.find(call => call.name === 'click')?.args.delivery_mode).toBe('background')

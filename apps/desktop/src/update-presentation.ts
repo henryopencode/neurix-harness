@@ -47,6 +47,8 @@ export function presentDesktopUpdate(state: DesktopUpdateState): DesktopUpdatePr
     phase: state.phase,
     ...(state.version === undefined ? {} : { version: state.version }),
     ...(state.percent === undefined ? {} : { percent: Math.floor(state.percent) }),
+    ...(state.canCancel === undefined ? {} : { canCancel: state.canCancel }),
+    ...(state.installMode === undefined ? {} : { installMode: state.installMode }),
     ...(state.phase === 'error' ? { failure: desktopUpdateFailureKind(state) } : {}),
   }
 }

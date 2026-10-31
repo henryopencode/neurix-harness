@@ -212,6 +212,12 @@ Web 侧的对应命令是 `pnpm run dev:web` 与 `pnpm run start:web`，见[开�
 
 安装工作区依赖不会自动运行锁定版本 Electron 提供的独立二进制安装程序。直接运行 [Windows 控制台信号测试](tests/windows-cli-signals.spec.ts)前，在仓库根目录执行 `pnpm --filter @deepseek-ai/dsh-desktop exec install-electron`，准备锁定版本的 Electron 二进制。通过代理下载时，为该安装进程启用 `ELECTRON_GET_USE_PROXY=1`。Windows 覆盖率检查要求安装成功后，才启动带覆盖率插桩的单元测试集。
 
+### 从源码更新已安装的 Mac 应用
+
+在仓库根目录双击 [update-neurix.command](../../update-neurix.command)，即可构建并替换已安装的 Mac 应用。脚本通过已安装应用自带的 Node 启动，缺少头文件时获取经过校验的开发工具链，并在独立目录中构建已跟踪源码和未被忽略的新增文件，包括本地修改。安装依赖需要联网及 Xcode 命令行工具。产物为使用 ad-hoc 签名的本地开发构建。更新程序先校验新应用，再请求旧应用正常退出，将旧应用保留在安装目录旁，并在备份目录生成 `rollback.command`。设置、凭证、会话和浏览器数据保留原位置；回滚只恢复应用，不回退新数据格式。
+
+使用 `./update-neurix.command --check` 检查环境。运行 `./update-neurix.command --prepare-only` 可在保持已安装应用运行的情况下打包，输出会给出用于完成替换的 `install.command`。通过 `--app /path/to/Neurix\ Harness.app` 选择其他安装位置。构建输入和产物保留在 `apps/desktop/.desktop-build/local-updates/`，可供检查。
+
 ### 启动引导
 
 API Key 输入框初始为空，并通过 `autocomplete="new-password"` 请求 Chromium 不要自动填入已保存的登录密码。
@@ -269,7 +275,7 @@ Windows 卸载程序会随应用一起删除 Electron 用户数据目录（`%APP
 
 ## 更新
 
-此分支的安装清单声明 `dshDesktopGithubRepository` 时，会检查稳定的 [GitHub Releases](https://github.com/henryopencode/neurix-harness/releases)。现有更新入口会提示新版本，并在浏览器中打开对应安装包下载。打开安装包即可更新，配置和会话保留。未声明该字段的安装包继续使用下述托管更新流程。分支、版本编号和发布重试见[发布工作流指南](../../docs/releasing.zh.md)。
+此分支的安装清单声明 `dshDesktopGithubRepository` 时，会通过公开的 `desktop-update.json` 资产检查稳定的 [GitHub Releases](https://github.com/henryopencode/neurix-harness/releases)，轮询不消耗 GitHub API 的匿名请求配额。左下角更新入口将对应安装包下载到应用私有缓存，按实际字节显示进度，并支持停止。停止会删除半成品，再次选择下载会重新传输。完整文件必须匹配发布资产大小及 `SHA256SUMS.txt`，才会进入可安装状态。下载完成不会自动安装，定时检查会保留已准备的安装包。Windows 的“安装并重启”会独立确认任务中断、完成 Host 关闭，再启动当前用户的 NSIS 安装器并自动重新打开应用。正式 macOS 和 Linux AppImage 安装同样提供“安装并重启”：已验证的新应用暂存于现有应用旁，独立 Node 工作进程等待 Electron 退出后替换并请求重新启动。替换或启动交接失败时恢复旧应用；新版本完成 Host 启动后才移除备份。应用备份不恢复已迁移的用户数据。安装目录必须可写。开发进程保留手动打开 DMG 或定位 AppImage 的方式。配置和会话仍保存在原有数据目录。未声明该清单字段的安装包继续使用下述托管更新流程，同样支持停止下载。分支、版本编号和发布重试见[发布工作流指南](../../docs/releasing.zh.md)。
 
 Windows 下载完成后的更新确认说明应用会在安装期间关闭、完成后自动打开，并提示期间不要重复启动。安装器携带 `--updated` 重启应用并直接打开工作区时，壳会将主窗口前置并聚焦一次，不启用永久置顶。启动进入欢迎页时会清除此请求，使后续登录保留正常的激活行为。普通启动和其他平台不执行此前置步骤。
 

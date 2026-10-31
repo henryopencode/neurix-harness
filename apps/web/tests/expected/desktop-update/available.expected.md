@@ -1,0 +1,2 @@
+- button "Download update"
+- button "Account menu"

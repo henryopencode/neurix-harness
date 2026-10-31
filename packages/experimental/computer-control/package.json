@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-experimental-computer-control",
-  "description": "Optional browser and macOS computer control with editable defaults",
+  "description": "Optional foreground macOS application control with editable defaults",
   "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
@@ -41,6 +41,7 @@
   "files": [
     "icon.svg",
     "locale/*.json",
+    "docs",
     "lib/index.js",
     "lib/client.js",
     "cordis.patch.yml",
@@ -61,7 +62,8 @@
         "@deepseek-ai/dsh-client-ui-settings",
         "@deepseek-ai/dsh-client-ui-plugin-manager",
         "@deepseek-ai/dsh-api-remotes",
-        "@deepseek-ai/dsh-client-ui-conversation"
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-computer-preview"
       ],
       "platform": "web"
     }
@@ -69,14 +71,14 @@
   "icon": "./icon.svg",
   "dependencies": {
     "@deepseek-ai/dsh-computer-use": "workspace:*",
-    "@deepseek-ai/dsh-browser-use": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~",
     "@deepseek-ai/dsh-typert-protocol": "workspace:*",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-experimental-computer-use-unified": "workspace:*"
+    "@deepseek-ai/dsh-experimental-computer-use-unified": "workspace:*",
+    "@deepseek-ai/dsh-client-ui-computer-preview": "workspace:*"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
@@ -114,6 +116,8 @@
     "@deepseek-ai/dsh-typert-registry": "workspace:*",
     "playwright": "1.61.1",
     "@deepseek-ai/dsh-experimental-computer-use-unified": "workspace:*",
-    "@deepseek-ai/dsh-tool-executor-native": "workspace:*"
+    "@deepseek-ai/dsh-tool-executor-native": "workspace:*",
+    "@deepseek-ai/dsh-experimental-browser-control": "workspace:*",
+    "@deepseek-ai/dsh-client-ui-computer-preview": "workspace:*"
   }
 }

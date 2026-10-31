@@ -3,38 +3,35 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/experimental/computer-control/README.md
 /:
-  en: 1ddf1681dd2d1fdf
-  zh: 0c62a8a8b30edbfb
+  en: 85ce51b93981ade3
+  zh: 3f29cb1ffca122f9
 /deepseek-ai-dsh-experimental-computer-control:
   en: f0c40e4a4e76f831
   zh: 6dde44ea28746cd4
 /deepseek-ai-dsh-experimental-computer-control/summary:
-  en: 3efe9bc627d4c32d
-  zh: 8bb12a2e9a9bd2f7
+  en: 7b7b8660f1fe0d10
+  zh: 4d07ea5661a4671c
 /deepseek-ai-dsh-experimental-computer-control/table-of-contents:
   en: d152484eb41ac6b4
   zh: 01e3cf191d4bd47d
 /deepseek-ai-dsh-experimental-computer-control/use-this-package:
-  en: ea2318d5dcfc6dfe
-  zh: 6d523bb0d98c756c
-/deepseek-ai-dsh-experimental-computer-control/use-this-package/test-from-a-conversation:
-  en: 9adaf0496e8697af
-  zh: c1d668cb06cddac5
+  en: 79bd62324549e531
+  zh: 86308335ee83197c
 /deepseek-ai-dsh-experimental-computer-control/understand-the-implementation:
-  en: 492483a05b860b1e
-  zh: be4f429bae94637f
+  en: 52aeed1f5fff8591
+  zh: 8266a85c3f1aa162
 /deepseek-ai-dsh-experimental-computer-control/further-exploration:
   en: 34cc73de5c07ef7e
   zh: ac713c54b422c4b6
 /deepseek-ai-dsh-experimental-computer-control/model-experience:
-  en: d81ef51b0b3088fe
+  en: 0cb0b4597bf2c11e
   zh: 8c8f48a713a1016f
 /deepseek-ai-dsh-experimental-computer-control/model-experience/kv-cache-effect:
   en: e5c75974568f0b26
   zh: d329f60001d2a571
 /deepseek-ai-dsh-experimental-computer-control/known-limitations-and-deferred-work:
-  en: 900ccc97c4df0a4b
-  zh: b28cddd19ab55f70
+  en: 4f5105591778bc6d
+  zh: 623fd5913952b47e
 /deepseek-ai-dsh-experimental-computer-control/known-limitations-and-deferred-work/dev-note:
   en: 279d01435256cd2a
   zh: 83780964e5de2f54

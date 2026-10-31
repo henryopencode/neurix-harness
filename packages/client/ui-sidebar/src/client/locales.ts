@@ -6,6 +6,7 @@ export const zh = {
   'session.new.label': '新建会话',
   'toggle.open': '打开侧边栏',
   'toggle.collapse': '收起侧边栏',
+  'navigation.home': '首页',
   'panels.label': '全局面板',
   'panels.more': '更多',
 } satisfies Record<string, string>
@@ -19,6 +20,7 @@ export const en = {
   'session.new.label': 'New session',
   'toggle.open': 'Open sidebar',
   'toggle.collapse': 'Collapse sidebar',
+  'navigation.home': 'Home',
   'panels.label': 'Global panels',
   'panels.more': 'More',
 } satisfies Record<SidebarKey, string>
@@ -29,6 +31,7 @@ export const ja = {
   'session.new.label': '新規セッション',
   'toggle.open': 'サイドバーを開く',
   'toggle.collapse': 'サイドバーを折りたたむ',
+  'navigation.home': 'ホーム',
   'panels.label': 'グローバルパネル',
   'panels.more': 'その他',
 } satisfies Record<keyof typeof en, string>
@@ -39,6 +42,7 @@ export const es = {
   'session.new.label': 'Nueva sesión',
   'toggle.open': 'Abrir barra lateral',
   'toggle.collapse': 'Contraer barra lateral',
+  'navigation.home': 'Inicio',
   'panels.label': 'Paneles globales',
   'panels.more': 'Más',
 } satisfies Record<keyof typeof en, string>
@@ -49,6 +53,7 @@ export const fr = {
   'session.new.label': 'Nouvelle séance',
   'toggle.open': 'Ouvrir la barre latérale',
   'toggle.collapse': 'Réduire la barre latérale',
+  'navigation.home': 'Accueil',
   'panels.label': 'Panneaux globaux',
   'panels.more': 'Plus',
 } satisfies Record<keyof typeof en, string>
@@ -59,6 +64,7 @@ export const de = {
   'session.new.label': 'Neue Sitzung',
   'toggle.open': 'Seitenleiste öffnen',
   'toggle.collapse': 'Seitenleiste einklappen',
+  'navigation.home': 'Startseite',
   'panels.label': 'Globale Bereiche',
   'panels.more': 'Mehr',
 } satisfies Record<keyof typeof en, string>
@@ -69,6 +75,7 @@ export const ru = {
   'session.new.label': 'Новая сессия',
   'toggle.open': 'Открыть боковую панель',
   'toggle.collapse': 'Свернуть боковую панель',
+  'navigation.home': 'Главная',
   'panels.label': 'Глобальные панели',
   'panels.more': 'Ещё',
 } satisfies Record<keyof typeof en, string>
@@ -79,6 +86,7 @@ export const pt = {
   'session.new.label': 'Nova sessão',
   'toggle.open': 'Abrir barra lateral',
   'toggle.collapse': 'Recolher barra lateral',
+  'navigation.home': 'Início',
   'panels.label': 'Painéis globais',
   'panels.more': 'Mais',
 } satisfies Record<keyof typeof en, string>

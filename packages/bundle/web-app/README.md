@@ -31,6 +31,8 @@ Run `dsh --profile web` for browser chat, model and settings management, and ses
 
 Start the GUI, open your browser, and start talking to the agent. The flags fine-tune the invocation.
 
+The Web composition uses provider-neutral setup and ordering. The optional `ui-deepseek-model-label-1017` entry is disabled by default; a profile overlay can set `disabled: false` to enable its release badge.
+
 ### Starting the Web GUI
 
 ```sh
@@ -91,6 +93,8 @@ When you launch `dsh --profile web` over SSH, the URL line still prints but the 
 Each browser session selects a shipped preset (`standard` by default). The Agent presets settings page changes the default and edits preset child plugins; saves persist in `$DSH_HOME/profiles/web/cordis.patch.yml`. Standard and Creator enable the plugin-management tool only when the Host provides an editable profile.
 
 -----
+
+The Web layer mounts the shared browser and application preview renderer; optional control bundles supply its preview sources.
 
 <a id="understand-the-implementation"></a>
 ## Understand the implementation

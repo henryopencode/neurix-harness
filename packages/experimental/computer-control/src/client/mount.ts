@@ -6,7 +6,7 @@ import type { TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-experimental-computer-control/remote'
 import type { ComputerPreviewSnapshot } from '../preview-types.ts'
-import { ComputerPreview } from './ComputerPreview.tsx'
+import type {} from '@deepseek-ai/dsh-client-ui-computer-preview/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
@@ -23,7 +23,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 /** Services that supply configuration values, localized copy, and slots. */
-export const inject = ['slots', 'locale', 'configForms', 'remote']
+export const inject = ['slots', 'locale', 'configForms', 'remote', 'computerPreviewUi']
 
 /**
  * Register the bundle-owned configuration page, including after late slot declaration.
@@ -52,20 +52,17 @@ export async function mountComputerControlUi(ctx: Context, contribution: TypertR
   const lifetime = new AbortController()
   const pending = new Set<Promise<ComputerPreviewSnapshot>>()
   const preview = ctx.inject(['remote.computerPreview'], (child) => {
-    child.slots.inject('conversation.session.header.utilities', () => child.slots.register({
-      name: 'conversation.session.header.utilities', id: 'computer-control.preview', locale: 'settings.computerControl',
-      inject: () => ({ loadPreview: (sessionId: SessionId, signal: AbortSignal) => {
-        const active = AbortSignal.any([signal, lifetime.signal])
-        const operation = child.remote.computerPreview.frame(sessionId, active).then((result) => {
-          if (!result.ok) throw result.error
-          active.throwIfAborted()
-          return result.value
-        })
-        pending.add(operation)
-        void operation.finally(() => { pending.delete(operation) }).catch(() => {})
-        return operation
-      } }),
-    }, ComputerPreview))
+    return child.computerPreviewUi.register(child, { surface: 'applications', loadPreview: (sessionId: SessionId, signal: AbortSignal) => {
+      const active = AbortSignal.any([signal, lifetime.signal])
+      const operation = child.remote.computerPreview.frame(sessionId, active).then((result) => {
+        if (!result.ok) throw result.error
+        active.throwIfAborted()
+        return result.value
+      })
+      pending.add(operation)
+      void operation.finally(() => { pending.delete(operation) }).catch(() => {})
+      return operation
+    } })
   })
   return async () => {
     lifetime.abort()

@@ -85,6 +85,16 @@ describe('onboardingReadiness', () => {
     expect(onboardingReadiness(state())).toEqual({ kind: 'credential-missing' })
   })
 
+  it('offers custom setup without an official adapter and keeps it visible during refresh', () => {
+    const namespaces: ModelsSettingsState['namespaces'] = new Map([['llm-pi-ai', {
+      ns: 'llm-pi-ai', schema: {}, value: {}, base: {}, user: {},
+      autoGenerate: true, applies: 'live', secrets: [], revision: 0,
+    }]])
+    expect(onboardingReadiness(state({ rows: [], namespaces }))).toEqual({ kind: 'credential-missing' })
+    expect(onboardingReadiness(state({ status: 'loading', rows: [], namespaces }))).toEqual({ kind: 'credential-missing' })
+    expect(onboardingReadiness(state({ rows: [], namespaces, writable: false }))).toEqual({ kind: 'adapter-absent' })
+  })
+
   it('ends onboarding once any other registered provider can serve requests', () => {
     expect(onboardingReadiness(state({ rows: [row(), otherRow()] }))).toEqual({ kind: 'provider-ready' })
     // A provider the user cannot reach yet leaves the prompt in place.

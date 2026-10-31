@@ -159,3 +159,18 @@ describe('isTrustedApiRequest', () => {
     expect(isTrustedApiRequest(request({ ...markers, host: '128.0.0.1' }), [])).toBe(false)
   })
 })
+
+it('permits explicit document navigation without admitting cross-site API or subresource requests', () => {
+  const navigation = { host: 'agent.example', 'sec-fetch-site': 'cross-site',
+    'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document' }
+  expect(isTrustedApiRequest(request(navigation), ['agent.example'])).toBe(false)
+  expect(isTrustedApiRequest(request(navigation), ['agent.example'], undefined, 'http:', 'document')).toBe(true)
+  expect(isTrustedApiRequest(request({ ...navigation, 'sec-fetch-mode': 'cors' }),
+    ['agent.example'], undefined, 'http:', 'document')).toBe(false)
+  expect(isTrustedApiRequest(request({ ...navigation, 'sec-fetch-dest': 'iframe' }),
+    ['agent.example'], undefined, 'http:', 'document')).toBe(false)
+  expect(isTrustedApiRequest(request({ ...navigation, origin: 'https://attacker.example' }),
+    ['agent.example'], undefined, 'http:', 'document')).toBe(false)
+  expect(isTrustedApiRequest(request({ ...navigation, host: 'attacker.example' }),
+    ['agent.example'], undefined, 'http:', 'document')).toBe(false)
+})

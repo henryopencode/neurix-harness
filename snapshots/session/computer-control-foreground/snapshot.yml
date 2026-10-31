@@ -1,0 +1,10 @@
+version: 1
+scenario: computer-control-foreground
+profile: headless
+composition: computer-control-foreground
+recording: authored
+header:
+  class: computer-control-foreground
+  pin: true
+replay:
+  override: true

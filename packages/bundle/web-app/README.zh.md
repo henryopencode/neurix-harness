@@ -31,6 +31,8 @@ kind: "package-bundle"
 
 启动 GUI、打开浏览器，然后开始与 agent（智能体）对话。flag 用于微调本次调用。
 
+Web 组合使用不偏向厂商的配置入口与排序。可选的 `ui-deepseek-model-label-1017` 条目默认禁用；可通过 profile overlay 设置 `disabled: false` 启用其版本徽标。
+
 ### 启动 Web GUI
 
 ```sh
@@ -91,6 +93,8 @@ dsh --profile web --no-open --host "$(hostname -i | awk '{print $1}')" --public-
 每个浏览器会话选择一个随发行版交付的 preset（默认 `standard`）。Agent 预设设置页可更改默认项并编辑预设的子插件；保存结果持久化到 `$DSH_HOME/profiles/web/cordis.patch.yml`。只有 Host 提供可编辑的 profile 时，标准模式和 Creator 才会启用插件管理工具。
 
 -----
+
+Web 层挂载浏览器与应用共享的预览渲染器；可选控制包向其提供预览来源。
 
 <a id="understand-the-implementation"></a>
 ## 理解实现

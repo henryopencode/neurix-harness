@@ -26,20 +26,22 @@ function declarations(selector: string): Map<string, string> | undefined {
 }
 
 describe('SidebarRoot.module.css', () => {
-  it('uses a compact expanded navigation gap without shrinking the collapsed rail spacing', () => {
-    expect(declarations('.panelList')?.get('gap')).toBe('2px')
-    expect(declarations('.collapsed .panelList')?.get('gap')).toBe('12px')
+  it('keeps navigation in a separate fixed-width track beside the workspace browser', () => {
+    expect(declarations('.root')?.get('grid-template-columns')).toBe('56px minmax(0, 1fr)')
+    expect(declarations('.navigationRail')?.get('grid-area')).toBe('navigation')
+    expect(declarations('.regionArea')?.get('grid-area')).toBe('browser')
+    expect(declarations('.footArea')?.get('grid-area')).toBe('foot')
+    expect(declarations('.panelList')?.get('gap')).toBe('12px')
+    expect(declarations('.panelRow')?.get('width')).toBe('36px')
+    expect(declarations('.panelRow')?.get('height')).toBe('36px')
   })
 
-  it('shares and cancels the wide shell trailing padding structurally', () => {
+  it('keeps the browser scrollbar inside its track at either sidebar width', () => {
     const root = declarations('.root')
-    expect(root?.get('--dsh-sidebar-inline-padding')).toBe('10px')
-    expect(root?.get('padding')).toBe('6px var(--dsh-sidebar-inline-padding)')
-    expect(declarations('.regionArea')?.get('margin-left')).toBe('-4px')
-    expect(declarations('.regionArea')?.get('padding-left')).toBe('4px')
-    expect(declarations('.regionArea')?.get('margin-right')).toBe(
-      'calc(-1 * var(--dsh-sidebar-inline-padding))',
-    )
+    expect(root?.get('padding')).toBe('6px 0')
+    expect(declarations('.regionArea')?.get('margin-left')).toBe('6px')
+    expect(declarations('.regionArea')?.get('padding-left')).toBe('0')
+    expect(declarations('.regionArea')?.get('margin-right')).toBe('0')
     expect(declarations('.collapsed .regionArea')?.get('margin-left')).toBe('0')
     expect(declarations('.collapsed .regionArea')?.get('padding-left')).toBe('0')
     expect(declarations('.collapsed .regionArea')?.get('margin-right')).toBe('0')

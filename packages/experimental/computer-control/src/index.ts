@@ -1,10 +1,11 @@
-/** Optional computer-control settings and per-Agent runtime composition. @module */
+/** Optional foreground application-control settings and per-Agent runtime composition. @module */
 
 import type { Context, Volatile } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
 import { Config as ProviderConfig, mountComputerControl } from '@deepseek-ai/dsh-experimental-computer-use-unified'
+import { ComputerPreviewSources } from '@deepseek-ai/dsh-client-ui-computer-preview'
 import type {} from '@deepseek-ai/dsh-settings'
-import { ComputerPreviewController, ComputerPreviewSources } from './preview.ts'
+import { ComputerPreviewController } from './preview.ts'
 export { ComputerPreviewController } from './preview.ts'
 export type { ComputerPreviewSnapshot } from './preview-types.ts'
 
@@ -12,21 +13,19 @@ export type { ComputerPreviewSnapshot } from './preview-types.ts'
 export const name = 'experimental-computer-control'
 
 /** Services required by the mounted unified provider. */
-export const inject = ['computerUse', 'browserUse', 'agents', 'tools', 'systemPrompt']
+export const inject = ['computerUse', 'agents', 'tools', 'systemPrompt']
 
-/** Saved runtime defaults, live input mode and approval, and live preview pacing. */
+/** Saved runtime defaults, live approval, and live preview pacing. */
 export interface Config {
   /** One-shot input approval; changes apply to the next operation in every Session. */
   requireInputApproval: Volatile<boolean>
-  /** Browser-only background or explicit foreground system input; changes apply to the next operation. */
-  inputMode: Volatile<'foreground' | 'background'>
   /** Foreground shortcut settling interval in milliseconds. */
   keySettleMs: Volatile<number>
   /** Display the glowing pointer and key indicators. */
   showOverlay: Volatile<boolean>
-  /** Pointer glide and browser drag duration in milliseconds. */
+  /** Foreground pointer glide duration in milliseconds. */
   cursorMoveDurationMs: Volatile<number>
-  /** Target duration of a browser wheel gesture in milliseconds. */
+  /** Target duration of foreground scrolling in milliseconds. */
   scrollDurationMs: Volatile<number>
   /** Delay between visible text characters in milliseconds. */
   typingDelayMs: Volatile<number>
@@ -38,24 +37,21 @@ export interface Config {
   previewActiveIntervalMs: Volatile<number>
   /** Delay between preview checks when no target exists, in milliseconds. */
   previewIdleIntervalMs: Volatile<number>
-  /** Installed browser distribution. */
-  browserChannel: Volatile<'chrome' | 'chromium' | 'msedge'>
-  /** Hide browser windows. */
-  headless: Volatile<boolean>
   /** Include screenshots; enable for a model that supports image input. */
   screenshots: Volatile<boolean>
   /** Elapsed deadline for input, observation, and discovery in milliseconds. */
   operationTimeoutMs: Volatile<number>
   /** Time allowed for one native accessibility walk, in milliseconds. */
   nativeTreeTimeoutMs: Volatile<number>
-  /** Elapsed deadline for application launch, browser startup, and navigation in milliseconds. */
+  /** Elapsed deadline for application launch in milliseconds. */
   navigationTimeoutMs: Volatile<number>
 }
 
-/** Runtime defaults apply on acquisition; input mode, approval, and preview pacing apply immediately. */
+// The config catalog requires literal keys for each plugin’s independent settings.
+/* jscpd:ignore-start */
+/** Runtime defaults apply on acquisition; approval and preview pacing apply immediately. */
 export const Config = Schema.object({
   requireInputApproval: Schema.boolean().default(false).volatile(),
-  inputMode: Schema.union(['foreground', 'background']).default('background').volatile(),
   keySettleMs: Schema.number().step(1).min(0).max(2000).default(300).volatile(),
   showOverlay: Schema.boolean().default(true).volatile(),
   cursorMoveDurationMs: Schema.number().step(1).min(0).max(5000).default(450).volatile(),
@@ -65,41 +61,33 @@ export const Config = Schema.object({
   previewIntervalMs: Schema.number().step(1).min(250).max(10_000).default(250).volatile(),
   previewActiveIntervalMs: Schema.number().step(1).min(40).max(1000).default(80).volatile(),
   previewIdleIntervalMs: Schema.number().step(1).min(250).max(30_000).default(2000).volatile(),
-  browserChannel: Schema.union(['chrome', 'chromium', 'msedge']).default('chrome').volatile(),
-  headless: Schema.boolean().default(false).volatile(),
   screenshots: Schema.boolean().default(false).volatile(),
   operationTimeoutMs: Schema.number().step(1).min(1).max(2 ** 31 - 1).default(15_000).volatile(),
   nativeTreeTimeoutMs: Schema.number().step(1).min(100).max(120_000).default(5000).volatile(),
   navigationTimeoutMs: Schema.number().step(1).min(1).max(2 ** 31 - 1).default(30_000).volatile(),
 })
+/* jscpd:ignore-end */
 
 /**
- * Mount computer control with editable defaults and live input mode, approval, and preview pacing.
+ * Mount foreground desktop control with editable defaults, live approval, and preview pacing.
  * @param ctx - context with the provider's required services.
  * @param config - live fields owned by the settings document.
  * @returns after tool registration; native startup occurs on first desktop use.
  */
 export async function apply(ctx: Context, config: Config): Promise<void> {
-  const preview = new ComputerPreviewSources()
-  ctx.effect(() => () => preview.dispose(), 'computer-control: display captures')
-  ctx.inject(['typert'], async (child) => {
-    await child.plugin(ComputerPreviewController, {
-      sources: preview, refreshMs: (active, idle) => idle ? config.previewIdleIntervalMs.get()
-        : active ? config.previewActiveIntervalMs.get() : config.previewIntervalMs.get(),
-    })
-  })
+  const preview = ComputerPreviewSources.mount(ctx, ComputerPreviewController, config)
   ctx.inject(['settings'], (child) => { child.effect(() => child.settings.configure({ auto: false }, ctx.fiber)) })
   await mountComputerControl(ctx, () => ProviderConfig({
     requireInputApproval: config.requireInputApproval.get(),
-    inputMode: config.inputMode.get(),
+    inputMode: 'foreground',
     nativeBackground: false,
     keySettleMs: config.keySettleMs.get(),
     showOverlay: config.showOverlay.get(),
     cursorMoveDurationMs: config.cursorMoveDurationMs.get(), scrollDurationMs: config.scrollDurationMs.get(),
     typingDelayMs: config.typingDelayMs.get(),
     overlayIdleMs: config.overlayIdleMs.get(),
-    browserChannel: config.browserChannel.get(), headless: config.headless.get(), screenshots: config.screenshots.get(),
+    screenshots: config.screenshots.get(),
     operationTimeoutMs: config.operationTimeoutMs.get(), navigationTimeoutMs: config.navigationTimeoutMs.get(),
     nativeTreeTimeoutMs: config.nativeTreeTimeoutMs.get(),
-  }), (sessionId, capture) => preview.register(sessionId, capture))
+  }), (sessionId, capture) => preview.register(sessionId, capture), 'applications')
 }
