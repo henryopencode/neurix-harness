@@ -236,12 +236,14 @@ export class DesktopHostProcess {
     })
     child.once('error', (error) => { this.fail(error) })
     this.exitPromise = new Promise<void>((resolve) => {
-      child.once('close', (code) => {
+      child.once('exit', (code) => {
         const suffix = this.stderr.trim() === '' ? '' : `: ${this.stderr.trim()}`
         if (code !== 0 && code !== null) this.fail(new Error(`dsh desktop host exited with ${String(code)}${suffix}`))
         else this.fail(new Error(`dsh desktop host stopped${suffix}`))
         resolve()
       })
+      // Failed spawns close their pipes without emitting a process exit.
+      child.once('close', () => { if (child.pid === undefined) resolve() })
     })
     return this.readyPromise
   }
@@ -336,6 +338,9 @@ export class DesktopHostProcess {
         throw new Error('dsh desktop host did not exit after SIGKILL')
       }
     }
+    child.stdout?.unpipe(process.stdout)
+    child.stdout?.destroy()
+    child.stderr?.destroy()
     this.child = undefined
     if (requireGraceful && (!graceful || child.exitCode !== 0 || !this.shutdownCompleted)) {
       // This diagnostic reaches expandable UI; arbitrary plugin stderr can contain credentials.
