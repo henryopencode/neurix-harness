@@ -8,6 +8,7 @@ import { pipeline } from 'node:stream/promises'
 import { gt, valid } from 'semver'
 import type { DesktopUpdateState } from './ipc.ts'
 import { DesktopUpdatePreparationError } from './update-error.ts'
+import { transferGithubRelease, type GithubReleaseRequest } from './github-release-transfer.ts'
 
 function object(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error('GitHub release metadata must be an object')
@@ -31,7 +32,7 @@ export function desktopGithubRepository(manifest: unknown): string | undefined {
 /** Shell-owned network, cache, and platform actions; none are supplied by product documents. */
 export interface GithubReleaseDownloadOptions {
   readonly directory: string
-  readonly request: (url: string, init: { signal: AbortSignal }) => Promise<Response>
+  readonly request: GithubReleaseRequest
   readonly install: (file: string, version: string) => Promise<void>
   readonly beforeRestart: () => Promise<boolean>
   readonly installMode: 'restart' | 'installer'
@@ -191,21 +192,16 @@ export class GithubReleaseDownloads {
 
   private async downloadCandidate(version: string, controller: AbortController): Promise<DesktopUpdateState> {
     let temporary: string | undefined
-    let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
-    let idle: ReturnType<typeof setTimeout> | undefined
     const signal = AbortSignal.any([controller.signal, this.lifetime.signal])
-    const refresh = (): void => {
-      clearTimeout(idle)
-      idle = setTimeout(() => { controller.abort(new Error('Update download timed out')) }, this.options.idleTimeoutMs)
-    }
     let outcome: DesktopUpdateState
     try {
       signal.throwIfAborted()
       const candidate = this.candidate
       if (candidate?.version !== version) throw new Error('The checked GitHub release changed; check for updates again')
       this.setState({ phase: 'downloading', version, percent: 0, canCancel: true })
-      refresh()
-      const checksums = await this.options.request(candidate.base + 'SHA256SUMS.txt', { signal })
+      const checksums = await this.options.request(candidate.base + 'SHA256SUMS.txt', {
+        signal: AbortSignal.any([signal, AbortSignal.timeout(this.options.metadataTimeoutMs)]),
+      })
       if (!checksums.ok) throw new Error(`Checksum download returned HTTP ${checksums.status}`)
       const checksumText = await checksums.text()
       if (Buffer.byteLength(checksumText) > 131_072) throw new Error('Checksum list exceeds its size limit')
@@ -215,38 +211,32 @@ export class GithubReleaseDownloads {
       })
       const expected = matches[0]
       if (matches.length !== 1 || expected === undefined) throw new Error('Installer SHA-256 checksum is missing or ambiguous')
-      refresh()
-      const response = await this.options.request(candidate.base + candidate.filename, { signal })
-      if (!response.ok || response.body === null) throw new Error(`Installer download returned HTTP ${response.status}`)
       await mkdir(this.options.directory, { recursive: true, mode: 0o700 })
       temporary = await mkdtemp(join(this.options.directory, '.download-'))
       const partial = join(temporary, candidate.filename)
       const file = await open(partial, 'wx', 0o600)
-      reader = response.body.getReader()
-      let received = 0
       let previousPercent = 0
-      const hash = createHash('sha256')
       try {
-        while (true) {
-          signal.throwIfAborted()
-          const chunk = await reader.read()
-          if (chunk.done) break
-          refresh()
-          received += chunk.value.byteLength
-          if (received > candidate.size) throw new Error('Installer exceeds the release asset size')
-          hash.update(chunk.value)
-          await file.writeFile(chunk.value)
-          const percent = Math.min(99, Math.floor(received / candidate.size * 100))
-          if (percent !== previousPercent) {
-            previousPercent = percent
-            this.setState({ phase: 'downloading', version, percent, canCancel: true })
-          }
-        }
-        signal.throwIfAborted()
-        this.setState({ phase: 'verifying', version, percent: 100 })
-        if (received !== candidate.size || hash.digest('hex') !== expected) throw new Error('Installer size or SHA-256 verification failed')
+        await transferGithubRelease({
+          url: candidate.base + candidate.filename, size: candidate.size, file,
+          request: this.options.request, signal, idleTimeoutMs: this.options.idleTimeoutMs,
+          progress: (received) => {
+            const percent = Math.min(99, Math.floor(received / candidate.size * 100))
+            if (percent !== previousPercent) {
+              previousPercent = percent
+              this.setState({ phase: 'downloading', version, percent, canCancel: true })
+            }
+          },
+        })
         await file.sync()
       } finally { await file.close() }
+      signal.throwIfAborted()
+      this.setState({ phase: 'verifying', version, percent: 100 })
+      const hash = createHash('sha256')
+      await pipeline(createReadStream(partial), new Writable({
+        write(bytes: Buffer, _encoding, done) { hash.update(bytes); done() },
+      }), { signal })
+      if (hash.digest('hex') !== expected) throw new Error('Installer size or SHA-256 verification failed')
       const destination = join(this.options.directory, candidate.filename)
       if (this.options.platform === 'linux') await chmod(partial, 0o700)
       await rename(partial, destination)
@@ -256,11 +246,6 @@ export class GithubReleaseDownloads {
       outcome = this.transfer?.cancelled === true ? { phase: 'available', version }
         : { phase: 'error', version, failedOperation: 'download', message: String(error) }
     } finally {
-      clearTimeout(idle)
-      if (reader !== undefined) {
-        try { await reader.cancel() } catch (_error) { /* Aborted network streams can already be closed. */ }
-        reader.releaseLock()
-      }
       if (temporary !== undefined) {
         try { await rm(temporary, { recursive: true, force: true }) }
         catch (error) {

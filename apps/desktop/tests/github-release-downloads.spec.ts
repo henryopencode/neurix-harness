@@ -150,8 +150,9 @@ describe('GitHub release downloads', () => {
     const f = await fixture()
     await f.updates.check()
     const started = Promise.withResolvers<undefined>()
-    f.request.mockImplementationOnce(async () => new Response(`${checksum}  ${filename()}\n`))
-      .mockImplementationOnce(async (_url, { signal }) => new Response(new ReadableStream<Uint8Array>({
+    f.request.mockImplementation(async (url, { signal }) => url.endsWith('SHA256SUMS.txt')
+      ? new Response(`${checksum}  ${filename()}\n`)
+      : new Response(new ReadableStream<Uint8Array>({
         start(controller) {
           signal.addEventListener('abort', () => { controller.error(signal.reason) }, { once: true })
           started.resolve(undefined)
@@ -161,13 +162,14 @@ describe('GitHub release downloads', () => {
     try {
       const operation = f.updates.download('1.0.0')
       await started.promise
-      await vi.advanceTimersByTimeAsync(10_000)
+      await vi.advanceTimersByTimeAsync(30_000)
       expect(await operation).toMatchObject({ phase: 'error', failedOperation: 'download' })
     } finally { vi.useRealTimers() }
     expect(await readdir(f.directory)).toEqual([])
     const count = f.request.mock.calls.length
     await f.updates.check()
     expect(f.request).toHaveBeenCalledTimes(count)
+    f.request.mockResolvedValueOnce(new Response(`${checksum}  ${filename()}\n`)).mockResolvedValueOnce(new Response(bytes))
     expect((await f.updates.download('1.0.0')).phase).toBe('ready')
   })
   it('shares overlapping checks and downloads without losing a manual failure report', async () => {
