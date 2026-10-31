@@ -94,15 +94,16 @@ class ServerUpdateTests(unittest.TestCase):
             backups.mkdir()
             archive = root / 'server.tar.gz'
             with tarfile.open(archive, 'w:gz') as source:
-                for name in ['dsh', 'server']:
+                for name in ['dsh', 'server', 'runtime/primary-runtime']:
                     entry = tarfile.TarInfo(name)
                     entry.type = tarfile.DIRTYPE
                     entry.mode = 0o755
                     source.addfile(entry)
-                for name, content in [('dsh/package.json', b'{"version":"1.0.0"}'), ('server/start.sh', b'#!/bin/sh\n')]:
+                for name, content in [('dsh/package.json', b'{"version":"1.0.0"}'),
+                                      ('server/start.sh', b'#!/bin/sh\n'), ('runtime/primary-runtime/node', b'node fixture')]:
                     entry = tarfile.TarInfo(name)
                     entry.size = len(content)
-                    entry.mode = 0o755 if name.endswith('.sh') else 0o644
+                    entry.mode = 0o644 if name.endswith('.json') else 0o755
                     source.addfile(entry, io.BytesIO(content))
             config = {'root': str(root), 'user': 'fixture', 'home': str(home), 'backups': str(backups),
                       'maintenance_file': str(root / 'maintenance'), 'health_timeout_seconds': 1 if healthy else 0,
@@ -130,7 +131,9 @@ class ServerUpdateTests(unittest.TestCase):
                     self.assertNotEqual((root / 'current').resolve(), old)
                     self.assertEqual((root / 'current').resolve().stat().st_mode & 0o777, 0o755)
                     for name, mode in [('dsh', 0o755), ('server', 0o755),
-                                       ('dsh/package.json', 0o644), ('server/start.sh', 0o755)]:
+                                       ('dsh/package.json', 0o644), ('server/start.sh', 0o755),
+                                       ('runtime', 0o755), ('runtime/primary-runtime', 0o755),
+                                       ('runtime/primary-runtime/node', 0o755)]:
                         self.assertEqual((root / 'current' / name).stat().st_mode & 0o777, mode, name)
                     self.assertEqual((home / 'session').read_text(), 'new-format')
                     self.assertEqual(next(backups.glob('*/home/session')).read_text(), 'original')
