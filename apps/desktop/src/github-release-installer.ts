@@ -118,7 +118,7 @@ export async function readGithubReleaseInstallationFailure(
     if (value.installed !== installed) throw new Error('The recorded backup belongs to another application installation')
     if (currentVersion !== value.version) return { phase: 'error', failedOperation: 'install', version: value.version,
       message: `Expected ${value.version} after installation, but ${currentVersion} started; the previous application is retained in ${value.staging}` }
-    await rm(value.staging, { recursive: true, force: true })
+    await rm(value.staging, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
     await rm(file)
     return undefined
   }
