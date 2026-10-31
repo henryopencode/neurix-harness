@@ -51,7 +51,7 @@ Linux 部署使用 [`scripts/deploy`](../scripts/deploy/server-update.py) 中的
 
 私有更新控制插件通过权限为 0600 的 Unix socket 报告活动 Agent、排队输入和后台任务。更新会等待任务空闲，锁住新的 API 请求，并等待已接受的请求结束；安装时临时返回维护状态，停止服务并备份 Harness home，然后切换程序目录。新版报告版本与就绪状态后，客户端才能重新连接。启动失败会恢复旧程序和备份的数据目录；失败版本会暂停重试，等待管理员检查。工作区文件保留在原目录。
 
-服务、定时器、控制补丁和部署路径配置均与更新器放在一起。安装后，运行 `python3 /etc/neurix-agent/server-update.py` 可仅检查而不安装；运行 `systemctl start neurix-agent-update.service` 可请求下次空闲更新。结果记录在 `/opt/neurix-agent/update-status.json` 及更新服务日志中。解包会保留归档权限，不受更新器的严格 umask 影响；下载的代码不会以 root 执行。管理员查明失败版本的原因并验证修复后，可通过 `--archive`、`--version` 和 `--sha256` 重试已校验的归档，同时保留失败记录和备份。只有安装成功才会解除该版本的暂停状态。
+服务、定时器、控制补丁和部署路径配置均与更新器放在一起。安装后，运行 `python3 /etc/neurix-agent/server-update.py` 可仅检查而不安装；运行 `systemctl start neurix-agent-update.service` 可请求下次空闲更新。结果记录在 `/opt/neurix-agent/update-status.json` 及更新服务日志中。解包会保留归档权限，不受更新器的严格 umask 影响，并保证隐式创建的 runtime 父目录可遍历；下载的代码不会以 root 执行。管理员查明失败版本的原因并验证修复后，可通过 `--archive`、`--version` 和 `--sha256` 重试已校验的归档，同时保留失败记录和备份。只有安装成功才会解除该版本的暂停状态。
 
 <a id="production-release-sop"></a>
 ## 正式发布与线上部署 SOP
