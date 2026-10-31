@@ -41,7 +41,7 @@ Cua Driver 提供方提供上游工具目录；统一控制提供一个感知会
 
 统一控制在 Windows 和 Linux 上报告仅浏览器能力，在首次访问桌面时初始化 macOS 原生驱动。可选输入审批设置使用已有的一次性审批服务。浏览器输入要求使用最近观察的元素；坐标输入有独立的截图有效期。[提供方参考](../../packages/experimental/computer-use-unified/README.zh.md)维护这些设置和失败语义。
 
-可选[应用操作组合包](../../packages/experimental/computer-control/README.zh.md)通过 `computerPreview` 展示选中的原生窗口；[浏览器操作](../../packages/experimental/browser-control/README.zh.md)通过 `browserPreview` 独立展示隐藏标签页。两个组合层分别提供 `application` 和 `browser`，可以同时运行。[`ComputerPreviewFrame`](../../packages/experimental/computer-use-unified/src/types.ts)区分 `idle`、`unavailable` 和 `frame`；图像携带原始 Unix 毫秒截图时间和当前操作状态。`ComputerPreviewSnapshot` 和 `BrowserPreviewSnapshot` 将结果与宿主指定的刷新间隔组合。`ComputerPreviewCursor` 使用相对窗口的比例坐标。显示端为每个活动会话注册一个 `ComputerPreviewCapture`，撤回时取消并等待已接受的截图。仅显示的预览保留操作观察，不增加模型输入或会话事件。
+可选[应用操作组合包](../../packages/experimental/computer-control/README.zh.md)通过 `computerPreview` 展示选中的原生窗口；[浏览器操作](../../packages/experimental/browser-control/README.zh.md)通过 `browserPreview` 独立展示隐藏标签页。两个组合层分别提供 `application` 和 `browser`，可以同时运行。[`ComputerPreviewFrame`](../../packages/client/ui-computer-preview/src/types.ts)区分 `idle`、`unavailable` 和 `frame`；图像携带原始 Unix 毫秒截图时间和当前操作状态。`ComputerPreviewSnapshot` 和 `BrowserPreviewSnapshot` 将结果与宿主指定的刷新间隔组合。`ComputerPreviewCursor` 使用相对窗口的比例坐标。显示端为每个活动会话注册一个 `ComputerPreviewCapture`，撤回时取消并等待已接受的截图。仅显示的预览保留操作观察，不增加模型输入或会话事件。
 
 [决策记录](../../.agents/notes/implemented/architecture/2026-09-12-computer-use-provider-registration.zh.md)解释只负责注册的服务和两个 Cua Driver 集成。
 

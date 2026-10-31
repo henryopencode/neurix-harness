@@ -50,7 +50,7 @@ const NO_MODEL_EXPERIENCE_SECTION: Readonly<Record<string, string>> = {
 const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/experimental/mobile-access': { kind: 'none', reason: 'Phone connection and transport add no model-visible context.' },
   'packages/image-generation/image-generation-bundle': { kind: 'indirect', reason: 'The optional layer delegates model-facing tools and results to tool-image-generation.' },
-  'packages/experimental/computer-preview': { kind: 'none', reason: 'Display-only captures and Client presentation never reach model requests.' },
+  'packages/client/ui-computer-preview': { kind: 'none', reason: 'Display-only captures and Client presentation never reach model requests.' },
   'packages/experimental/browser-control': { kind: 'indirect', reason: 'The optional browser layer delegates its tool, guidance, and results to computer-use-unified.' },
   'packages/experimental/computer-control': { kind: 'indirect', reason: 'The optional layer delegates computer tools, guidance, and results to computer-use-unified.' },
   'packages/client/ui-entry-customization': { kind: 'none', reason: 'Controls browser launchers and prepares a reviewable Creator draft without submitting model input.' },

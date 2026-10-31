@@ -65,7 +65,7 @@ const SAFE_HOST_DEPENDENCY_EXPORTS = {
 const PEER_REQUIRED_HOST_EXPORTS = {
   // The settings bundle mounts the provider against the same Cordis service registrations.
   '@deepseek-ai/dsh-experimental-computer-use-unified': ['Config', 'mountComputerControl'],
-  '@deepseek-ai/dsh-experimental-computer-preview': ['ComputerPreviewSources'],
+  '@deepseek-ai/dsh-client-ui-computer-preview': ['ComputerPreviewSources'],
   // CUA checks UserQuestionError and preserves AttachmentError from image admission.
   '@deepseek-ai/dsh-attachment': ['admitEncodedImages'],
   '@deepseek-ai/dsh-user-questions': ['UserQuestionError'],

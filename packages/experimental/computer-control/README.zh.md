@@ -69,6 +69,8 @@ provider 维护启用或停用工具与指引时的前缀变化，以及仅追�
 
 ## 已知限制与延后工作
 
+Web 应用提供共享的预览渲染器。不包含 `dsh-web-app` 的自定义 Web 组合必须自行挂载 `@deepseek-ai/dsh-client-ui-computer-preview`。
+
 <a id="known-limitations-and-deferred-work"></a>
 
 - 原生应用的限制由统一提供者定义。本插件通过原生控件操作现有浏览器窗口，绝不启动 Playwright。

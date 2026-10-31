@@ -5,8 +5,6 @@
       isolate:
         browserUse: true
       config:
-        - id: browser-control-preview-ui
-          name: '@deepseek-ai/dsh-experimental-computer-preview'
         - id: optional-browser-use
           name: '@deepseek-ai/dsh-browser-use'
         - id: browser-control

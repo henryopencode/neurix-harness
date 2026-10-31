@@ -3,7 +3,7 @@
 import { Context } from '@deepseek-ai/cordis'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type { SessionId } from '@deepseek-ai/dsh-session'
-import type { ComputerPreviewSources } from '@deepseek-ai/dsh-experimental-computer-preview'
+import type { ComputerPreviewSources } from '@deepseek-ai/dsh-client-ui-computer-preview'
 import type { BrowserPreviewSnapshot } from './types.ts'
 
 declare module '@deepseek-ai/cordis' {

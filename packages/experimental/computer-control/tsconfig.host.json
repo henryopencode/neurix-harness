@@ -30,7 +30,7 @@
       "path": "../../core/session"
     },
     {
-      "path": "../computer-preview/tsconfig.host.json"
+      "path": "../../client/ui-computer-preview/tsconfig.host.json"
     }
   ]
 }

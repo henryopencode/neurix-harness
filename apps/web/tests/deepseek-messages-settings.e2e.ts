@@ -13,7 +13,7 @@ import { openSettings, connectFreshWorkspaceZh, saveFailureShot, ZH_BROWSER_LOCA
 const EXPECTED = fileURLToPath(new URL('./expected/deepseek-messages-settings/', import.meta.url))
 
 it.each([{ name: 'Chromium', engine: chromium }, { name: 'WebKit', engine: webkit }])(
-  'keeps a foreign model drag from editing another provider input in $name', async ({ engine }) => {
+  'keeps a custom-model draft isolated from an existing provider in $name', async ({ engine }) => {
     const scaffold = await launchWebScaffold({ deepSeekMissingCredential: true })
     let browser: Browser | undefined
     try {
@@ -27,17 +27,20 @@ it.each([{ name: 'Chromium', engine: chromium }, { name: 'WebKit', engine: webki
       const dialog = page.getByRole('dialog', { name: '设置', exact: true })
       await dialog.getByRole('button', { name: '模型', exact: true }).click()
       const setup = dialog.getByText('DeepSeek', { exact: true }).locator('xpath=ancestor::li')
+      await setup.getByRole('button', { name: '编辑 DeepSeek (deepseek-official)', exact: true }).click()
       await setup.getByText('自定义设置', { exact: true }).click()
+      const before = scaffold.ctx.settings.describe({ redactSecrets: true }).map(row => ({ ns: row.ns, value: row.value }))
       await dialog.getByRole('button', { name: '添加模型提供商' }).click()
       await dialog.getByRole('tab', { name: '自定义模型 API' }).click()
       const custom = dialog.getByRole('tabpanel', { name: '自定义模型 API' })
       await custom.getByRole('button', { name: '添加模型', exact: true }).click()
       const target = custom.getByLabel('模型 ID 1', { exact: true })
       await target.fill('foreign-model')
-      const before = scaffold.ctx.settings.describe({ redactSecrets: true }).map(row => ({ ns: row.ns, value: row.value }))
-      const source = setup.getByRole('button', { name: '调整模型顺序 1', exact: true })
-      await source.dragTo(target)
       expect(await target.inputValue()).toBe('foreign-model')
+      expect(await setup.getByLabel('模型 ID 1', { exact: true }).count()).toBe(0)
+      await custom.getByRole('button', { name: '取消', exact: true }).click()
+      await setup.getByRole('button', { name: '编辑 DeepSeek (deepseek-official)', exact: true }).click()
+      await setup.getByText('自定义设置', { exact: true }).click()
       expect(await setup.getByLabel('模型 ID 1', { exact: true }).inputValue()).toBe('deepseek-flash')
       expect(scaffold.ctx.settings.describe({ redactSecrets: true }).map(row => ({ ns: row.ns, value: row.value }))).toEqual(before)
       expect(tripwire.pageErrors).toEqual([])

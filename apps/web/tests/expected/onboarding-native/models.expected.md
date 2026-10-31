@@ -5,12 +5,16 @@
     - button "模型"
     - button "内置插件"
     - button "Agent 预设"
+    - button "关于"
   - button "打开配置文件"
   - button "关闭"
   - heading "模型" [level=2]
   - paragraph: 填入各提供商的 API 密钥即可使用其模型。
   - list:
     - listitem:
+      - text: DeepSeek
+      - img "API 密钥缺失"
+      - button "编辑 DeepSeek (deepseek-official)": 编辑
       - text: DeepSeek deepseek-official API 密钥
       - button "认证说明": "?"
       - textbox "API 密钥":

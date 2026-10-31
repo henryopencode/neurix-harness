@@ -66,6 +66,8 @@ kind: package-bundle
 
 ## 已知限制与延后工作
 
+Web 应用提供共享的预览渲染器。不包含 `dsh-web-app` 的自定义 Web 组合必须自行挂载 `@deepseek-ai/dsh-client-ui-computer-preview`。
+
 <a id="known-limitations-and-deferred-work"></a>
 
 - 浏览器须已安装；插件不会安装软件。

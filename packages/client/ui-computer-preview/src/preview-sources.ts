@@ -2,7 +2,7 @@
 
 import type { Context, Plugin, Volatile } from '@deepseek-ai/cordis'
 import type { SessionId } from '@deepseek-ai/dsh-session'
-import type { ComputerPreviewCapture, ComputerPreviewFrame } from '@deepseek-ai/dsh-experimental-computer-use-unified/types'
+import type { ComputerPreviewCapture, ComputerPreviewFrame } from './types.ts'
 
 interface PreviewPacing {
   previewIntervalMs: Volatile<number>

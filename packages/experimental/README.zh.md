@@ -84,7 +84,6 @@ kind: "package-group"
 | [`computer-use-cua-driver-mcp`](computer-use-cua-driver-mcp/README.zh.md) | 通过 MCP 使用已安装的 Cua Driver | `ctx.computerUse` |
 | [`computer-use-cua-driver-native`](computer-use-cua-driver-native/README.zh.md) | 嵌入 Cua Driver 原生 npm 运行时 | `ctx.computerUse` |
 | [`computer-control`](computer-control/README.zh.md) | 在 macOS 前台操作应用和浏览器窗口 | — |
-| [`computer-preview`](computer-preview/README.zh.md) | 共享仅用于显示的浏览器与应用预览 | `ctx.computerPreviewUi` (Client) |
 | [`browser-control`](browser-control/README.zh.md) | 操作独立隐藏浏览器并显示画中画 | — |
 | [`computer-use-unified`](computer-use-unified/README.zh.md) | 操作会话独立的浏览器标签页与精确 macOS 窗口 | `ctx.computerUse`, `ctx.browserUse` |
 | [`browser-use-playwright-mcp`](browser-use-playwright-mcp/README.zh.md) | 通过 MCP 提供 Playwright 浏览器工具 | `ctx.browserUse` |

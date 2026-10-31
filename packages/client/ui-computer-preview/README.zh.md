@@ -3,13 +3,13 @@ description: "为独立启用的浏览器和应用操作提供仅用于显示的
 kind: package-reference
 ---
 
-# @deepseek-ai/dsh-experimental-computer-preview
+# @deepseek-ai/dsh-client-ui-computer-preview
 
 [English](README.md) | 中文
 
 ## 概述
 
-通过可独立移动和调整大小的画中画查看浏览器和应用操作。所属的控制插件自动挂载此内部界面插件；它不会启动操作运行时，也不提供模型工具。
+通过可独立移动和调整大小的画中画查看浏览器和应用操作。Web 配置自动挂载共享渲染器；它不会启动操作运行时，也不提供模型工具。
 
 ## 目录
 
@@ -25,7 +25,7 @@ kind: package-reference
 <a id="use-this-package"></a>
 ## 使用此包
 
-在插件页启用浏览器操作或应用操作，各自的组合层都包含此载体，用户无需单独启用。客户端提供 `computerPreviewUi`，各来源按自己的生命周期和来源标识注册截图回调。宿主不包含设置、工具或截图副作用。
+在插件页启用浏览器操作或应用操作，Web 配置包含此载体，用户无需单独启用。客户端提供 `computerPreviewUi`，各来源按自己的生命周期和来源标识注册截图回调。宿主不包含设置、工具或截图副作用。
 
 目标可用时自动显示画中画。拖动画面可在应用窗口内移动，拖动任一下角可调整大小。「最大化」铺满可用窗口并保持画面比例；「还原」恢复之前的小窗尺寸和位置。「收起」暂停截图并保留展开按钮。
 
@@ -46,8 +46,8 @@ kind: package-reference
 <a id="further-exploration"></a>
 ## 进一步探索
 
-- [浏览器操作](../browser-control/README.zh.md) — 隐藏浏览器来源。
-- [应用操作](../computer-control/README.zh.md) — 原生前台来源。
+- [浏览器操作](../../experimental/browser-control/README.zh.md) — 隐藏浏览器来源。
+- [应用操作](../../experimental/computer-control/README.zh.md) — 原生前台来源。
 
 -----
 

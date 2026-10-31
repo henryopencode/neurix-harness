@@ -5,8 +5,6 @@
       isolate:
         computerUse: true
       config:
-        - id: computer-control-preview-ui
-          name: '@deepseek-ai/dsh-experimental-computer-preview'
         - id: optional-computer-use
           name: '@deepseek-ai/dsh-computer-use'
         - id: computer-control

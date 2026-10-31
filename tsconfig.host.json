@@ -579,7 +579,7 @@
     { "path": "./apps/desktop/tsconfig.host.json" },
     { "path": "./packages/experimental/computer-control/tsconfig.host.json" },
     { "path": "./packages/experimental/browser-control/tsconfig.host.json" },
-    { "path": "./packages/experimental/computer-preview/tsconfig.host.json" },
+    { "path": "./packages/client/ui-computer-preview/tsconfig.host.json" },
     { "path": "./packages/experimental/mobile-access/tsconfig.host.json" }
   ]
 }

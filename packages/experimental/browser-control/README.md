@@ -66,6 +66,8 @@ Activation changes the tool and guidance prefix; results append to history.
 
 ## Known Limitations and Deferred Work
 
+The Web application supplies the shared preview renderer. A custom Web composition without `dsh-web-app` must mount `@deepseek-ai/dsh-client-ui-computer-preview` itself.
+
 <a id="known-limitations-and-deferred-work"></a>
 
 - The selected browser must already be installed; this plugin does not install software.

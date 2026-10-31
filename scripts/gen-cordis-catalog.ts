@@ -176,7 +176,7 @@ export const SERVICE_PAGE: Record<string, string> = {
  * to a model as `cordis_runtime_inspect what:"client"`).
  */
 export const SERVICE_WALK_EXEMPTIONS: Record<string, string> = {
-  computerPreviewUi: 'Client-only display renderer; packages/experimental/computer-preview/README.md owns source registration and panel lifetime.',
+  computerPreviewUi: 'Client-only display renderer; packages/client/ui-computer-preview/README.md owns source registration and panel lifetime.',
   mobileAccess: 'Optional phone connection Remote; packages/experimental/mobile-access/README.md owns its lifecycle and deployment.',
   phoneSessions: 'Optional link-authenticated phone sessions; packages/experimental/mobile-access/README.md owns browser authorization and revocation.',
   invocation: 'not a service: per-call accessor (RemoteInvocation | undefined) the Gateway derives for each Remote call — packages/api/gateway/README.md owns the contract',

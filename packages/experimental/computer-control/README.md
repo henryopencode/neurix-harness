@@ -69,6 +69,8 @@ The provider owns prefix changes when activation adds or removes its tool and gu
 
 ## Known Limitations and Deferred Work
 
+The Web application supplies the shared preview renderer. A custom Web composition without `dsh-web-app` must mount `@deepseek-ai/dsh-client-ui-computer-preview` itself.
+
 <a id="known-limitations-and-deferred-work"></a>
 
 - Native application limits belong to the unified provider. The plugin operates existing browser windows through native controls and never starts Playwright.

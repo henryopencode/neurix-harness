@@ -84,7 +84,6 @@ Promotion requires a named product role, documented public behavior and limitati
 | [`computer-use-cua-driver-mcp`](computer-use-cua-driver-mcp/README.md) | Use an installed Cua Driver through MCP | `ctx.computerUse` |
 | [`computer-use-cua-driver-native`](computer-use-cua-driver-native/README.md) | Embed the Cua Driver native npm runtime | `ctx.computerUse` |
 | [`computer-control`](computer-control/README.md) | Operate macOS apps and browser windows in the foreground | — |
-| [`computer-preview`](computer-preview/README.md) | Share display-only browser and application previews | `ctx.computerPreviewUi` (Client) |
 | [`browser-control`](browser-control/README.md) | Operate an isolated hidden browser with picture-in-picture | — |
 | [`computer-use-unified`](computer-use-unified/README.md) | Operate session-owned browser tabs and exact macOS windows | `ctx.computerUse`, `ctx.browserUse` |
 | [`browser-use-playwright-mcp`](browser-use-playwright-mcp/README.md) | Playwright browser tools over MCP | `ctx.browserUse` |

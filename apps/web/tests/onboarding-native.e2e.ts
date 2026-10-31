@@ -59,9 +59,9 @@ describe.skipIf(MODE === 'record').each([false, true])('web e2e: native credenti
       }
       const accountMenu = page.getByRole('button', { name: '账号菜单', exact: true })
       await accountMenu.waitFor()
-      expect(await accountMenu.textContent()).toBe('更多')
+      expect(await accountMenu.textContent()).toBe('')
       const triggerBox = (await accountMenu.boundingBox())!
-      expect(Math.abs(triggerBox.height - 32)).toBeLessThan(1)
+      expect(Math.abs(triggerBox.height - 36)).toBeLessThan(1)
       await accountMenu.click()
       const menu = page.getByRole('menu')
       await menu.waitFor()
@@ -89,6 +89,7 @@ describe.skipIf(MODE === 'record').each([false, true])('web e2e: native credenti
       await openSettings(page, 'zh')
       const settings = page.getByRole('dialog', { name: '设置', exact: true })
       await settings.getByRole('button', { name: '模型', exact: true }).click()
+      await settings.getByRole('button', { name: '编辑 DeepSeek (deepseek-official)', exact: true }).click()
       await settings.getByLabel('API 密钥', { exact: true }).waitFor()
       expect(await page.getByRole('dialog', { name: '连接模型服务' }).count()).toBe(0)
       expect(await welcome.count()).toBe(0)
