@@ -189,7 +189,7 @@ def install(config, archive, version, expected_digest):
     # Extract as the unprivileged application user; archive content never executes as root.
     command('chown', config['user'], str(staged))
     with open(archive, 'rb') as source:
-        command('runuser', '-u', config['user'], '--', 'tar', '--no-same-owner', '-xzf', '-', '-C', str(staged), input_stream=source)
+        command('runuser', '-u', config['user'], '--', 'tar', '--no-same-owner', '--same-permissions', '-xzf', '-', '-C', str(staged), input_stream=source)
     command('chown', '-hR', 'root:root', str(staged))
     os.chmod(staged, 0o755)
     manifest = json.loads((staged / 'dsh/package.json').read_text())

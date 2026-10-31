@@ -4,6 +4,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import subprocess
 import tarfile
 import tempfile
 import unittest
@@ -93,9 +94,15 @@ class ServerUpdateTests(unittest.TestCase):
             backups.mkdir()
             archive = root / 'server.tar.gz'
             with tarfile.open(archive, 'w:gz') as source:
+                for name in ['dsh', 'server']:
+                    entry = tarfile.TarInfo(name)
+                    entry.type = tarfile.DIRTYPE
+                    entry.mode = 0o755
+                    source.addfile(entry)
                 for name, content in [('dsh/package.json', b'{"version":"1.0.0"}'), ('server/start.sh', b'#!/bin/sh\n')]:
                     entry = tarfile.TarInfo(name)
                     entry.size = len(content)
+                    entry.mode = 0o755 if name.endswith('.sh') else 0o644
                     source.addfile(entry, io.BytesIO(content))
             config = {'root': str(root), 'user': 'fixture', 'home': str(home), 'backups': str(backups),
                       'maintenance_file': str(root / 'maintenance'), 'health_timeout_seconds': 1 if healthy else 0,
@@ -105,11 +112,8 @@ class ServerUpdateTests(unittest.TestCase):
             def command(*args, input_stream=None):
                 operations.append(args)
                 if args[0] == 'runuser':
-                    destination = Path(args[-1])
-                    (destination / 'dsh').mkdir()
-                    (destination / 'server').mkdir()
-                    (destination / 'dsh/package.json').write_text('{"version":"1.0.0"}')
-                    (destination / 'server/start.sh').write_text('#!/bin/sh\n')
+                    subprocess.run(args[args.index('--') + 1:], stdin=input_stream, check=True,
+                                   timeout=30, umask=0o077)
                 if args[:2] == ('systemctl', 'start') and (root / 'current').resolve() != old:
                     (home / 'session').write_text('new-format')
 
@@ -125,6 +129,9 @@ class ServerUpdateTests(unittest.TestCase):
                     self.assertEqual(updater.install(config, archive, '1.0.0', checksum), 'updated')
                     self.assertNotEqual((root / 'current').resolve(), old)
                     self.assertEqual((root / 'current').resolve().stat().st_mode & 0o777, 0o755)
+                    for name, mode in [('dsh', 0o755), ('server', 0o755),
+                                       ('dsh/package.json', 0o644), ('server/start.sh', 0o755)]:
+                        self.assertEqual((root / 'current' / name).stat().st_mode & 0o777, mode, name)
                     self.assertEqual((home / 'session').read_text(), 'new-format')
                     self.assertEqual(next(backups.glob('*/home/session')).read_text(), 'original')
                 else:
@@ -136,7 +143,7 @@ class ServerUpdateTests(unittest.TestCase):
                 self.assertFalse((root / 'maintenance').exists())
                 self.assertLess(operations.index(('control', 'lock')), operations.index(('systemctl', 'stop', 'fixture.service')))
 
-    def test_success_retains_backup(self):
+    def test_success_retains_backup_and_archive_permissions_under_private_umask(self):
         self.install_case(True)
 
     def test_failed_start_restores_program_and_data(self):
