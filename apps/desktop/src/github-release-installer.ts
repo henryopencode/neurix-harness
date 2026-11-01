@@ -4,11 +4,19 @@ import { chmod, copyFile, mkdir, mkdtemp, open, readFile, readdir, realpath, rm,
 import { constants } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
+import { createRequire } from 'node:module'
 import { app, shell } from 'electron'
 import { verifyGithubReleaseReplacement, type GithubReleaseReplacement } from './github-release-replacement.ts'
 import type { DesktopUpdateState } from './ipc.ts'
 
 const execute = promisify(execFile)
+
+async function removeApplicationBackup(directory: string): Promise<void> {
+  // Electron's patched filesystem treats .asar files as virtual directories.
+  const moduleName = process.versions.electron === undefined ? 'node:fs' : 'original-fs'
+  const filesystem = createRequire(import.meta.url)(moduleName) as typeof import('node:fs')
+  await filesystem.promises.rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
+}
 
 async function plist(file: string, key: string): Promise<string> {
   return (await execute('/usr/bin/plutil', ['-extract', key, 'raw', '-o', '-', file])).stdout.trim()
@@ -118,7 +126,7 @@ export async function readGithubReleaseInstallationFailure(
     if (value.installed !== installed) throw new Error('The recorded backup belongs to another application installation')
     if (currentVersion !== value.version) return { phase: 'error', failedOperation: 'install', version: value.version,
       message: `Expected ${value.version} after installation, but ${currentVersion} started; the previous application is retained in ${value.staging}` }
-    await rm(value.staging, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
+    await removeApplicationBackup(value.staging)
     await rm(file)
     return undefined
   }

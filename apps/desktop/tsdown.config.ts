@@ -13,7 +13,10 @@ const manifest = JSON.parse(readFileSync(new URL('./package.json', import.meta.u
   dependencies: Record<string, string>
 }
 /** electron-builder ships the manifest `dependencies` next to the main bundle; Electron provides `electron` and Node. */
-const mainProcessImports = { packages: new Set(['electron', ...Object.keys(manifest.dependencies)]), nodeBuiltins: true }
+const mainProcessImports = {
+  packages: new Set(['electron', 'original-fs', ...Object.keys(manifest.dependencies)]),
+  nodeBuiltins: true,
+}
 /**
  * The `require` polyfill of a sandboxed preload resolves only these modules
  * (Electron: Process Sandboxing, "Preload scripts").
