@@ -28,12 +28,13 @@ export class SessionSkillCatalog extends TypertRemoteService {
   /**
    * List the user-invocable skills visible to one Session composition.
    * @param request - Session identity whose cwd and preset select the catalog view.
-   * @param signal - caller lifetime carried by the Remote transport; admitted catalog reads retain their existing completion semantics.
+   * @param signal - Caller lifetime cancelling skill discovery when the transport closes.
    * @returns user-invocable skill metadata without loading skill bodies.
    * @throws RemoteError when the Session cannot be inspected or no registry can serve it.
    */
   @Remote
   async list(request: SkillListRequest, signal: AbortSignal): Promise<SkillListValue> {
+    signal.throwIfAborted()
     const { sessionId } = request
     let cwd: string
     let agentPreset: string | undefined
@@ -75,7 +76,7 @@ export class SessionSkillCatalog extends TypertRemoteService {
     await using lease = live === undefined ? await this.scopeFor(agentPreset) : undefined
     const scope = live ?? lease?.key
     try {
-      const skills = (await skillRegistry.list({ cwd, scope })).filter(isUserInvocable)
+      const skills = (await skillRegistry.list({ cwd, scope, signal })).filter(isUserInvocable)
       return {
         skills: skills.map(skill => ({
           name: skill.name,

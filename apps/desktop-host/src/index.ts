@@ -15,8 +15,10 @@ import { installDesktopUpdateTaskControl } from './update-tasks.ts'
 import { installDesktopQuitInspection } from './quit-inspection.ts'
 import { installPlatformSessionPublisher } from './platform-session.ts'
 import { installOfficeEngineResolution } from './office-engine.ts'
+import { prepareHostProcessExit } from './host-exit.ts'
 
 async function main(): Promise<void> {
+  const exitStoppedHost = await prepareHostProcessExit()
   const runtimeDir = process.argv[2] as string
   const projectDir = process.argv[3] as string
   installOfficeEngineResolution(runtimeDir)
@@ -62,7 +64,7 @@ async function main(): Promise<void> {
     if (process.connected) process.disconnect()
     // A handle a disposed plugin left open would otherwise keep the Host alive past the shell's graceful
     // deadline; a startup failure keeps its own diagnostic exit.
-    if (running !== undefined) process.exit()
+    if (running !== undefined) exitStoppedHost()
   })()
   process.on('message', (message: unknown) => {
     if (typeof message !== 'object' || message === null || !('type' in message)) return
