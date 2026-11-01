@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-image-generation",
   "description": "Generate and save images from OpenAI-compatible or MiniMax APIs",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publishConfig": {
     "access": "public"
   },
