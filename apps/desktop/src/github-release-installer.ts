@@ -13,7 +13,8 @@ const execute = promisify(execFile)
 
 async function removeApplicationBackup(directory: string): Promise<void> {
   // Electron's patched filesystem treats .asar files as virtual directories.
-  const moduleName = process.versions.electron === undefined ? 'node:fs' : 'original-fs'
+  const versions: Readonly<Record<string, string | undefined>> = process.versions
+  const moduleName = versions.electron === undefined ? 'node:fs' : 'original-fs'
   const filesystem = createRequire(import.meta.url)(moduleName) as typeof import('node:fs')
   await filesystem.promises.rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
 }
