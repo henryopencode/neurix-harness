@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-deepseek-model-label-1017",
   "description": "Temporary 1017 release badge for official DeepSeek Flash model labels",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "publishConfig": {
     "access": "public"
   },
@@ -23,8 +23,8 @@
       "default": "./lib/client.js"
     },
     "./src/*": "./src/*",
-    "./locale/*.json": "./locale/*.json",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "dsh": {
     "client": {
