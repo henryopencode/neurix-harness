@@ -30,6 +30,9 @@ interface OfficialConnection extends ResolvedDeepSeekOptions {
 export function apply(ctx: Context, config: Config): void {
   const options = () => resolveAdapterOptions(plainOptions(config), launchEnvironmentOf(ctx))
   options()
+  ctx.llm.registerConfigurableProviders([
+    { provider: PROVIDER, displayName: 'DeepSeek', settingsNs: ctx.fiber.entry?.options.id ?? name, settingsPath: [] },
+  ])
   const resolveApiKey = async (connection: ResolvedDeepSeekOptions): Promise<string> => {
     const ref = connection.apiKeyEnv
     const credentials = ctx.get('credentials')
@@ -79,9 +82,6 @@ export function apply(ctx: Context, config: Config): void {
     }
     return { ...connection, models: catalog.resolution, offered: catalog.offered, refusals: catalog.refusals }
   }
-  ctx.llm.registerConfigurableProviders([
-    { provider: PROVIDER, displayName: 'DeepSeek', settingsNs: ctx.fiber.entry?.options.id ?? name, settingsPath: [] },
-  ])
   registerDeepSeekProvider<OfficialConnection>(ctx, PROVIDER, {
     providerName: 'DeepSeek',
     options: () => {
@@ -112,7 +112,7 @@ export function apply(ctx: Context, config: Config): void {
       const view = await listings.view(connection.listing)
       return view.authenticated ? connectionOf(connection, view).offered.map(model => catalogModelInfo(provider, model)) : []
     },
-  })
+  }, () => config.enabled.get())
   // Starting or stopping to follow the listing discards it, so restoring the built-in
   // catalog after a customization reloads the listing on the next access.
   let following = options().listing !== undefined

@@ -159,3 +159,44 @@ describe.skipIf(webSnapshotMode() === 'record')('web e2e: DeepSeek Messages sett
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
 })
+
+it('deletes and re-adds DeepSeek through the ordinary provider controls', async () => {
+  const scaffold = await launchWebScaffold({ deepSeekMissingCredential: true })
+  let browser: Browser | undefined
+  try {
+    await scaffold.ctx.settings.update('llm-deepseek', {
+      baseURL: 'https://messages.example/anthropic', models: [{ id: 'removal-model', name: 'Removal model' }],
+    })
+    browser = await chromium.launch()
+    const page = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
+    const tripwire = watchConsole(page)
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-deepseek-remove'))
+    await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
+    await page.getByRole('dialog', { name: '开始使用', exact: true }).getByRole('button', { name: '添加 API Key', exact: true }).click()
+    const onboarding = page.getByRole('dialog', { name: '连接模型服务' })
+    await onboarding.getByRole('combobox', { name: '提供商', exact: true }).selectOption('provider:deepseek-official')
+    await onboarding.getByRole('group', { name: 'DeepSeek', exact: true }).getByLabel('API 密钥', { exact: true }).fill('sk-deepseek-removal-fixture')
+    await onboarding.getByRole('button', { name: '保存并继续' }).click()
+    await onboarding.waitFor({ state: 'detached' })
+    await openSettings(page, 'zh')
+    const dialog = page.getByRole('dialog', { name: '设置', exact: true })
+    await dialog.getByRole('button', { name: '模型', exact: true }).click()
+    await dialog.getByRole('button', { name: '删除 DeepSeek (deepseek-official)', exact: true }).click()
+    const confirmation = page.getByRole('dialog', { name: '删除 DeepSeek (deepseek-official)？', exact: true })
+    await confirmation.getByRole('button', { name: '删除 DeepSeek (deepseek-official)', exact: true }).click()
+    await confirmation.waitFor({ state: 'detached' })
+    await expect.poll(() => scaffold.ctx.llm.listProviders().some(provider => provider.id === 'deepseek-official')).toBe(false)
+    expect(await dialog.getByRole('button', { name: '编辑 DeepSeek (deepseek-official)', exact: true }).count()).toBe(0)
+    await compareOrRefreshGolden(join(EXPECTED, 'removed.expected.md'),
+      await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd), webSnapshotMode())
+    await dialog.getByRole('button', { name: '添加模型提供商', exact: true }).click()
+    await dialog.getByRole('combobox', { name: '提供商', exact: true }).selectOption('deepseek-official')
+    await dialog.getByRole('button', { name: '保存', exact: true }).click()
+    await expect.poll(() => scaffold.ctx.llm.listProviders().some(provider => provider.id === 'deepseek-official')).toBe(true)
+    await dialog.getByRole('button', { name: '删除 DeepSeek (deepseek-official)', exact: true }).waitFor()
+    expect(tripwire.pageErrors).toEqual([])
+  } finally {
+    try { await browser?.close() }
+    finally { await scaffold.close() }
+  }
+})
