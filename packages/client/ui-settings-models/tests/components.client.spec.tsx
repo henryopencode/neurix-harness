@@ -56,6 +56,7 @@ const PiAiConfig = Schema.object({
 })
 
 const DeepSeekConfig = Schema.object({
+  enabled: Schema.boolean().default(true),
   apiKeyEnv: Schema.string().role('credential-ref'),
   baseURL: Schema.string().pattern(/^https:\/\//),
   reasoningEffort: Schema.union(['off', 'low', 'high', 'max']),
@@ -524,6 +525,35 @@ describe('ModelsSection', () => {
     }
     fireEvent.click(add)
     expect(screen.getByLabelText(en.provider)).toBeTruthy()
+  })
+
+  it('removes the DeepSeek row and offers it for adding again', async () => {
+    const { controller, mutate, mirror } = await mountSection()
+    fireEvent.click(screen.getByRole('button', { name: deepSeekCopy(en.removeProvider) }))
+    const namespace = wireNamespaces()[0]!
+    const removed = { ...namespace, value: { ...namespace.value as object, enabled: false }, user: { enabled: false } }
+    const removal = Promise.withResolvers<RemoteResult<SettingsNamespaceView>>()
+    mutate.mockReturnValueOnce(removal.promise)
+    fireEvent.click(within(screen.getByRole('dialog', { name: deepSeekCopy(en.deleteTitle) }))
+      .getByRole('button', { name: deepSeekCopy(en.deleteConfirm) }))
+    await act(async () => { mirror.acceptView(removed); removal.resolve(remoteOk(removed)); await removal.promise })
+    await waitFor(() => { expect(screen.queryByRole('button', { name: deepSeekCopy(en.editProvider) })).toBeNull() })
+    expect(mutate).toHaveBeenCalledWith('llm-deepseek', [{ op: 'set', path: ['enabled'], value: false }], undefined)
+    expect(controller.store.getSnapshot().rows.find(row => row.entry.provider === 'deepseek-official'))
+      .toMatchObject({ configured: false, removable: true })
+    fireEvent.click(screen.getByRole('button', { name: en.add }))
+    expect(screen.getByRole('option', { name: 'DeepSeek' })).toBeTruthy()
+  })
+
+  it.each([false, true])('enables a removed provider when it is added again (credentialOnly=%s)', async (credentialOnly) => {
+    const { face, mutate } = scriptedFace()
+    const namespace = wireNamespaces()[0]!
+    render(<ProviderEditor provider="deepseek-official" displayName="DeepSeek" settingsPath={[]}
+      namespace={{ ...namespace, value: { ...namespace.value as object, enabled: false }, user: { enabled: false } }}
+      schema={settingsSchema} operations={operationsWith(face)} t={t} readOnly={false} credentialOnly={credentialOnly} onClose={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText(en.keyInput), { target: { value: 'sk-readded' } })
+    fireEvent.click(screen.getByRole('button', { name: en.apply }))
+    await waitFor(() => { expect(mutate).toHaveBeenCalledWith('llm-deepseek', [{ op: 'set', path: ['enabled'], value: true }], 0) })
   })
 
   it('blocks new Add and Remove actions while a joined refresh retains an open add draft', async () => {

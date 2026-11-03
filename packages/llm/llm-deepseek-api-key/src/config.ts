@@ -16,10 +16,13 @@ const OFFICIAL_ORIGIN = new URL(PUBLIC_BASE_URL).origin
 
 /** Messages configuration with a per-request API-key reference. */
 export interface Config extends ProtocolConfig, ModelListingConfig {
+  /** Whether this provider is available for model selection and requests. */
+  enabled: Volatile<boolean>
   /** Credential reference resolved per request; defaults to DEEPSEEK_API_KEY. */
   apiKeyEnv: Volatile<string>
 }
 export const Config = z.object({
+  enabled: z.boolean().default(true).volatile(),
   ...deepSeekConfigFields,
   ...modelListingConfigFields,
   apiKeyEnv: z.string().role('credential-ref').default('DEEPSEEK_API_KEY').volatile(),
@@ -41,7 +44,8 @@ export interface ResolvedDeepSeekOptions extends DeepSeekConnectionOptions {
  * @returns detached resolver inputs.
  */
 export function plainOptions(config: Config): Options {
-  return { ...protocolOptions(config), apiKeyEnv: config.apiKeyEnv.get() }
+  const { enabled: _enabled, ...connection } = config
+  return { ...protocolOptions(connection), apiKeyEnv: config.apiKeyEnv.get() }
 }
 /** Resolve API-key, listing, and protocol settings together.
  * @param config - raw deployment settings.

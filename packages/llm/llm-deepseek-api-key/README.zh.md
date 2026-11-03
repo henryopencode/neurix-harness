@@ -25,6 +25,8 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用此包
 
+`enabled` 默认为 `true`。设为 `false` 后，提供商不接受模型请求，也不公布可选模型；设置目录保留该提供商，供用户重新添加。
+
 `apiKeyEnv` 默认为 `DEEPSEEK_API_KEY`，在每次请求和模型发现时解析凭据。已组合 credentials 服务时，按其优先级解析；只有未组合该服务时才直接读取启动环境。请求时凭据缺失以 `MISSING_CREDENTIAL` 失败；格式错误以 `INVALID_CREDENTIAL` 失败。模型发现在凭据缺失时返回空目录，在模型选择器中隐藏该路由，但保留其设置入口。凭据格式错误和其他读取失败继续上报。添加或删除密钥会影响下一次模型发现。
 
 ```yaml

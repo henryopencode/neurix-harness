@@ -27,7 +27,7 @@ Provide the shared DeepSeek Messages transport, request configuration, and model
 <a id="use-this-package"></a>
 ## Use this package
 
-This package exports the transport library; the provider plugins register routes with the harness LLM service. It captures connection options from Config references once per operation.
+This package exports the transport library; the provider plugins register routes with the harness LLM service. Host registration accepts an optional live enablement callback; disabled routes are withdrawn without discarding their provider settings. It captures connection options from Config references once per operation.
 
 The adapter accepts the LLM service's [request-only user inputs](../llm/README.md#use-this-package) alongside durable history; omitting request-only identity and attribution does not alter provider content.
 

@@ -2019,6 +2019,8 @@ export interface Config extends Omit<ProtocolConfig, 'models'>, ModelListingConf
 ```ts config-catalog
 /** Messages configuration with a per-request API-key reference. */
 export interface Config extends ProtocolConfig, ModelListingConfig {
+  /** Whether this provider is available for model selection and requests. */
+  enabled: Volatile<boolean>
   /** Credential reference resolved per request; defaults to DEEPSEEK_API_KEY. */
   apiKeyEnv: Volatile<string>
 }

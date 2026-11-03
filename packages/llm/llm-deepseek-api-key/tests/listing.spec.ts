@@ -47,6 +47,27 @@ async function host(key: string | undefined = 'fixture-api-key') {
 }
 const ids = async (ctx: Context) => (await ctx.llm.listModels('deepseek-official')).map(model => model.id)
 
+it('withdraws a removed provider while retaining its addable directory entry', async () => {
+  const requests = officialListing(listing(FLASH))
+  const { ctx } = await host()
+  const live = await liveConfig(ctx, ApiKey, { enabled: false })
+  expect(ctx.llm.listProviders()).toEqual([])
+  expect(ctx.llm.listConfigurableProviders()).toMatchObject([{ provider: 'deepseek-official', settingsPath: [] }])
+  await expect(ctx.llm.prepareCall({ provider: 'deepseek-official', model: 'deepseek-flash' })).rejects.toThrow()
+  expect(requests).toEqual([])
+  await live.update({ enabled: true })
+  expect(await ids(ctx)).toEqual(['deepseek-flash'])
+  await live.update({ enabled: false, retryPolicy: { mode: 'always' } })
+  expect(ctx.llm.listProviders()).toEqual([])
+  await live.update({ retryPolicy: { mode: 'normal' } })
+  expect(ctx.llm.listProviders()).toEqual([])
+  await live.update({ enabled: true })
+  expect(await ids(ctx)).toEqual(['deepseek-flash'])
+  await live.fiber.dispose()
+  expect(ctx.llm.listConfigurableProviders()).toEqual([])
+  expect(ctx.llm.listProviders()).toEqual([])
+})
+
 it('follows the official listing while the catalog is the built-in one', async () => {
   const requests = officialListing(listing(FLASH, { ...PRO, id: 'deepseek-v5', ...requires('0.0.1') }, PRO))
   const { ctx, diagnostics } = await host()
