@@ -12,7 +12,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type { McpManagerSnapshot } from '../types.ts'
 import { McpPage, McpPanelIcon, type McpPageInjected } from './McpPage.tsx'
 import { McpNotice, type McpNoticeValue } from './McpNotice.tsx'
-import { en, zh, type McpLocaleKey } from './locales.ts'
+import { en, zh, ja, es, fr, de, ru, pt, type McpLocaleKey } from './locales.ts'
 
 export type { McpPageProps } from './McpPage.tsx'
 
@@ -35,7 +35,7 @@ export const inject = ['slots', 'locale', 'remote', 'remote.mcpManager', 'remote
  * @param ctx - running browser Client.
  */
 export function apply(ctx: Context): void {
-  ctx.effect(() => ctx.locale.register('mcpManager', { en, zh }))
+  ctx.effect(() => ctx.locale.register('mcpManager', { en, zh, ja, es, fr, de, ru, pt }))
   const notice = createSnapshotStore<McpNoticeValue | null>(null)
   let seq = 0
   const failures: Record<string, McpLocaleKey> = {
