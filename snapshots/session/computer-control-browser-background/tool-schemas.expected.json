@@ -46,8 +46,8 @@
       }
     },
     {
-      "name": "computer",
-      "description": "Observe and operate session-owned browser tabs and exact macOS windows. The action parameter is required: start with {\"action\":\"list\"}, {\"action\":\"open_app\",\"bundleId\":\"com.apple.TextEdit\"}, or {\"action\":\"open_browser\",\"url\":\"https://example.com\"}. Successful input returns fresh state.",
+      "name": "browser",
+      "description": "Operate an isolated browser session, hidden by default and visible in picture-in-picture. Start with open_browser. This tool cannot control native application windows.",
       "parameters": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -55,11 +55,6 @@
           "query": {
             "description": "Literal substring: list filters targets; native observe filters accessibility text. Omit for a full read. Never put an operation description here.",
             "type": "string"
-          },
-          "bundleId": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Required for open_app: macOS bundle identifier, for example com.apple.TextEdit. Use {\"action\":\"open_app\",\"bundleId\":\"com.apple.TextEdit\"}."
           },
           "url": {
             "type": "string"
@@ -69,14 +64,8 @@
             "type": "boolean"
           },
           "target": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Required window or tab id returned by list/observe. Send target separately from ref, locator, or coordinates; a native ref identifies an element inside this target. List again after resuming."
-          },
-          "ref": {
-            "description": "Native element_token from the latest observation of this exact window. Native background click and type require target plus ref on every call; their pixel routes can activate the application and are unavailable in background mode.",
-            "type": "string",
-            "minLength": 1
+            "description": "Owned tab id returned by this browser tool; never a native window id.",
+            "type": "string"
           },
           "locator": {
             "description": "Browser locator: role needs role and name; label/text need text; css needs selector.",
@@ -128,12 +117,12 @@
             ]
           },
           "x": {
-            "description": "Screenshot-pixel X. Native click/type coordinates require foreground input; browser coordinates remain available in background.",
+            "description": "X in CSS pixels from the latest screenshot of this tab.",
             "type": "number",
             "minimum": 0
           },
           "y": {
-            "description": "Screenshot-pixel Y, supplied together with x. Native background click/type must use ref.",
+            "description": "Y in CSS pixels from the latest screenshot of this tab.",
             "type": "number",
             "minimum": 0
           },
@@ -262,14 +251,6 @@
             "type": "number",
             "minimum": 0
           },
-          "path": {
-            "minItems": 1,
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
           "accept": {
             "type": "boolean"
           },
@@ -277,7 +258,6 @@
             "type": "string",
             "enum": [
               "list",
-              "open_app",
               "open_browser",
               "new_tab",
               "observe",
@@ -288,12 +268,11 @@
               "key",
               "scroll",
               "drag",
-              "menu",
               "dialog",
               "close_tab",
               "reset"
             ],
-            "description": "Required operation. list/reset need no other fields; open_app requires bundleId. All other actions except open_browser require target. type requires text; key requires keys; navigate requires url; scroll requires direction and amount; drag prefers locator and toLocator from geometry.elements, or x,y,toX,toY in actual screenshot pixels; menu requires path; dialog requires accept. click/scroll need an observed element or screenshot point. type uses an observed editor, or the verified focused browser editor; foreground native type may continue in the focused editor without another address."
+            "description": "Required browser operation. Start with open_browser. Reuse returned tab targets; list reports owned tabs only."
           }
         },
         "required": [

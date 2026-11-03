@@ -1,0 +1,8 @@
+version: 1
+scenario: model-group
+profile: headless
+composition: model-group
+recording: authored
+header:
+  class: model-group
+  pin: true

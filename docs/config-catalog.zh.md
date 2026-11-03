@@ -460,7 +460,7 @@ export type Config = LocalConfig
 ## `@deepseek-ai/dsh-client-connection`
 
 - `inject`: `credentials`
-- `source`: [`packages/client/connection/src/index.ts:96`](../packages/client/connection/src/index.ts)
+- `source`: [`packages/client/connection/src/index.ts:97`](../packages/client/connection/src/index.ts)
 
 ```ts config-catalog
 /** Browser authentication, request limits, and connection recovery configuration. */
@@ -865,12 +865,19 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-experimental-agent-team`
 
-- `inject`: `agents` · `sessions` · `sessionPersistence` · `sessionProjections` · `subagents`
-- `source`: [`packages/experimental/agent-team/src/types.ts:153`](../packages/experimental/agent-team/src/types.ts)
+- `inject`: `agents` · `sessions` · `sessionPersistence` · `sessionProjections` · `subagents` · `llm`
+- `refs`: `Volatile` (`@deepseek-ai/cordis`)
+- `source`: [`packages/experimental/agent-team/src/types.ts:207`](../packages/experimental/agent-team/src/types.ts)
 
 ```ts config-catalog
 /** Team-service deployment limits. */
 export interface Config {
+  /** Candidate model routes and strengths; empty retains inherited model selection. */
+  readonly models?: Volatile<TeamModel[]>
+  /** Candidate alias used by the Lead; empty preserves the Lead's current selection. */
+  readonly leaderModel?: Volatile<string>
+  /** Maximum simultaneously active teammates per Team. */
+  readonly maxParallel?: Volatile<number>
   /** Maximum immutable teammate names retained by one Team. */
   readonly maxMembers?: number
   /** Maximum non-deleted tasks retained by one Team. */
@@ -879,6 +886,20 @@ export interface Config {
   readonly maxMessageBytes?: number
   /** Maximum milliseconds for shared operation settlement and for each Team child drain. */
   readonly disposalTimeoutMs?: number
+}
+
+/** One available model; responsibilities belong to teammates rather than model entries. */
+export interface TeamModel {
+  /** Unique alias selected by the Lead when creating a responsibility. */
+  readonly name: string
+  /** Display name in Team settings and attributed replies. */
+  readonly label: string
+  /** Registered LLM provider route. */
+  readonly provider: string
+  /** Exact provider-owned model identifier. */
+  readonly model: string
+  /** User-authored task guidance for model selection. */
+  readonly strengths: string
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-agent-team -->
@@ -901,6 +922,50 @@ export interface Config {
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-api-speech-to-text -->
+
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-browser-control -->
+<a id="deepseek-aidsh-experimental-browser-control"></a>
+
+## `@deepseek-ai/dsh-experimental-browser-control`
+
+- `inject`: `browserUse` · `agents` · `tools` · `systemPrompt`
+- `refs`: `Volatile` (`@deepseek-ai/cordis`)
+- `source`: [`packages/experimental/browser-control/src/index.ts:17`](../packages/experimental/browser-control/src/index.ts)
+
+```ts config-catalog
+/** Saved browser defaults, live approval, and display capture pacing. */
+export interface Config {
+  /** Ask before each browser mutation; changes apply to existing Sessions. */
+  requireInputApproval: Volatile<boolean>
+  /** Installed browser distribution, independent of the user's normal profile. */
+  browserChannel: Volatile<'chrome' | 'chromium' | 'msedge'>
+  /** Viewport width in CSS pixels. */
+  browserViewportWidth: Volatile<number>
+  /** Viewport height in CSS pixels. */
+  browserViewportHeight: Volatile<number>
+  /** Include model-visible images; picture-in-picture remains independent. */
+  screenshots: Volatile<boolean>
+  /** Pointer and drag duration in milliseconds. */
+  cursorMoveDurationMs: Volatile<number>
+  /** Browser scroll duration in milliseconds. */
+  scrollDurationMs: Volatile<number>
+  /** Delay between text characters in milliseconds. */
+  typingDelayMs: Volatile<number>
+  /** Idle lifetime of preview input indicators in milliseconds. */
+  overlayIdleMs: Volatile<number>
+  /** Delay between preview captures in milliseconds. */
+  previewIntervalMs: Volatile<number>
+  /** Delay between captures during input feedback in milliseconds. */
+  previewActiveIntervalMs: Volatile<number>
+  /** Delay between checks without an active target in milliseconds. */
+  previewIdleIntervalMs: Volatile<number>
+  /** Elapsed deadline for input and observation in milliseconds. */
+  operationTimeoutMs: Volatile<number>
+  /** Elapsed deadline for browser startup and navigation in milliseconds. */
+  navigationTimeoutMs: Volatile<number>
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-browser-control -->
 
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp -->
 <a id="deepseek-aidsh-experimental-browser-use-chrome-devtools-mcp"></a>
@@ -1034,24 +1099,22 @@ export interface CotTranslationPreferences {
 
 ## `@deepseek-ai/dsh-experimental-computer-control`
 
-- `inject`: `computerUse` · `browserUse` · `agents` · `tools` · `systemPrompt`
+- `inject`: `computerUse` · `agents` · `tools` · `systemPrompt`
 - `refs`: `Volatile` (`@deepseek-ai/cordis`)
-- `source`: [`packages/experimental/computer-control/src/index.ts:18`](../packages/experimental/computer-control/src/index.ts)
+- `source`: [`packages/experimental/computer-control/src/index.ts:19`](../packages/experimental/computer-control/src/index.ts)
 
 ```ts config-catalog
-/** Saved runtime defaults, live input mode and approval, and live preview pacing. */
+/** Saved runtime defaults, live approval, and live preview pacing. */
 export interface Config {
   /** One-shot input approval; changes apply to the next operation in every Session. */
   requireInputApproval: Volatile<boolean>
-  /** Browser-only background or explicit foreground system input; changes apply to the next operation. */
-  inputMode: Volatile<'foreground' | 'background'>
   /** Foreground shortcut settling interval in milliseconds. */
   keySettleMs: Volatile<number>
   /** Display the glowing pointer and key indicators. */
   showOverlay: Volatile<boolean>
-  /** Pointer glide and browser drag duration in milliseconds. */
+  /** Foreground pointer glide duration in milliseconds. */
   cursorMoveDurationMs: Volatile<number>
-  /** Target duration of a browser wheel gesture in milliseconds. */
+  /** Target duration of foreground scrolling in milliseconds. */
   scrollDurationMs: Volatile<number>
   /** Delay between visible text characters in milliseconds. */
   typingDelayMs: Volatile<number>
@@ -1063,17 +1126,13 @@ export interface Config {
   previewActiveIntervalMs: Volatile<number>
   /** Delay between preview checks when no target exists, in milliseconds. */
   previewIdleIntervalMs: Volatile<number>
-  /** Installed browser distribution. */
-  browserChannel: Volatile<'chrome' | 'chromium' | 'msedge'>
-  /** Hide browser windows. */
-  headless: Volatile<boolean>
   /** Include screenshots; enable for a model that supports image input. */
   screenshots: Volatile<boolean>
   /** Elapsed deadline for input, observation, and discovery in milliseconds. */
   operationTimeoutMs: Volatile<number>
   /** Time allowed for one native accessibility walk, in milliseconds. */
   nativeTreeTimeoutMs: Volatile<number>
-  /** Elapsed deadline for application launch, browser startup, and navigation in milliseconds. */
+  /** Elapsed deadline for application launch in milliseconds. */
   navigationTimeoutMs: Volatile<number>
 }
 ```
@@ -1109,7 +1168,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-experimental-computer-use-unified`
 
 - `inject`: `computerUse` · `browserUse` · `agents` · `tools` · `systemPrompt`
-- `source`: [`packages/experimental/computer-use-unified/src/index.ts:86`](../packages/experimental/computer-use-unified/src/index.ts)
+- `source`: [`packages/experimental/computer-use-unified/src/index.ts:90`](../packages/experimental/computer-use-unified/src/index.ts)
 
 ```ts config-catalog
 /** Optional profile settings resolved by the plugin schema before execution. */
@@ -1143,6 +1202,10 @@ export interface ResolvedConfig {
   previewTimeoutMs: number
   /** Run owned browsers without visible windows. */
   headless: boolean
+  /** CSS viewport width for hidden browser pages; visible windows retain their native dimensions. */
+  browserViewportWidth: number
+  /** CSS viewport height for hidden browser pages; visible windows retain their native dimensions. */
+  browserViewportHeight: number
   /** Installed browser distribution used when no executable path is supplied. */
   browserChannel: 'chrome' | 'chromium' | 'msedge'
   /** Explicit browser executable, overriding the selected distribution. */
@@ -1256,6 +1319,78 @@ export interface InspectorOptions {
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-inspector -->
+
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-mobile-access -->
+<a id="deepseek-aidsh-experimental-mobile-access"></a>
+
+## `@deepseek-ai/dsh-experimental-mobile-access`
+
+- `inject`: `webServer` · `connection` · `typert` · `credentials`
+- `source`: [`packages/experimental/mobile-access/src/index.ts:15`](../packages/experimental/mobile-access/src/index.ts)
+
+```ts config-catalog
+/** Deployment-owned listener, public endpoint, and authentication limits. */
+export interface Config {
+  /** Phone access port; zero requests an available port instead of a stable bookmark. */
+  port?: number
+  /** HTTPS origin of the reverse proxy; configures a loopback-only backend. */
+  publicUrl?: string
+  /** Enable internet access on first startup; subsequent startups respect the saved switch. */
+  autoConnect?: boolean
+  /** Absolute browser-session lifetime; the saved connection link remains valid. */
+  sessionMaxAgeMs?: number
+  /** Maximum simultaneous phone browser sessions. */
+  maxPhoneSessions?: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-mobile-access -->
+
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-model-group-runtime -->
+<a id="deepseek-aidsh-experimental-model-group-runtime"></a>
+
+## `@deepseek-ai/dsh-experimental-model-group-runtime`
+
+- `inject`: `agents` · `sessions` · `sessionProjections` · `sessionPersistence` · `subagents` · `agentTeams` · `commands` · `tools` · `systemPrompt` · `llm`
+- `refs`: `Volatile` (`@deepseek-ai/cordis`)
+- `source`: [`packages/experimental/model-group-runtime/src/index.ts:45`](../packages/experimental/model-group-runtime/src/index.ts)
+
+```ts config-catalog
+/**
+ * Live member defaults follow unused conversations; started conversations retain their routes.
+ */
+export interface Config {
+  /** Execution mode captured by subsequently created conversations. */
+  readonly defaultMode: Volatile<ModelGroupMode>
+  /** Name of the configured model that coordinates new groups. */
+  readonly leader: Volatile<string>
+  /** Exact model routes and editable strengths followed until a conversation starts. */
+  readonly members: Volatile<ModelGroupMember[]>
+  /** Live worker-model limit per group; the leader does not consume a slot. */
+  readonly maxParallel: Volatile<number>
+}
+
+/**
+ * Conversation-local execution mode.
+ */
+export type ModelGroupMode = 'single' | 'multi'
+
+/**
+ * A named exact model route; strengths guide assignment without fixing its role.
+ */
+export interface ModelGroupMember {
+  /** Unique lowercase model alias used in mentions and task assignment. */
+  readonly name: string
+  /** Model name shown in the group roster and public replies. */
+  readonly label: string
+  /** Registered LLM provider route. */
+  readonly provider: string
+  /** Provider-owned exact model identifier. */
+  readonly model: string
+  /** User-authored task strengths used by the leader when choosing models. */
+  readonly strengths: string
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-model-group-runtime -->
 
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-ptc-runtime-python -->
 <a id="deepseek-aidsh-experimental-ptc-runtime-python"></a>
@@ -1441,7 +1576,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-experimental-tool-agent-team`
 
 - `inject`: `agents` · `agentTeams` · `tools` · `systemPrompt`
-- `source`: [`packages/experimental/tool-agent-team/src/index.ts:17`](../packages/experimental/tool-agent-team/src/index.ts)
+- `source`: [`packages/experimental/tool-agent-team/src/index.ts:18`](../packages/experimental/tool-agent-team/src/index.ts)
 
 ```ts config-catalog
 /** Tool routing configuration. */
@@ -1845,7 +1980,7 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-host-webserver`
 
-- `source`: [`packages/host/webserver/src/index.ts:97`](../packages/host/webserver/src/index.ts)
+- `source`: [`packages/host/webserver/src/index.ts:105`](../packages/host/webserver/src/index.ts)
 
 ```ts config-catalog
 /** Web server listen, TLS, and response-compression config. */
@@ -1952,6 +2087,8 @@ export interface Config extends Omit<ProtocolConfig, 'models'>, ModelListingConf
 ```ts config-catalog
 /** Messages configuration with a per-request API-key reference. */
 export interface Config extends ProtocolConfig, ModelListingConfig {
+  /** Whether this provider is available for model selection and requests. */
+  enabled: Volatile<boolean>
   /** Credential reference resolved per request; defaults to DEEPSEEK_API_KEY. */
   apiKeyEnv: Volatile<string>
 }
@@ -2448,6 +2585,23 @@ export interface ReconnectConfig {
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-mcp-client -->
+
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-mcp-manager -->
+<a id="deepseek-aidsh-mcp-manager"></a>
+
+## `@deepseek-ai/dsh-mcp-manager`
+
+- `inject`: `loader` · `mcpResources`
+- `source`: [`packages/mcp/mcp-manager/src/index.ts:23`](../packages/mcp/mcp-manager/src/index.ts)
+
+```ts config-catalog
+/** Interval between connection snapshots while the management page is open. */
+export interface Config {
+  /** Interval between connection snapshots while the management page is open. */
+  readonly refreshIntervalMs: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-mcp-manager -->
 
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-message-feedback -->
 <a id="deepseek-aidsh-message-feedback"></a>
@@ -4891,6 +5045,7 @@ export interface Config {
 | `@deepseek-ai/dsh-client-ui-input-trigger` | — | [`packages/client/ui-input-trigger/src/index.ts`](../packages/client/ui-input-trigger/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-jobs` | — | [`packages/client/ui-jobs/src/index.ts`](../packages/client/ui-jobs/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-layout` | — | [`packages/client/ui-layout/src/index.ts`](../packages/client/ui-layout/src/index.ts) |
+| `@deepseek-ai/dsh-client-ui-mcp` | — | [`packages/client/ui-mcp/src/index.ts`](../packages/client/ui-mcp/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-message-feedback` | — | [`packages/client/ui-message-feedback/src/index.ts`](../packages/client/ui-message-feedback/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-model-selection` | — | [`packages/client/ui-model-selection/src/index.ts`](../packages/client/ui-model-selection/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-open-in-app` | — | [`packages/client/ui-open-in-app/src/index.ts`](../packages/client/ui-open-in-app/src/index.ts) |
@@ -4940,7 +5095,9 @@ export interface Config {
 | `@deepseek-ai/dsh-experimental-auto-review` | `approval` · `llm` · `permissionPresets` · `sessions` · `tools` · `workingDirectory` | [`packages/experimental/auto-review/src/index.ts`](../packages/experimental/auto-review/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-agent-team` | — | [`packages/experimental/client-ui-agent-team/src/index.ts`](../packages/experimental/client-ui-agent-team/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-claude-code-mods` | — | [`packages/experimental/client-ui-claude-code-mods/src/index.ts`](../packages/experimental/client-ui-claude-code-mods/src/index.ts) |
+| `@deepseek-ai/dsh-experimental-client-ui-model-group` | — | [`packages/experimental/client-ui-model-group/src/index.ts`](../packages/experimental/client-ui-model-group/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-voice-input` | — | [`packages/experimental/client-ui-voice-input/src/index.ts`](../packages/experimental/client-ui-voice-input/src/index.ts) |
+| `@deepseek-ai/dsh-experimental-computer-preview` | — | [`packages/experimental/computer-preview/src/index.ts`](../packages/experimental/computer-preview/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-computer-use-cua-driver-native` | `computerUse` · `tools` · `systemPrompt` | [`packages/experimental/computer-use-cua-driver-native/src/index.ts`](../packages/experimental/computer-use-cua-driver-native/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-session-inspector` | — | [`packages/experimental/session-inspector/src/index.ts`](../packages/experimental/session-inspector/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-tool-worktree` | `tools` · `worktrees` | [`packages/experimental/tool-worktree/src/index.ts`](../packages/experimental/tool-worktree/src/index.ts) |
@@ -5036,6 +5193,7 @@ export interface Config {
 | `@deepseek-ai/dsh-experimental-cot-translation-bundle` | — | [`packages/experimental/cot-translation-bundle/src/index.ts`](../packages/experimental/cot-translation-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-inspector-profile` | — | [`packages/experimental/inspector-profile/src/index.ts`](../packages/experimental/inspector-profile/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-liveshare-protocol` | — | [`packages/experimental/liveshare-protocol/src/index.ts`](../packages/experimental/liveshare-protocol/src/index.ts) |
+| `@deepseek-ai/dsh-experimental-model-group` | — | [`packages/experimental/model-group/src/index.ts`](../packages/experimental/model-group/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-plugin-market-bundle` | — | [`packages/experimental/plugin-market-bundle/src/index.ts`](../packages/experimental/plugin-market-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-ralph-bundle` | — | [`packages/experimental/ralph-bundle/src/index.ts`](../packages/experimental/ralph-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-session-search` | — | [`packages/experimental/session-search/src/index.ts`](../packages/experimental/session-search/src/index.ts) |

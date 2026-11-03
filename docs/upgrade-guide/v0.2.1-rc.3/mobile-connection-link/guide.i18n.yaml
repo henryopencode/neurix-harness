@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.1-rc.3/mobile-connection-link/guide.md
+/:
+  en: 8d52b937fa5684be
+  zh: 886ded3a893a49e8
+/phone-connection-uses-a-private-link:
+  en: 209e3f4011ccc5b6
+  zh: 603ccbb40e652d7c
+/phone-connection-uses-a-private-link/change:
+  en: c9c798aef60ee712
+  zh: 5b0df4ca473dff98
+/phone-connection-uses-a-private-link/migration:
+  en: df26c68c5d06fe03
+  zh: 19e916707b9d3176

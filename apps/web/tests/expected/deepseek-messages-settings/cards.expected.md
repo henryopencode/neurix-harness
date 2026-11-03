@@ -5,6 +5,7 @@
     - button "模型"
     - button "内置插件"
     - button "Agent 预设"
+    - button "关于"
   - button "打开配置文件"
   - button "关闭"
   - heading "模型" [level=2]
@@ -14,6 +15,7 @@
       - text: DeepSeek
       - img "API 密钥已配置"
       - button "编辑 DeepSeek (deepseek-official)": 编辑
+      - button "删除 DeepSeek (deepseek-official)": 删除
       - text: DeepSeek deepseek-official API 密钥
       - button "认证说明": "?"
       - textbox "API 密钥":

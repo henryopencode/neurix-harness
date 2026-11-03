@@ -36,7 +36,8 @@ export function EntryMenuContent({
   entries, onOpen, region, onDismiss, usePluginNavigation, browsePlugins, createPlugin, t,
 }: EntryMenuContentProps) {
   const moreEntries = region === 'conversation' ? entries : []
-  const browsable = usePluginNavigation(present => present)
+  const pluginNavigationPresent = usePluginNavigation(present => present)
+  const browsable = region !== 'sidebar' && pluginNavigationPresent
   return <>
     {moreEntries.map(entry => <MenuItemButton key={entry.id} current={entry.active === true}
       onSelect={() => { onDismiss(); onOpen(entry.id) }}>

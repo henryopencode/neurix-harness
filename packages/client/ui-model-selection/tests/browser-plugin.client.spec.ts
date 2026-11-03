@@ -206,6 +206,24 @@ async function bench(locale: 'zh' | 'en' = 'zh') {
 const projection = (id: string) => ({ sessionId: sid(id) })
 
 describe('ui-model-selection dual entry', () => {
+  it('shares provider removals and explicit refreshes with settings model pickers', async () => {
+    const b = await bench()
+    try {
+      b.mint('s1')
+      const source = b.ctx.modelDirectories.catalogSource()
+      expect(b.ctx.modelDirectories.catalogSource()).toBe(source)
+      await b.popup().options(projection('s1'), new AbortController().signal)
+      expect(source.getSnapshot().value?.groups).toEqual(GROUPS)
+      b.setGroups([GROUPS[1]!])
+      b.remote.emit('settings/document-updated', ['llm-deepseek', 1])
+      await vi.waitFor(() => { expect(source.getSnapshot().value?.groups).toEqual([GROUPS[1]!]) })
+      const options = await b.popup().options(projection('s1'), new AbortController().signal)
+      expect(options.map(option => option.label)).toEqual(['External Flash'])
+      b.setGroups(GROUPS)
+      b.ctx.modelDirectories.refreshCatalog()
+      await vi.waitFor(() => { expect(source.getSnapshot()).toMatchObject({ status: 'ready', value: { groups: GROUPS } }) })
+    } finally { await b.ctx.fiber.dispose() }
+  })
   it('carries writer contention to the model seat and localizes the command failure', async () => {
     const b = await bench()
     b.mint('owned')
@@ -244,7 +262,7 @@ describe('ui-model-selection dual entry', () => {
       : { placeholder: 'Search models…', empty: 'No models available.', noResults: 'No matching models.' })
   })
 
-  it('orders popup provider groups account-first while retaining third-party catalog order', async () => {
+  it('orders popup provider groups by id without preferring a vendor', async () => {
     const b = await bench()
     try {
       b.setGroups([

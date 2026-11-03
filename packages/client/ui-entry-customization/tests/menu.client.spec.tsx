@@ -44,7 +44,8 @@ function content(overrides: Partial<ContentProps> = {}) {
 }
 
 describe('More menu rows', () => {
-  it.each(['sidebar', 'rightbar'] as const)('shows only discovery and creation in %s regardless of entries', (region) => {
+  it('shows discovery and creation in the rightbar regardless of entries', () => {
+    const region = 'rightbar'
     const b = content({ region, entries: [
       { id: 'notes', label: 'Notes', pinned: true, active: true },
       { id: 'tasks', label: 'Tasks', pinned: false },
@@ -59,6 +60,16 @@ describe('More menu rows', () => {
     expect(b.onDismiss.mock.invocationCallOrder[1]).toBeLessThan(b.createPlugin.mock.invocationCallOrder[0]!)
     expect(b.onOpen).not.toHaveBeenCalled()
     expect(b.onPinnedChange).not.toHaveBeenCalled()
+  })
+
+  it.each([true, false])('keeps the sidebar menu limited to creation with plugin navigation present=%s', (present) => {
+    const b = content({ usePluginNavigation: select => select(present) })
+    expect(b.view.getAllByRole('menuitem').map(row => row.textContent)).toEqual(['Create your plugin'])
+    expect(b.view.queryByRole('separator')).toBeNull()
+    fireEvent.click(b.view.getByRole('menuitem', { name: 'Create your plugin' }))
+    expect(b.createPlugin).toHaveBeenCalledExactlyOnceWith()
+    expect(b.browsePlugins).not.toHaveBeenCalled()
+    expect(b.onDismiss.mock.invocationCallOrder[0]).toBeLessThan(b.createPlugin.mock.invocationCallOrder[0]!)
   })
 
   it.each([true, false])('opens folded Views and marks the active View with plugin navigation present=%s', (browsable) => {
@@ -149,11 +160,11 @@ async function bench(
 describe('More menu registrations', () => {
   it('shows plugin discovery only while the Plugins page navigation is present', async () => {
     const b = await bench('en', { navigation: false })
-    const sidebar = () => within(b.view.getByRole('menu', { name: 'sidebar.panellist.actions' }))
-    expect(sidebar().queryByRole('menuitem', { name: 'Browse other plugins' })).toBeNull()
-    expect(sidebar().getByRole('menuitem', { name: 'Create your plugin' })).toBeTruthy()
-    expect(sidebar().queryByRole('separator')).toBeNull()
-    const injected = b.runtime.slots.entries('sidebar.panellist.actions')[0]!.inject!() as { browsePlugins: () => void }
+    const menu = () => within(b.view.getByRole('menu', { name: 'sidebar.right.tab.guide.actions' }))
+    expect(menu().queryByRole('menuitem', { name: 'Browse other plugins' })).toBeNull()
+    expect(menu().getByRole('menuitem', { name: 'Create your plugin' })).toBeTruthy()
+    expect(menu().queryByRole('separator')).toBeNull()
+    const injected = b.runtime.slots.entries('sidebar.right.tab.guide.actions')[0]!.inject!() as { browsePlugins: () => void }
     expect(() => { injected.browsePlugins() }).not.toThrow()
 
     const navigation = await b.runtime.mount({
@@ -161,12 +172,12 @@ describe('More menu registrations', () => {
       apply(ctx: Context) { ctx.provide('pluginNavigation', { openList: b.openList } as never) },
     })
     await act(async () => { await Promise.resolve() })
-    fireEvent.click(sidebar().getByRole('menuitem', { name: 'Browse other plugins' }))
+    fireEvent.click(menu().getByRole('menuitem', { name: 'Browse other plugins' }))
     expect(b.openList).toHaveBeenCalledExactlyOnceWith()
 
     await navigation.dispose()
     await act(async () => { await Promise.resolve() })
-    expect(sidebar().queryByRole('menuitem', { name: 'Browse other plugins' })).toBeNull()
+    expect(menu().queryByRole('menuitem', { name: 'Browse other plugins' })).toBeNull()
   })
 
   it('registers one row set per region and removes all of them when the plugin unloads', async () => {
@@ -174,10 +185,10 @@ describe('More menu registrations', () => {
     for (const seat of SEATS) {
       expect(b.runtime.slots.entries(seat).map(entry => entry.options.id)).toEqual(['entry-customization'])
       expect(within(b.view.getByRole('menu', { name: seat })).getAllByRole('menuitem').map(row => row.textContent))
-        .toEqual(['Browse other plugins', 'Create your plugin'])
+        .toEqual(seat === 'sidebar.panellist.actions' ? ['Create your plugin'] : ['Browse other plugins', 'Create your plugin'])
     }
-    const sidebar = within(b.view.getByRole('menu', { name: 'sidebar.panellist.actions' }))
-    fireEvent.click(sidebar.getByRole('menuitem', { name: 'Browse other plugins' }))
+    const rightbar = within(b.view.getByRole('menu', { name: 'sidebar.right.tab.guide.actions' }))
+    fireEvent.click(rightbar.getByRole('menuitem', { name: 'Browse other plugins' }))
     expect(b.openList).toHaveBeenCalledExactlyOnceWith()
     await b.plugin.dispose()
     for (const seat of SEATS) {
@@ -206,16 +217,18 @@ describe('More menu registrations', () => {
     ['sidebar.panellist.actions', 'sidebar'],
     ['conversation.session.header.views.actions', 'conversation'],
     ['sidebar.right.tab.guide.actions', 'rightbar'],
-  ] as const)('reports both footer actions of %s as the %s region before acting', async (seat, region) => {
+  ] as const)('reports available footer actions of %s as the %s region before acting', async (seat, region) => {
     const b = await bench()
     const menu = within(b.view.getByRole('menu', { name: seat }))
-    fireEvent.click(menu.getByRole('menuitem', { name: 'Browse other plugins' }))
-    expect(b.track).toHaveBeenCalledExactlyOnceWith('more_menu_item_click', { region, action: 'browse_plugins' })
-    expect(b.track.mock.invocationCallOrder[0]).toBeLessThan(b.openList.mock.invocationCallOrder[0]!)
+    if (region !== 'sidebar') {
+      fireEvent.click(menu.getByRole('menuitem', { name: 'Browse other plugins' }))
+      expect(b.track).toHaveBeenCalledExactlyOnceWith('more_menu_item_click', { region, action: 'browse_plugins' })
+      expect(b.track.mock.invocationCallOrder[0]).toBeLessThan(b.openList.mock.invocationCallOrder[0]!)
+    }
     fireEvent.click(menu.getByRole('menuitem', { name: 'Create your plugin' }))
     expect(b.track).toHaveBeenLastCalledWith('more_menu_item_click', { region, action: 'create_plugin' })
-    expect(b.track.mock.invocationCallOrder[1]).toBeLessThan(b.startSession.mock.invocationCallOrder[0]!)
-    expect(b.track).toHaveBeenCalledTimes(2)
+    expect(b.track.mock.invocationCallOrder.at(-1)).toBeLessThan(b.startSession.mock.invocationCallOrder[0]!)
+    expect(b.track).toHaveBeenCalledTimes(region === 'sidebar' ? 1 : 2)
   })
 
   it('keeps both footer actions working without the analytics service', async () => {

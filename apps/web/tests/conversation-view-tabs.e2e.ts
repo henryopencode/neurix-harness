@@ -1,6 +1,4 @@
-// Browser hit testing for the conversation view tabs: each tab accepts presses
-// beyond its label, and the selected tab's bar stays above the Trajectory
-// view's sticky toolbar where the two meet.
+/** Conversation view buttons retain compact spacing, hit targets, and hover feedback. */
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
@@ -19,14 +17,15 @@ const SEED_ID = 'conversation-view-tabs-web-e2e'
 interface TabProbe {
   readonly label: { left: number; top: number; right: number; bottom: number }
   readonly button: { left: number; top: number; right: number; bottom: number }
-  readonly ownsAboveLabel: boolean
-  readonly ownsBesideLabel: boolean
-  readonly ownsBarOverhang: boolean
+  readonly headerHeight: number
+  readonly titleBottom: number
+  readonly titleLeft: number
+  readonly ownsTopPadding: boolean
+  readonly ownsInlinePadding: boolean
 }
 
 /**
- * Probe one tab: the run above and beside its label, and the bar's lowest
- * half pixel, below the button box.
+ * Measure one tab's press target and its clearance from the Session title.
  * @param page - the page under test.
  * @param name - the tab's accessible name.
  * @returns the tab's rectangles and probe owners.
@@ -37,14 +36,18 @@ async function probeTab(page: Page, name: string): Promise<TabProbe> {
     range.selectNodeContents(tab)
     const label = range.getBoundingClientRect()
     const button = tab.getBoundingClientRect()
+    const header = tab.closest('header')!
+    const title = header.querySelector('nav')!.getBoundingClientRect()
     const owns = (x: number, y: number): boolean => document.elementFromPoint(x, y)?.closest('[role="tab"]') === tab
     const centerX = (label.left + label.right) / 2
     return {
       label: { left: label.left, top: label.top, right: label.right, bottom: label.bottom },
       button: { left: button.left, top: button.top, right: button.right, bottom: button.bottom },
-      ownsAboveLabel: owns(centerX, label.top - 8),
-      ownsBesideLabel: owns(label.left - 8, (label.top + label.bottom) / 2),
-      ownsBarOverhang: owns(centerX, button.bottom + 0.5),
+      headerHeight: header.getBoundingClientRect().height,
+      titleBottom: title.bottom,
+      titleLeft: title.left,
+      ownsTopPadding: owns(centerX, button.top + 2),
+      ownsInlinePadding: owns(button.left + 2, (label.top + label.bottom) / 2),
     }
   })
 }
@@ -86,25 +89,56 @@ describe('web e2e: conversation view tabs', () => {
     await scaffold?.close()
   })
 
-  it('takes presses above and beside the label', async () => {
+  it('aligns compact buttons below the title without making the header taller', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-conversation-view-tabs-target'))
     const chat = await probeTab(page, 'Chat')
-    expect(chat.button.top).toBeLessThan(chat.label.top - 8)
-    expect(chat.button.left).toBeLessThan(chat.label.left - 8)
-    expect(chat.ownsAboveLabel).toBe(true)
-    expect(chat.ownsBesideLabel).toBe(true)
+    const trajectory = await probeTab(page, 'Trajectory')
+    const more = (await page.getByRole('button', { name: 'More conversation views', exact: true }).boundingBox())!
+    expect(chat.headerHeight).toBe(84)
+    expect(chat.button.bottom - chat.button.top).toBe(28)
+    expect(chat.button.left).toBe(chat.titleLeft)
+    expect(chat.button.top - chat.titleBottom).toBeGreaterThanOrEqual(6)
+    expect(chat.button.top - chat.titleBottom).toBeLessThanOrEqual(10)
+    expect(trajectory.button.top).toBe(chat.button.top)
+    expect(trajectory.button.bottom).toBe(chat.button.bottom)
+    expect(more.y).toBe(chat.button.top)
+    expect(more.height).toBe(28)
+    expect(chat.ownsTopPadding).toBe(true)
+    expect(chat.ownsInlinePadding).toBe(true)
     expect(tripwire.pageErrors).toEqual([])
   })
 
-  it('keeps the selected bar above the Trajectory toolbar', async () => {
+  it('keeps the Trajectory toolbar below the view buttons', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-conversation-view-tabs-trajectory'))
     await page.getByRole('tab', { name: 'Trajectory', exact: true }).click()
     const toolbar = page.getByRole('toolbar', { name: 'Trajectory toolbar' })
     await toolbar.waitFor({ timeout: 30_000 })
     const trajectory = await probeTab(page, 'Trajectory')
-    // The toolbar must start within the bar's overhang, or the probe cannot fail.
-    expect((await toolbar.boundingBox())!.y).toBeLessThanOrEqual(trajectory.button.bottom + 1)
-    expect(trajectory.ownsBarOverhang).toBe(true)
+    expect((await toolbar.boundingBox())!.y).toBeGreaterThan(trajectory.button.bottom)
+    expect(await page.getByRole('tab', { name: 'Trajectory', exact: true }).getAttribute('aria-selected')).toBe('true')
     expect(tripwire.pageErrors).toEqual([])
+  })
+
+  it.each(['light', 'dark'] as const)('shows hover feedback without moving controls in %s mode', async (colorScheme) => {
+    try {
+      await page.emulateMedia({ colorScheme })
+      await expect.poll(() => page.locator('body').evaluate(body => body.hasAttribute('data-ds-dark-theme')))
+        .toBe(colorScheme === 'dark')
+      const chat = page.getByRole('tab', { name: 'Chat', exact: true })
+      const more = page.getByRole('button', { name: 'More conversation views', exact: true })
+      for (const control of [chat, more]) {
+        await page.mouse.move(0, 0)
+        const before = await control.evaluate(element => getComputedStyle(element).backgroundColor)
+        const rect = await control.boundingBox()
+        await control.hover()
+        await expect.poll(() => control.evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe(before)
+        expect(await control.boundingBox()).toEqual(rect)
+        await expect.poll(() => page.getByRole('tooltip').count()).toBe(control === more ? 1 : 0)
+      }
+      expect(tripwire.pageErrors).toEqual([])
+    } finally {
+      await page.mouse.move(0, 0)
+      await page.emulateMedia({ colorScheme: null })
+    }
   })
 })

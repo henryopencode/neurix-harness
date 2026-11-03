@@ -184,7 +184,7 @@ export class MacOverlay {
       if (signal.aborted) signal.throwIfAborted()
       if (error instanceof ComputerError) throw error
       throw new ComputerError('OVERLAY_UNAVAILABLE', error instanceof Error ? error.message : String(error), 'possible',
-        'Observe the target before continuing. Check macOS Accessibility permission or select background input in Computer Control settings.')
+        'Observe the target and check macOS Accessibility permission. Stop input if system input remains unavailable.')
     } finally { signal.removeEventListener('abort', abort) }
   }
 

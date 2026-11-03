@@ -82,6 +82,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   browserUse: 'browser-use.md',
   computerUse: 'computer-use.md',
   computerPreview: 'computer-use.md',
+  browserPreview: 'computer-use.md',
   cuaAccess: 'computer-use.md',
   commands: 'commands.md',
   compaction: 'compaction.md',
@@ -137,6 +138,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   jobController: 'jobs.md',
   sessionTelemetry: 'session-telemetry.md',
   agentTeams: 'agent-team.md',
+  modelGroups: 'agent-team.md',
   claudeCodeMods: 'claude-code-mods.md',
   tokenMeter: 'token-meter.md',
   toolResultPruner: 'compaction.md',
@@ -175,6 +177,9 @@ export const SERVICE_PAGE: Record<string, string> = {
  * to a model as `cordis_runtime_inspect what:"client"`).
  */
 export const SERVICE_WALK_EXEMPTIONS: Record<string, string> = {
+  computerPreviewUi: 'Client-only display renderer; packages/experimental/computer-preview/README.md owns source registration and panel lifetime.',
+  mobileAccess: 'Optional phone connection Remote; packages/experimental/mobile-access/README.md owns its lifecycle and deployment.',
+  phoneSessions: 'Optional link-authenticated phone sessions; packages/experimental/mobile-access/README.md owns browser authorization and revocation.',
   invocation: 'not a service: per-call accessor (RemoteInvocation | undefined) the Gateway derives for each Remote call — packages/api/gateway/README.md owns the contract',
   webTerminals: 'client-side terminal view models — packages/api/terminal-controller/README.md owns the API',
   appReady: 'not a service: launcher-provided successful-startup signal — packages/boot/cmdline/README.md owns the launcher contract',
@@ -291,6 +296,7 @@ export const EVENT_WALK_EXEMPTIONS: Record<string, string> = {
  * appear on more than one page.
  */
 export const LINK_MAP: Readonly<Record<string, string>> = {
+  McpConnectionSnapshot: 'mcp.md',
   Principal: 'typert.md',
   PrincipalMap: 'typert.md',
   RemoteAccessResource: 'typert.md',
@@ -339,6 +345,7 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   BrowserUseProviderName: 'browser-use.md',
   ComputerUseProviderName: 'computer-use.md',
   ComputerPreviewSnapshot: 'computer-use.md',
+  BrowserPreviewSnapshot: 'computer-use.md',
   CuaApplicationId: 'computer-use.md',
   CuaApplicationGrant: 'computer-use.md',
   CuaPermissionProcess: 'computer-use.md',
@@ -736,7 +743,14 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   TeamMembership: 'agent-team.md',
   TeamTaskId: 'agent-team.md',
   TeamTaskView: 'agent-team.md',
+  TeamModelSelection: 'agent-team.md',
   TeamProjection: 'agent-team.md',
+  ModelGroupMode: 'agent-team.md',
+  ModelSelectionGuard: 'core.md',
+  ModelGroupMember: 'agent-team.md',
+  ModelGroupSnapshot: 'agent-team.md',
+  ModelGroupPost: 'agent-team.md',
+  ModelGroupDispatchReceipt: 'agent-team.md',
   TeamMemberProjection: 'agent-team.md',
   TeamWaitResult: 'agent-team.md',
   UpdateTeamTaskRequest: 'agent-team.md',
@@ -823,6 +837,8 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   PresetOption: 'permission-presets.md',
   PresetSpec: 'permission-presets.md',
   WebRoute: 'web-server.md',
+  WebListener: 'web-server.md',
+  ConnectionBrowserAuth: 'web-server.md',
   WebResourceRoute: 'web-server.md',
   IndexInjection: 'web-server.md',
   StorageBackend: 'storage.md',

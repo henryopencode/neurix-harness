@@ -25,6 +25,8 @@ This package lets the model create named teammates, send them messages, inspect 
 <a id="use-this-package"></a>
 ## Use this package
 
+When Team model candidates are configured, `spawn_teammate` requires `model` to select a candidate alias for its `name` and `description` responsibility. The Lead receives candidates and strengths in logged runtime context. `send_message`, shared tasks, and waits retain their existing Team semantics. Human commands use `/team tell <member-or-model> <message>` and `/team stop [member]`; candidate aliases can be addressed directly without creating a second collaboration mode.
+
 Add this package on top of `@deepseek-ai/dsh-experimental-agent-team` when the model should run a team through tools. Once mounted, every team member — the Lead and each teammate — gets the same nine tools plus the same coordination policy. Each member receives its current role and name through required runtime context; `spawn_teammate` sends the initial task unchanged.
 
 ### When to choose it

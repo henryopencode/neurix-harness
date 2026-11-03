@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "MCP server manager",
+    "description": "Persist global MCP server settings and expose connection states and registered tools."
+  }
+}

@@ -409,11 +409,17 @@ describe('Conversation registries', () => {
   })
 
   it('removes Event, fallback, and view contributions with their caller fiber', async () => {
-    const { ctx, events, views } = await bootRegistries()
+    const { ctx, events, views, uiConversation } = await bootRegistries()
+    const stop = vi.fn().mockResolvedValue(undefined)
+    const offStop = vi.fn()
     const feature = ctx.inject(['uiConversation'], (featureCtx) => {
       featureCtx.uiConversation.events.register(eventDefinition('message'))
       featureCtx.uiConversation.events.registerFallback(eventDefinition('unknown'))
       featureCtx.uiConversation.views.register(viewDefinition('chat'))
+      featureCtx.uiConversation.stops.register({
+        id: 'test', owns: () => true, active: () => true,
+        subscribe: () => offStop, stop,
+      })
     })
     await feature.await()
 
@@ -421,12 +427,18 @@ describe('Conversation registries', () => {
     expect(events.fallbackEntry()).toBeDefined()
     expect(events.forEvent('turn/start').size).toBe(1)
     expect(views.entries()).toHaveLength(1)
+    expect(uiConversation.stops.activity(SESSION_ID).getSnapshot()).toBe(true)
+    await uiConversation.stops.cancel(SESSION_ID)
+    expect(stop).toHaveBeenCalledWith(SESSION_ID)
 
     await feature.dispose()
     expect(events.entries()).toEqual([])
     expect(events.fallbackEntry()).toBeUndefined()
     expect(events.forEvent('turn/start').size).toBe(0)
     expect(views.entries()).toEqual([])
+    expect(uiConversation.stops.activity(SESSION_ID).getSnapshot()).toBe(false)
+    expect(uiConversation.stops.cancel(SESSION_ID)).toBeUndefined()
+    expect(offStop).toHaveBeenCalledOnce()
   })
 
   it('coalesces one turn of registry changes into one rebuild per resident Conversation', async () => {

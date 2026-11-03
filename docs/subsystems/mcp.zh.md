@@ -23,6 +23,8 @@
 
 MCP 服务器需要主动配置。在目标 Cordis 作用域中，为每台服务器配置一个 `@deepseek-ai/dsh-mcp-client` 条目。每个随附 profile 都提供[工具注册表](tools.zh.md)，并统一挂载共享资源服务一次；用户只需配置客户端条目。调用方没有可见的已配置服务器时，在 native 或 PTC 模式下都不会获得 MCP 提示词文本或工具。
 
+在 Web 或 Desktop 侧栏打开 **MCP**，可查看全局连接、浏览工具、重新连接并管理本机的服务器配置。[MCP 管理页](../../packages/client/ui-mcp/README.zh.md)负责配置编辑、认证信息处理及失败恢复。
+
 | 选择 | 配置维护位置 |
 |---|---|
 | 服务器身份、本地进程或 HTTP 端点、凭据和进程环境 | [客户端配置](../../packages/mcp/mcp-client/README.zh.md#use-this-package) |
@@ -81,8 +83,20 @@ type McpResourceRequest =
 ```
 
 ```ts type-equiv
+/** Connection-owned state and registered tools, without server credentials. */
+interface McpConnectionSnapshot {
+  readonly state: 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
+  readonly tools: readonly { readonly name: string; readonly description: string }[]
+}
+```
+
+```ts type-equiv
 /** One configured server's resource access, owned by its MCP connection plugin. */
 interface McpResourceProvider {
+  /** Read connection state without sending a protocol request.
+   * @returns current connection phase and registered tools.
+   */
+  inspect?(): McpConnectionSnapshot
   /**
    * Run an operation against one live connection generation.
    * @param request - MCP resource method and parameters.
@@ -133,6 +147,13 @@ Scoped resource access plus three tools shared by configured MCP servers.
  * @returns the effect disposer for this exact registration.
  */
 register(server: string, provider: McpResourceProvider): () => void
+
+/**
+ * Inspect one server visible in the caller's scope without opening a connection.
+ * @param server - configured MCP namespace.
+ * @returns connection-owned state, or null when no inspecting provider is registered.
+ */
+inspect(server: string): McpConnectionSnapshot | null
 ```
 
 Source: [`packages/mcp/mcp-resources/src/index.ts`](../../packages/mcp/mcp-resources/src/index.ts)

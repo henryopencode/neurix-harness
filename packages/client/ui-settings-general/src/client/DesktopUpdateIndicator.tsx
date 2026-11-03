@@ -1,6 +1,6 @@
 /** Optional Electron status presentation; the native shell owns actions and Web owns visible copy. */
-import { IconDownloadOutlineRegular, IconLoadingOutlineRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import { IconDownloadOutlineRegular, IconLoadingOutlineRegular, IconRefreshOutlineRegular, IconStopFillRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { HostObservable, InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import css from './DesktopUpdateIndicator.module.css'
 import type { DesktopUpdateFailureKind, DesktopUpdatePresentation, DesktopUpdateView } from '../types.ts'
 import type { SettingsRootInjected } from './shell-contract.ts'
@@ -15,14 +15,17 @@ function updateCopy(state: DesktopUpdatePresentation, t: SettingsTranslate): { l
   const labels: Readonly<Record<DesktopUpdatePresentation['phase'], string>> = {
     idle: '',
     checking: t('desktop.update.checking'),
-    available: t('desktop.update.available'),
+    available: t('desktop.update.download'),
     downloading: t('desktop.update.progress', { percent: state.percent ?? 0 }),
     verifying: t('desktop.update.verifying'),
     installing: t('desktop.update.installing'),
-    ready: t('desktop.update.ready'),
+    ready: t(state.installMode === 'installer' ? 'desktop.update.openInstaller' : 'desktop.update.ready'),
     error: t('desktop.update.retry'),
   }
   const label = labels[state.phase]
+  if (state.phase === 'ready' && state.installMode === 'installer') {
+    return { label, detail: t('desktop.update.installerDetail', { version: state.version ?? '' }) }
+  }
   if (state.phase === 'checking' || state.phase === 'verifying' || state.phase === 'installing') {
     return { label, detail: state.version ?? label }
   }
@@ -50,34 +53,60 @@ function updateCopy(state: DesktopUpdatePresentation, t: SettingsTranslate): { l
 }
 
 /**
- * Render update status with connection-indicator geometry and brand-blue labels, including retries.
- * @param props - Connection priority, sidebar width, and localized bridge-failure copy.
- * @returns Desktop-only status beside the account button, or nothing in browsers.
+ * Render a rail action with determinate transfer progress and an explicit stop action.
+ * @param props - Localized carrier state and shell-owned actions; wide is retained for existing callers.
+ * @returns An icon button above Settings, or nothing without a reported update.
  */
-export function DesktopUpdateIndicator({ wide, hidden, t, view, onOpen }: {
+export function DesktopUpdateIndicator({ hidden, t, view, onOpen, onStop }: {
   wide: boolean
   hidden: boolean
   t: SettingsTranslate
   view: DesktopUpdateView
   onOpen: () => void
+  onStop?: () => void
 }) {
   const { presentation: state, failed, opening } = view
-  if (!wide || hidden || (!failed && (state === undefined || state.phase === 'idle'))) return null
+  if (hidden || (!failed && (state === undefined || state.phase === 'idle'))) return null
   const retryLabel = t('desktop.update.retry')
   const copy = state === undefined ? { label: retryLabel, detail: retryLabel } : updateCopy(state, t)
-  const label = failed ? retryLabel : copy.label
+  const canStop = state?.phase === 'downloading' && state.canCancel === true && onStop !== undefined
+  const label = canStop ? t('desktop.update.stop') : failed ? retryLabel : copy.label
   const error = failed || state?.phase === 'error'
-  const busy = opening || (state !== undefined && BUSY_PHASES.has(state.phase))
-  return <Tooltip label={failed ? retryLabel : copy.detail} side="top">
+  const busy = !canStop && (opening || (state !== undefined && BUSY_PHASES.has(state.phase)))
+  const percent = Math.min(100, Math.max(0, state?.percent ?? 0))
+  return <Tooltip label={canStop ? `${failed ? t('desktop.update.cancelFailed') : copy.detail}\n${label}` : failed ? retryLabel : copy.detail} side="right">
     <button type="button" className={css.indicator}
-      aria-label={label} aria-disabled={busy} onClick={() => { if (!busy) onOpen() }}>
+      aria-label={label} aria-disabled={busy} onClick={() => { if (!busy) { if (canStop) onStop(); else onOpen() } }}>
+      {state?.phase === 'downloading' && <svg className={css.progress} viewBox="0 0 36 36"
+        role="progressbar" aria-label={t('desktop.update.progress', { percent })} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
+        <circle className={css.track} cx="18" cy="18" r="15" />
+        <circle cx="18" cy="18" r="15" pathLength="100" strokeDasharray="100" strokeDashoffset={100 - percent} />
+      </svg>}
       <span className={css.icon} aria-hidden="true">
-        {error ? <span className={css.errorDot} />
-          : busy ? <IconLoadingOutlineRegular className={css.spinner} size={14} /> : <IconDownloadOutlineRegular size={14} />}
+        {canStop ? <IconStopFillRegular size={14} />
+          : error ? <IconRefreshOutlineRegular size={18} />
+            : busy ? <IconLoadingOutlineRegular className={css.spinner} size={18} />
+              : state?.phase === 'ready' && state.installMode !== 'installer' ? <IconRefreshOutlineRegular size={18} />
+                : <IconDownloadOutlineRegular size={18} />}
       </span>
-      <span>{label}</span>
     </button>
   </Tooltip>
+}
+
+type FooterInjected = {
+  open: () => void
+  stop: () => void
+  hooks: { desktopUpdate: HostObservable<DesktopUpdateView> }
+}
+
+/**
+ * @param props - Framework-bound update source and main-process actions.
+ * @returns The same persistent update control in expanded and collapsed sidebars.
+ */
+export function DesktopUpdateFooter({ useDesktopUpdate, open, stop, t }: PropsRuntime<'sidebar.footer.action'>
+  & PropsLocale<'settings'> & InjectFace<FooterInjected>) {
+  const view = useDesktopUpdate(value => value)
+  return <DesktopUpdateIndicator wide={false} hidden={false} t={t} view={view} onOpen={open} onStop={stop} />
 }
 
 type BadgeProps = PropsRuntime<'sidebar.toggle.badge'> & PropsLocale<'settings'>

@@ -4,7 +4,7 @@ import type { ChatNodeViewProps, PresentationInjected, TurnTailOwnerProps } from
 import { AssistantMarkdown } from './AssistantMarkdown.tsx'
 
 type AssistantNodeViewProps = ChatNodeViewProps<'assistant-step'> & InjectFace<PresentationInjected>
-  & PropsRenderSlots<'conversation.chat.reasoning.body' | 'conversation.chat.message.images'>
+  & PropsRenderSlots<'conversation.chat.assistant.header' | 'conversation.chat.reasoning.body' | 'conversation.chat.message.images'>
 
 /** Streaming, settled, and interrupted Assistant states share one keyed renderer instance. */
 export const AssistantNodeView = memo(function AssistantNodeView({
@@ -41,22 +41,26 @@ export const AssistantNodeView = memo(function AssistantNodeView({
     && !turnProcess.open
   const revealProcess = useCallback(() => { turnProcess?.setOpen(true) }, [turnProcess])
   return (
-    <AssistantMarkdown
-      blocks={data.blocks}
-      groupPart={groupPart}
-      useDisclosure={useDisclosure}
-      streaming={data.status === 'running'}
-      textInteractionSource={data.status === 'settled' && data.finalNode?.messageId !== undefined}
-      interrupted={data.status === 'interrupted'}
-      loadImage={loadImage}
-      reasoningHidden={reasoningHidden}
-      useGroupAction={useGroupAction}
-      usePresentation={usePresentation}
-      renderSlot={renderSlot}
-      revealProcess={revealProcess}
-      mentions={mentions}
-      generatedImageReferences={generatedImageReferences}
-      t={t}
-    />
+    <>
+      {groupPart !== 'reasoning' && data.blocks.some(block => block.kind === 'text' && block.text.trim() !== '')
+        ? renderSlot('conversation.chat.assistant.header', { node }) : null}
+      <AssistantMarkdown
+        blocks={data.blocks}
+        groupPart={groupPart}
+        useDisclosure={useDisclosure}
+        streaming={data.status === 'running'}
+        textInteractionSource={data.status === 'settled' && data.finalNode?.messageId !== undefined}
+        interrupted={data.status === 'interrupted'}
+        loadImage={loadImage}
+        reasoningHidden={reasoningHidden}
+        useGroupAction={useGroupAction}
+        usePresentation={usePresentation}
+        renderSlot={renderSlot}
+        revealProcess={revealProcess}
+        mentions={mentions}
+        generatedImageReferences={generatedImageReferences}
+        t={t}
+      />
+    </>
   )
 })

@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 import { describe, expect, it } from 'vitest'
 import { presentDesktopUpdate } from '../../desktop/src/update-presentation.ts'
-import { en } from '../../desktop/src/locale.ts'
 import { launchWebScaffold, watchConsole } from './scaffold.ts'
 
 // Mirrors the preload's presentation-only API; importing Client projects would mix compiler faces.
@@ -19,7 +18,7 @@ type FixtureWindow = Window & typeof globalThis & { updateFixture: CarrierFixtur
 
 describe('web e2e: Desktop update workspace chrome', () => {
   it.each(['zh-CN', 'en-US'])('renders update states and routes explicit actions in %s', async (locale) => {
-    const scaffold = await launchWebScaffold({})
+    const scaffold = await launchWebScaffold({ extraOverlayPath: fileURLToPath(new URL('./pin-browse-picker.overlay.yml', import.meta.url)) })
     try {
       const browser = await chromium.launch()
       try {
@@ -48,13 +47,13 @@ describe('web e2e: Desktop update workspace chrome', () => {
           await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
           await page.waitForSelector('[class*="frame"]')
           await expect.poll(() => page.evaluate(() => (window as FixtureWindow).updateFixture.listeners.size)).toBe(1)
-          const availableLabel = locale === 'zh-CN' ? '新版本' : 'Update'
+          const availableLabel = locale === 'zh-CN' ? '下载更新' : 'Download update'
           const retryLabel = locale === 'zh-CN' ? '重试更新' : 'Retry update'
           const errorDetail = locale === 'zh-CN' ? '下载更新失败，请重试。' : 'Could not download the update. Please try again.'
-          const readyLabel = locale === 'zh-CN' ? '安装并重启' : 'Install and Restart'
+          const readyLabel = locale === 'zh-CN' ? '安装并重启' : 'Install and restart'
           const version = '0.1.5-nightly.20260911'
-          // The carrier classification deliberately uses English shell copy; Web copy follows its own locale.
-          const available = presentDesktopUpdate({ phase: 'available', version }, en)
+          // The carrier sends semantic state; the Web locale owns visible and accessible copy.
+          const available = presentDesktopUpdate({ phase: 'available', version })
           const publish = async (state: Presentation) => page.evaluate((value) => {
             (window as FixtureWindow).updateFixture.publish(value)
           }, state)
@@ -71,12 +70,12 @@ describe('web e2e: Desktop update workspace chrome', () => {
           await update.click()
           await expect.poll(opens).toBe(1)
 
-          const progress = presentDesktopUpdate({ phase: 'downloading', version, percent: 58 }, en)
+          const progress = presentDesktopUpdate({ phase: 'downloading', version, percent: 58 })
           await publish(progress)
           const downloading = page.getByRole('button', { name: '58%', exact: true })
           await downloading.waitFor()
           expect(await downloading.getAttribute('aria-disabled')).toBe('true')
-          expect(await downloading.locator('svg').count()).toBe(1)
+          expect(await downloading.getByRole('progressbar').count()).toBe(1)
           // Force dispatch past Playwright's aria-disabled guard to verify the product's click guard.
           await downloading.click({ force: true })
           expect(await opens()).toBe(1)
@@ -88,12 +87,12 @@ describe('web e2e: Desktop update workspace chrome', () => {
           const toggle = page.getByRole('button', { name: expand, exact: true })
           const badge = toggle.getByRole('img', { name: '58%', exact: true })
           await badge.waitFor()
-          await expect.poll(() => downloading.count()).toBe(0)
+          expect(await downloading.count()).toBe(1)
           expect(await page.getByRole('img', { name: '58%', exact: true }).count()).toBe(1)
           const updateBackground = await badge.evaluate(element => getComputedStyle(element).backgroundColor)
           await page.screenshot({ path: join(evidence, 'collapsed.png') })
 
-          const error = presentDesktopUpdate({ phase: 'error', version, failedOperation: 'download', message: 'HTTP 503' }, en)
+          const error = presentDesktopUpdate({ phase: 'error', version, failedOperation: 'download', message: 'HTTP 503' })
           await publish(error)
           const errorBadge = toggle.getByRole('img', { name: retryLabel, exact: true })
           await errorBadge.waitFor()
@@ -121,7 +120,7 @@ describe('web e2e: Desktop update workspace chrome', () => {
           await retry.click()
           await expect.poll(opens).toBe(2)
 
-          await publish(presentDesktopUpdate({ phase: 'ready', version }, en))
+          await publish(presentDesktopUpdate({ phase: 'ready', version }))
           const ready = page.getByRole('button', { name: readyLabel, exact: true })
           await ready.waitFor()
           expect(await ready.getAttribute('aria-disabled')).toBe('false')

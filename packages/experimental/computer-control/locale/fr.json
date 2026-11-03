@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Contrôle des applications",
+    "description": "Pilotez les applications macOS au premier plan, y compris les navigateurs, avec la souris et le clavier système.",
+    "detail": "docs/DETAIL.md"
+  }
+}

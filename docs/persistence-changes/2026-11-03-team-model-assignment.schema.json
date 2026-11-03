@@ -1,0 +1,27 @@
+{
+  "formatVersion": 2,
+  "roots": [
+    {"key":"event:team/control","kind":"event","event":"team/control","surface":false,"digest":"e7dc7e291279ecac2c2291e82d8004312c7c6e165f69ace8331d18c3ec976c41"},
+    {"key":"event:team/models","kind":"event","event":"team/models","surface":false,"digest":"3c856d90656eea4b2a37a1314ef2269fa86f130091f469e99512d13f2bf6ebe7"},
+    {"key":"event:team/post","kind":"event","event":"team/post","surface":false,"digest":"3c15bfec435853b32326afc8bacdcabf531edb07bdf857f946c54dd2b7d296c2"}
+  ],
+  "types": [],
+  "nodes": {
+    "0657d3ca5ac4e7bf": {"kind":"primitive","type":"number"},
+    "1399238be639cf93": {"kind":"object","properties":[{"name":"stopped","type":"aa93010d0e521ad7","optional":false},{"name":"stoppedMembers","type":"93c33d9687613293","optional":false}],"indices":[]},
+    "14d88fc0238fd2a4": {"kind":"object","properties":[{"name":"label","type":"4cd48f3e5108bd6e","optional":false},{"name":"model","type":"4cd48f3e5108bd6e","optional":false},{"name":"name","type":"4cd48f3e5108bd6e","optional":false},{"name":"provider","type":"4cd48f3e5108bd6e","optional":false},{"name":"strengths","type":"4cd48f3e5108bd6e","optional":false}],"indices":[]},
+    "162e6331d5b57f80": {"kind":"literal","value":"team/models"},
+    "3c15bfec435853b3": {"kind":"object","properties":[{"name":"data","type":"903edd5bda5d1ffe","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"6ac552bb52d5dbe2","optional":false}],"indices":[]},
+    "3c856d90656eea4b": {"kind":"object","properties":[{"name":"data","type":"497b689f4099c829","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"162e6331d5b57f80","optional":false}],"indices":[]},
+    "497b689f4099c829": {"kind":"object","properties":[{"name":"leader","type":"4cd48f3e5108bd6e","optional":false},{"name":"models","type":"6b0d198055b987f9","optional":false}],"indices":[]},
+    "4cd48f3e5108bd6e": {"kind":"primitive","type":"string"},
+    "6ac552bb52d5dbe2": {"kind":"literal","value":"team/post"},
+    "6b0d198055b987f9": {"kind":"array","element":"14d88fc0238fd2a4"},
+    "903edd5bda5d1ffe": {"kind":"object","properties":[{"name":"description","type":"4cd48f3e5108bd6e","optional":false},{"name":"failure","type":"4cd48f3e5108bd6e","optional":true},{"name":"label","type":"4cd48f3e5108bd6e","optional":false},{"name":"member","type":"4cd48f3e5108bd6e","optional":false},{"name":"model","type":"4cd48f3e5108bd6e","optional":false},{"name":"sourceSeq","type":"0657d3ca5ac4e7bf","optional":true},{"name":"sourceSession","type":"4cd48f3e5108bd6e","optional":false},{"name":"text","type":"4cd48f3e5108bd6e","optional":false}],"indices":[]},
+    "93c33d9687613293": {"kind":"array","element":"4cd48f3e5108bd6e"},
+    "aa93010d0e521ad7": {"kind":"primitive","type":"boolean"},
+    "c52b6d39ca57a7cf": {"kind":"literal","value":"team/control"},
+    "dacf3d5f3e4ff619": {"kind":"literal","value":true},
+    "e7dc7e291279ecac": {"kind":"object","properties":[{"name":"data","type":"1399238be639cf93","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"c52b6d39ca57a7cf","optional":false}],"indices":[]}
+  }
+}

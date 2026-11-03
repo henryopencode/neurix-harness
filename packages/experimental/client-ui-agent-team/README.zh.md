@@ -25,7 +25,9 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-通过 [`@deepseek-ai/dsh-experimental-agent-team-profile`](../agent-team-profile/README.zh.md) 启用本包。这个组合包同时提供团队服务、工具与 Web 界面。Web Client loader 挂载 `/client` export；root Host export 不执行行为，本包也没有用户配置字段。
+团队组合包设置可编辑统一模型目录中的候选模型、组长模型、擅长任务与并行上限。会话栏显示实际职责名称与模型路由，并提供单成员停止图标。输入框的停止按钮会停止团队，仅队友运行时也可使用。@ 来源可联系队友和候选模型，带职责署名的回复显示在主会话中。历史模型群回复记录仍可阅读。模型发现和凭证复用已有的模型目录与设置服务。
+
+通过 [`@deepseek-ai/dsh-experimental-agent-team-profile`](../agent-team-profile/README.zh.md) 启用本包。这个组合包同时提供团队服务、工具与 Web 界面。Web Client loader 挂载 `/client` export；root Host export 不执行行为，配置表单编辑团队服务入口。
 
 ### 检查并导航 roster
 

@@ -34,7 +34,7 @@ function ViewsMoreMenu({ label, current, entries, onOpen, onPinnedChange, render
         <Tooltip label={label} portal>
           <Button size="sm" className={clsx(css.viewsMore, current && css.viewsMoreActive)} aria-label={label} aria-haspopup="menu" aria-expanded={open}
             onClick={() => { setOpen(value => !value) }}>
-            <IconEllipsisOutlineRegular size={13} />
+            <IconEllipsisOutlineRegular size={16} />
           </Button>
         </Tooltip>
       )}>
@@ -197,16 +197,16 @@ export function ConversationSessionHeader({
         <div ref={tabRow} className={css.tabs}>
           <div className={css.viewTabs} role="tablist" data-conversation-tabs="">
             {visibleTabs.map(viewTab => (
-              <button
+              <Button
                 key={viewTab.id}
-                type="button"
+                size="sm"
                 role="tab"
                 aria-selected={viewTab.id === active?.id}
                 className={clsx(css.tab, viewTab.id === active?.id && css.tabActive)}
                 onClick={() => { selectView(viewTab.id) }}
               >
-                <Tooltip label={viewTab.label} portal><span className={css.tabLabel}>{viewTab.label}</span></Tooltip>
-              </button>
+                <Tooltip label={viewTab.label} onlyWhenClipped portal><span className={css.tabLabel}>{viewTab.label}</span></Tooltip>
+              </Button>
             ))}
           </div>
           {hasEntryActions && (

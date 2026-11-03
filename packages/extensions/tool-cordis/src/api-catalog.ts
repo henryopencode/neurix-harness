@@ -265,6 +265,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'Agent service (`ctx.agents`): tracks live agents and carries the initiating Agent through one process-local asynchronous driver chain. Agent *creation* is provided by whichever plugin implements the AgentFactory (`@deepseek-ai/dsh-agent-loop`), registered via setFactory.\n\nInitiator methods provide same-process causal attribution only. Ambient presence is neither liveness proof nor authorization; subjects and owners remain explicit, as does identity at worker, process, persistence, and wire boundaries. Returned Promise boundaries drain during teardown, except a nested lineage that starts an owning-fiber unload is excluded from its own drain.',
     methods: [
       {
+        signature: 'guardModelSelection(guard: ModelSelectionGuard): () => Promise<void>',
+        description: 'Register a model-choice restriction until its owning plugin unloads.',
+        parameters: [{ name: 'guard', description: 'Returns a denial reason or permits the choice by returning undefined.' }],
+        returns: 'Disposer removing this exact restriction.',
+      },
+      {
+        signature: 'assertModelSelection(agent: Agent, selection: Readonly<ModelSelection>): void',
+        description: 'Enforce registered restrictions at a model provider\'s selection operation.',
+        parameters: [{ name: 'agent', description: 'Agent whose model is being selected, including during setup.' }, { name: 'selection', description: 'Complete proposed model choice.' }],
+        throws: ['When an active plugin rejects the choice; no selection is recorded.'],
+      },
+      {
         signature: 'turnBoundaryOf(session: Session): TurnBoundaryProjection',
         description: 'Read the turn and step positions recorded in a Session.',
         parameters: [{ name: 'session', description: 'Session whose committed events are read.' }],
@@ -383,6 +395,24 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Create one named, continuable direct child of the Team Lead.',
         parameters: [{ name: 'caller', description: 'exact live Lead Agent.' }, { name: 'request', description: 'immutable name, description, prompt, context mode, provider, and cancellation.' }],
         returns: 'the active roster row.',
+      },
+      {
+        signature: 'modelSelection(caller: Agent): TeamModelSelection | null',
+        description: 'Read the candidate models captured by this member\'s Lead.',
+        parameters: [{ name: 'caller', description: 'Exact live Team member.' }],
+        returns: 'Its Lead\'s configured candidate models.',
+      },
+      {
+        signature: 'async stop(caller: Agent, target?: string): Promise<void>',
+        description: 'Stop the Team or one responsibility, retaining the roster and shared tasks.',
+        parameters: [{ name: 'caller', description: 'Exact live Lead.' }, { name: 'target', description: 'Teammate name; omission stops the whole Team.' }],
+        returns: 'After selected executions and pending creation have settled.',
+      },
+      {
+        signature: 'async tell(caller: Agent, targets: readonly string[], content: import(\'@deepseek-ai/dsh-llm\').ContentBlock[], provider: string, signal: AbortSignal): Promise<void>',
+        description: 'Deliver direct human input to responsibilities or configured model aliases.',
+        parameters: [{ name: 'caller', description: 'Live Lead conversation.' }, { name: 'targets', description: 'Member names or candidate model aliases.' }, { name: 'content', description: 'Complete accepted human input.' }, { name: 'provider', description: 'Continuable execution provider for a newly addressed model.' }, { name: 'signal', description: 'Caller-owned admission cancellation.' }],
+        returns: 'After every selected target has accepted its input; partial failures reject visibly.',
       },
       {
         signature: 'async sendMessage(caller: Agent, request: SendTeamMessageRequest): Promise<SendTeamMessageResult>',
@@ -589,6 +619,19 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'request', description: 'the key, the method, the surface, and the cancel signal.' }],
         returns: '`authorized` once the flow\'s record is committed during this attempt and observed, or `cancelled` when the human declined or the caller withdrew.',
         throws: ['{AuthorizationError} code `NO_FLOW` when nothing claims the key, `UNKNOWN_METHOD` when the named method is not one the flow offers, `ALREADY_IN_FLIGHT` when an attempt is already running for the key, or `NOT_COMMITTED` when the flow resolved without committing a record during the attempt.'],
+      },
+    ],
+  },
+  {
+    key: 'browserPreview',
+    summary: 'Read-only Remote with a namespace independent of application control.',
+    description: 'Read-only Remote with a namespace independent of application control.',
+    methods: [
+      {
+        signature: '@Remote async frame(sessionId: SessionId, signal: AbortSignal): Promise<BrowserPreviewSnapshot>',
+        description: 'Capture an existing browser target without starting an Agent or sending input.',
+        parameters: [{ name: 'sessionId', description: 'Session displayed by the Client.' }, { name: 'signal', description: 'viewing and Remote lifetime.' }],
+        returns: 'bounded image and Host-selected refresh interval.',
       },
     ],
   },
@@ -821,6 +864,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [],
       },
       {
+        signature: 'registerTrustedHost(authority: string): () => Promise<void>',
+        description: 'Admit an additional deployment authority without granting authentication.',
+        parameters: [{ name: 'authority', description: 'canonical host or host:port.' }],
+        returns: 'idempotent withdrawal owned by the calling plugin\'s lifetime.',
+      },
+      {
+        signature: 'registerBrowserAuth(provider: ConnectionBrowserAuth): () => Promise<void>',
+        description: 'Register a browser authentication provider without bypassing Host/Origin admission.',
+        parameters: [{ name: 'provider', description: 'credential checks and optional login page owned by one plugin.' }],
+        returns: 'withdrawal owned by the calling fiber.',
+      },
+      {
         signature: 'createSharedFetchHandler(channel: \'/api\'): ConnectionFetchHandler',
         description: 'Compose exact Fetch routes and the shared-channel RPC interceptor.',
         parameters: [{ name: 'channel', description: 'shared channel mounted by Connection.' }],
@@ -833,9 +888,9 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'rejection status, or undefined when the route may accept the request.',
       },
       {
-        signature: 'admit(request: ConnectionTrustRequest): PeerAdmission',
+        signature: 'admit(request: ConnectionTrustRequest, purpose?: \'api\' | \'document\'): PeerAdmission',
         description: 'Admit an HTTP request against its signed browser or API credential and live Peer.',
-        parameters: [{ name: 'request', description: 'request headers from the HTTP or upgrade request.' }],
+        parameters: [{ name: 'request', description: 'request headers from the HTTP or upgrade request.' }, { name: 'purpose', description: '`document` permits top-level navigation while retaining Host, Origin, and credential checks; defaults to `api`.' }],
         returns: 'the credential\'s Peer, or the rejection status.',
       },
       {
@@ -1718,6 +1773,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'server', description: 'configured server name, unique in this scope.' }, { name: 'provider', description: 'connection-owned resource operations.' }],
         returns: 'the effect disposer for this exact registration.',
       },
+      {
+        signature: 'inspect(server: string): McpConnectionSnapshot | null',
+        description: 'Inspect one server visible in the caller\'s scope without opening a connection.',
+        parameters: [{ name: 'server', description: 'configured MCP namespace.' }],
+        returns: 'connection-owned state, or null when no inspecting provider is registered.',
+      },
     ],
   },
   {
@@ -1742,6 +1803,35 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Delete one item after checking its version; absence succeeds without an event.',
         parameters: [{ name: 'request', description: 'Session, message, and observed item version.' }],
         returns: 'the stable absent postcondition or an explicit failure.',
+      },
+    ],
+  },
+  {
+    key: 'modelGroups',
+    summary: 'Model groups with independent model routes, shared tasks, and direct human addressing.',
+    description: 'Model groups with independent model routes, shared tasks, and direct human addressing.',
+    methods: [
+      {
+        signature: 'snapshot(agent: Agent): ModelGroupSnapshot | null',
+        description: 'Read one conversation\'s durable model-group selection.',
+        parameters: [{ name: 'agent', description: 'Exact live root.' }],
+        returns: 'Its group selection, if configured.',
+      },
+      {
+        signature: 'async setMode(agent: Agent, mode: ModelGroupMode): Promise<void>',
+        description: 'Change only this conversation after stopping existing executions.',
+        parameters: [{ name: 'agent', description: 'Live root.' }, { name: 'mode', description: 'Desired mode.' }],
+      },
+      {
+        signature: 'async stop(agent: Agent, member?: string): Promise<void>',
+        description: 'Stop current work and close new assignment admission.',
+        parameters: [{ name: 'agent', description: 'Live root.' }, { name: 'member', description: 'Optional single model name.' }],
+      },
+      {
+        signature: 'assign( agent: Agent, name: string, prompt: ContentBlock[], direct: boolean, signal: AbortSignal, taskId?: TeamTaskId, ): Promise<ModelGroupDispatchReceipt>',
+        description: 'Dispatch one admitted model task.',
+        parameters: [{ name: 'agent', description: 'Live leader.' }, { name: 'name', description: 'Configured model name.' }, { name: 'prompt', description: 'Logged task input.' }, { name: 'direct', description: 'Human-directed delivery.' }, { name: 'signal', description: 'Admission cancellation.' }, { name: 'taskId', description: 'Existing ready task; omission creates a new task.' }],
+        returns: 'Accepted model, target Session, and shared task identities.',
       },
     ],
   },
@@ -3922,6 +4012,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         throws: ['before `listen` binds a port, or when the bind address has no URL form.'],
       },
       {
+        signature: 'async listen(options: { host: string; port: number }): Promise<WebListener>',
+        description: 'Serve the existing application on another concrete local interface. This grants no authentication or browser trust. The calling plugin owns closure.',
+        parameters: [{ name: 'options', description: 'concrete interface and port; zero requests an OS-assigned port.' }],
+        returns: 'bound origin and idempotent closure registered with the calling fiber.',
+      },
+      {
         signature: 'register(route: WebRoute | WebResourceRoute): () => void',
         description: 'Register a named route. Duplicate (kind, path) throws — route patterns are a composition-level contract, so a collision is a misconfiguration.',
         parameters: [{ name: 'route', description: 'kind, path, and the owning handler or resource.' }],
@@ -5258,6 +5354,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type BrandedNumber<B extends string> = number & {\n    readonly [BRAND]: B;\n};',
   },
   {
+    name: 'BrowserPreviewSnapshot',
+    declaration: 'export interface BrowserPreviewSnapshot {\n    frame: ComputerPreviewFrame;\n    refreshMs: number;\n}',
+  },
+  {
     name: 'BrowserUseProviderName',
     declaration: 'export type BrowserUseProviderName = Branded<\'BrowserUseProviderName\'>;',
   },
@@ -5366,10 +5466,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type CompositionRowEnablement = boolean | \'conditional\';',
   },
   {
-    name: 'ComputerPreviewSnapshot',
-    declaration: 'export interface ComputerPreviewSnapshot {\n    frame: ComputerPreviewFrame;\n    refreshMs: number;\n}',
-  },
-  {
     name: 'ComputerUseProviderName',
     declaration: 'export type ComputerUseProviderName = Branded<\'ComputerUseProviderName\'>;',
   },
@@ -5388,6 +5484,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ConnectionAdmission',
     declaration: 'export type ConnectionAdmission = {\n    readonly peer: PeerScope;\n    readonly release: () => Promise<void>;\n} | {\n    readonly rejection: 401 | 403 | 409;\n};',
+  },
+  {
+    name: 'ConnectionBrowserAuth',
+    declaration: 'export interface ConnectionBrowserAuth {\n    authenticate(request: ConnectionTrustRequest): PeerScope | undefined;\n    authorizeIndex(request: ConnectionIndexRequest, response: ConnectionIndexResponse): boolean | undefined;\n}',
   },
   {
     name: 'ConnectionFetchHandler',
@@ -6442,8 +6542,12 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type MatcherValue = string | number | boolean | null | RegExp | readonly (string | number | boolean | null)[];',
   },
   {
+    name: 'McpConnectionSnapshot',
+    declaration: 'export interface McpConnectionSnapshot {\n    readonly state: \'connecting\' | \'connected\' | \'reconnecting\' | \'disconnected\';\n    readonly tools: readonly {\n        readonly name: string;\n        readonly description: string;\n    }[];\n}',
+  },
+  {
     name: 'McpResourceProvider',
-    declaration: 'export interface McpResourceProvider {\n    request(request: McpResourceRequest, exec: ToolExecution): Promise<JsonValue>;\n}',
+    declaration: 'export interface McpResourceProvider {\n    inspect?(): McpConnectionSnapshot;\n    request(request: McpResourceRequest, exec: ToolExecution): Promise<JsonValue>;\n}',
   },
   {
     name: 'McpResourceRequest',
@@ -6558,6 +6662,22 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ModelCatalogModel {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n}',
   },
   {
+    name: 'ModelGroupDispatchReceipt',
+    declaration: 'export interface ModelGroupDispatchReceipt {\n    readonly member: string;\n    readonly sessionId: SessionId;\n    readonly taskId?: Branded<\'TeamTaskId\'>;\n    readonly accepted: true;\n}',
+  },
+  {
+    name: 'ModelGroupMember',
+    declaration: 'export interface ModelGroupMember {\n    readonly name: string;\n    readonly label: string;\n    readonly provider: string;\n    readonly model: string;\n    readonly strengths: string;\n}',
+  },
+  {
+    name: 'ModelGroupMode',
+    declaration: 'export type ModelGroupMode = \'single\' | \'multi\';',
+  },
+  {
+    name: 'ModelGroupSnapshot',
+    declaration: 'export interface ModelGroupSnapshot {\n    readonly mode: ModelGroupMode;\n    readonly leader: string;\n    readonly members: readonly ModelGroupMember[];\n    readonly stopped: boolean;\n    readonly direct: readonly string[];\n    readonly stoppedMembers: readonly string[];\n}',
+  },
+  {
     name: 'ModelMessageSource',
     declaration: 'export interface ModelMessageSource extends AssistantProviderMetadata {\n    kind: \'model\';\n}',
   },
@@ -6580,6 +6700,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ModelReasoningEffort',
     declaration: 'export interface ModelReasoningEffort {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n}',
+  },
+  {
+    name: 'ModelSelectionGuard',
+    declaration: 'export type ModelSelectionGuard = (agent: Agent, selection: Readonly<ModelSelection>) => string | undefined;',
   },
   {
     name: 'ModEvents',
@@ -8107,7 +8231,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SpawnTeammateRequest',
-    declaration: 'export interface SpawnTeammateRequest {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: ContentBlock[];\n    readonly context: \'fresh\' | \'fork\';\n    readonly provider: string;\n    readonly signal: AbortSignal;\n}',
+    declaration: 'export interface SpawnTeammateRequest {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: ContentBlock[];\n    readonly context: \'fresh\' | \'fork\';\n    readonly provider: string;\n    readonly model?: string;\n    readonly agentOptions?: AgentOptions;\n    readonly coordinationOwner?: string;\n    readonly signal: AbortSignal;\n}',
   },
   {
     name: 'SpawnTeammateResult',
@@ -8439,7 +8563,15 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamMemberView',
-    declaration: 'export interface TeamMemberView {\n    readonly id: SessionId;\n    readonly name: string;\n    readonly role: \'lead\' | \'teammate\';\n    readonly status: \'running\' | \'inactive\' | \'provisioning\' | \'failed\';\n    readonly description?: string;\n    readonly provider?: string;\n    readonly context?: \'fresh\' | \'fork\';\n    readonly model?: string;\n    readonly diagnostics: string[];\n}',
+    declaration: 'export interface TeamMemberView {\n    readonly id: SessionId;\n    readonly name: string;\n    readonly role: \'lead\' | \'teammate\';\n    readonly status: \'running\' | \'inactive\' | \'provisioning\' | \'failed\';\n    readonly description?: string;\n    readonly provider?: string;\n    readonly context?: \'fresh\' | \'fork\';\n    readonly coordinationOwner?: string;\n    readonly model?: string;\n    readonly diagnostics: string[];\n}',
+  },
+  {
+    name: 'TeamModel',
+    declaration: 'export interface TeamModel {\n    readonly name: string;\n    readonly label: string;\n    readonly provider: string;\n    readonly model: string;\n    readonly strengths: string;\n}',
+  },
+  {
+    name: 'TeamModelSelection',
+    declaration: 'export interface TeamModelSelection {\n    readonly leader: string;\n    readonly models: readonly TeamModel[];\n}',
   },
   {
     name: 'TeamTaskAction',
@@ -9052,6 +9184,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WebhookSourceId',
     declaration: 'export type WebhookSourceId = Branded<\'WebhookSourceId\'>;',
+  },
+  {
+    name: 'WebListener',
+    declaration: 'export interface WebListener {\n    readonly origin: string;\n    close(): Promise<void>;\n}',
   },
   {
     name: 'WebResource',

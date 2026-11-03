@@ -81,6 +81,14 @@ export interface WebUpgradeRoute {
   handler: (req: IncomingMessage, socket: Duplex, head: Buffer) => void | Promise<void>
 }
 
+/** An additional interface serving the same application and TLS configuration. */
+export interface WebListener {
+  /** Bound origin without authentication credentials. */
+  readonly origin: string
+  /** Stop admission and await this listener's sockets closing. */
+  close(): Promise<void>
+}
+
 /**
  * TLS material for the HTTPS listener: one certificate chain file and the
  * private key file it pairs with. Both hold PEM text and both resolve against
@@ -434,6 +442,53 @@ export class WebServer extends Service {
     }
     if (this.listenedPort === undefined) throw new Error('webserver: origin read before the listener bound a port')
     return `${this.protocol}//${host}:${String(this.listenedPort)}`
+  }
+
+  /**
+   * Serve the existing application on another concrete local interface.
+   * This grants no authentication or browser trust. The calling plugin owns closure.
+   * @param options - concrete interface and port; zero requests an OS-assigned port.
+   * @returns bound origin and idempotent closure registered with the calling fiber.
+   */
+  async listen(options: { host: string; port: number }): Promise<WebListener> {
+    const config = WebServer.Config({ ...this.config, ...options })
+    const host = bindUrlHost(config.host)
+    if (host === undefined) throw new Error('webserver: an additional listener requires an address expressible as a URL')
+    const sockets = new Set<Duplex>()
+    let origin = ''
+    const close = this.ctx.effect(async () => {
+      const listener = (req: IncomingMessage, res: ServerResponse): void => { this.server.emit('request', req, res) }
+      const tls = this.tlsConfig
+      const server = tls === undefined ? createServer(listener) : createSecureServer({
+        cert: await readTlsFile('certFile', resolve(tls.certFile)),
+        key: await readTlsFile('keyFile', resolve(tls.keyFile)),
+      }, listener)
+      server.on('connection', (socket: Duplex) => {
+        sockets.add(socket)
+        socket.once('close', () => { sockets.delete(socket) })
+      })
+      server.on('upgrade', (req, socket, head) => { this.server.emit('upgrade', req, socket, head) })
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject)
+        server.listen(config.port, config.host, () => {
+          server.off('error', reject)
+          server.on('error', (error) => { this.ctx.logger.error(error) })
+          origin = `${this.protocol}//${host}:${String((server.address() as AddressInfo).port)}`
+          resolve()
+        })
+      })
+      return async () => {
+        const closed = new Promise<void>((resolve) => { server.close(() => { resolve() }) })
+        const disconnected = [...sockets].map(socket => new Promise<void>((resolve) => {
+          socket.once('close', () => { resolve() })
+          socket.destroy()
+        }))
+        server.closeAllConnections()
+        await Promise.all([closed, ...disconnected])
+      }
+    }, 'webServer.additional-listener')
+    await close
+    return { origin, close }
   }
 
   /**

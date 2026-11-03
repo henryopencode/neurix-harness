@@ -530,6 +530,8 @@ export interface ComposerBarInjected {
   toggleCommandMenu: ((selection: EditSelection) => void) | undefined
   stop: (() => void) | undefined
   hooks: {
+    /** Plugin-owned executions associated with this composer's Session. */
+    stopActivity: ObservableSnapshot<boolean>
     /** Readable sequence while the fixed Stop command is registered. */
     stopShortcut: ObservableSnapshot<readonly string[]>
     /**

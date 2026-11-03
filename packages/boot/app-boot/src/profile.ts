@@ -744,7 +744,9 @@ export function loadProfile(
 /**
  * Compose patch layers into the effective entry list over an empty root —
  * the same single `applyEntryPatches` call the boot include makes, so flag
- * derivation and config dumps see exactly what mounts.
+ * derivation and config dumps see exactly what mounts. Root entries sharing
+ * an explicit id and module use the final declaration, matching Loader activation.
+ * Conflicting modules retain every declaration so management refuses ambiguous edits.
  * @param layers - patch lists in application order.
  * @param warn - sink for skipped-patch diagnostics; defaults to silent (boot repeats them).
  * @returns the composed entry list.
@@ -752,8 +754,28 @@ export function loadProfile(
 export function composeEntries(
   layers: readonly PatchOptions[][], warn: (message: string) => void = () => {},
 ): EntryOptions[] {
-  return applyEntryPatches([], structuredClone(layers.flat()), (message: string, ...args: unknown[]) => {
+  const entries = applyEntryPatches([], structuredClone(layers.flat()), (message: string, ...args: unknown[]) => {
     let index = 0
     warn(message.replace(/%C/g, () => JSON.stringify(args[index++])))
   })
+  const last = new Map<string, EntryOptions>()
+  const conflicts = new Set<string>()
+  for (const entry of entries) {
+    if (!entry.id) continue
+    const previous = last.get(entry.id)
+    if (previous !== undefined && previous.name !== entry.name) conflicts.add(entry.id)
+    last.set(entry.id, entry)
+  }
+  const composed: EntryOptions[] = []
+  for (const entry of entries) {
+    if (!entry.id || conflicts.has(entry.id)) {
+      composed.push(entry)
+      continue
+    }
+    const effective = last.get(entry.id)
+    if (effective === undefined) continue
+    composed.push(effective)
+    last.delete(entry.id)
+  }
+  return composed
 }
