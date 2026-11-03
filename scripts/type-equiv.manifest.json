@@ -2443,6 +2443,11 @@
       "source": "packages/mcp/mcp-resources/src/index.ts"
     },
     {
+      "doc": "docs/subsystems/mcp.md",
+      "symbol": "McpConnectionSnapshot",
+      "source": "packages/mcp/mcp-resources/src/types.ts"
+    },
+    {
       "doc": "docs/subsystems/deliverables.md",
       "symbol": "PresentedFile",
       "source": "packages/deliverables/tool-present/src/types.ts"

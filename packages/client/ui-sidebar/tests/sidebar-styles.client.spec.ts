@@ -38,8 +38,10 @@ describe('SidebarRoot.module.css', () => {
 
   it('keeps the browser scrollbar inside its track at either sidebar width', () => {
     const root = declarations('.root')
+    expect(root?.get('--dsh-sidebar-inline-padding')).toBe('12px')
     expect(root?.get('padding')).toBe('6px 0')
-    expect(declarations('.regionArea')?.get('margin-left')).toBe('6px')
+    expect(declarations('.regionArea')?.get('margin-left')).toBe('var(--dsh-sidebar-inline-padding)')
+    expect(declarations('.newSession')?.get('margin')).toBe('0 var(--dsh-sidebar-inline-padding) 6px')
     expect(declarations('.regionArea')?.get('padding-left')).toBe('0')
     expect(declarations('.regionArea')?.get('margin-right')).toBe('0')
     expect(declarations('.collapsed .regionArea')?.get('margin-left')).toBe('0')

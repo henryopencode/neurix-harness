@@ -1,0 +1,20 @@
+- region "MCP":
+  - heading "MCP" [level=1]
+  - button "Refresh"
+  - button "Add server"
+  - searchbox "Search servers or tools"
+  - list:
+    - listitem:
+      - heading "knowledge" [level=2]
+      - text: Connected
+      - switch "Enable knowledge" [checked]
+      - text: Local command
+      - button "Reconnect"
+      - button "Edit"
+      - button "Remove"
+      - group:
+        - text: Tools (1)
+        - list:
+          - listitem:
+            - code: mcp__knowledge__search_notes
+            - paragraph: Search knowledge notes.

@@ -1743,6 +1743,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'server', description: 'configured server name, unique in this scope.' }, { name: 'provider', description: 'connection-owned resource operations.' }],
         returns: 'the effect disposer for this exact registration.',
       },
+      {
+        signature: 'inspect(server: string): McpConnectionSnapshot | null',
+        description: 'Inspect one server visible in the caller\'s scope without opening a connection.',
+        parameters: [{ name: 'server', description: 'configured MCP namespace.' }],
+        returns: 'connection-owned state, or null when no inspecting provider is registered.',
+      },
     ],
   },
   {
@@ -6485,8 +6491,12 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type MatcherValue = string | number | boolean | null | RegExp | readonly (string | number | boolean | null)[];',
   },
   {
+    name: 'McpConnectionSnapshot',
+    declaration: 'export interface McpConnectionSnapshot {\n    readonly state: \'connecting\' | \'connected\' | \'reconnecting\' | \'disconnected\';\n    readonly tools: readonly {\n        readonly name: string;\n        readonly description: string;\n    }[];\n}',
+  },
+  {
     name: 'McpResourceProvider',
-    declaration: 'export interface McpResourceProvider {\n    request(request: McpResourceRequest, exec: ToolExecution): Promise<JsonValue>;\n}',
+    declaration: 'export interface McpResourceProvider {\n    inspect?(): McpConnectionSnapshot;\n    request(request: McpResourceRequest, exec: ToolExecution): Promise<JsonValue>;\n}',
   },
   {
     name: 'McpResourceRequest',

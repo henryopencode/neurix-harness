@@ -13,7 +13,7 @@ import {
   assertFixtureInventory, compareOrRefreshGolden, launchWebScaffold, seedSession, watchConsole,
   webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { newEnglishPage, saveFailureShot } from './support.ts'
+import { expectTooltipOnTop, newEnglishPage, saveFailureShot } from './support.ts'
 
 const SEED = fileURLToPath(new URL('../../../snapshots/web/seeded-history/session.v3.jsonl', import.meta.url))
 const SNAPSHOT_DIR = fileURLToPath(new URL('../../../snapshots/web/sidebar-scrollbar', import.meta.url))
@@ -37,6 +37,9 @@ interface ListMetrics {
   band: number
   scrollbarEdgeOffset: number
   rowEdgeInset: number
+  rowScrollbarGap: number
+  newSessionLeftOffset: number
+  newSessionRightOffset: number
   clientRight: number
   borderRight: number
   timeRight: number
@@ -59,8 +62,10 @@ function measureList(page: Page): Promise<ListMetrics> {
     if (list === null) throw new Error('sidebar session list not in the DOM')
     const time = list.querySelector<HTMLElement>('[class*="time"]')
     if (time === null) throw new Error('no row relative-time element in the sidebar list')
-    const row = list.querySelector<HTMLElement>('[role="treeitem"]')
+    const row = list.querySelector<HTMLElement>('[data-row-key^="session:"]')
     if (row === null) throw new Error('no row in the sidebar list')
+    const newSession = document.querySelector<HTMLElement>('button[class*="newSession"]')
+    if (newSession === null) throw new Error('sidebar New Session button not in the DOM')
     // Use one probe per variable because computed style declarations are live;
     // the color property also normalizes palette syntax.
     const resolve = (name: string): string => {
@@ -93,6 +98,8 @@ function measureList(page: Page): Promise<ListMetrics> {
     const pseudoWidth = getComputedStyle(list, '::-webkit-scrollbar').width
     const barWidth = pseudoWidth === 'auto' ? 15 : Number.parseFloat(pseudoWidth)
     const listRect = list.getBoundingClientRect()
+    const rowRect = row.getBoundingClientRect()
+    const newSessionRect = newSession.getBoundingClientRect()
     const sidebarEdge = list.parentElement?.getBoundingClientRect().right
     if (sidebarEdge === undefined) throw new Error('sidebar session list has no layout parent')
     return {
@@ -108,6 +115,9 @@ function measureList(page: Page): Promise<ListMetrics> {
       band: listRect.width - list.clientWidth,
       scrollbarEdgeOffset: sidebarEdge - listRect.right,
       rowEdgeInset: sidebarEdge - row.getBoundingClientRect().right,
+      rowScrollbarGap: listRect.right - barWidth - rowRect.right,
+      newSessionLeftOffset: rowRect.left - newSessionRect.left,
+      newSessionRightOffset: rowRect.right - newSessionRect.right,
       clientRight: listRect.left + list.clientWidth,
       borderRight: listRect.right,
       timeRight: time.getBoundingClientRect().right,
@@ -268,13 +278,13 @@ async function expandSeededSessions(page: Page): Promise<void> {
     }
     const showMore = page.getByRole('button', { name: /Show \d+ more sessions/ })
     if (await bucket.getAttribute('aria-expanded') === 'true'
-      && await rows.count() <= SEED_COUNT / 2
+      && await rows.count() < SEED_COUNT
       && await showMore.count() > 0) {
       await showMore.click()
     }
-    if (await bucket.getAttribute('aria-expanded') === 'true' && await rows.count() > SEED_COUNT / 2) return
+    if (await bucket.getAttribute('aria-expanded') === 'true' && await rows.count() >= SEED_COUNT) return
     if (Date.now() > deadline) {
-      throw new Error(`Ungrouped bucket never revealed more than ${SEED_COUNT / 2} rows`)
+      throw new Error(`Ungrouped bucket never revealed all ${SEED_COUNT} rows`)
     }
     await page.waitForTimeout(200)
   }
@@ -311,6 +321,34 @@ describe('web e2e: sidebar session list scrollbar (reserved gutter / themed thum
     await scaffold?.close()
   })
 
+  it('keeps header actions inset and their tooltips beside the hovered controls', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-sidebar-action-layout'))
+    const add = page.getByRole('button', { name: 'Add workspace', exact: true })
+    const rightInset = await add.evaluate((button) => {
+      const sidebar = button.closest('[data-sidebar-browser]')
+      if (sidebar === null) throw new Error('workspace button has no sidebar browser')
+      return sidebar.getBoundingClientRect().right - button.getBoundingClientRect().right
+    })
+    expect(rightInset).toBe(12)
+    for (const name of ['Search sessions', 'View options', 'Add workspace']) {
+      const button = page.getByRole('button', { name, exact: true })
+      await button.hover()
+      const tooltip = page.getByRole('tooltip')
+      await tooltip.waitFor({ state: 'visible' })
+      await expectTooltipOnTop(tooltip)
+      const anchor = await button.boundingBox()
+      const bubble = await tooltip.boundingBox()
+      if (anchor === null || bubble === null) throw new Error('hovered action or tooltip has no layout box')
+      expect(Math.abs(bubble.y - anchor.y - anchor.height - 8)).toBeLessThan(1)
+      expect(Math.abs(bubble.x + bubble.width / 2 - anchor.x - anchor.width / 2)).toBeLessThan(1)
+      expect(bubble.x).toBeGreaterThanOrEqual(12)
+      expect(bubble.x + bubble.width).toBeLessThanOrEqual(page.viewportSize()!.width - 12)
+    }
+    await pointAt(page, 'list')
+    await page.getByRole('tooltip').waitFor({ state: 'hidden' })
+    expect(tripwire.pageErrors).toEqual([])
+  })
+
   it('reserves a scrollbar gutter on the overflowing session list', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-sidebar-scrollbar-gutter'))
     // Vacuity guard: with a non-overflowing list `stable` still reserves, but
@@ -322,6 +360,9 @@ describe('web e2e: sidebar session list scrollbar (reserved gutter / themed thum
     expect(metrics.band).toBeGreaterThan(0)
     expect(metrics.scrollbarEdgeOffset).toBe(2)
     expect(metrics.rowEdgeInset).toBe(12)
+    expect(metrics.rowScrollbarGap).toBeGreaterThanOrEqual(5)
+    expect(metrics.newSessionLeftOffset).toBe(0)
+    expect(metrics.newSessionRightOffset).toBe(0)
     // Measure against the bar because overlay scrollbars do not move the client edge.
     expect(metrics.timeCoveredBy).toBe(0)
     expect(metrics.timeRight).toBeLessThanOrEqual(metrics.clientRight)
@@ -345,6 +386,9 @@ describe('web e2e: sidebar session list scrollbar (reserved gutter / themed thum
     expect(quiet.gutter).toBe('stable')
     expect(quiet.band).toBeGreaterThan(0)
     expect(quiet.timeCoveredBy).toBe(0)
+    expect(quiet.rowScrollbarGap).toBeGreaterThanOrEqual(5)
+    expect(quiet.newSessionLeftOffset).toBe(0)
+    expect(quiet.newSessionRightOffset).toBe(0)
     // Scrolling without a pointer — what a keyboard or a touch drag does —
     // leaves the column quiet. This is the one deliberate loss, and
     // it is pinned here rather than only described, so making a scroll
@@ -396,6 +440,9 @@ describe('web e2e: sidebar session list scrollbar (reserved gutter / themed thum
     // gesture that sets it is owned there).
     await page.evaluate(() => { document.body.setAttribute('data-ds-dark-theme', '') })
     const dark = await measureList(page)
+    expect(dark.rowScrollbarGap).toBeGreaterThanOrEqual(5)
+    expect(dark.newSessionLeftOffset).toBe(0)
+    expect(dark.newSessionRightOffset).toBe(0)
     expect(dark.token).not.toBe(light.token)
     expect(dark.hoverToken).not.toBe(dark.token)
     expect(dark.hoverToken).not.toBe(light.hoverToken)

@@ -56,6 +56,8 @@ Chat omits system-prompt, ordinary Context injection, and `permission` command r
 
 When an Assistant attempt retires without a visible message, Chat hides its already-published Node instead of removing its key. A retry in the same Step reuses that key when visible content returns. This also applies when the loaded window lacks the Step start.
 
+A blocked Turn that executed no Step has no completion marker.
+
 <a id="command-and-failure-rows"></a>
 ## Command and failure rows
 
