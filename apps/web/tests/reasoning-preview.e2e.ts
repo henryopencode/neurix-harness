@@ -87,15 +87,15 @@ it.each(['plain', 'signature'])('shows completed paragraph first lines with a ri
           try {
             const style = getComputedStyle(path)
             return {
-              stroke: style.stroke.toLowerCase() === 'currentcolor' ? style.color : style.stroke,
+              fill: style.fill.toLowerCase() === 'currentcolor' ? style.color : style.fill,
               canvas: getComputedStyle(probe).color,
               length: (path as SVGPathElement).getTotalLength(),
             }
           } finally { probe.remove() }
         })
-        expect(colors.stroke).not.toBe('none')
-        expect(colors.stroke).not.toBe('transparent')
-        expect(colors.stroke).not.toBe(colors.canvas)
+        expect(colors.fill).not.toBe('none')
+        expect(colors.fill).not.toBe('transparent')
+        expect(colors.fill).not.toBe(colors.canvas)
         expect(colors.length).toBeGreaterThan(0)
       }
       try {
