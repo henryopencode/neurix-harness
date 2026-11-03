@@ -27,7 +27,7 @@ dsh Web 客户端的侧边栏在 Workspace 与 Session 浏览器旁提供 56px �
 <a id="use-this-package"></a>
 ## 使用本包
 
-侧边栏将全局导航与会话浏览分开：首页和面板图标位于左侧窄栏，设置固定在其底部；品牌、新建会话、Workspace 与 Session 列表位于相邻列。首页返回当前对话，不会新建会话。功能插件填充它的席位——ui-workspace 填充 `sidebar.workspaces`，ui-settings 在 `sidebar.settings` 注册触发行与设置面板。
+侧边栏将全局导航与会话浏览分开：首页和面板图标位于左侧窄栏，设置固定在其底部；品牌、新建会话、Workspace 与 Session 列表位于相邻列。首页返回当前对话，不会新建会话。新建会话按钮和浏览区域共用 12px 的左右留白，行背景边缘保持对齐。导航提示挂载到 document body，不受窄栏滚动及动画容器影响。功能插件填充它的席位——ui-workspace 填充 `sidebar.workspaces`，ui-settings 在 `sidebar.settings` 注册触发行与设置面板。
 
 ### 品牌与 New Session
 

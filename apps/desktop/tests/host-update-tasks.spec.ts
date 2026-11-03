@@ -2,6 +2,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { JobId, JobRegistry } from '@deepseek-ai/dsh-jobs'
 import type { JobStatus, JobView } from '@deepseek-ai/dsh-jobs'
 import { SessionId } from '@deepseek-ai/dsh-session/types'
+import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { Readable } from 'node:stream'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
@@ -11,7 +12,12 @@ import { forwardWebRequest } from '../src/web-document.ts'
 import { bridge } from '../../../packages/client/connection/src/http-bridge.ts'
 import { SessionSkillCatalog } from '../../../packages/api/session-controller/src/skill-catalog.ts'
 
-type AgentState = { id: SessionId; status: 'idle' | 'running'; inbox: { nextTurn: object[]; nextStep: object[] } }
+type LiveAgent = ReturnType<Context['agents']['list']>[number]
+type AgentState = {
+  id: LiveAgent['id']
+  status: LiveAgent['status']
+  inbox: { nextTurn: LiveAgent['inbox']['nextTurn']; nextStep: LiveAgent['inbox']['nextStep'] }
+}
 
 let ctx: Context
 let inspect: ReturnType<typeof installDesktopUpdateTaskControl>
@@ -47,7 +53,8 @@ beforeEach(() => {
   jobs.clear()
   ctx = new Context()
   // Narrow service doubles exercise the inspector against a real Cordis event lifecycle.
-  ctx.provide('agents', { list: () => agents, get: () => undefined } as unknown as Context['agents'])
+  const get: Context['agents']['get'] = () => undefined
+  ctx.provide('agents', { list: () => agents, get } as Context['agents'])
   new RosterOnlyJobRegistry(ctx)
   inspect = installDesktopUpdateTaskControl(ctx)
 })
@@ -134,12 +141,12 @@ describe('Desktop Host update task protection', () => {
   it.each(['running', 'nextTurn', 'nextStep'] as const)('counts %s agent work without stopping it', async (kind) => {
     const agent = idleAgent()
     if (kind === 'running') agent.status = 'running'
-    else agent.inbox[kind].push({ queued: true })
+    else agent.inbox[kind] = [createUserMessage({ content: [{ type: 'text', text: 'queued' }], source: { kind: 'user' } })]
     agents.push(agent)
     expect(await inspect('inspect')).toBe(true)
     agent.status = 'idle'
-    agent.inbox.nextTurn.length = 0
-    agent.inbox.nextStep.length = 0
+    agent.inbox.nextTurn = []
+    agent.inbox.nextStep = []
     expect(await inspect('inspect')).toBe(false)
   })
 
@@ -190,7 +197,7 @@ describe('Desktop Host update task protection', () => {
       entered.resolve(undefined)
       await finish.promise
       const agent = idleAgent()
-      agent.inbox.nextTurn.push({ queued: true })
+      agent.inbox.nextTurn = [createUserMessage({ content: [{ type: 'text', text: 'queued' }], source: { kind: 'user' } })]
       agents.push(agent)
     })
     try {

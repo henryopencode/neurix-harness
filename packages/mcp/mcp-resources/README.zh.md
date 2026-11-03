@@ -33,6 +33,8 @@ kind: "package-reference"
 
 调用方没有已配置 MCP 服务器时，在 native 或 PTC 模式下都看不到 MCP 提示词文本或资源工具。配置服务器后会启用三个共享资源工具，包括由其他提供方挂载客户端的服务器，以及没有工具或指令的服务器。只要客户端条目保持激活，连接失败就不会移除共享工具；资源调用会报告连接错误。
 
+提供方可通过可选的 `inspect()` 方法提供连接状态和已注册工具，无需发送协议请求。`ctx.mcpResources.inspect(server)` 读取调用方可见的提供方，在不支持状态读取时返回 `null`；返回值不包含认证信息。
+
 ### 发现与读取
 
 挂载系统提示词组装服务时，提示词列出调用 agent 可见的服务器名称。将其中一个名称作为 `server` 调用 `list_mcp_resources` 或 `list_mcp_resource_templates`。未提供游标时，MCP SDK 收集服务器的全部分页；显式提供游标时返回一页；将其中的 `nextCursor` 原样作为 `cursor` 传入，以请求下一页。使用相同的 `server` 名称和显式 `uri`，通过 `read_mcp_resource` 读取已列出的 URI 或展开后的模板。

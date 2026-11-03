@@ -23,6 +23,8 @@ Model Context Protocol (MCP) connects the model to tools supplied by external se
 
 MCP servers are opt-in. Configure one `@deepseek-ai/dsh-mcp-client` entry per server in the intended Cordis scope. Every shipped profile supplies the [tool registry](tools.md) and mounts the shared resource service once; users configure only client entries. Callers with no visible configured server receive no MCP prompt text or tools in native or PTC mode.
 
+Open **MCP** in the Web or Desktop sidebar to inspect global connections, browse tools, reconnect, and manage machine-wide server configuration. The [MCP manager](../../packages/client/ui-mcp/README.md) owns editing, credential handling, and recovery semantics.
+
 | Choice | Configuration owner |
 |---|---|
 | Server identity, local process or HTTP endpoint, credentials, and process environment | [Client configuration](../../packages/mcp/mcp-client/README.md#use-this-package) |
@@ -81,8 +83,20 @@ type McpResourceRequest =
 ```
 
 ```ts type-equiv
+/** Connection-owned state and registered tools, without server credentials. */
+interface McpConnectionSnapshot {
+  readonly state: 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
+  readonly tools: readonly { readonly name: string; readonly description: string }[]
+}
+```
+
+```ts type-equiv
 /** One configured server's resource access, owned by its MCP connection plugin. */
 interface McpResourceProvider {
+  /** Read connection state without sending a protocol request.
+   * @returns current connection phase and registered tools.
+   */
+  inspect?(): McpConnectionSnapshot
   /**
    * Run an operation against one live connection generation.
    * @param request - MCP resource method and parameters.
@@ -133,6 +147,13 @@ Scoped resource access plus three tools shared by configured MCP servers.
  * @returns the effect disposer for this exact registration.
  */
 register(server: string, provider: McpResourceProvider): () => void
+
+/**
+ * Inspect one server visible in the caller's scope without opening a connection.
+ * @param server - configured MCP namespace.
+ * @returns connection-owned state, or null when no inspecting provider is registered.
+ */
+inspect(server: string): McpConnectionSnapshot | null
 ```
 
 Source: [`packages/mcp/mcp-resources/src/index.ts`](../../packages/mcp/mcp-resources/src/index.ts)

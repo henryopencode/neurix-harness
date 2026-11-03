@@ -56,6 +56,8 @@ Chat 在所有工作步骤展示模式下都不显示系统提示词行、普通
 
 Assistant 尝试结束且没有可见消息时，Chat 隐藏已发布的 Node，不移除其 key。同一 Step 的重试再次产生可见内容时，复用该 key。已加载窗口缺少 Step 起点时也遵循此规则。
 
+被阻止且未执行任何 Step 的 Turn 不显示完成标记。
+
 <a id="command-and-failure-rows"></a>
 ## 指令与失败行
 

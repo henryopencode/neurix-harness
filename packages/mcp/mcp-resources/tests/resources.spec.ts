@@ -89,13 +89,16 @@ describe('MCP resource tools', () => {
     const ctx = await setup()
     const request = vi.fn<McpResourceProvider['request']>().mockResolvedValue({ resources: [] })
     const first = await ctx.plugin({ inject: ['mcpResources'], apply(inner: Context) {
-      inner.mcpResources.register('first', { request })
+      inner.mcpResources.register('first', { request, inspect: () => ({ state: 'connected', tools: [] }) })
     } })
+    expect(ctx.mcpResources.inspect('first')).toEqual({ state: 'connected', tools: [] })
+    expect(ctx.mcpResources.inspect('second')).toBeNull()
     const second = await ctx.plugin({ inject: ['mcpResources'], apply(inner: Context) {
       inner.mcpResources.register('second', { request })
     } })
     expect(visibleResourceTools(ctx)).toEqual([...resourceToolNames].sort())
     await first.dispose()
+    expect(ctx.mcpResources.inspect('first')).toBeNull()
     expect(visibleResourceTools(ctx)).toEqual([...resourceToolNames].sort())
     expect((await call(ctx, 'list_mcp_resources', { server: 'second' })).isError).toBe(false)
     await second.dispose()

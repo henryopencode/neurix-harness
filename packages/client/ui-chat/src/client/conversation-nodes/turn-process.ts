@@ -319,6 +319,7 @@ export const turnProcessDefinition: ConversationNodeDefinition<TurnProcessState>
     const turn = turnLocation(context)
     const data = turn?.data.get('turn-process')
     if (turn === undefined || data === undefined) return null
+    if (turn.status === 'closed' && turn.steps.length === 0 && turn.end?.data.reason.kind === 'blocked') return null
     const current = context.current.get('chat') as ChatNode | null | undefined
     const state = context.state
     if (current?.kind === 'turn-process'

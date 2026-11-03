@@ -2,6 +2,7 @@
    sidebar column. Collapsing keeps the existing compact control stack. */
 
 .root {
+  --dsh-sidebar-inline-padding: 12px;
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr) auto;
@@ -107,7 +108,7 @@
 
 :global([data-windows-titlebar]) .root:not(.collapsed) .newSession {
   margin-top: 8px;
-  margin-left: 12px;
+  margin-left: var(--dsh-sidebar-inline-padding);
 }
 
 :global([data-windows-titlebar]) .collapsed .navigationRail,
@@ -374,7 +375,7 @@
   color: var(--dsw-alias-label-primary);
 }
 
-/* The New Session action shares the global navigation row geometry. */
+/* Expanded New Session and browser rows share their inline insets. */
 .newSession {
   grid-area: new;
   container-type: inline-size;
@@ -386,7 +387,7 @@
   gap: 0;
   height: 34px;
   padding: 6px 10px;
-  margin: 0 12px 6px;
+  margin: 0 var(--dsh-sidebar-inline-padding) 6px;
   box-sizing: border-box;
   border: none;
   border-radius: var(--dsw-radius-sm);
@@ -564,7 +565,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  margin-left: 6px;
+  margin-left: var(--dsh-sidebar-inline-padding);
   margin-right: 0;
   padding-left: 0;
   overflow: hidden;

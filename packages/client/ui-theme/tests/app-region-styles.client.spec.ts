@@ -67,6 +67,12 @@ interface ChromeRow {
 
 const CHROME_ROWS: readonly ChromeRow[] = [
   {
+    file: 'client/ui-mcp/src/client/McpPage.module.css',
+    selector: '.header',
+    markup: 'client/ui-mcp/src/client/McpPage.tsx',
+    inset: ['padding', '28px 0 24px'],
+  },
+  {
     file: 'client/ui-settings-account/src/client/OnboardingSurface.module.css',
     selector: '.dragBand',
     markup: 'client/ui-settings-account/src/client/OnboardingSurface.tsx',

@@ -854,7 +854,7 @@ it.each([
   expect(readFileSync(profile.patchPath, 'utf8')).toBe(patch)
 })
 
-it('addresses children inside profile groups and marks ambiguous ids read-only', async () => {
+it('addresses children and shared entries while keeping conflicting modules read-only', async () => {
   const { manager, bundle, profile } = await fixture('live', false, (ctx) => { ctx.loader.builtins.group = Group })
   bundle('grouped', [{ id: 'group', name: 'cordis:group', group: true,
     config: [{ id: 'child', name: './plugin.mjs', config: { service: 'child' } }] }])
@@ -864,7 +864,28 @@ it('addresses children inside profile groups and marks ambiguous ids read-only',
   const entries = composeEntries([readProfilePatches('test', profile)])
   const duplicate = entries.find(row => row.id === 'managed')!
   writeFileSync(profile.patchPath, JSON.stringify([{ insert: [duplicate] }]))
+  const managed = (await manager.listPlugins()).find(row => row.entryId === 'include:managed')!
+  expect(managed.readOnlyReason).toBeUndefined()
+  expect(await manager.setPluginEnabled(managed.entryId, false)).toMatchObject({ application: 'applied' })
+  writeFileSync(profile.patchPath, JSON.stringify([{ insert: [{ ...duplicate, name: 'conflicting-module' }] }]))
   expect((await manager.listPlugins()).find(row => row.entryId === 'include:managed')?.readOnlyReason).toBe('unaddressable')
+})
+
+it('retains a shared provider until its last selected bundle is disabled', async () => {
+  const { ctx, manager, bundle, profile } = await fixture('live')
+  const shared = composeEntries([readProfilePatches('test', profile)]).find(row => row.id === 'managed')!
+  const entry = [...ctx.loader.entries()].find(row => row.options.id === 'managed')!
+  const fiber = entry.fiber
+  bundle('sharing', [shared])
+  expect(await manager.setBundleEnabled('sharing', true)).toMatchObject({ application: 'applied' })
+  expect([...ctx.loader.entries()].filter(row => row.options.id === 'managed')).toHaveLength(1)
+  expect(entry.fiber).toBe(fiber)
+  expect(ctx.get('managedProbe')).toBe(true)
+  expect(await manager.setBundleEnabled('extra', false)).toMatchObject({ application: 'applied' })
+  expect(entry.fiber).toBe(fiber)
+  expect(ctx.get('managedProbe')).toBe(true)
+  expect(await manager.setBundleEnabled('sharing', false)).toMatchObject({ application: 'applied' })
+  expect(ctx.get('managedProbe')).toBeUndefined()
 })
 
 it.each(['', '-g'])('rejects an invalid installation spec before calling pnpm: %j', async (spec) => {

@@ -2264,6 +2264,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     declaredBy: 'an entry in \'root\' (client-ui-layout), so it exists while that entry is mounted',
     occupants: [
       'client-ui-conversation ConversationPanel key \'conversation\'',
+      'client-ui-mcp McpPage',
       'client-ui-plugin-manager PluginManagerPage',
       'client-ui-schedule TaskManagerPage',
     ],
@@ -3550,6 +3551,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       'client-ui-chat QuotaNoticeHost id \'chat.quota-notice\'',
       'client-ui-chat TurnBookmarkNoticeHost id \'chat.turn-bookmarks\'',
       'client-ui-file-drag FileDragFeedback id \'file-drag.feedback\'',
+      'client-ui-mcp McpNotice id \'mcp-operation-notice\'',
       'client-ui-plugin-manager PluginRefreshToast id \'plugin-manager.refresh-toast\'',
       'client-ui-schedule ScheduleDeleteToast id \'schedule.delete-toast\'',
       'client-ui-settings-account DesktopOnboardingEntry id \'desktop-onboarding\'',
@@ -3848,6 +3850,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     slotInject: '',
     declaredBy: 'an entry in \'sidebar\' (client-ui-sidebar), so it exists while that entry is mounted',
     occupants: [
+      'client-ui-mcp McpPanelIcon id \'mcp\'',
       'client-ui-plugin-manager PluginsPanelIcon',
       'client-ui-schedule TaskManagerIcon',
     ],
@@ -5011,7 +5014,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'tool.call.generatedImages\', () => ctx.slots.register(\n      { name: \'tool.call.generatedImages\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-tool/src/client/contract/slots.ts:45',
+    source: 'packages/client/ui-tool/src/client/contract/slots.ts:43',
   },
   {
     key: 'tool.call.images',
@@ -5056,14 +5059,14 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'tool.call.images\', () => ctx.slots.register(\n      { name: \'tool.call.images\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-tool/src/client/contract/slots.ts:43',
+    source: 'packages/client/ui-tool/src/client/contract/slots.ts:41',
   },
   {
     key: 'tool.call.toolview',
     kind: 'keyed',
     scope: 'session',
-    summary: 'Keyed view dispatched by wire Tool name; any name is allowed, including your package\'s tools.',
-    doc: 'Keyed view dispatched by wire Tool name; any name is allowed, including your package\'s tools.\nRegister with `key: \'<tool name>\'`; a typo never renders.\n\nRegistering an occupied key replaces its view; unclaimed keys use the\ngeneric row. The owner supplies the call identity and running\nor settled node through explicit phase props. Every stage supplies\n`name` and lazy `args`; preparing arguments may be incomplete.',
+    summary: 'Views dispatch by exact wire Tool name, including package-owned tools.',
+    doc: 'Views dispatch by exact wire Tool name, including package-owned tools.\nRegister with `key: \'<tool name>\'`; a typo never renders. An occupied key\nreplaces its view; unclaimed keys use the generic row. The owner supplies\ncall identity and phase-specific running or settled data. Every stage\nsupplies `name` and lazy `args`; preparing arguments may be incomplete.',
     registerOptions: [
       {
         name: 'key',
@@ -5169,7 +5172,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'tool.call.toolview\', () => ctx.slots.register(\n      { name: \'tool.call.toolview\', key: \'<one key the owner dispatches>\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-tool/src/client/contract/slots.ts:25',
+    source: 'packages/client/ui-tool/src/client/contract/slots.ts:23',
   },
   {
     key: 'tool.view.cordis',

@@ -4,6 +4,7 @@
 - button "Home"
 - navigation "Global panels":
   - button "Plugins"
+  - button "MCP"
   - button "Automation tasks"
   - button "More"
 - text: Workspaces

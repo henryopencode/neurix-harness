@@ -164,9 +164,13 @@ describe('reconnect supervisor', () => {
     try {
       await handle.ready
       ctx.mcpResources.register('srv', handle.resources)
+      expect(ctx.mcpResources.inspect('srv')?.state).toBe('connected')
+      expect(ctx.mcpResources.inspect('srv')?.tools.map(tool => tool.name)).toEqual(['mcp__srv__remote'])
       mockConnect.mockImplementationOnce(() => reconnectGate.promise)
       instances[0]!.onclose?.()
+      expect(ctx.mcpResources.inspect('srv')?.state).toBe('reconnecting')
       await vi.waitFor(() => { expect(instances).toHaveLength(2) })
+      expect(ctx.mcpResources.inspect('srv')?.state).toBe('connecting')
       const result = await executeToolFixture(ctx, {
         name: 'list_mcp_resources', arguments: { server: 'srv' },
         callId: nextCallId(), signal: testToolSignal,
@@ -176,6 +180,7 @@ describe('reconnect supervisor', () => {
     } finally {
       reconnectGate.resolve()
       await handle.dispose()
+      expect(ctx.mcpResources.inspect('srv')).toEqual({ state: 'disconnected', tools: [] })
       await ctx.fiber.dispose()
     }
   })

@@ -364,6 +364,14 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
     ready,
     instructions: () => serverInstructions,
     resources: {
+      inspect() {
+        return {
+          state: client !== undefined
+            ? connectedAt === undefined ? 'connecting' : 'connected'
+            : reconnectTimer !== undefined ? 'reconnecting' : 'disconnected',
+          tools: [...disposers.keys()].map(name => ({ name, description: ctx.tools.get(name)?.description ?? '' })),
+        }
+      },
       async request(request, exec): Promise<JsonValue> {
         const generation = client
         if (!generation || connectedAt === undefined) throw new Error(`${label}: server is disconnected`)
