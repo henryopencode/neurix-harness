@@ -1,0 +1,25 @@
+- id: llm-deepseek
+  disabled: true
+- id: plugin-package-inventory-deepseek
+  disabled: true
+- insert:
+    - id: model-group-replay
+      name: '@deepseek-ai/dsh-llm-replay'
+      config:
+        providers:
+          - id: deepseek-official
+            name: DeepSeek
+            models:
+              - id: deepseek-v4-flash
+    - id: agent-team
+      name: '@deepseek-ai/dsh-experimental-agent-team'
+    - id: model-group
+      name: '@deepseek-ai/dsh-experimental-model-group-runtime'
+      config:
+        leader: a
+        members:
+          - name: a
+            label: DeepSeek
+            provider: deepseek-official
+            model: deepseek-v4-flash
+            strengths: Task analysis

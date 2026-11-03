@@ -44,9 +44,11 @@ export class ComputerError extends Error {
    * @param message - task-relevant failure summary.
    * @param effect - whether input might already have reached its target.
    * @param nextAction - safe next operation for the caller.
+   * @param options - original failure retained for host diagnostics.
    */
-  constructor(readonly code: string, message: string, readonly effect: 'none' | 'possible' | 'completed', readonly nextAction: string) {
-    super(message)
+  constructor(readonly code: string, message: string, readonly effect: 'none' | 'possible' | 'completed', readonly nextAction: string,
+    options?: ErrorOptions) {
+    super(message, options)
   }
 }
 

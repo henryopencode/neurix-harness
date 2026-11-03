@@ -1,6 +1,6 @@
 - dialog "开始使用":
   - heading "开始使用" [level=2]
   - button "关闭"
-  - paragraph: 登录 DeepSeek 账号，或添加 API Key，即可开始使用。你的项目和文件保存在本地。
+  - paragraph: 配置模型服务的 API 连接即可开始使用，也可使用服务商账号登录
   - button "添加 API Key"
   - button "登录"

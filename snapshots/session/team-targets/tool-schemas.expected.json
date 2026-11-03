@@ -314,7 +314,7 @@
     },
     {
       "name": "spawn_teammate",
-      "description": "Create one named, durable teammate. Only the Team Lead may call this tool.",
+      "description": "Create one named, durable teammate for a specific responsibility. Choose its model from the configured model candidates by task fit. Only the Team Lead may call this tool.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -329,6 +329,10 @@
           "prompt": {
             "type": "string",
             "description": "Complete initial task for the teammate."
+          },
+          "model": {
+            "type": "string",
+            "description": "Configured candidate model alias chosen for this responsibility. Required when the Team has model candidates; omit only when none are configured."
           },
           "context": {
             "type": "string",

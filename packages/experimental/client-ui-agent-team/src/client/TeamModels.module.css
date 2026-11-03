@@ -1,0 +1,18 @@
+.settings { display: flex; flex-direction: column; gap: 18px; }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--dsw-alias-label-primary); }
+.field select, .field input { width: 100%; box-sizing: border-box; border: 0.5px solid var(--dsw-alias-border-l1); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); padding: 7px 9px; font: inherit; }
+.modelOption { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-bottom: 0.5px solid var(--dsw-alias-border-l1); }
+.modelOption > label:first-child { display: flex; align-items: center; gap: 8px; }
+.secondary { color: var(--dsw-alias-label-secondary); font-size: 12px; }
+.loading { display: flex; justify-content: center; padding: 20px; }
+.error { color: var(--dsw-alias-state-error-primary); overflow-wrap: anywhere; font-size: 13px; }
+.post { margin: 12px 0; padding: 14px 16px; min-width: 0; border: 0.5px solid var(--dsw-alias-border-l1); border-radius: var(--dsw-radius-lg); background: var(--dsw-alias-bg-layer-2); }
+.author { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; font-size: var(--dsh-content-font-size, 15px); font-weight: 500; }
+.roster { box-sizing: border-box; width: calc(100% - 2 * var(--dsh-composer-side-clearance) - 2 * var(--dsh-composer-dock-inset)); max-width: calc(var(--dsh-composer-card-max-width) - 2 * var(--dsh-composer-dock-inset)); margin: 0 auto calc(0px - var(--dsh-composer-stack-gap) - 12px); padding: 8px 10px 20px; border: 0.5px solid var(--dsw-alias-border-l1); border-bottom: 0; border-radius: var(--dsw-radius-lg) var(--dsw-radius-lg) 0 0; background: var(--dsw-specific-menu); }
+.members { display: flex; align-items: center; gap: 8px; overflow-x: auto; padding: 2px; min-width: 0; }
+.member { display: flex; flex: none; align-items: center; gap: 4px; font-size: 13px; white-space: nowrap; }
+.member button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 28px; min-height: 28px; padding: 3px 6px; border: 0; border-radius: var(--dsw-radius-sm); background: transparent; color: var(--dsw-alias-label-primary); font: inherit; cursor: pointer; }
+.member button:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: 2px; }
+.running { color: var(--dsw-alias-state-business-primary); font-size: 12px; }
+@media (hover: hover) { .member button:hover { background: var(--dsw-alias-interactive-bg-hover); } }
+@media (pointer: coarse) { .field input, .field select { font-size: 16px; min-height: 44px; } .member button { min-width: 44px; min-height: 44px; } }

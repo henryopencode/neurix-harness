@@ -1,0 +1,4 @@
+- button "Stop download":
+  - progressbar "37%"
+- 'tooltip "Downloading update: 37% Target version: 1.0.1 Stop download"'
+- button "Account menu"

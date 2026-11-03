@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Generación de imágenes",
+    "description": "Genera y guarda imágenes con API compatibles con OpenAI o de MiniMax."
+  }
+}

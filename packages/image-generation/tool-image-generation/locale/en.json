@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Image Generation",
-    "description": "Generate and save images from OpenAI-compatible or MiniMax APIs"
+    "title": "Image generation",
+    "description": "Generate and save images from OpenAI-compatible or MiniMax APIs."
   }
 }

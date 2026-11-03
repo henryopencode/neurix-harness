@@ -1,9 +1,54 @@
 /** Public Agent Teams identities, durable records, and service request values. */
 
 import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
+import type { AgentOptions } from '@deepseek-ai/dsh-agent/types'
 import type { Branded } from '@deepseek-ai/dsh-brand'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm/types'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionSeq } from '@deepseek-ai/dsh-session/types'
+import type { Volatile } from '@deepseek-ai/cordis'
+
+/** One available model; responsibilities belong to teammates rather than model entries. */
+export interface TeamModel {
+  /** Unique alias selected by the Lead when creating a responsibility. */
+  readonly name: string
+  /** Display name in Team settings and attributed replies. */
+  readonly label: string
+  /** Registered LLM provider route. */
+  readonly provider: string
+  /** Exact provider-owned model identifier. */
+  readonly model: string
+  /** User-authored task guidance for model selection. */
+  readonly strengths: string
+}
+
+/** Model choices captured for one Team, independent of its role roster. */
+export interface TeamModelSelection {
+  /** Candidate alias initially assigned to the Lead. */
+  readonly leader: string
+  /** Model pool captured for this Team. */
+  readonly models: readonly TeamModel[]
+}
+
+/** Public teammate output retains both its responsibility and actual model route. */
+export interface TeamPost {
+  /** Responsibility name from the Team roster. */
+  readonly member: string
+  /** Delegated responsibility description. */
+  readonly description: string
+  /** Actual model recorded on the assistant response. */
+  readonly model: string
+  /** Candidate display label, or the actual model id when no label matches. */
+  readonly label: string
+  /** Public assistant text. */
+  readonly text: string
+  /** Member Session that produced the output. */
+  readonly sourceSession: SessionId
+  /** Original assistant-message sequence, absent for a terminal failure notice. */
+  readonly sourceSeq?: SessionSeq
+  /** Terminal outcome when no complete reply was returned. */
+  readonly failure?: string
+}
 
 /** Identifies the implicit team rooted at one top-level Session. */
 export type TeamId = Branded<'TeamId'>
@@ -51,6 +96,8 @@ export interface TeamMemberSnapshot {
   readonly description: string
   readonly provider: string
   readonly context: 'fresh' | 'fork'
+  /** Immutable coordination namespace that created this member; omission leaves it unassigned to a coordinator. */
+  readonly coordinationOwner?: string
   readonly phase: TeamMemberPhase
   readonly error?: string
 }
@@ -64,6 +111,9 @@ export interface TeamMemberView {
   readonly description?: string
   readonly provider?: string
   readonly context?: 'fresh' | 'fork'
+  /** Coordination namespace that created this member. */
+  readonly coordinationOwner?: string
+  /** Current selection of the live Agent; absent when no live model selection is available. */
   readonly model?: string
   readonly diagnostics: string[]
 }
@@ -104,6 +154,8 @@ export interface TeamMemberProjection {
   readonly role: 'lead' | 'teammate'
   /** Durable lifecycle; the Lead row is always `active`. Turn activity comes from Session status. */
   readonly phase: TeamMemberPhase
+  /** Coordination namespace that created this member. */
+  readonly coordinationOwner?: string
   readonly error?: string
 }
 
@@ -120,6 +172,8 @@ export interface TeamProjection {
 
 declare module '@deepseek-ai/dsh-session-projection/types' {
   interface SessionProjectionMap {
+    /** Configured model candidates and selected leader for one Team. */
+    teamModels: TeamModelSelection | null
     /** Durable roster and non-deleted task board of the Team rooted at the projected Session. */
     agentTeam: TeamProjection
   }
@@ -151,6 +205,12 @@ declare module '@deepseek-ai/dsh-llm' {
 
 /** Team-service deployment limits. */
 export interface Config {
+  /** Candidate model routes and strengths; empty retains inherited model selection. */
+  readonly models?: Volatile<TeamModel[]>
+  /** Candidate alias used by the Lead; empty preserves the Lead's current selection. */
+  readonly leaderModel?: Volatile<string>
+  /** Maximum simultaneously active teammates per Team. */
+  readonly maxParallel?: Volatile<number>
   /** Maximum immutable teammate names retained by one Team. */
   readonly maxMembers?: number
   /** Maximum non-deleted tasks retained by one Team. */
@@ -168,6 +228,12 @@ export interface SpawnTeammateRequest {
   readonly prompt: ContentBlock[]
   readonly context: 'fresh' | 'fork'
   readonly provider: string
+  /** Configured model alias chosen for this responsibility; required when model candidates are configured. */
+  readonly model?: string
+  /** Explicit child model route and request controls supported by the execution provider. */
+  readonly agentOptions?: AgentOptions
+  /** Immutable coordination namespace retained with the member. */
+  readonly coordinationOwner?: string
   readonly signal: AbortSignal
 }
 
@@ -226,6 +292,12 @@ export interface TeamWaitResult {
 
 declare module '@deepseek-ai/dsh-session/types' {
   interface SessionEventMap {
+    /** Candidate models and Lead selection captured before Team execution. */
+    'team/models': TeamModelSelection
+    /** Human stop control; later human input reopens collaboration. */
+    'team/control': { readonly stopped: boolean; readonly stoppedMembers: readonly string[] }
+    /** Attributed teammate output at its committed root-conversation position. */
+    'team/post': TeamPost
     /** Whole teammate lifecycle value, stored only in the Team Lead Session. */
     'team/member': { version: 2; teamId: TeamId; member: TeamMemberSnapshot }
     /** Whole shared-task value, stored only in the Team Lead Session. */

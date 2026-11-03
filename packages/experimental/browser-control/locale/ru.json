@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Управление браузером",
+    "description": "Управляйте отдельным скрытым браузером в Windows, macOS и Linux с просмотром в мини-окне.",
+    "detail": "docs/DETAIL.md"
+  }
+}

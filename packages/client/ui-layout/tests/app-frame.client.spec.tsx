@@ -4,6 +4,7 @@ import type { GlobalStandardProps, RenderOpts } from '@deepseek-ai/dsh-client-ui
 import { allowAllAccess, bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render } from '@testing-library/react'
+import { useLayoutEffect, useRef } from 'react'
 import { AppFrame } from '../src/client/AppFrame.tsx'
 import type { AppFrameProps } from '../src/client/AppFrame.tsx'
 import type { MainPanelId, RightbarOwnerProps, SidebarOwnerProps } from '../src/client/index.ts'
@@ -60,12 +61,23 @@ function resize(width: number): void {
   })
 }
 
-function mountFrame(windowWidth = frameWidth) {
+function SidebarMeasurement({ owner, measure }: { owner: object; measure: (frame: HTMLElement) => void }) {
+  const node = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const frame = node.current?.closest<HTMLElement>('[style*="grid-template-columns"]')
+    if (frame === null || frame === undefined) throw new Error('sidebar has no frame')
+    measure(frame)
+  }, [owner, measure])
+  return <div ref={node} data-testid="sidebar-content" />
+}
+
+function mountFrame(windowWidth = frameWidth, measureSidebar?: (frame: HTMLElement) => void) {
   vi.stubGlobal('innerWidth', windowWidth)
   const instance = createLayoutStore().create()
   const slotCalls: { key: string; props: object; options: RenderOpts | undefined }[] = []
   const renderSlot: AppFrameProps['renderSlot'] = (key, owner, options) => {
     slotCalls.push({ key, props: owner, options })
+    if (key === 'sidebar' && measureSidebar !== undefined) return <SidebarMeasurement owner={owner} measure={measureSidebar} />
     return <div data-testid={`${key}-content`} data-entry-key={options?.entryKey} />
   }
   const useSessions: AppFrameProps['useSessions'] = sel => sel({
@@ -436,6 +448,20 @@ describe('AppFrame right panel presentation', () => {
       frame.dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'grid-template-columns' }))
     })
     expect(frame.dataset.animating).toBeUndefined()
+  })
+
+  it('enables track motion before sidebar layout measurements read either toggle destination', () => {
+    const measured: { collapsed: boolean; animating: boolean; width: number }[] = []
+    const { instance } = mountFrame(frameWidth, (frame) => {
+      measured.push({ collapsed: frame.hasAttribute('data-sidebar-collapsed'),
+        animating: frame.hasAttribute('data-animating'), width: tracks(frame)[0]! })
+    })
+    measured.length = 0
+    act(() => { instance.actions.toggleSidebar() })
+    expect(measured[0]).toEqual({ collapsed: true, animating: true, width: 56 })
+    measured.length = 0
+    act(() => { instance.actions.toggleSidebar() })
+    expect(measured[0]).toEqual({ collapsed: false, animating: true, width: 280 })
   })
 
   it('lands the responsive auto-collapse instantly, keeping user toggles eased', () => {

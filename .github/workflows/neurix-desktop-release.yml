@@ -1,9 +1,8 @@
 name: Neurix stable desktop release
 
 on:
-  pull_request:
+  push:
     branches: [master]
-    types: [closed]
   workflow_dispatch:
     inputs:
       validation_only:
@@ -25,13 +24,13 @@ permissions:
 
 env:
   DSH_TELEMETRY_DISABLED: '1'
+  DSH_COVERAGE_TEST_TIMEOUT_MS: '90000'
 
 jobs:
   version:
     if: >-
       (github.event_name == 'workflow_dispatch' && (inputs.validation_only || github.ref == 'refs/heads/master')) ||
-      (github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'develop' &&
-       github.event.pull_request.head.repo.full_name == github.repository)
+      (github.event_name == 'push' && github.ref == 'refs/heads/master')
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -43,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || 'master' }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
       - uses: pnpm/action-setup@v5.0.0
       - uses: actions/setup-node@v7.0.0
@@ -55,7 +54,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || !inputs.validation_only
         id: release
         env:
-          RELEASE_SOURCE: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+          RELEASE_SOURCE: ${{ github.sha }}
           REQUESTED_VERSION: ${{ inputs.version }}
         run: pnpm exec tsx scripts/release/desktop-stable.ts --version "$REQUESTED_VERSION"
       - name: Select validation source without publication
@@ -115,6 +114,21 @@ jobs:
         env:
           RELEASE_TARGET: ${{ matrix.target }}
         run: pnpm --dir apps/desktop exec tsx scripts/package-target.ts "$env:RELEASE_TARGET" --unsigned
+      - name: Verify update discovery, transfers and installation handoff
+        run: >-
+          pnpm exec vitest run
+          apps/desktop/tests/github-release-downloads.spec.ts
+          apps/desktop/tests/github-release-installer.spec.ts
+          apps/desktop/tests/github-release-replacement.spec.ts
+          apps/desktop/tests/update-schedule.spec.ts
+          apps/desktop/tests/update-coordinator.spec.ts
+          scripts/release/desktop-stable.spec.ts
+      - name: Verify server update admission and rollback
+        if: matrix.target == 'linux-x64'
+        shell: bash
+        run: |
+          python3 -m unittest scripts/deploy/test_server_update.py
+          node --test scripts/deploy/server-update-control.test.mjs
       - name: Package Linux Web server runtime
         if: matrix.target == 'linux-x64'
         run: node scripts/release/package-linux-server.mjs
@@ -147,13 +161,31 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ needs.version.outputs.tag }}
           RELEASE_COMMIT: ${{ needs.version.outputs.commit }}
+          RELEASE_VERSION: ${{ needs.version.outputs.version }}
         run: |
           cd release-assets
+          for asset in \
+            "neurix-harness-$RELEASE_VERSION-win-x64-unsigned.exe" \
+            "neurix-harness-$RELEASE_VERSION-mac-arm64-unsigned.dmg" \
+            "neurix-harness-$RELEASE_VERSION-mac-x64-unsigned.dmg" \
+            "neurix-harness-$RELEASE_VERSION-linux-x86_64-unsigned.AppImage" \
+            "neurix-harness-$RELEASE_VERSION-linux-x64-server.tar.gz"; do
+            test -s "$asset"
+          done
           test "$(find . -maxdepth 1 -type f | wc -l)" -eq 5
           sha256sum -- *.exe *.dmg *.AppImage *.tar.gz > SHA256SUMS.txt
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+          const assets = fs.readdirSync('.').map(name => ({ name, size: fs.statSync(name).size }))
+          fs.writeFileSync('desktop-update.json', JSON.stringify({
+            tag_name: process.env.RELEASE_TAG, draft: false, prerelease: false, assets,
+          }) + '\n')
+          NODE
           printf '%s\n' 'Windows x64, macOS Apple Silicon, macOS Intel, and Linux x64 installers.' \
             '' 'Windows installers are unsigned. macOS installers use ad-hoc signing without notarization.' \
             'These downloads do not use the upstream automatic-update service.' > ../release-notes.md
+          printf '\nSource: `%s`\nBuild and update checks: %s/%s/actions/runs/%s\n' \
+            "$RELEASE_COMMIT" "$GITHUB_SERVER_URL" "$GH_REPO" "$GITHUB_RUN_ID" >> ../release-notes.md
           if gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft > ../release-is-draft; then
             if test "$(cat ../release-is-draft)" != true; then
               echo 'This immutable release is already published.'

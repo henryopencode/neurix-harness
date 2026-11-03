@@ -1,0 +1,16 @@
+- paragraph: 审批修改立即生效；其他设置请在保存后新建对话使用
+- group:
+  - text: 浏览器
+  - combobox "浏览器":
+    - option "Google Chrome" [selected]
+    - option "Chromium"
+    - option "Microsoft Edge"
+  - paragraph: 请先在这台电脑上安装所选浏览器
+  - checkbox "每次浏览器操作前确认"
+  - text: 每次浏览器操作前确认
+  - paragraph: 立即应用于所有对话；列出窗口和读取状态仍自动执行。审批通道不可用时，操作会被阻止
+  - checkbox "附带截图"
+  - text: 附带截图
+  - paragraph: 文本模型请先关闭截图；使用支持图像输入的模型时再开启
+- group: 高级设置
+- button "保存" [disabled]

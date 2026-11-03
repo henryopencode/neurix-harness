@@ -26,6 +26,7 @@ import { ConversationViewRegistry } from './view-registry.ts'
 import { ConversationGroupRegistry } from './group-registry.ts'
 import { ConversationInteractionRegistry } from './interaction-registry.ts'
 import { UserTextRegistry } from './user-text-registry.ts'
+import { ConversationStopRegistry } from './stop-registry.ts'
 
 /** Observable faces published for one Session's Conversation assembly. */
 export interface ConversationBinding {
@@ -196,6 +197,8 @@ export class UiConversation extends Service {
   readonly userText: UserTextRegistry
   /** Plugin-owned handlers for selection and context-menu gestures. */
   readonly interactions: ConversationInteractionRegistry
+  /** Associated execution activity and cancellation used by the composer. */
+  readonly stops: ConversationStopRegistry
   private readonly bindings = new WeakMapWithValues<SessionBinding, BindingRecord>()
   private readonly images: HistoricalImageCache
 
@@ -210,6 +213,7 @@ export class UiConversation extends Service {
     this.groups = new ConversationGroupRegistry(ctx, this.views)
     this.userText = new UserTextRegistry(ctx)
     this.interactions = new ConversationInteractionRegistry(ctx)
+    this.stops = new ConversationStopRegistry(ctx)
     this.images = new HistoricalImageCache(ctx, sessions)
     const rebuild = (): void => {
       for (const record of this.bindings.values) record.binding.rebuild()

@@ -37,6 +37,8 @@ import { claimDesktopSingleInstance } from './single-instance.ts'
 import { desktopUpdateChannel } from './update-channel.ts'
 import { DesktopUpdateCoordinator } from './update-coordinator.ts'
 import { desktopGithubRepository, GithubReleaseDownloads } from './github-release-downloads.ts'
+import { openGithubReleaseInstaller, readGithubReleaseInstallationFailure } from './github-release-installer.ts'
+import { resolveDurationMs } from './duration-env.ts'
 import { prepareDesktopUpdateWindow } from './update-window.ts'
 import { DesktopCommandManager } from './command-management.ts'
 import { serveWebDocument, authenticateWebHost, forwardWebRequest } from './web-document.ts'
@@ -616,65 +618,73 @@ async function main(): Promise<void> {
   const manifest: unknown = JSON.parse(await readFile(join(app.getAppPath(), 'package.json'), 'utf8'))
   const updateChannel = desktopUpdateChannel(manifest)
   const githubRepository = desktopGithubRepository(manifest)
+  const beforeUpdateRestart = async (): Promise<boolean> => {
+    await commandManager.idle()
+    await workspaceRecovery
+    await startup?.catch(() => undefined)
+    const host = backend.host
+    if (host === undefined) throw new DesktopUpdatePreparationError('tasks-unavailable', locale.messages.updateTasksUnavailable)
+    const active = await host.updateTasks('inspect')
+    const parent = currentDialogWindow()
+    if (parent === undefined || !await prepareDesktopUpdateWindow(parent, locale.messages.updateFullscreenTimeout)) return false
+    const ready = desktopUpdateReadyConfirmation(locale.messages, updates.state.version ?? '', process.platform)
+    const confirmation: Electron.MessageBoxOptions = {
+      type: active ? 'warning' : 'info', title: locale.messages.updateTitle,
+      message: active ? locale.messages.updateActiveTasks : ready.message,
+      detail: active ? locale.messages.updateActiveTasksDetail : ready.detail,
+      buttons: active ? [locale.messages.updateStopTasks, locale.messages.updateLater] : [locale.messages.installAndRestart],
+      defaultId: 1, cancelId: 1,
+    }
+    if (isMandatory()) {
+      if (!await mandatoryUI?.confirm(updates.state.version ?? '', active)) return false
+    } else {
+      const result = await updateDialog.show(parent, confirmation)
+      if (result.response !== 0 || isMandatory()) return false
+    }
+    // The update lock rejects new HTTP requests, including analytics intake.
+    await track('desktop_upgrade_install_restart_click', {})
+    if (backend.host !== host) throw new DesktopUpdatePreparationError('tasks-unavailable', locale.messages.updateTasksUnavailable)
+    try {
+      const stillActive = await host.updateTasks('lock')
+      if (stillActive && !active) throw new DesktopUpdatePreparationError('tasks-changed', locale.messages.updateTasksChanged)
+      mandatoryUI?.preparingRestart(stillActive)
+      // The embedded Platform document holds credentials issued by the Host that is about to stop.
+      await platformView.closeAndWait()
+      await disposeFileDrag().catch((error: unknown) => { console.error(error) })
+      requireCleanStop = true
+      updateStopFailure = undefined
+      await backend.stop()
+      updateStoppedHost = true
+      // The backend's async cleanup callback can assign this after the reset above.
+      const stopFailure = updateStopFailure as DesktopHostUncleanExitError | undefined
+      if (stopFailure !== undefined) throw new DesktopUpdatePreparationError('stop-failed', locale.messages.updateStopFailed, stopFailure.message)
+      updateJournal?.action('install-confirmed')
+      shellInstallerOwnsQuit = true
+    } catch (error) {
+      if (!updateStoppedHost) await host.updateTasks('unlock').catch((unlockError: unknown) => { console.error(unlockError) })
+      throw error
+    } finally {
+      requireCleanStop = false
+    }
+    return true
+  }
   const createManagedUpdates = (): DesktopUpdateCoordinator => new DesktopUpdateCoordinator(
-    publishUpdate,
-    async () => {
-      await commandManager.idle()
-      await workspaceRecovery
-      await startup?.catch(() => undefined)
-      const host = backend.host
-      if (host === undefined) throw new DesktopUpdatePreparationError('tasks-unavailable', locale.messages.updateTasksUnavailable)
-      const active = await host.updateTasks('inspect')
-      const parent = currentDialogWindow()
-      if (parent === undefined || !await prepareDesktopUpdateWindow(parent, locale.messages.updateFullscreenTimeout)) return false
-      const ready = desktopUpdateReadyConfirmation(locale.messages, updates.state.version ?? '', process.platform)
-      const confirmation: Electron.MessageBoxOptions = {
-        type: active ? 'warning' : 'info', title: locale.messages.updateTitle,
-        message: active ? locale.messages.updateActiveTasks : ready.message,
-        detail: active ? locale.messages.updateActiveTasksDetail : ready.detail,
-        buttons: active ? [locale.messages.updateStopTasks, locale.messages.updateLater] : [locale.messages.installAndRestart],
-        defaultId: 1, cancelId: 1,
-      }
-      if (isMandatory()) {
-        if (!await mandatoryUI?.confirm(updates.state.version ?? '', active)) return false
-      } else {
-        const result = await updateDialog.show(parent, confirmation)
-        if (result.response !== 0 || isMandatory()) return false
-      }
-      // The update lock rejects new HTTP requests, including analytics intake.
-      await track('desktop_upgrade_install_restart_click', {})
-      if (backend.host !== host) throw new DesktopUpdatePreparationError('tasks-unavailable', locale.messages.updateTasksUnavailable)
-      try {
-        const stillActive = await host.updateTasks('lock')
-        if (stillActive && !active) throw new DesktopUpdatePreparationError('tasks-changed', locale.messages.updateTasksChanged)
-        mandatoryUI?.preparingRestart(stillActive)
-        // The embedded Platform document holds credentials issued by the Host that is about to stop.
-        await platformView.closeAndWait()
-        await disposeFileDrag().catch((error: unknown) => { console.error(error) })
-        requireCleanStop = true
-        updateStopFailure = undefined
-        await backend.stop()
-        updateStoppedHost = true
-        // The backend's async cleanup callback can assign this after the reset above.
-        const stopFailure = updateStopFailure as DesktopHostUncleanExitError | undefined
-        if (stopFailure !== undefined) throw new DesktopUpdatePreparationError('stop-failed', locale.messages.updateStopFailed, stopFailure.message)
-        updateJournal?.action('install-confirmed')
-        shellInstallerOwnsQuit = true
-      } catch (error) {
-        if (!updateStoppedHost) await host.updateTasks('unlock').catch((unlockError: unknown) => { console.error(unlockError) })
-        throw error
-      } finally {
-        requireCleanStop = false
-      }
-      return true
-    },
+    publishUpdate, beforeUpdateRestart,
     undefined, undefined, undefined,
     (success, reason) => { void track('desktop_upgrade_download_result', { is_success: success, ...reason === undefined ? {} : { error_reason: reason } }) },
     updateChannel,
   )
   const updates = githubRepository === undefined ? createManagedUpdates()
-    : new GithubReleaseDownloads(githubRepository, app.getVersion(), publishUpdate,
-      url => shell.openExternal(url), (url, init) => net.fetch(url, init))
+    : new GithubReleaseDownloads(githubRepository, app.getVersion(), publishUpdate, {
+      directory: join(app.getPath('userData'), 'updates', 'github'),
+      request: (url, init) => net.fetch(url, init),
+      beforeRestart: beforeUpdateRestart,
+      installMode: process.platform === 'win32' || (app.isPackaged && (process.platform === 'darwin' || process.env.APPIMAGE !== undefined)) ? 'restart' : 'installer',
+      platform: process.platform, arch: process.arch,
+      metadataTimeoutMs: resolveDurationMs(process.env, 'DSH_DESKTOP_UPDATE_CHECK_TIMEOUT_MS', 30_000),
+      idleTimeoutMs: resolveDurationMs(process.env, 'DSH_DESKTOP_UPDATE_HTTP_IDLE_TIMEOUT_MS', 60_000),
+      install: (file, version) => openGithubReleaseInstaller(file, process.platform, version),
+    })
 
   const updateSchedule = new DesktopUpdateSchedule(updates, resolveDesktopUpdateScheduleConfig(process.env))
 
@@ -682,7 +692,7 @@ async function main(): Promise<void> {
     void track('desktop_upgrade_click', {})
     updateJournal?.action('download-requested')
     const state = await updates.download(version)
-    if (state.phase !== 'ready' || quitting) return state
+    if (state.phase !== 'ready' || quitting || githubRepository !== undefined) return state
     // Only a completed user-driven download opens this prompt; cancelling installation does not reopen it.
     // A confirmation on a hidden window would go unseen, so it waits for the next show; the mandatory
     // flow keeps its own taskbar and Dock attention instead.
@@ -831,6 +841,10 @@ async function main(): Promise<void> {
     assertProductSender(event)
     await openUpdatePrompt()
   })
+  ipcMain.handle(DESKTOP_IPC.updatesCancel, async (event) => {
+    assertProductSender(event)
+    await updates.cancel()
+  })
 
   let promptOperation: Promise<void> | undefined
   let policyAuthenticationQueued = false
@@ -852,7 +866,7 @@ async function main(): Promise<void> {
       let progress: Promise<unknown> | undefined
       try {
         let state = updates.state
-        if (manual || state.phase === 'idle' || (state.phase === 'error' && state.failedOperation === 'check')) {
+        if ((manual && state.phase !== 'ready') || state.phase === 'idle' || (state.phase === 'error' && state.failedOperation === 'check')) {
           controller = new AbortController()
           ordinaryDialogs.add(controller)
           const parent = currentDialogWindow()
@@ -882,7 +896,7 @@ async function main(): Promise<void> {
         if (manual) {
           const result = await ordinaryMessageBox({ title: locale.messages.updateCheckTitle,
             message: formatDesktopMessage(locale.messages.updateAvailable, { version: state.version ?? '' }),
-            detail: githubRepository === undefined ? locale.messages.updateDetail : locale.messages.updateManualDownloadDetail,
+            detail: locale.messages.updateDetail,
             buttons: [locale.messages.updateDownload], cancelId: 1 })
           if (result.response !== 0) return
         }
@@ -1374,6 +1388,11 @@ async function main(): Promise<void> {
     window.webContents.openDevTools({ mode: 'detach' })
   }
   publishUpdate(updateState)
+  if (githubRepository !== undefined && backendReady) {
+    const failed = await readGithubReleaseInstallationFailure(join(app.getPath('userData'), 'updates', 'github'), app.getVersion())
+      .catch((error: unknown): DesktopUpdateState => ({ phase: 'error', failedOperation: 'install', message: String(error) }))
+    if (failed !== undefined) await showUpdateFailure(failed)
+  }
 }
 
 const ownsDesktopInstance = claimDesktopSingleInstance(app, () => { focusPrimaryWindow() })

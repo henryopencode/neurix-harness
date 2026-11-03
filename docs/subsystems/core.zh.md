@@ -699,6 +699,21 @@ Initiator methods provide same-process causal attribution only. Ambient presence
 
 ```ts cordis-catalog
 /**
+ * Register a model-choice restriction until its owning plugin unloads.
+ * @param guard - Returns a denial reason or permits the choice by returning undefined.
+ * @returns Disposer removing this exact restriction.
+ */
+guardModelSelection(guard: ModelSelectionGuard): () => Promise<void>
+
+/**
+ * Enforce registered restrictions at a model provider's selection operation.
+ * @param agent - Agent whose model is being selected, including during setup.
+ * @param selection - Complete proposed model choice.
+ * @throws When an active plugin rejects the choice; no selection is recorded.
+ */
+assertModelSelection(agent: Agent, selection: Readonly<ModelSelection>): void
+
+/**
  * Read the turn and step positions recorded in a Session.
  * @param session - Session whose committed events are read.
  * @returns the current turn and step positions; do not mutate the returned value.

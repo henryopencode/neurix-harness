@@ -212,10 +212,23 @@ describe('web e2e: image generation', () => {
     await form.getByLabel('生图接口地址', { exact: true }).waitFor({ timeout: 20_000 })
     expect(await apiKey.inputValue()).toBe('')
     expect(await form.getByLabel('生图接口地址', { exact: true }).inputValue()).toBe(endpoint)
-    await panel.getByRole('switch', { name: '启用 图像生成', exact: true }).click()
-    await expect.poll(() => scaffold!.ctx.tools.schemas().map(tool => tool.name), { timeout: PLUGIN_TOGGLE_SETTLE_MS }).not.toContain('generate_image')
     await panel.getByRole('button', { name: '返回插件', exact: true }).click()
+    const card = tools.locator('[data-plugin-package="@deepseek-ai/dsh-image-generation-bundle"]')
+    await card.evaluate((element) => {
+      const observer = new MutationObserver((records) => {
+        if (records.some(record => Array.from(record.addedNodes).some(node => node.textContent?.includes('待配置')))) {
+          element.setAttribute('data-setup-flashed', '')
+        }
+        const toggle = element.querySelector('[role="switch"]')
+        if (toggle?.getAttribute('aria-checked') === 'false' && !toggle.hasAttribute('disabled')) observer.disconnect()
+      })
+      observer.observe(element, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-checked', 'disabled'] })
+    })
+    await tools.getByRole('switch', { name: '启用 图像生成', exact: true }).click()
+    await expect.poll(() => scaffold!.ctx.tools.schemas().map(tool => tool.name), { timeout: PLUGIN_TOGGLE_SETTLE_MS }).not.toContain('generate_image')
     await expect.poll(() => tools.getByRole('switch', { name: '启用 图像生成', exact: true }).isChecked(), { timeout: PLUGIN_TOGGLE_SETTLE_MS }).toBe(false)
+    await expect.poll(() => tools.getByRole('switch', { name: '启用 图像生成', exact: true }).isEnabled(), { timeout: PLUGIN_TOGGLE_SETTLE_MS }).toBe(true)
+    expect(await card.getAttribute('data-setup-flashed')).toBeNull()
     expect(await tools.getByText('已停用', { exact: true }).count()).toBe(1)
     expect(await tools.getByRole('button', { name: '查看 图像生成', exact: true }).isVisible()).toBe(true)
     expect(consoleWatch.pageErrors).toEqual([])

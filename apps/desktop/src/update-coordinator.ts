@@ -3,7 +3,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { app } from 'electron'
-import electronUpdater, { type AppUpdater, type ProgressInfo, type UpdateInfo } from 'electron-updater'
+import electronUpdater, { CancellationToken, type AppUpdater, type ProgressInfo, type UpdateInfo } from 'electron-updater'
 import { gt, valid } from 'semver'
 import type { DesktopUpdateState } from './ipc.ts'
 import { DesktopUpdateHttpExecutor } from './update-http-executor.ts'
@@ -20,11 +20,12 @@ export class DesktopUpdateCoordinator {
   private checkOperation: Promise<DesktopUpdateState> | undefined
   private downloadOperation: Promise<DesktopUpdateState> | undefined
   private installOperation: Promise<DesktopUpdateState> | undefined
+  private cancellation: CancellationToken | undefined
 
   private readonly onProgress = (progress: ProgressInfo): void => {
     if (this.downloadOperation === undefined || this.downloaded) return
     const percent = Math.min(100, Math.max(0, progress.percent))
-    this.setState({ phase: percent >= 100 ? 'verifying' : 'downloading', ...this.target(), percent })
+    this.setState({ phase: percent >= 100 ? 'verifying' : 'downloading', ...this.target(), percent, canCancel: percent < 100 })
   }
 
   private readonly onDownloaded = (info: UpdateInfo): void => {
@@ -108,19 +109,30 @@ export class DesktopUpdateCoordinator {
       this.assertLive()
       if (this.candidate === undefined) throw new Error('desktop update: no checked update is available')
       if (version !== this.candidate) throw new Error('desktop update: download confirmation is stale')
-      this.setState({ phase: 'downloading', version, percent: 0 })
+      const cancellation = new CancellationToken()
+      this.cancellation = cancellation
+      this.setState({ phase: 'downloading', version, percent: 0, canCancel: true })
       try {
-        await this.updater.downloadUpdate()
+        await this.updater.downloadUpdate(cancellation)
+        if (cancellation.cancelled) { this.downloaded = false; return this.setState({ phase: 'available', version }) }
         if (!this.downloaded) throw new Error('desktop update: platform preparation did not report readiness')
         this.downloadResult?.(true)
         return this.setState({ phase: 'ready', version })
       } catch (error) {
         this.downloaded = false
+        if (cancellation.cancelled) return this.setState({ phase: 'available', version })
         this.downloadResult?.(false, error instanceof DesktopUpdatePreparationError ? error.kind : 'download_failed')
         return this.setState(this.failure(error, 'download'))
       }
-    }).finally(() => { this.downloadOperation = undefined })
+    }).finally(() => { this.downloadOperation = undefined; this.cancellation = undefined })
     return this.downloadOperation
+  }
+
+  /** Cancel the active download and wait for the updater's transfer to settle. */
+  async cancel(): Promise<void> {
+    if (this.current.phase !== 'downloading') return
+    this.cancellation?.cancel()
+    await this.downloadOperation
   }
 
   /**
@@ -149,6 +161,7 @@ export class DesktopUpdateCoordinator {
   /** Remove owned listeners and prevent pending library operations from publishing into closed UI. */
   dispose(): void {
     this.disposed = true
+    this.cancellation?.cancel()
     this.updater.off('download-progress', this.onProgress)
     this.updater.off('update-downloaded', this.onDownloaded)
     // Pending updater promises can still emit EventEmitter errors during shutdown.

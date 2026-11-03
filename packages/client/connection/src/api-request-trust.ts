@@ -116,13 +116,15 @@ function isBindAddressAuthority(hostUrl: URL, bindHost: string | undefined): boo
  * @param trustedHosts - non-loopback authorities this deployment serves: exact `host:port`, or port-less `host` matching any port.
  * @param bindHost - the listener's own bind IP literal, accepted on any port independently of `trustedHosts`.
  * @param protocol - listener protocol for default Host ports; HTTP when no Web carrier is mounted.
- * @returns true when the Host is ours (loopback, the bind address, or trusted) and any attached browser markers are same-origin.
+ * @param purpose - API calls reject every cross-site marker; documents permit explicit top-level browser navigation.
+ * @returns true for a trusted Host and browser Origin and Fetch Metadata headers permitted for the purpose.
  */
 export function isTrustedApiRequest(
   request: ConnectionTrustRequest,
   trustedHosts: readonly string[],
   bindHost?: string,
   protocol: 'http:' | 'https:' = 'http:',
+  purpose: 'api' | 'document' = 'api',
 ): boolean {
   // Host fence (DNS-rebinding defense), applied to every request: the browser
   // fills Host from the URL it believes it is talking to, so a rebound page
@@ -139,8 +141,11 @@ export function isTrustedApiRequest(
     && !isTrustedAuthority(hostUrl, trustedHosts, protocol)
     && !isBindAddressAuthority(hostUrl, bindHost)) return false
   // Cross-site fence: modern browsers label the initiator relationship on
-  // every fetch; an explicit cross-site marker is refused regardless of Origin.
-  if (header(request.headers, 'sec-fetch-site') === 'cross-site') return false
+  // every fetch; APIs and subresources reject cross-site markers. Document
+  // navigation retains the Host, Origin, and signed-cookie checks.
+  const navigation = purpose === 'document' && header(request.headers, 'sec-fetch-mode') === 'navigate'
+    && header(request.headers, 'sec-fetch-dest') === 'document'
+  if (header(request.headers, 'sec-fetch-site') === 'cross-site' && !navigation) return false
   // Origin fence: when a browser attaches an Origin it must be exactly this
   // authority (compared through the same normalization as the Host). Absent
   // Origin is fine — the Host fence above already bound the request. The

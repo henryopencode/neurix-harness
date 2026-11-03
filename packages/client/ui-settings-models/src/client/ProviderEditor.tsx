@@ -269,10 +269,13 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
     const ns = namespace.ns
     // A pi-ai profile names the conventional reference only when this page is
     // about to store a key. Otherwise the provider keeps its native auth path.
-    const next = layout === 'pi-ai' && stringAt(draft, 'apiKeyEnv') === undefined
-      && stringAt(fallback, 'apiKeyEnv') === undefined && keyValue.length > 0
-      ? schema.setPath(draft, ['apiKeyEnv'], keyRef)
+    const activeDraft = schema.getPath(fallback, ['enabled']) === false
+      ? schema.setPath(draft, ['enabled'], true)
       : draft
+    const next = layout === 'pi-ai' && stringAt(activeDraft, 'apiKeyEnv') === undefined
+      && stringAt(fallback, 'apiKeyEnv') === undefined && keyValue.length > 0
+      ? schema.setPath(activeDraft, ['apiKeyEnv'], keyRef)
+      : activeDraft
     if (props.credentialOnly !== true) {
       // The same checker gates the submit button, so a card cannot reach this
       // with a bad row; it stays because the schema check below would refuse
@@ -294,7 +297,9 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
       && committedOriginal === undefined
       && Object.keys(next).length === 0
     const ops: SettingsPathOpView[] = props.credentialOnly === true
-      ? []
+      ? schema.getPath(fallback, ['enabled']) === false && schema.getPath(committedOriginal, ['enabled']) !== true
+        ? [{ op: 'set', path: [...settingsPath, 'enabled'], value: true }]
+        : []
       : materializesNativeProfile
         ? [{ op: 'set', path: [...settingsPath], value: {} }]
         : pathOps(settingsPath, committedOriginal, next)

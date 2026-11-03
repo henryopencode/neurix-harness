@@ -67,6 +67,7 @@ kind: "package-group"
 | [`client-ui-voice-input`](client-ui-voice-input/README.zh.md) | 麦克风录音与版本检查后的草稿插入 | — |
 | [`plugin-market-bundle`](plugin-market-bundle/README.zh.md) | 默认禁用的可选自定义插件索引：索引服务和「发现」标签页 | — |
 | [`liveshare-protocol`](liveshare-protocol/README.zh.md) | owner bundle 与 Relay 共用的线路帧与身份契约 | — |
+| [`mobile-access`](mobile-access/README.zh.md) | 通过专属链接和二维码从手机接管电脑已有对话 | — |
 | [`voice-input-bundle`](voice-input-bundle/README.zh.md) | 默认禁用的可选语音输入组合 | — |
 | [`agent-team-profile`](agent-team-profile/README.zh.md) | Agent Teams 协作、工具与 Web UI 组合包 | — |
 | [`agent-team`](agent-team/README.zh.md) | 具名 teammate，成员之间直接消息与持久共享任务板 | `ctx.agentTeams` |
@@ -82,7 +83,9 @@ kind: "package-group"
 | [`cua-bundle`](cua-bundle/README.zh.md) | 面向 PTC 会话、默认关闭的 Computer Use 开关 | — |
 | [`computer-use-cua-driver-mcp`](computer-use-cua-driver-mcp/README.zh.md) | 通过 MCP 使用已安装的 Cua Driver | `ctx.computerUse` |
 | [`computer-use-cua-driver-native`](computer-use-cua-driver-native/README.zh.md) | 嵌入 Cua Driver 原生 npm 运行时 | `ctx.computerUse` |
-| [`computer-control`](computer-control/README.zh.md) | 在插件页启用和配置电脑控制 | — |
+| [`computer-control`](computer-control/README.zh.md) | 在 macOS 前台操作应用和浏览器窗口 | — |
+| [`computer-preview`](computer-preview/README.zh.md) | 共享仅用于显示的浏览器与应用预览 | `ctx.computerPreviewUi` (Client) |
+| [`browser-control`](browser-control/README.zh.md) | 操作独立隐藏浏览器并显示画中画 | — |
 | [`computer-use-unified`](computer-use-unified/README.zh.md) | 操作会话独立的浏览器标签页与精确 macOS 窗口 | `ctx.computerUse`, `ctx.browserUse` |
 | [`browser-use-playwright-mcp`](browser-use-playwright-mcp/README.zh.md) | 通过 MCP 提供 Playwright 浏览器工具 | `ctx.browserUse` |
 | [`browser-use-chrome-devtools-mcp`](browser-use-chrome-devtools-mcp/README.zh.md) | 通过 MCP 提供 Chrome DevTools 检查与浏览器控制 | `ctx.browserUse` |

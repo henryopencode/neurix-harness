@@ -108,6 +108,20 @@ const GROUP_ORDER = [
 
 const SERVICE_ROLES: ServiceRole[] = [
   {
+    key: 'modelGroups',
+    pkg: 'experimental-model-group-runtime',
+    title: 'Optional model-group coordination',
+    mode: 'core',
+    note: 'Coordinates configured model routes through shared Team tasks and conversation-local human controls.',
+  },
+  {
+    key: 'browserPreview',
+    pkg: 'experimental-browser-control',
+    title: 'Hidden browser preview Remote',
+    mode: 'core',
+    note: 'Returns display-only captures of Session-owned tabs without native application access.',
+  },
+  {
     key: 'computerPreview',
     pkg: 'experimental-computer-control',
     title: 'Computer target preview Remote',

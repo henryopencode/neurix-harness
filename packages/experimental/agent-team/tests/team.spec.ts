@@ -62,7 +62,7 @@ async function storedEvents(ctx: Context, id: SessionId): Promise<readonly Sessi
 
 async function setup(
   script: ConstructorParameters<typeof MockAdapter>[0],
-  config: ConstructorParameters<typeof TeamService>[1] = {},
+  config: Parameters<typeof TeamService.Config>[0] = {},
 ) {
   const ctx = new Context()
   contexts.push(ctx)
@@ -86,6 +86,49 @@ async function setup(
 function content(text: string) {
   return [{ type: 'text' as const, text }]
 }
+
+describe('model-aware Team responsibilities', () => {
+  const models = [
+    { name: 'gpt', label: 'GPT', provider: 'mock', model: 'gpt', strengths: 'Planning and synthesis' },
+    { name: 'opus', label: 'Opus', provider: 'mock', model: 'opus', strengths: 'Architecture and code review' },
+    { name: 'gemini', label: 'Gemini', provider: 'mock', model: 'gemini', strengths: 'Research and multimodal analysis' },
+  ]
+
+  it('assigns responsibility names independently of model aliases and stops selected or all work', async () => {
+    const { ctx, lead, adapter } = await setup(['hang', 'hang'], { models, leaderModel: 'gpt', maxParallel: 2 })
+    vi.spyOn(ctx.llm, 'listModels').mockResolvedValue(models.map(model => ({ provider: 'mock', id: model.model, name: model.label })))
+    expect(lead.model.current()?.model).toBe('gpt')
+    await Promise.all([
+      ctx.agentTeams.spawnTeammate(lead, { name: 'code-reviewer', description: 'Review implementation', model: 'opus', prompt: content('Review code'), context: 'fresh', provider: 'spawn', signal: SIGNAL }),
+      ctx.agentTeams.spawnTeammate(lead, { name: 'researcher', description: 'Compare evidence', model: 'gemini', prompt: content('Research evidence'), context: 'fresh', provider: 'spawn', signal: SIGNAL }),
+    ])
+    await vi.waitFor(() => { expect(adapter.requests).toHaveLength(2) })
+    expect(ctx.agentTeams.listMembers(lead).filter(member => member.role !== 'lead').map(member => [member.name, member.model]))
+      .toEqual([['code-reviewer', 'opus'], ['researcher', 'gemini']])
+    await expect(ctx.agentTeams.spawnTeammate(lead, { name: 'writer', description: 'Write', model: 'opus', prompt: content('Write'), context: 'fresh', provider: 'spawn', signal: SIGNAL }))
+      .rejects.toMatchObject({ code: 'TEAM_CAPACITY' })
+    await ctx.agentTeams.stop(lead, 'code-reviewer')
+    expect(ctx.agentTeams.listMembers(lead).find(member => member.name === 'researcher')?.status).toBe('running')
+    await ctx.agentTeams.stop(lead)
+    expect(ctx.agentTeams.listMembers(lead).every(member => member.status !== 'running')).toBe(true)
+    await expect(ctx.agentTeams.spawnTeammate(lead, { name: 'late', description: 'Late', model: 'opus', prompt: content('Late'), context: 'fresh', provider: 'spawn', signal: SIGNAL }))
+      .rejects.toMatchObject({ code: 'TEAM_STOPPED' })
+  })
+
+  it('validates model choice before reserving a durable role and publishes the role with its actual model', async () => {
+    const { ctx, lead, adapter } = await setup([textResponse('Review result')], { models, leaderModel: 'gpt' })
+    vi.spyOn(ctx.llm, 'listModels').mockResolvedValue(models.map(model => ({ provider: 'mock', id: model.model, name: model.label })))
+    const request = { name: 'reviewer', description: 'Architecture review', prompt: content('Review'), context: 'fresh' as const, provider: 'spawn', signal: SIGNAL }
+    await expect(ctx.agentTeams.spawnTeammate(lead, request)).rejects.toMatchObject({ code: 'TEAM_MODEL_REQUIRED' })
+    expect(durable(lead).members).toEqual([])
+    await ctx.agentTeams.spawnTeammate(lead, { ...request, model: 'opus' })
+    await ctx.subagents.waitForChildren(lead)
+    await vi.waitFor(() => { expect(lead.session.snapshotEvents().find(event => event.type === 'team/post')?.data)
+      .toMatchObject({ member: 'reviewer', model: 'opus', label: 'Opus', text: 'Review result' }) })
+    expect(adapter.requests[0]?.model).toBe('opus')
+    expect(ctx.agentTeams.modelSelection(lead)?.models).toEqual(models)
+  })
+})
 
 interface TeamServiceInternals {
   readonly lifecycle: TeamRuntimeLifecycle
@@ -142,6 +185,23 @@ async function waitRunning(ctx: Context, id: SessionId): Promise<Agent> {
 }
 
 describe('Team identity and provisioning', () => {
+  it('reports live model selections and never borrows the lead model for an inactive member', async () => {
+    const { ctx, lead } = await setup(['hang'])
+    lead.model.select({ provider: 'mock', model: 'selected-leader' })
+    const spawned = await ctx.agentTeams.spawnTeammate(lead, {
+      name: 'worker', description: 'Different model', prompt: content('Work'), context: 'fresh',
+      provider: 'spawn', agentOptions: { provider: 'mock', model: 'selected-worker' }, signal: SIGNAL,
+    })
+    const worker = ctx.agents.get(spawned.member.id)
+    expect(worker).toBeDefined()
+    worker?.model.select({ provider: 'mock', model: 'changed-worker' })
+    expect(ctx.agentTeams.listMembers(lead).map(member => member.model)).toEqual(['selected-leader', 'changed-worker'])
+    await ctx.agentTeams.interrupt(lead, 'worker')
+    await ctx.subagents.waitForChildren(lead)
+    await lead.whenIdle()
+    expect(ctx.agentTeams.listMembers(lead).find(member => member.name === 'worker')?.model).toBeUndefined()
+  })
+
   it('rejects reads and mutations after a Team projection fails', async () => {
     const { ctx, lead } = await setup([])
     lead.session.append('team/message/delivered', {

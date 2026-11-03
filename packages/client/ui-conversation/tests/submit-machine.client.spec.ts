@@ -95,6 +95,17 @@ describe('submit-machine: plain × enter', () => {
 })
 
 describe('submit-machine: adjudication outcomes', () => {
+  it('routes an inline recipient with its complete message when the source opts in', () => {
+    const machine = new SubmitMachine()
+    const draft = 'Please inspect @model-b this function\nand its callers'
+    const entered = machine.dispatch({ type: 'enter', mode: 'steer', draft, adjudicate: true })
+    const attempt = effectAt(entered, 0, 'adjudicate').attempt
+    const claim: CommandClaim = { ...claimOf('models'), token: '@model-b ', wholeMessage: true }
+    const submitted = machine.dispatch({ type: 'adjudicated', attempt, outcome: { claim } })
+    expect(effectAt(submitted, 0, 'begin-submit').args).toBe(draft)
+    expect(effectAt(submitted, 0, 'begin-submit').attempt.mode).toBe('steer')
+  })
+
   it('{claim} moves to submitting; args split on the first whitespace, newlines kept', () => {
     const m = new SubmitMachine()
     const attempt = enterAdjudicating(m, '/goal write x\nand y')

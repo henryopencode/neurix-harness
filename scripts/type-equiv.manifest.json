@@ -2254,7 +2254,7 @@
     {
       "doc": "docs/subsystems/core.md",
       "symbol": "AgentOptions",
-      "source": "packages/core/agent/src/runtime-types.ts"
+      "source": "packages/core/agent/src/types.ts"
     },
     {
       "doc": "docs/subsystems/feedback.md",
@@ -2441,6 +2441,11 @@
       "doc": "docs/subsystems/mcp.md",
       "symbol": "McpResourceProvider",
       "source": "packages/mcp/mcp-resources/src/index.ts"
+    },
+    {
+      "doc": "docs/subsystems/mcp.md",
+      "symbol": "McpConnectionSnapshot",
+      "source": "packages/mcp/mcp-resources/src/types.ts"
     },
     {
       "doc": "docs/subsystems/deliverables.md",

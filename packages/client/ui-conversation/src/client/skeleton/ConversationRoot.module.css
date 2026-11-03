@@ -7,12 +7,7 @@
   background: var(--dsw-alias-bg-base);
 }
 
-/* 76px with its rule: the height of the Sidebar's tab strip and header row
-   (ui-dockkit `.tabStrip` 38px + the pane header's 38px), so the two rules
-   meet at the column edge. The rows add up to it — 10px top inset, the 30px
-   title row, the tab strip's 10px margin, and a 25px view row. When the views
-   and the More launcher do not fit on one row, the row wraps and the header
-   grows past 76px. */
+/* The compact view controls fit inside the 84px header; wrapped rows can grow it. */
 .header {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -191,7 +186,6 @@
   display: none;
 }
 
-/* The tab row sits above the header paint so the active bar covers its rule. */
 .tabs {
   grid-column: 1 / -1;
   position: relative;
@@ -201,7 +195,7 @@
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
   margin-top: 6px;
   padding-left: 0;
@@ -209,69 +203,36 @@
 
 .viewTabs {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 32px;
+  gap: 4px;
   min-width: 0;
-  min-height: 25px;
+  min-height: 28px;
 }
 
-/* The 16px text line retains 9px below it. The press target extends 10px
-   above the text into the strip's top margin and 10px to each side, matching
-   the inline padding of the Sidebar tab chips (ui-dockkit `.tab`); negative
-   margins keep the layout box at its 25px row and text width. The active bar
-   spans the text and reaches 1px past the tab box to sit over the header
-   rule. */
 .tab {
-  --dsh-tab-hit-inline: 10px;
-
-  position: relative;
-  box-sizing: border-box;
-  min-height: 35px;
-  margin: -10px calc(-1 * var(--dsh-tab-hit-inline)) 0;
-  padding: 10px var(--dsh-tab-hit-inline) 9px;
-  border: none;
-  background: transparent;
+  flex: none;
+  padding: 0 8px;
   font-size: 13px;
   line-height: 20px;
   font-weight: 400;
   color: var(--dsw-alias-label-tertiary);
-  cursor: pointer;
-  border-radius: var(--dsw-radius-sm);
 }
 
-.tab::after {
-  content: '';
-  position: absolute;
-  right: var(--dsh-tab-hit-inline);
-  bottom: -1px;
-  left: var(--dsh-tab-hit-inline);
-  height: 2px;
-  border-radius: 2px;
-  background: transparent;
-}
-
-/* Selected tab is blue, not ink: brand-primary resolves to neutral black in
-   this token sheet, so the selected state rides the business blue — the
-   nearest semantic token that stays blue in both themes. */
 .tabActive {
   color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-interactive-bg-hover);
   font-weight: 500;
 }
 
-.tabActive::after {
-  background: transparent;
-}
-
-/* The More launcher centers its 22px box on the tab's 16px text line. */
 .viewsMoreAnchor {
+  display: flex;
+  align-items: center;
   flex: none;
 }
 
 .viewsMore {
-  width: 22px;
-  height: 22px;
-  margin-top: -3px;
+  width: 28px;
   padding: 0;
   color: var(--dsw-alias-label-secondary);
 }
