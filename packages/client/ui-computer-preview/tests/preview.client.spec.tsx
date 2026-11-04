@@ -23,8 +23,10 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 const frame: ComputerPreviewSnapshot = { refreshMs: 750, frame: { kind: 'frame', imageUrl: 'data:image/png;base64,AA==',
   title: 'Owned window', action: 'type', active: true, capturedAt: 1, cursor: { x: 0.4, y: 0.3 } } }
-const props = (loadPreview: ComputerPreviewProps['loadPreview']): ComputerPreviewProps => ({ sessionId: SessionId('one'),
-  surface: 'applications', loadPreview, t: makeTranslate(en, commonEn) }) as ComputerPreviewProps
+const props = (loadPreview: ComputerPreviewProps['loadPreview'], generation: number | null = 1): ComputerPreviewProps => ({ sessionId: SessionId('one'),
+  surface: 'applications', loadPreview, t: makeTranslate(en, commonEn),
+  useConnectionGeneration: select => select(generation === null ? undefined : { id: generation, host: { home: '/test' } }),
+}) as ComputerPreviewProps
 
 it.each(['a', 'A', 'ß', 'é', '👩🏽‍💻', '中'])('shows the exact current character %s beside the keyboard icon', async (character) => {
   const typing = structuredClone(frame)
@@ -75,6 +77,90 @@ it('waits for a target without adding a header button', async () => {
   expect(view.container.childElementCount).toBe(0)
   await advance(2000)
   expect(screen.getByRole('img')).toBeTruthy()
+})
+
+it.each(['applications', 'browser'] as const)('keeps an unused %s preview hidden when requests fail', async (surface) => {
+  vi.useFakeTimers()
+  const report = vi.spyOn(console, 'error').mockImplementation(() => {})
+  const failure = new Error('Host restarting')
+  const load = vi.fn<ComputerPreviewProps['loadPreview']>().mockRejectedValueOnce(failure)
+    .mockResolvedValueOnce({ refreshMs: 2000, frame: { kind: 'idle' } }).mockRejectedValue(failure)
+  const view = render(<ComputerPreview {...props(load)} surface={surface} />)
+  await advance(0)
+  expect(report).toHaveBeenCalledWith('Computer preview request failed:', failure)
+  expect(screen.queryByRole('complementary')).toBeNull()
+  view.rerender(<ComputerPreview {...props(load, 2)} surface={surface} />)
+  await advance(0)
+  await advance(2000)
+  expect(load).toHaveBeenCalledTimes(3)
+  expect(screen.queryByRole('complementary')).toBeNull()
+})
+
+it('waits for connection readiness and discovers targets after a restart without opening empty panels', async () => {
+  vi.useFakeTimers()
+  const load = vi.fn<ComputerPreviewProps['loadPreview']>().mockResolvedValueOnce({ refreshMs: 2000, frame: { kind: 'idle' } })
+    .mockResolvedValue(frame)
+  const view = render(<ComputerPreview {...props(load, null)} />)
+  await advance(5000)
+  expect(load).not.toHaveBeenCalled()
+  expect(screen.queryByRole('complementary')).toBeNull()
+  view.rerender(<ComputerPreview {...props(load)} />)
+  await advance(0)
+  expect(load).toHaveBeenCalledTimes(1)
+  expect(screen.queryByRole('complementary')).toBeNull()
+  view.rerender(<ComputerPreview {...props(load, null)} />)
+  await advance(5000)
+  expect(load).toHaveBeenCalledTimes(1)
+  expect(screen.queryByRole('complementary')).toBeNull()
+  view.rerender(<ComputerPreview {...props(load, 2)} />)
+  await advance(0)
+  expect(load).toHaveBeenCalledTimes(2)
+  expect(screen.getByRole('img')).toBeTruthy()
+})
+
+it('retains an existing image with a failure notice until the restarted Host confirms its target', async () => {
+  vi.useFakeTimers()
+  const pending = Promise.withResolvers<ComputerPreviewSnapshot>()
+  const load = vi.fn<ComputerPreviewProps['loadPreview']>().mockResolvedValueOnce(frame).mockReturnValue(pending.promise)
+  const view = render(<ComputerPreview {...props(load)} />)
+  await advance(0)
+  view.rerender(<ComputerPreview {...props(load, null)} />)
+  expect(screen.getByRole('img')).toBeTruthy()
+  expect(screen.getByText(en.previewUnavailable)).toBeTruthy()
+  view.rerender(<ComputerPreview {...props(load, 2)} />)
+  await advance(0)
+  expect(screen.getByText(en.previewUnavailable)).toBeTruthy()
+  await act(async () => { pending.resolve({ refreshMs: 2000, frame: { kind: 'idle' } }) })
+  expect(screen.queryByRole('complementary')).toBeNull()
+})
+
+it('shows a target-specific capture failure even before the first image is available', async () => {
+  vi.useFakeTimers()
+  const load = vi.fn<ComputerPreviewProps['loadPreview']>().mockResolvedValue({ refreshMs: 750,
+    frame: { kind: 'unavailable', title: 'Owned window', code: 'PERMISSION_REQUIRED' } })
+  render(<ComputerPreview {...props(load)} />)
+  await advance(0)
+  expect(screen.getByRole('complementary')).toBeTruthy()
+  expect(screen.getByText(en.previewPermissionRequired)).toBeTruthy()
+  expect(screen.getByRole('button', { name: en.previewRetry })).toBeTruthy()
+})
+
+it('ignores a capture completed after its connection was withdrawn', async () => {
+  vi.useFakeTimers()
+  const pending = Promise.withResolvers<ComputerPreviewSnapshot>()
+  const load = vi.fn<ComputerPreviewProps['loadPreview']>().mockReturnValueOnce(pending.promise)
+    .mockResolvedValue({ refreshMs: 2000, frame: { kind: 'idle' } })
+  const view = render(<ComputerPreview {...props(load)} />)
+  await advance(0)
+  const signal = load.mock.calls[0]?.[1]
+  view.rerender(<ComputerPreview {...props(load, null)} />)
+  expect(signal?.aborted).toBe(true)
+  await act(async () => { pending.resolve(frame) })
+  expect(screen.queryByRole('complementary')).toBeNull()
+  view.rerender(<ComputerPreview {...props(load, 2)} />)
+  await advance(0)
+  expect(load).toHaveBeenCalledTimes(2)
+  expect(screen.queryByRole('complementary')).toBeNull()
 })
 
 it('switches the maximize icon and restores the previous floating position with Escape', async () => {

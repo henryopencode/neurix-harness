@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent, PointerEvent } from 'react'
 import { createPortal } from 'react-dom'
+import type { ConnectionGenerationState } from '@deepseek-ai/dsh-client-connection/client'
 import { Button, IconChevronDownOutlineRegular, IconChevronUpOutlineRegular, IconCopyOutlineRegular,
   IconFullscreenOutlineRegular, IconPanelLeftOutlineRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -14,6 +15,10 @@ import css from './ComputerPreview.module.css'
 
 /** Cancellable display-only reader injected by the optional Remote contribution. */
 export interface ComputerPreviewInjected {
+  hooks: {
+    /** Connection readiness and replacement restart display-only capture. */
+    connectionGeneration: ConnectionGenerationState
+  }
   /** Independent source identity for labels and initial panel position. */
   surface: 'applications' | 'browser'
   /**
@@ -31,14 +36,16 @@ export type ComputerPreviewProps = PropsRuntime<'conversation.session.header.uti
 /**
  * Display the actual target without activating it; collapsing stops capture.
  * @param props - exact Session, read-only capture, and localized controls.
- * @returns the floating panel when a target or capture failure is available.
+ * @returns the floating panel only after the Host confirms a target; request failures keep idle sources hidden.
  */
-export function ComputerPreview({ sessionId, loadPreview, t, surface }: ComputerPreviewProps) {
+export function ComputerPreview({ sessionId, loadPreview, t, surface, useConnectionGeneration }: ComputerPreviewProps) {
+  const generationId = useConnectionGeneration(generation => generation?.id)
   const [collapsed, setCollapsed] = useState(false)
   const [maximized, setMaximized] = useState(false)
   const [retry, setRetry] = useState(0)
   const [view, setView] = useState<{
     sessionId: SessionId
+    generationId?: number
     snapshot?: ComputerPreviewSnapshot
     failed: boolean
     failure?: Extract<ComputerPreviewSnapshot['frame'], { kind: 'unavailable' }>['code']
@@ -50,7 +57,7 @@ export function ComputerPreview({ sessionId, loadPreview, t, surface }: Computer
   const panel = useRef<HTMLElement>(null)
   const dragging = useRef<{ pointerId: number; element: HTMLElement; x: number; y: number; start: PreviewLayout; edge?: 'left' | 'right' }>()
   useEffect(() => {
-    if (collapsed) return
+    if (collapsed || generationId === undefined) return
     const lifetime = new AbortController()
     let timer: ReturnType<typeof setTimeout> | undefined
     setView(current => current.sessionId === sessionId ? current : { sessionId, failed: false, aspect: 1.6 })
@@ -67,7 +74,7 @@ export function ComputerPreview({ sessionId, loadPreview, t, surface }: Computer
           lifetime.signal.throwIfAborted()
           aspect = image.naturalWidth / image.naturalHeight
         }
-        setView(current => ({ sessionId, failed: snapshot.frame.kind === 'unavailable',
+        setView(current => ({ sessionId, generationId, failed: snapshot.frame.kind === 'unavailable',
           aspect: snapshot.frame.kind === 'unavailable' && current.sessionId === sessionId ? current.aspect : aspect,
           ...snapshot.frame.kind === 'unavailable' ? { failure: snapshot.frame.code } : {},
           snapshot: snapshot.frame.kind === 'unavailable' && current.sessionId === sessionId && current.snapshot?.frame.kind === 'frame'
@@ -76,18 +83,18 @@ export function ComputerPreview({ sessionId, loadPreview, t, surface }: Computer
       } catch (error) {
         if (!lifetime.signal.aborted) {
           console.error('Computer preview request failed:', error)
-          setView(current => ({ sessionId, failed: true, aspect: current.sessionId === sessionId ? current.aspect : 1.6,
-            ...current.sessionId === sessionId && current.snapshot !== undefined ? { snapshot: current.snapshot } : {} }))
+          setView(current => current.sessionId === sessionId ? { ...current, failed: true }
+            : { sessionId, failed: true, aspect: 1.6 })
         }
       }
       if (!lifetime.signal.aborted && refreshMs !== undefined) timer = setTimeout(() => { void read() }, refreshMs)
     }
     void read()
     return () => { lifetime.abort(); if (timer !== undefined) clearTimeout(timer) }
-  }, [sessionId, collapsed, loadPreview, retry])
+  }, [sessionId, collapsed, loadPreview, retry, generationId])
   const current = view.sessionId === sessionId ? view : undefined
   const frame = current?.snapshot?.frame
-  const visible = frame !== undefined && frame.kind !== 'idle' || current?.failed
+  const visible = frame !== undefined && frame.kind !== 'idle'
   const hasImage = frame?.kind === 'frame'
   const aspect = current?.aspect ?? 1.6
   const viewport = () => ({ width: window.innerWidth, height: window.innerHeight,
@@ -139,7 +146,7 @@ export function ComputerPreview({ sessionId, loadPreview, t, surface }: Computer
     ...layout === undefined || maximized && !collapsed ? {} : { left: layout.x, '--preview-top': `${layout.y}px`, right: 'auto',
       ...collapsed ? {} : { '--preview-width': `${layout.width}px` } },
   }
-  const failed = current?.failed || frame?.kind === 'unavailable'
+  const failed = current?.failed || frame?.kind === 'unavailable' || current?.generationId !== generationId
   const unavailable = current?.failure === 'PERMISSION_REQUIRED' ? 'previewPermissionRequired'
     : current?.failure === 'CAPTURE_TIMEOUT' ? 'previewTimeout' : current?.failure === 'IMAGE_TOO_LARGE' ? 'previewTooLarge' : 'previewUnavailable'
   const action = frame?.kind === 'frame' ? frame.action : ''

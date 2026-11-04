@@ -3,6 +3,7 @@
 import { Context } from '@deepseek-ai/cordis'
 import { expect, it } from 'vitest'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
+import { installConnection } from '@deepseek-ai/dsh-client-connection/client'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import * as PreviewUi from '../src/client/index.ts'
 
@@ -11,6 +12,7 @@ it('registers both sources after a late header declaration and withdraws each in
   try {
     await ctx.plugin(SlotRegistry)
     ctx.provide('locale', new LocaleRuntime(ctx))
+    installConnection(ctx)
     const fiber = ctx.plugin(PreviewUi)
     await fiber
     const slots = ctx.get('slots') as SlotRegistry

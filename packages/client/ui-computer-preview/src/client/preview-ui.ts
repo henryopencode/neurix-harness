@@ -1,6 +1,7 @@
 /** Shared preview rendering service for independent application and browser sources. @module */
 
 import type { Context } from '@deepseek-ai/cordis'
+import type { ConnectionGenerationState } from '@deepseek-ai/dsh-client-connection/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ComputerPreviewSnapshot } from '../types.ts'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
@@ -38,13 +39,14 @@ declare module '@deepseek-ai/cordis' {
 
 /**
  * Create a renderer without starting capture or registering a source.
+ * @param connectionGeneration - shared Host readiness and reconnect lifetime.
  * @returns source-registration service owned by the caller's client plugin.
  */
-export function createPreviewUi(): ComputerPreviewUi {
+export function createPreviewUi(connectionGeneration: ConnectionGenerationState): ComputerPreviewUi {
   return { register(ctx, source) {
     const fiber = ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({
       name: 'conversation.session.header.utilities', id: `${source.surface}-control.preview`, locale: 'computerPreview',
-      inject: () => source,
+      inject: () => ({ ...source, hooks: { connectionGeneration } }),
     }, ComputerPreview))
     return () => { fiber(); return Promise.resolve() }
   } }
