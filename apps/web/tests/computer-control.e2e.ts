@@ -96,6 +96,11 @@ it.skipIf(webSnapshotMode() === 'record')('validates settings, rejects and appro
     await page.reload({ waitUntil: 'load' })
     const input = page.locator('[data-composer-input][contenteditable="true"]').first()
     await input.waitFor({ timeout: 20_000 })
+    let previewFailed = false
+    page.on('console', (message) => {
+      if (message.type() === 'error' && message.text().startsWith('Computer preview request failed:')) previewFailed = true
+    })
+    await page.route('**/api/browserPreview/frame', route => route.abort('connectionreset'), { times: 1 })
     const rejected = active.whenTurnSettled(90_000)
     await input.fill('Open the test page with browser; I will reject this action.')
     await input.press('Enter')
@@ -103,8 +108,12 @@ it.skipIf(webSnapshotMode() === 'record')('validates settings, rejects and appro
     const rejectedSession = await rejected
     const rejectedEvents = active.ctx.sessions.get(rejectedSession)?.snapshotEvents() ?? []
     expect(rejectedEvents.some(event => event.type === 'approval/decided' && event.data.outcome === 'rejected')).toBe(true)
+    await expect.poll(() => previewFailed).toBe(true)
+    expect(await page.locator('[data-computer-preview]').count()).toBe(0)
     expect(requests).toBe(0)
     if (process.platform === 'darwin') expect(await ownedChromeProcesses()).toHaveLength(0)
+    await page.reload({ waitUntil: 'load' })
+    await input.waitFor({ timeout: 20_000 })
     // Approval, browser startup, and persistence share this wait; startup alone can consume 30 seconds.
     const settled = active.whenTurnSettled(90_000)
     await input.fill('Open a blank browser tab with browser and show its preview.')
