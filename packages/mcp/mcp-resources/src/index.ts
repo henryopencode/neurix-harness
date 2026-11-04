@@ -10,6 +10,9 @@ import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { registerResourceTools } from './tools.ts'
+import type { McpConnectionSnapshot } from './types.ts'
+
+export type { McpConnectionSnapshot } from './types.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -24,6 +27,10 @@ export type McpResourceRequest =
 
 /** One configured server's resource access, owned by its MCP connection plugin. */
 export interface McpResourceProvider {
+  /** Read connection state without sending a protocol request.
+   * @returns current connection phase and registered tools.
+   */
+  inspect?(): McpConnectionSnapshot
   /**
    * Run an operation against one live connection generation.
    * @param request - MCP resource method and parameters.
@@ -102,6 +109,15 @@ export class McpResourceRuntime extends Service {
     }.bind(this), `mcpResources.register(${server})`)
     // oxlint-disable-next-line typescript/no-misused-promises -- visibility cleanup is synchronous; Cordis retains pending fiber disposal
     return dispose
+  }
+
+  /**
+   * Inspect one server visible in the caller's scope without opening a connection.
+   * @param server - configured MCP namespace.
+   * @returns connection-owned state, or null when no inspecting provider is registered.
+   */
+  inspect(server: string): McpConnectionSnapshot | null {
+    return this.layers.merge(scopeOf(this.ctx), layer => layer.servers).get(server)?.inspect?.() ?? null
   }
 
   /** Own one scope's tools independently of its configured server plugins. */

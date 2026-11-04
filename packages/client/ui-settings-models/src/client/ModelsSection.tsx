@@ -137,7 +137,9 @@ function renderProviderEditor({ target, row, ...props }: ProviderEditorRenderPro
 }
 
 /**
- * Remove one user-added provider and its page-managed credential. Credential
+ * Remove one provider and its page-managed credential. Namespace-root
+ * providers retain an enabled=false setting so deployment defaults cannot
+ * restore the route. Credential
  * removal comes first so a second-step failure leaves the provider row visible
  * and the whole operation safely retryable; both unsets are idempotent.
  * The settings removal names the profile rather than rebuilding its whole
@@ -158,7 +160,9 @@ export async function removeProviderProfile(
   }
   const written = await operations.writeSettings(
     target.settingsNs,
-    [{ op: 'unset', path: [...target.settingsPath] }],
+    target.settingsPath.length === 0
+      ? [{ op: 'set', path: ['enabled'], value: false }]
+      : [{ op: 'unset', path: [...target.settingsPath] }],
     undefined,
   )
   if (written.kind !== 'written') return written.message

@@ -45,7 +45,7 @@ function officialEntry(id: string): 'plugin' | 'cron' | undefined {
 function PanelRow({ id, label, usePanelInfo, selectPanel, trackEntryClick, renderSlot }: PanelRowProps) {
   const active = usePanelInfo(info => info.activePanelId === id)
   return (
-    <Tooltip label={label} delayMs={500} side="right">
+    <Tooltip label={label} delayMs={500} side="right" portal>
       <button
         type="button"
         className={clsx(css.panelRow, active && css.panelActive)}
@@ -78,7 +78,7 @@ function PanelMoreMenu({ label, entries, onOpen, onPinnedChange, trackEntryClick
   return (
     <Menu open={open} onClose={onDismiss} portal autoFocus className={css.moreAnchor} listClassName={css.moreMenu}
       anchor={(
-        <Tooltip label={label} delayMs={500} side="right">
+        <Tooltip label={label} delayMs={500} side="right" portal>
           <button type="button" className={css.panelRow} aria-label={label} aria-haspopup="menu" aria-expanded={open}
             onClick={() => {
               trackEntryClick({ menu_name: 'more', position: 'sidebar' })
@@ -292,7 +292,7 @@ export function SidebarRoot({
       )}
 
       <div className={css.navigationRail} data-sidebar-navigation>
-        <Tooltip label={t('navigation.home')} delayMs={500} side="right">
+        <Tooltip label={t('navigation.home')} delayMs={500} side="right" portal>
           <button type="button" className={clsx(css.panelRow, activePanelId === null && css.panelActive)}
             aria-label={t('navigation.home')} aria-current={activePanelId === null ? 'page' : undefined}
             onClick={() => { selectPanel(null) }}>

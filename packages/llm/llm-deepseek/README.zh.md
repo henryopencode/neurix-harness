@@ -27,7 +27,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-本包导出传输库；provider 插件向 harness LLM 服务注册路由。它在每次操作开始时从 Config 引用捕获连接选项。
+本包导出传输库；provider 插件向 harness LLM 服务注册路由。Host 注册支持可选的实时启用状态回调；停用时会撤下路由并保留提供商设置。它在每次操作开始时从 Config 引用捕获连接选项。
 
 适配器接受 LLM 服务的[仅供请求使用的 user 输入](../llm/README.zh.md#use-this-package)，并可将其与持久历史混用；省略请求输入的身份与来源不会改变提供方内容。
 

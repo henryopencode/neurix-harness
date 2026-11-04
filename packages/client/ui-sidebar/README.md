@@ -27,7 +27,7 @@ The dsh web client sidebar places a 56px icon navigation rail beside the Workspa
 <a id="use-this-package"></a>
 ## Use this package
 
-The sidebar separates global navigation from browsing: Home and panel icons occupy the left rail, Settings stays at its foot, and the brand, New Session, Workspaces, and Sessions occupy the adjacent column. Home returns to the current conversation without starting a session. Feature plugins fill its seats — ui-workspace fills `sidebar.workspaces`, ui-settings registers the trigger row and settings panel at `sidebar.settings`.
+The sidebar separates global navigation from browsing: Home and panel icons occupy the left rail, Settings stays at its foot, and the brand, New Session, Workspaces, and Sessions occupy the adjacent column. Home returns to the current conversation without starting a session. New Session and the browser share 12px inline insets, so their row backgrounds align. Navigation tooltips render under the document body to escape rail scrolling and animation containers. Feature plugins fill its seats — ui-workspace fills `sidebar.workspaces`, ui-settings registers the trigger row and settings panel at `sidebar.settings`.
 
 ### Brand and New Session
 

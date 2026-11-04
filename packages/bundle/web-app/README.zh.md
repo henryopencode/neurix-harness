@@ -15,6 +15,7 @@ kind: "package-bundle"
 
 运行 `dsh --profile web`，获得浏览器内的聊天、模型与设置管理以及会话历史，并与其他 dsh 表层共用同一套模型访问、工具与安全默认值。启动时会打印带 token 的 URL，通常还会在默认浏览器中打开；SSH 会话和 `--no-open` 需要手动打开。你可以更改端口、允许额外 authority、绑定一个具体的本机 IP，并用自己提供的证书直接提供 HTTPS；通配地址会被拒绝。跨机访问使用剥离前缀代理后公告的 HTTP(S) URL、监听器 TLS，或非 loopback 绑定上的明文 HTTP。一次性的命令行任务应使用 headless 配置。
 
+
 ## 目录
 
 - [使用本包](#use-this-package)
@@ -32,6 +33,8 @@ kind: "package-bundle"
 启动 GUI、打开浏览器，然后开始与 agent（智能体）对话。flag 用于微调本次调用。
 
 Web 组合使用不偏向厂商的配置入口与排序。可选的 `ui-deepseek-model-label-1017` 条目默认禁用；可通过 profile overlay 设置 `disabled: false` 启用其版本徽标。
+
+侧栏的 **MCP** 页面可管理全局 MCP 服务器，并显示实时连接状态及工具。配置和恢复说明见 [MCP 管理页](../../client/ui-mcp/README.zh.md)。
 
 ### 启动 Web GUI
 

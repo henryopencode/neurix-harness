@@ -79,9 +79,9 @@ export interface ProviderRow {
   accountAvailable?: boolean
   /** The directory entry (route id, display name, settings address, live state). */
   entry: ProviderDirectoryEntry
-  /** Whether any layer configures this provider (its profile resolves). */
+  /** Whether this provider's profile resolves and is enabled. */
   configured: boolean
-  /** Whether the user layer alone carries the profile (removal restores the base). */
+  /** Whether the profile can be removed or a namespace-root provider can be disabled. */
   removable: boolean
   /** The credential reference the resolved profile names, when one does. */
   apiKeyEnv: string | undefined
@@ -250,10 +250,12 @@ export class ModelsSettingsStore {
       const namespace = namespaces.get(entry.settingsNs)
       const configured = namespace !== undefined
         && (entry.settingsPath.length === 0 || this.schema.getPath(namespace.value, entry.settingsPath) !== undefined)
+        && this.schema.getPath(namespace.value, [...entry.settingsPath, 'enabled']) !== false
       const removable = namespace !== undefined
-        && entry.settingsPath.length > 0
-        && this.schema.hasPath(namespace.user, entry.settingsPath)
-        && !this.schema.hasPath(namespace.base, entry.settingsPath)
+        && (entry.settingsPath.length === 0
+          ? this.schema.nodeAtPath(this.schema.rehydrate(namespace.schema), ['enabled'])?.type === 'boolean'
+          : this.schema.hasPath(namespace.user, entry.settingsPath)
+            && !this.schema.hasPath(namespace.base, entry.settingsPath))
       return {
         entry,
         configured,
