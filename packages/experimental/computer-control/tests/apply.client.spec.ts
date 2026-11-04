@@ -21,6 +21,7 @@ it('registers a localized configuration after the Plugins slot appears and remov
     const locale = new LocaleRuntime(ctx)
     locale.setLocale('zh')
     ctx.provide('locale', locale)
+    ctx.provide('connection', { generation: { getSnapshot: () => undefined, subscribe: () => () => {} } })
     new PreviewRemote(ctx, { settings: { describe: () => Promise.resolve({
       ok: true, value: { writable: true, hasDocument: true, namespaces: [] },
     }) } })

@@ -1,6 +1,7 @@
 /** Shared display-only preview service for independently enabled control plugins. @module */
 
 import type { Context } from '@deepseek-ai/cordis'
+import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import { createPreviewUi } from './preview-ui.ts'
 import { en, zh, ja, es, fr, de, ru, pt, type ComputerControlLocaleKey } from './locales.ts'
@@ -14,13 +15,14 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 /** Shared presentation dependencies; no operating runtime is started. */
-export const inject = ['slots', 'locale']
+export const inject = ['slots', 'locale', 'connection']
 
 /**
  * Provide the shared renderer without registering an application or browser source.
- * @param ctx - Client context with slots and localized copy.
+ * @param ctx - Client context with slots, localized copy, and Connection generations.
  */
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.locale.register('computerPreview', { en, zh, ja, es, fr, de, ru, pt }), 'computer-preview: dictionary')
-  ctx.provide('computerPreviewUi', createPreviewUi())
+  const connection = ctx.get('connection') as ConnectionHandle
+  ctx.provide('computerPreviewUi', createPreviewUi(connection.generation))
 }

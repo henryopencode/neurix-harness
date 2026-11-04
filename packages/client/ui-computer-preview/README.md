@@ -29,6 +29,8 @@ Enable Browser control or Application control from Plugins. The Web profile incl
 
 Previews appear automatically when a target is available. Drag the picture to move it within the application window, or drag either bottom corner to resize it. Maximize fills the available window while preserving the image proportions; Restore returns to the previous floating size and position. Collapse pauses capture and leaves an Expand button.
 
+Updates and connection failures do not open previews without a target. Capture pauses while disconnected and checks the target again after reconnection. An existing preview retains its last image with an unavailable notice until a fresh response arrives; a response with no target hides the panel. Target-specific capture failures, including missing permissions, show a Retry action.
+
 -----
 
 <a id="understand-the-implementation"></a>
