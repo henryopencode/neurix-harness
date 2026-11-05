@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-pwsh-local",
   "description": "Local PowerShell implementation of the Neurix Harness bash executor seam",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "publishConfig": {
     "access": "public"
   },
