@@ -1,8 +1,11 @@
 import { createHash } from 'node:crypto'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { load } from 'js-yaml'
+import { createRuntimeProjectMetadata } from '../src/project-manager.ts'
+import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
 import {
   DESKTOP_PACKAGES_DIR,
   DESKTOP_PACKAGE_SET_FILE,
@@ -57,6 +60,15 @@ afterEach(() => {
 })
 
 describe('desktop core package set', () => {
+  it('denies unused optional embedding scripts in the materialized runtime installation policy', () => {
+    const { root } = packageSetProject()
+    createRuntimeProjectMetadata(root, { schemaVersion: 1, version: '1.2.3', nodeVersion: '24.17.0',
+      pnpmVersion: '11.28.5', hostProtocolVersion: DESKTOP_HOST_PROTOCOL_VERSION })
+    expect(load(readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8'))).toMatchObject({
+      allowBuilds: { 'onnxruntime-node': false, sharp: false, 'node-pty': true, koffi: true },
+    })
+  })
+
   it('pins the direct dsh dependency and every internal package to local tarballs', () => {
     const { root } = packageSetProject()
     const packageSet = verifyDesktopCorePackageSet(root, '1.2.3')
