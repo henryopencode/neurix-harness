@@ -2,7 +2,7 @@
 
 [English](knowledge-base.md) | 中文
 
-可选的 [knowledge-base 包](../../packages/experimental/knowledge-base/README.zh.md)将导入的参考片段与个人记忆分开保存。原生工具依据调用方 Session 的原始工作区限制访问。可信服务消费者只能提供其有权访问的工作区标识。
+可选的 [knowledge-base 包](../../packages/core/knowledge-base/README.zh.md)将导入的参考片段与个人记忆分开保存。原生工具依据调用方 Session 的原始工作区限制访问。可信服务消费者只能提供其有权访问的工作区标识。
 
 ## 标识与结果
 
@@ -15,10 +15,10 @@
 | `KnowledgeSearch` | 实际 `mode`（`keyword` 或 `hybrid`）和有界 `passages` |
 | `KnowledgeDocumentList` | 有界 `documents` 和 `nextOffset`，无后续条目时为 null；偏移要求集合不变 |
 | `KnowledgeRemoval` | 被移除的 `documentId` 和 `removed: true`，已不存在的文档也返回此结果 |
-| `KnowledgeDashboard` | 工作区总数、有界文档元数据和原文匹配、图谱节点与边、分页、采样标记及上传字节限制 |
+| `KnowledgeDashboard` | `availability`（`ready` 或 `unsupported-platform`）、工作区总数、有界文档元数据和原文匹配、图谱节点与边、分页、采样标记及上传字节限制 |
 | `KnowledgeGraphNode` / `KnowledgeGraphEdge` | 带品牌的文档或关键词节点，以及观测到的文档与关键词共现次数 |
 
-类型定义见[知识库结果类型](../../packages/experimental/knowledge-base/src/types.ts)。操作限制、支持格式、embedding 配置、失败保证和模型可见行为由[包参考](../../packages/experimental/knowledge-base/README.zh.md)负责。
+类型定义见[知识库结果类型](../../packages/core/knowledge-base/src/types.ts)。操作限制、支持格式、embedding 配置、失败保证和模型可见行为由[包参考](../../packages/core/knowledge-base/README.zh.md)负责。
 
 ## Cordis API
 
@@ -109,7 +109,7 @@ importUploaded( space: KnowledgeSpace, name: string, base64: string, replace: bo
 dashboard(space: KnowledgeSpace, query: string, offset: number, signal: AbortSignal): Promise<KnowledgeDashboard>
 ```
 
-Source: [`packages/experimental/knowledge-base/src/index.ts`](../../packages/experimental/knowledge-base/src/index.ts)
+Source: [`packages/core/knowledge-base/src/index.ts`](../../packages/core/knowledge-base/src/index.ts)
 
 <a id="ctxknowledgecontroller--knowledgecontroller"></a>
 
@@ -162,5 +162,5 @@ One Remote namespace for knowledge management, without changing the Agent tools.
 
 Types: [WorkspaceId](workspace.zh.md)
 
-Source: [`packages/experimental/knowledge-base/src/controller.ts`](../../packages/experimental/knowledge-base/src/controller.ts)
+Source: [`packages/core/knowledge-base/src/controller.ts`](../../packages/core/knowledge-base/src/controller.ts)
 <!-- END GENERATED cordis-surface -->

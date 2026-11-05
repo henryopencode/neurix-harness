@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-experimental-knowledge-base",
+  "name": "@deepseek-ai/dsh-knowledge-base",
   "description": "Import local documents and retrieve source passages through native agent tools.",
   "version": "1.0.8",
   "type": "module",
@@ -22,14 +22,11 @@
     },
     "./types": {
       "types": "./lib/types/types.d.ts"
-    },
-    "./cordis.patch.yml": "./cordis.patch.yml"
+    }
   },
   "files": [
-    "icon.svg",
     "locale/*.json",
     "lib/index.js",
-    "cordis.patch.yml",
     "lib/types/**/*.d.ts",
     "lib/typert.host.js",
     "lib/typert.host.d.ts",
@@ -45,8 +42,7 @@
     "apache-arrow": "21.2.0",
     "pdfjs-dist": "6.3.289",
     "zod": "^4.1.5",
-    "@deepseek-ai/schemastery": "workspace:~",
-    "@deepseek-ai/dsh-experimental-client-ui-knowledge-base": "workspace:*"
+    "@deepseek-ai/schemastery": "workspace:~"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
@@ -91,12 +87,6 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/henryopencode/neurix-harness.git",
-    "directory": "packages/experimental/knowledge-base"
-  },
-  "icon": "./icon.svg",
-  "dsh": {
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    }
+    "directory": "packages/core/knowledge-base"
   }
 }

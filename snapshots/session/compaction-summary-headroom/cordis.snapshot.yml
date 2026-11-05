@@ -1,3 +1,7 @@
+# Keep this finite compaction budget independent of reference retrieval.
+- id: knowledge-base
+  disabled: true
+
 # The summary output cap inherits the 1,800-token headroom. A 1,000-token
 # request output reservation lowers the proactive trigger to 5,822 tokens.
 

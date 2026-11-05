@@ -7,9 +7,9 @@ A service can be a core spine service, a swappable capability seam, a bundle/com
 
 ```mermaid
 flowchart LR
-  pkg_experimental_knowledge_base["experimental-knowledge-base"]
+  pkg_knowledge_base["knowledge-base"]
   svc_knowledgeBase["ctx.knowledgeBase<br/>Workspace document knowledge"]
-  pkg_experimental_client_ui_knowledge_base["experimental-client-ui-knowledge-base"]
+  pkg_client_ui_knowledge_base["client-ui-knowledge-base"]
   svc_knowledgeController["ctx.knowledgeController<br/>Workspace knowledge management Remote"]
   pkg_experimental_browser_control["experimental-browser-control"]
   svc_browserPreview["ctx.browserPreview<br/>Hidden browser preview Remote"]
@@ -368,8 +368,6 @@ flowchart LR
   pkg_experimental_computer_control --> svc_computerPreview
   pkg_experimental_computer_use_cua_driver_mcp --> svc_computerUse
   pkg_experimental_computer_use_cua_driver_native --> svc_computerUse
-  pkg_experimental_knowledge_base --> svc_knowledgeBase
-  pkg_experimental_knowledge_base --> svc_knowledgeController
   pkg_experimental_ptc_runtime_python --> svc_ptcRuntime
   pkg_experimental_speech_to_text --> svc_speechToText
   pkg_experimental_speech_to_text_sensevoice --> svc_speechToText
@@ -392,6 +390,8 @@ flowchart LR
   pkg_inspector --> svc_inspector
   pkg_jobs --> svc_jobs
   pkg_jobs_local --> svc_jobs
+  pkg_knowledge_base --> svc_knowledgeBase
+  pkg_knowledge_base --> svc_knowledgeController
   pkg_llm --> svc_llm
   pkg_llm_deepseek --> svc_llm
   pkg_llm_pi_ai --> svc_llm
@@ -527,9 +527,9 @@ flowchart LR
   svc_jobs --> pkg_tool_jobs
   svc_jobs --> pkg_tool_pwsh
   svc_jobs --> pkg_tool_terminal
-  svc_knowledgeBase --> pkg_experimental_client_ui_knowledge_base
-  svc_knowledgeBase --> pkg_experimental_knowledge_base
-  svc_knowledgeController --> pkg_experimental_client_ui_knowledge_base
+  svc_knowledgeBase --> pkg_client_ui_knowledge_base
+  svc_knowledgeBase --> pkg_knowledge_base
+  svc_knowledgeController --> pkg_client_ui_knowledge_base
   svc_llm --> pkg_agent_loop
   svc_llm --> pkg_compaction_basic
   svc_lsp --> pkg_tool_lsp
@@ -646,8 +646,8 @@ flowchart LR
 
 | ctx key | Role | Owner | Implementations | Direct consumers | Companion plugins | Note |
 | --- | --- | --- | --- | --- | --- | --- |
-| `ctx.knowledgeBase` | `core` | [`experimental-knowledge-base`](../packages/experimental/knowledge-base) | - | [`experimental-knowledge-base`](../packages/experimental/knowledge-base), [`experimental-client-ui-knowledge-base`](../packages/experimental/client-ui-knowledge-base) | - | The service, LanceDB provider, and native tool consumer share one optional package; document snapshots retain source revisions independently of personal memory. |
-| `ctx.knowledgeController` | `core` | [`experimental-knowledge-base`](../packages/experimental/knowledge-base) | - | [`experimental-client-ui-knowledge-base`](../packages/experimental/client-ui-knowledge-base) | - | Workspace resource authorization covers uploaded documents, exact source reads, and keyword associations. |
+| `ctx.knowledgeBase` | `core` | [`knowledge-base`](../packages/core/knowledge-base) | - | [`knowledge-base`](../packages/core/knowledge-base), [`client-ui-knowledge-base`](../packages/client/ui-knowledge-base) | - | The service, LanceDB provider, and native tool consumer share one optional package; document snapshots retain source revisions independently of personal memory. |
+| `ctx.knowledgeController` | `core` | [`knowledge-base`](../packages/core/knowledge-base) | - | [`client-ui-knowledge-base`](../packages/client/ui-knowledge-base) | - | Workspace resource authorization covers uploaded documents, exact source reads, and keyword associations. |
 | `ctx.browserPreview` | `core` | [`experimental-browser-control`](../packages/experimental/browser-control) | - | - | - | Returns display-only captures of Session-owned tabs without native application access. |
 | `ctx.computerPreview` | `core` | [`experimental-computer-control`](../packages/experimental/computer-control) | - | - | - | Returns display-only captures from the selected Session without activating Agents or delivering input. |
 | `ctx.actionCards` | `service` | [`action-cards`](../packages/experimental/action-cards) | - | [`creation-recommendations`](../packages/experimental/creation-recommendations), [`client-ui-action-cards`](../packages/experimental/client-ui-action-cards) | - | Owns the card tool, card state, user actions and status notices; card kinds register their actions and handlers. |

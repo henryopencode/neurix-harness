@@ -6,7 +6,7 @@
 
 ## 启用知识库管理
 
-在已安装的 Web 或 Desktop 版本中，打开插件页并启用**知识库**。通过侧边栏入口导入和管理工作区文档。索引保存在本机；记忆系统继续单独管理个人偏好。
+在 Web 或 Desktop 中，直接打开侧边栏的**知识库**。此能力已内置，默认启用。通过侧边栏入口导入和管理工作区文档。索引保存在本机；记忆系统继续单独管理个人偏好。
 
 ### 源码示例
 
@@ -32,4 +32,4 @@ Agent 使用 `knowledge_import`、`knowledge_search`、`knowledge_read`、`knowl
 
 ## 可选语义检索
 
-示例默认使用本地关键词检索，无需凭据。已有的 Ollama embedding 服务和模型可以同时启用语义与关键词检索；[包参考](../../../packages/experimental/knowledge-base/README.zh.md#retrieval-and-limits)负责配置和重建索引要求。仅在显式配置 embedding 端点后，片段才会发送到该端点。
+示例默认使用本地关键词检索，无需凭据。已有的 Ollama embedding 服务和模型可以同时启用语义与关键词检索；[包参考](../../../packages/core/knowledge-base/README.zh.md#retrieval-and-limits)负责配置和重建索引要求。仅在显式配置 embedding 端点后，片段才会发送到该端点。

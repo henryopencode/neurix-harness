@@ -1,9 +1,9 @@
-/** The package names the plugin manager protects, hides, orders, or marks experimental. */
+/** Package names the plugin manager protects, hides, orders, or marks experimental. */
 
 /**
- * Plugin packages the plugin manager refuses to disable or remove, because management itself needs them; a bundle that
- * contains one is read-only as well. Removing a name drops only this `management-required` refusal; the manager's own
- * entry, installation-carried bundles, and unaddressable rows stay protected by their own rules.
+ * Packages required by management or built-in Agent capabilities cannot be disabled or removed in the plugin manager.
+ * Containing bundles are read-only. The manager's own entry, installation-carried bundles, and unaddressable rows
+ * retain their independent protection rules.
  */
 export const PROTECTED_PLUGINS: ReadonlySet<string> = new Set([
   '@deepseek-ai/dsh-plugin-manager', '@deepseek-ai/cordis-plugin-loader',
@@ -15,6 +15,7 @@ export const PROTECTED_PLUGINS: ReadonlySet<string> = new Set([
   '@deepseek-ai/cordis-plugin-timer', '@deepseek-ai/dsh-client-connection',
   '@deepseek-ai/dsh-host-frontend-static', '@deepseek-ai/dsh-tools',
   '@deepseek-ai/dsh-hmr',
+  '@deepseek-ai/dsh-knowledge-base', '@deepseek-ai/dsh-client-ui-knowledge-base',
 ])
 
 /**

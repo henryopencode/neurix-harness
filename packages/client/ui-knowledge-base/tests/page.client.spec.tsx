@@ -14,7 +14,7 @@ const workspaceId = brandString<WorkspaceId>('workspace-a')
 const sourceDocument: Document = { documentId: brandString<Document['documentId']>('document-a'),
   source: 'knowledge-upload://guide.md', title: 'guide.md', version: 'revision-a', chunks: 1 }
 const dashboard: Dashboard = {
-  totalDocuments: 1, totalPassages: 1, documents: [sourceDocument], passages: [], nextOffset: null,
+  availability: 'ready', totalDocuments: 1, totalPassages: 1, documents: [sourceDocument], passages: [], nextOffset: null,
   truncated: false, pageSize: 30, maxFileBytes: 1024,
   nodes: [
     { id: brandString<Dashboard['nodes'][number]['id']>('document:a'), kind: 'document', label: sourceDocument.title, documentId: sourceDocument.documentId },
@@ -23,12 +23,12 @@ const dashboard: Dashboard = {
   edges: [{ source: brandString<Dashboard['nodes'][number]['id']>('document:a'), target: brandString<Dashboard['nodes'][number]['id']>('keyword:a'), occurrences: 2 }],
 }
 
-function fixture() {
+function fixture(value: Dashboard = dashboard) {
   let view: ViewState = { workspaceId, query: '', offset: 0, busy: null }
   const workspaces = { ...workspaceSnapshot(), phase: 'ready' as const, items: [{ workspaceId,
     path: '/project', title: 'Project', sessionIds: [], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' }] }
   const resources = vi.fn((address: string) => ({ status: 'live' as const, failure: undefined,
-    value: address.includes('knowledge-dashboard') ? dashboard : address.includes('knowledge-passage')
+    value: address.includes('knowledge-dashboard') ? value : address.includes('knowledge-passage')
       ? { ...sourceDocument, chunk: 0, page: null, startLine: 2, endLine: 2, text: '<script>untrusted reference</script>' } : undefined,
   }))
   const unused = (): never => { throw new Error('Unused standard hook') }
@@ -71,4 +71,11 @@ it('captures the document workspace when removal is opened and mutates only afte
   fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Remove' }))
   await waitFor(() => { expect(props.remove).toHaveBeenCalledWith(workspaceId, sourceDocument) })
   await waitFor(() => { expect(screen.queryByRole('dialog')).toBeNull() })
+})
+
+it('keeps its built-in page visible and explains an unavailable native index', () => {
+  fixture({ ...dashboard, availability: 'unsupported-platform', documents: [], nodes: [], edges: [], totalDocuments: 0, totalPassages: 0 })
+  expect(screen.getByText(en.unsupportedPlatform)).toBeTruthy()
+  expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Import document' }).disabled).toBe(true)
+  expect(screen.queryByText('No documents yet')).toBeNull()
 })

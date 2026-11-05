@@ -1,3 +1,7 @@
+# Keep this finite compaction budget independent of reference retrieval.
+- id: knowledge-base
+  disabled: true
+
 # With 1,800 tokens of headroom, a 1,000-token output reservation lowers the
 # trigger from 6,822 to 5,822, between the history and its condensed replacement.
 

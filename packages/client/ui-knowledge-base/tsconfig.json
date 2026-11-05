@@ -12,7 +12,7 @@
       "path": "../../../vendor/cordis"
     },
     {
-      "path": "../knowledge-base"
+      "path": "../../core/knowledge-base"
     },
     {
       "path": "../../api/remotes/tsconfig.client.json"
@@ -21,31 +21,31 @@
       "path": "../../api/workspace-controller/tsconfig.client.json"
     },
     {
-      "path": "../../client/connection/tsconfig.client.json"
+      "path": "../connection/tsconfig.client.json"
     },
     {
-      "path": "../../client/locale/tsconfig.client.json"
+      "path": "../locale/tsconfig.client.json"
     },
     {
-      "path": "../../client/resources"
+      "path": "../resources"
     },
     {
-      "path": "../../client/store"
+      "path": "../store"
     },
     {
-      "path": "../../client/ui-layout"
+      "path": "../ui-layout"
     },
     {
-      "path": "../../client/ui-sidebar"
+      "path": "../ui-sidebar"
     },
     {
-      "path": "../../client/ui-slots"
+      "path": "../ui-slots"
     },
     {
-      "path": "../../client/ui-primitives"
+      "path": "../ui-primitives"
     },
     {
-      "path": "../../client/ui-renderer"
+      "path": "../ui-renderer"
     },
     {
       "path": "../../typert/protocol"

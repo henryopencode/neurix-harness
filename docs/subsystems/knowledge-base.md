@@ -2,7 +2,7 @@
 
 English | [中文](knowledge-base.zh.md)
 
-The optional [knowledge-base package](../../packages/experimental/knowledge-base/README.md) stores imported reference passages independently of personal memory. Native tools derive access from the calling Session's original workspace. Trusted service consumers must supply only workspace identities they are authorized to access.
+The optional [knowledge-base package](../../packages/core/knowledge-base/README.md) stores imported reference passages independently of personal memory. Native tools derive access from the calling Session's original workspace. Trusted service consumers must supply only workspace identities they are authorized to access.
 
 ## Identities and results
 
@@ -15,10 +15,10 @@ The optional [knowledge-base package](../../packages/experimental/knowledge-base
 | `KnowledgeSearch` | Actual `mode` (`keyword` or `hybrid`) and bounded `passages` |
 | `KnowledgeDocumentList` | Bounded `documents` and `nextOffset`, or null when exhausted; offsets require an unchanged collection |
 | `KnowledgeRemoval` | Removed `documentId` and `removed: true`, including when already absent |
-| `KnowledgeDashboard` | Workspace totals, bounded document metadata and source matches, graph nodes/edges, pagination, sampling indicator, and upload byte limit |
+| `KnowledgeDashboard` | `availability` (`ready` or `unsupported-platform`), workspace totals, bounded document metadata and source matches, graph nodes/edges, pagination, sampling indicator, and upload byte limit |
 | `KnowledgeGraphNode` / `KnowledgeGraphEdge` | Branded document or keyword nodes and observed document-to-keyword occurrence counts |
 
-Definitions: [knowledge result types](../../packages/experimental/knowledge-base/src/types.ts). Operational limits, supported sources, embedding configuration, failure guarantees, and model-visible behavior belong to the [package reference](../../packages/experimental/knowledge-base/README.md).
+Definitions: [knowledge result types](../../packages/core/knowledge-base/src/types.ts). Operational limits, supported sources, embedding configuration, failure guarantees, and model-visible behavior belong to the [package reference](../../packages/core/knowledge-base/README.md).
 
 ## Cordis API
 
@@ -109,7 +109,7 @@ importUploaded( space: KnowledgeSpace, name: string, base64: string, replace: bo
 dashboard(space: KnowledgeSpace, query: string, offset: number, signal: AbortSignal): Promise<KnowledgeDashboard>
 ```
 
-Source: [`packages/experimental/knowledge-base/src/index.ts`](../../packages/experimental/knowledge-base/src/index.ts)
+Source: [`packages/core/knowledge-base/src/index.ts`](../../packages/core/knowledge-base/src/index.ts)
 
 <a id="ctxknowledgecontroller--knowledgecontroller"></a>
 
@@ -162,5 +162,5 @@ One Remote namespace for knowledge management, without changing the Agent tools.
 
 Types: [WorkspaceId](workspace.md)
 
-Source: [`packages/experimental/knowledge-base/src/controller.ts`](../../packages/experimental/knowledge-base/src/controller.ts)
+Source: [`packages/core/knowledge-base/src/controller.ts`](../../packages/core/knowledge-base/src/controller.ts)
 <!-- END GENERATED cordis-surface -->

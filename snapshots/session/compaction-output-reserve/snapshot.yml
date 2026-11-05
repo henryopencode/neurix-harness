@@ -8,5 +8,4 @@ header:
   class: compaction-output-reserve
   pin: true
   systemPromptSource: compaction-recovery
-  toolSchemasSource: compaction-recovery
   changes: 1

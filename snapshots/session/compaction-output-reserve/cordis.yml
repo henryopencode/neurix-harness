@@ -1,3 +1,7 @@
+# Keep this finite compaction budget independent of reference retrieval.
+- id: knowledge-base
+  disabled: true
+
 # Proactive compaction with a bounded message budget.
 
 - id: agent-instructions

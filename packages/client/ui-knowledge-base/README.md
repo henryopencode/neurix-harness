@@ -3,7 +3,7 @@ description: "Manage workspace knowledge documents, inspect source passages, and
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-client-ui-knowledge-base
+# @deepseek-ai/dsh-client-ui-knowledge-base
 
 English | [中文](README.zh.md)
 
@@ -25,13 +25,13 @@ Import and manage reference documents from a dedicated sidebar page. Explore the
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount this optional plugin alongside [document knowledge](../knowledge-base/README.md) in a Web or Desktop composition providing the Workspace controller, typed Gateway, and standard Client services. The [source-checkout overlay](../../../apps/cli/config/examples/knowledge-base.cordis.yml) mounts both packages.
+The Web bundle mounts this built-in page alongside [document knowledge](../../core/knowledge-base/README.md) in a Web or Desktop composition providing the Workspace controller, typed Gateway, and standard Client services. No plugin activation is required.
 
 ```yaml
-- name: '@deepseek-ai/dsh-experimental-knowledge-base'
+- name: '@deepseek-ai/dsh-knowledge-base'
   config:
     path: /absolute/path/to/knowledge-index
-- name: '@deepseek-ai/dsh-experimental-client-ui-knowledge-base'
+- name: '@deepseek-ai/dsh-client-ui-knowledge-base'
 ```
 
 Open **Knowledge base**, select a workspace, and import Markdown, TXT, or text PDF. A document node opens its exact imported source; a keyword filters associated documents. Search operates on document content. The graph supports pan, zoom, and view reset, with the document list below it on narrow screens.
@@ -58,7 +58,7 @@ Sources: [resource and sidebar bindings](src/client/mount.ts), [page](src/client
 ## Further Exploration
 
 - [User guide](../../../docs/user/guide/knowledge-base.md) — enable the example and import documents.
-- [Knowledge package](../knowledge-base/README.md) — indexing, retrieval, budgets, and failures.
+- [Knowledge package](../../core/knowledge-base/README.md) — indexing, retrieval, budgets, and failures.
 - [Knowledge API](../../../docs/subsystems/knowledge-base.md) — workspace-authorized management results.
 
 -----
@@ -66,7 +66,7 @@ Sources: [resource and sidebar bindings](src/client/mount.ts), [page](src/client
 <a id="model-experience"></a>
 ## Model Experience
 
-Indirectly, through later [knowledge tool results](../knowledge-base/README.md#model-experience) after documents are imported, replaced, or removed; this UI contributes no model prompt or tool schema.
+Indirectly, through later [knowledge tool results](../../core/knowledge-base/README.md#model-experience) after documents are imported, replaced, or removed; this UI contributes no model prompt or tool schema.
 
 #### KV Cache effect
 
