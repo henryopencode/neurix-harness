@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-skill-badge",
   "description": "Bundled dsh badge skill provider for Neurix Harness",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "publishConfig": {
     "access": "public"
   },
