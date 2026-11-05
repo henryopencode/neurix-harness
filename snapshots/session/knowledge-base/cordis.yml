@@ -45,7 +45,6 @@
               - id: deepseek-v4-pro
 
 - insert:
-    - id: knowledge-base
-      name: '@deepseek-ai/dsh-experimental-knowledge-base'
-      config:
-        path: !!js dshHomePath('storages', 'knowledge-base')
+- id: knowledge-base
+  config:
+    path: !!js dshHomePath('storages', 'knowledge-base')

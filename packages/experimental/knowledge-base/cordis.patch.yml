@@ -1,7 +1,0 @@
-- insert:
-    - id: knowledge-base
-      name: '@deepseek-ai/dsh-experimental-knowledge-base'
-      config:
-        path: !!js dshHomePath('storages', 'knowledge-base')
-    - id: ui-knowledge-base
-      name: '@deepseek-ai/dsh-experimental-client-ui-knowledge-base'

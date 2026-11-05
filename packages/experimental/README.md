@@ -36,7 +36,6 @@ Promotion requires a named product role, documented public behavior and limitati
 
 | Package | Role | ctx key |
 |---|---|---|
-| [`knowledge-base`](knowledge-base/README.md) | Import workspace reference documents and retrieve source passages through native tools | `ctx.knowledgeBase` |
 | [`action-cards`](action-cards/README.md) | Optional action cards below answers: the proposal tool, card state, user actions and status notices | `ctx.actionCards` |
 | [`client-ui-action-cards`](client-ui-action-cards/README.md) | Card frame below completed answers, kind bodies and the proposal process row | — |
 | [`creation-recommendations`](creation-recommendations/README.md) | Explicit-need creation of persistent removable interface plugins | — |
@@ -61,7 +60,6 @@ Promotion requires a named product role, documented public behavior and limitati
 | [`skill-badge`](skill-badge/README.md) | The powered-by-dsh badge skill | — |
 | [`translator`](translator/README.md) | Anonymous Google and Bing text translation | `ctx.translator` |
 | [`client-ui-cot-translation`](client-ui-cot-translation/README.md) | Expanded reasoning translation and original-text controls | `ctx.cotTranslation` |
-| [`client-ui-knowledge-base`](client-ui-knowledge-base/README.md) | Manage workspace references and explore document/keyword associations | `ctx.knowledgeController` |
 | [`cot-translation-bundle`](cot-translation-bundle/README.md) | Default-disabled reasoning translation composition | — |
 | [`speech-to-text`](speech-to-text/README.md) | Named speech recognition providers | `ctx.speechToText` |
 | [`speech-to-text-sensevoice`](speech-to-text-sensevoice/README.md) | Managed local SenseVoice inference | — |

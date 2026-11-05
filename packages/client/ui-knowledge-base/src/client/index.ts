@@ -1,7 +1,7 @@
 /** Bind the generated knowledge Remote to the source-tested browser lifecycle. */
 
 import type { Context } from '@deepseek-ai/cordis'
-import contribution from '@deepseek-ai/dsh-experimental-knowledge-base/remote'
+import contribution from '@deepseek-ai/dsh-knowledge-base/remote'
 import { mountKnowledgeUi } from './mount.ts'
 
 export { inject } from './mount.ts'

@@ -3,7 +3,7 @@ description: "从侧边栏管理工作区知识文档、检查原文片段，并
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-client-ui-knowledge-base
+# @deepseek-ai/dsh-client-ui-knowledge-base
 
 [English](README.md) | 中文
 
@@ -25,13 +25,13 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用此包
 
-在提供工作区控制器、类型化 Gateway 和标准 Client 服务的 Web 或 Desktop 组合中，将此可选插件与[文档知识库](../knowledge-base/README.zh.md)共同挂载。[源码示例叠加配置](../../../apps/cli/config/examples/knowledge-base.cordis.yml)会同时挂载这两个包。
+在提供工作区控制器、类型化 Gateway 和标准 Client 服务的 Web 或 Desktop 组合中，默认将此内置页面与[文档知识库](../../core/knowledge-base/README.zh.md)共同挂载。无需手动启用插件。
 
 ```yaml
-- name: '@deepseek-ai/dsh-experimental-knowledge-base'
+- name: '@deepseek-ai/dsh-knowledge-base'
   config:
     path: /absolute/path/to/knowledge-index
-- name: '@deepseek-ai/dsh-experimental-client-ui-knowledge-base'
+- name: '@deepseek-ai/dsh-client-ui-knowledge-base'
 ```
 
 打开**知识库**，选择工作区，导入 Markdown、TXT 或文字 PDF。文档节点会打开精确导入版本的原文；关键词会筛选关联文档。搜索针对文档内容。图谱支持平移、缩放和重置视角，窄屏下文档列表位于图谱下方。
@@ -58,7 +58,7 @@ Host 对每个调用执行工作区资源授权，并使用与原生工具相同
 ## 进一步探索
 
 - [用户指南](../../../docs/user/guide/knowledge-base.zh.md)——启用示例和导入文档。
-- [知识库包](../knowledge-base/README.zh.md)——索引、检索、预算与失败处理。
+- [知识库包](../../core/knowledge-base/README.zh.md)——索引、检索、预算与失败处理。
 - [知识库 API](../../../docs/subsystems/knowledge-base.zh.md)——按工作区授权的管理结果。
 
 -----
@@ -66,7 +66,7 @@ Host 对每个调用执行工作区资源授权，并使用与原生工具相同
 <a id="model-experience"></a>
 ## 模型体验
 
-通过导入、替换或移除文档后的[知识工具结果](../knowledge-base/README.zh.md#model-experience)间接影响模型；此 UI 不贡献模型提示词或工具 schema。
+通过导入、替换或移除文档后的[知识工具结果](../../core/knowledge-base/README.zh.md#model-experience)间接影响模型；此 UI 不贡献模型提示词或工具 schema。
 
 #### KV Cache 影响
 

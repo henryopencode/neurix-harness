@@ -27,7 +27,7 @@
       "path": "../../llm/llm"
     },
     {
-      "path": "../../core/tools"
+      "path": "../tools"
     },
     {
       "path": "../../session/working-directory"

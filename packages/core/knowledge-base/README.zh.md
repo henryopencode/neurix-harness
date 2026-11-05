@@ -1,9 +1,9 @@
 ---
 description: "工作区文档知识库：通过原生工具导入本地 Markdown、TXT 和 PDF，保留来源引用，并可选配置 Ollama embedding。"
-kind: "package-bundle"
+kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-knowledge-base
+# @deepseek-ai/dsh-knowledge-base
 
 [English](README.md) | 中文
 
@@ -25,14 +25,12 @@ kind: "package-bundle"
 <a id="use-this-package"></a>
 ## 使用此包
 
-在 Web 或 Desktop 的插件页启用**知识库**，即可添加文档管理和原生 Agent 工具。内置 profile 提供此 bundle，默认关闭。索引保存在 `$DSH_HOME/storages/knowledge-base`，与 Session 日志和记忆数据库分开。支持 Apple Silicon macOS、Linux 和 Windows；此版本的 LanceDB 不提供 Intel macOS 原生绑定。
-
-Bundle 的[叠加配置](cordis.patch.yml)挂载本服务和[管理 UI](../client-ui-knowledge-base/README.zh.md)。停用后会移除工具及页面，并保留索引文档。提供 `tools`、`fs` 和 `workingDirectory` 的自定义组合也可以直接挂载服务。
+基于 base 的 profile 默认挂载知识库。Web 和 Desktop 启动后即可看到侧边栏管理页，插件页不提供启停开关。索引仍保存在 `$DSH_HOME/storages/knowledge-base`，空资料库不会自动导入文件。Intel macOS 显示明确的平台不支持状态，不加载原生绑定。提供 `tools`、`fs` 和 `workingDirectory` 的自定义组合也可以挂载此服务。
 
 ### 最小配置
 
 ```yaml
-- name: '@deepseek-ai/dsh-experimental-knowledge-base'
+- name: '@deepseek-ai/dsh-knowledge-base'
   config:
     path: /absolute/path/to/knowledge-index
 ```
@@ -43,14 +41,14 @@ Bundle 的[叠加配置](cordis.patch.yml)挂载本服务和[管理 UI](../clien
 
 ### 文档管理
 
-在提供工作区控制器和类型化 Gateway 的 Web 或 Desktop 组合中，此插件同时开放按工作区授权的文档管理。挂载[可选 UI 包](../client-ui-knowledge-base/README.zh.md)可添加侧边栏入口、浏览器文件导入、原文读取及文档与关键词图谱。上传文件名使用独立来源标识；上传同名文件需要明确确认替换。图谱从有界原文样本提取关键词共现，不推断语义事实关系。
+在提供工作区控制器和类型化 Gateway 的 Web 或 Desktop 组合中，此插件同时开放按工作区授权的文档管理。Web bundle 默认挂载[内置 UI 包](../../client/ui-knowledge-base/README.zh.md)可添加侧边栏入口、浏览器文件导入、原文读取及文档与关键词图谱。上传文件名使用独立来源标识；上传同名文件需要明确确认替换。图谱从有界原文样本提取关键词共现，不推断语义事实关系。
 
 <a id="retrieval-and-limits"></a>
 ### 检索与限制
 
 默认通过本地 ICU 分词全文索引检索中文及其他文字。启用混合检索时，为选定 Ollama 服务上已经安装的 embedding 模型配置 `embedding.baseUrl` 和 `embedding.model`。导入片段和查询会发送到该配置端点。插件不会下载模型，也不会将聊天模型自动选作 embedding 模型。更换 embedding 目标需要使用新索引目录并重新导入文档。
 
-生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-experimental-knowledge-base)负责所有字段及默认值。文件字节数、提取文字长度、片段数量、搜索数量和完整 UTF-8 结果大小分别受限。单个片段无法容纳时会明确拒绝；搜索和列表分页会减少条目数以符合预算。相邻片段不重叠，使重复原文也能保留正确行号；需要周围内容时使用 `knowledge_read` 读取相邻片段。
+生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-knowledge-base)负责所有字段及默认值。文件字节数、提取文字长度、片段数量、搜索数量和完整 UTF-8 结果大小分别受限。单个片段无法容纳时会明确拒绝；搜索和列表分页会减少条目数以符合预算。相邻片段不重叠，使重复原文也能保留正确行号；需要周围内容时使用 `knowledge_read` 读取相邻片段。
 
 ### 失败与恢复
 
@@ -107,7 +105,7 @@ Cordis 服务、LanceDB 提供方和原生工具消费者位于同一个包。�
 
 <a id="known-limitations-and-deferred-work"></a>
 
-此可选实现具有以下限制。
+此内置实现具有以下限制。
 
 - 仅支持文字 PDF：不包含 OCR、Office 格式、网站同步、目录监听。
 - 原生 LanceDB 需要受支持的运行架构；所选版本支持 Apple Silicon macOS、Linux 和 Windows，不提供 Intel macOS 绑定。

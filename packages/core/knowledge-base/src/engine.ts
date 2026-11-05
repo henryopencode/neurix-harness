@@ -3,7 +3,8 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { connect, Index, type Connection, type Table } from '@lancedb/lancedb'
+import { arch, platform } from 'node:os'
+import type { Connection, Table } from '@lancedb/lancedb'
 import { Field, FixedSizeList, Float32, Int32, Schema, Utf8 } from 'apache-arrow'
 import { OllamaEmbeddings } from '@langchain/ollama'
 import { z } from 'zod'
@@ -45,7 +46,8 @@ function schema(dimensions: number | undefined): Schema {
  * Callers own workspace authorization; file bytes are supplied by the filesystem provider.
  */
 export class KnowledgeIndex {
-  private connection!: Connection
+  private native: { connection: Connection; index: typeof import('@lancedb/lancedb').Index } | undefined
+  private readonly available = platform() !== 'darwin' || arch() !== 'x64'
   private table: Table | undefined
   private tail: Promise<void> = Promise.resolve()
   private readonly lifetime = new AbortController()
@@ -54,10 +56,11 @@ export class KnowledgeIndex {
   constructor(readonly config: KnowledgeConfig) {}
 
   /**
-   * Validate persisted format and embedding identity before serving any caller.
-   * @returns Resolves after the existing table is opened, or a fresh directory is initialized.
+   * Open a supported native index; unsupported hosts retain status without loading bindings or touching the directory.
+   * @returns Resolves when metadata can be served; unavailable hosts reject indexing operations explicitly.
    */
   async open(): Promise<void> {
+    if (!this.available) return
     await mkdir(this.config.path, { recursive: true, mode: 0o700 })
     const manifest = join(this.config.path, 'format.json')
     const expected = JSON.stringify({ version: 1, embedding: this.config.embedding ?? null })
@@ -68,19 +71,30 @@ export class KnowledgeIndex {
         throw new KnowledgeError('Index format or embedding target differs. Use a new index directory and reimport the source files.', 'KNOWLEDGE_FORMAT_MISMATCH')
       }
     }
-    this.connection = await connect(this.config.path)
+    const { connect, Index } = await import('@lancedb/lancedb')
+    const connection = await connect(this.config.path)
+    this.native = { connection, index: Index }
     try {
-      for await (const name of this.connection.listTables()) {
-        if (name === 'passages') this.table = await this.connection.openTable(name)
+      for await (const name of connection.listTables()) {
+        if (name === 'passages') this.table = await connection.openTable(name)
       }
     } catch (error) {
-      this.connection.close()
+      connection.close()
       throw error
     }
   }
 
+  private database(): NonNullable<KnowledgeIndex['native']> {
+    if (this.native === undefined) throw new Error('knowledge-base: index is not open')
+    return this.native
+  }
+
   private run<T>(signal: AbortSignal, operation: (signal: AbortSignal) => Promise<T>): Promise<T> {
     if (this.closing !== undefined) return Promise.reject(new KnowledgeError('Knowledge index is closed.', 'KNOWLEDGE_CLOSED'))
+    if (!this.available) return Promise.reject(new KnowledgeError(
+      'Knowledge indexing requires Apple Silicon macOS, Linux, or Windows. Intel macOS is not supported.',
+      'KNOWLEDGE_UNSUPPORTED_PLATFORM',
+    ))
     const combined = AbortSignal.any([signal, this.lifetime.signal])
     const pending = this.tail.then(() => {
       combined.throwIfAborted()
@@ -146,8 +160,9 @@ export class KnowledgeIndex {
       }))
       active.throwIfAborted()
       if (this.table === undefined) {
-        this.table = await this.connection.createEmptyTable('passages', schema(vectors?.[0]?.length))
-        await this.table.createIndex('text', { config: Index.fts({ baseTokenizer: 'icu', stem: false, removeStopWords: false }) })
+        const native = this.database()
+        this.table = await native.connection.createEmptyTable('passages', schema(vectors?.[0]?.length))
+        await this.table.createIndex('text', { config: native.index.fts({ baseTokenizer: 'icu', stem: false, removeStopWords: false }) })
       }
       active.throwIfAborted()
       try {
@@ -200,8 +215,18 @@ export class KnowledgeIndex {
    * @returns A consistent management snapshot from this index owner's operation queue.
    */
   dashboard(space: KnowledgeSpace, query: string, offset: number, signal: AbortSignal): Promise<KnowledgeDashboard> {
+    if (!this.available) {
+      signal.throwIfAborted()
+      if (this.closing !== undefined) return Promise.reject(new KnowledgeError('Knowledge index is closed.', 'KNOWLEDGE_CLOSED'))
+      return Promise.resolve({
+        availability: 'unsupported-platform', totalDocuments: 0, totalPassages: 0,
+        documents: [], passages: [], nodes: [], edges: [], nextOffset: null, truncated: false,
+        pageSize: this.config.graphDocuments, maxFileBytes: this.config.maxFileBytes,
+      })
+    }
     return this.run(signal, async (active) => {
       const empty: KnowledgeDashboard = {
+        availability: 'ready',
         totalDocuments: 0, totalPassages: 0, documents: [], passages: [], nodes: [], edges: [],
         nextOffset: null, truncated: false, pageSize: this.config.graphDocuments, maxFileBytes: this.config.maxFileBytes,
       }
@@ -233,6 +258,7 @@ export class KnowledgeIndex {
       active.throwIfAborted()
       const graph = buildKnowledgeGraph(documents, samples, this.config.graphKeywords, this.config.graphKeywordsPerDocument)
       const result: KnowledgeDashboard = {
+        availability: 'ready',
         totalDocuments, totalPassages, documents,
         passages: searching ? rows.slice(0, this.config.maxResults).map(passage) : [],
         ...graph, nextOffset: !searching && rows.length > limit ? offset + limit : null,
@@ -319,7 +345,7 @@ export class KnowledgeIndex {
       this.lifetime.abort(new KnowledgeError('Knowledge index is closing.', 'KNOWLEDGE_CLOSED'))
       await this.tail
       this.table?.close()
-      this.connection.close()
+      this.native?.connection.close()
     })()
   }
 }

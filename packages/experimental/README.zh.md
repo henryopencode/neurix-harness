@@ -36,7 +36,6 @@ kind: "package-group"
 
 | 包 | 职责 | ctx 键 |
 |---|---|---|
-| [`knowledge-base`](knowledge-base/README.zh.md) | 导入工作区参考文档，通过原生工具检索原文片段 | `ctx.knowledgeBase` |
 | [`action-cards`](action-cards/README.zh.md) | 回答下方的可选操作卡片：提议工具、卡片状态、用户操作与状态通知 | `ctx.actionCards` |
 | [`client-ui-action-cards`](client-ui-action-cards/README.zh.md) | 已完成回答下方的卡片框架、种类正文与提议过程行 | — |
 | [`creation-recommendations`](creation-recommendations/README.zh.md) | 针对明确需求创建持续可用、可移除的界面插件 | — |
@@ -61,7 +60,6 @@ kind: "package-group"
 | [`skill-badge`](skill-badge/README.zh.md) | powered-by-dsh 徽章技能 | — |
 | [`translator`](translator/README.zh.md) | 免登录 Google 与 Bing 文本翻译 | `ctx.translator` |
 | [`client-ui-cot-translation`](client-ui-cot-translation/README.zh.md) | 展开的思考内容翻译与原文控件 | `ctx.cotTranslation` |
-| [`client-ui-knowledge-base`](client-ui-knowledge-base/README.zh.md) | 管理工作区资料并浏览文档与关键词关联 | `ctx.knowledgeController` |
 | [`cot-translation-bundle`](cot-translation-bundle/README.zh.md) | 默认禁用的思考内容翻译组合 | — |
 | [`speech-to-text`](speech-to-text/README.zh.md) | 具名语音识别 Provider | `ctx.speechToText` |
 | [`speech-to-text-sensevoice`](speech-to-text-sensevoice/README.zh.md) | 托管本地 SenseVoice 推理 | — |

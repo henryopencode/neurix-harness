@@ -7,7 +7,7 @@ import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
 import type { IWorkspaces } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import type { KnowledgeUiKey } from './locales.ts'
 
-export type {} from '@deepseek-ai/dsh-experimental-knowledge-base/remote'
+export type {} from '@deepseek-ai/dsh-knowledge-base/remote'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {

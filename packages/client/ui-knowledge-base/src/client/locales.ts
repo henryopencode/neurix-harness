@@ -6,6 +6,7 @@ export const NS = 'knowledgeBase'
 /** English management labels. */
 export const en = {
   title: 'Knowledge base', import: 'Import document', importing: 'Importing', loading: 'Loading',
+  unsupportedPlatform: 'Knowledge indexing is unavailable on Intel macOS. Use Apple Silicon macOS, Windows, or Linux.',
   search: 'Search', searchPlaceholder: 'Search document content', workspace: 'Workspace', chooseWorkspace: 'Choose a workspace',
   noWorkspaces: 'Add a workspace to manage its documents', refresh: 'Refresh', graph: 'Knowledge graph', documents: 'Documents',
   keywords: 'Keywords', document: 'Document', keyword: 'Keyword',
@@ -29,6 +30,7 @@ export type KnowledgeUiKey = keyof typeof en
 /** Chinese management labels. */
 export const zh: Record<KnowledgeUiKey, string> = {
   title: '知识库', import: '导入文档', importing: '导入中', loading: '加载中',
+  unsupportedPlatform: 'Intel Mac 暂不支持知识库索引。请使用 Apple Silicon Mac、Windows 或 Linux。',
   search: '搜索', searchPlaceholder: '搜索文档内容', workspace: '工作区', chooseWorkspace: '选择工作区',
   noWorkspaces: '先添加一个工作区，再管理其中的资料', refresh: '刷新', graph: '知识图谱', documents: '文档',
   keywords: '关键词', document: '文档', keyword: '关键词',
@@ -49,6 +51,7 @@ export const zh: Record<KnowledgeUiKey, string> = {
 /** Japanese management labels. */
 export const ja: Record<KnowledgeUiKey, string> = {
   title: 'ナレッジベース', import: '文書を取り込む', importing: '取り込み中', loading: '読み込み中',
+  unsupportedPlatform: 'Intel Mac では索引を利用できません。Apple Silicon Mac、Windows、Linux をご利用ください。',
   search: '検索', searchPlaceholder: '文書の内容を検索', workspace: 'ワークスペース', chooseWorkspace: 'ワークスペースを選択',
   noWorkspaces: '文書を管理するワークスペースを追加してください', refresh: '更新', graph: 'ナレッジグラフ', documents: '文書',
   keywords: 'キーワード', document: '文書', keyword: 'キーワード',
@@ -69,6 +72,7 @@ export const ja: Record<KnowledgeUiKey, string> = {
 /** Spanish management labels. */
 export const es: Record<KnowledgeUiKey, string> = {
   title: 'Base de conocimiento', import: 'Importar documento', importing: 'Importando', loading: 'Cargando',
+  unsupportedPlatform: 'El índice no está disponible en Mac Intel. Usa un Mac Apple Silicon, Windows o Linux.',
   search: 'Buscar', searchPlaceholder: 'Buscar en los documentos', workspace: 'Espacio de trabajo', chooseWorkspace: 'Elegir espacio de trabajo',
   noWorkspaces: 'Añade un espacio de trabajo para gestionar sus documentos', refresh: 'Actualizar', graph: 'Grafo de conocimiento', documents: 'Documentos',
   keywords: 'Palabras clave', document: 'Documento', keyword: 'Palabra clave',
@@ -89,6 +93,7 @@ export const es: Record<KnowledgeUiKey, string> = {
 /** French management labels. */
 export const fr: Record<KnowledgeUiKey, string> = {
   title: 'Base de connaissances', import: 'Importer un document', importing: 'Importation', loading: 'Chargement',
+  unsupportedPlatform: 'L’indexation est indisponible sur Mac Intel. Utilisez un Mac Apple Silicon, Windows ou Linux.',
   search: 'Rechercher', searchPlaceholder: 'Rechercher dans les documents', workspace: 'Espace de travail', chooseWorkspace: 'Choisir un espace de travail',
   noWorkspaces: 'Ajoutez un espace de travail pour gérer ses documents', refresh: 'Actualiser', graph: 'Graphe de connaissances', documents: 'Documents',
   keywords: 'Mots-clés', document: 'Document', keyword: 'Mot-clé',
@@ -109,6 +114,7 @@ export const fr: Record<KnowledgeUiKey, string> = {
 /** German management labels. */
 export const de: Record<KnowledgeUiKey, string> = {
   title: 'Wissensdatenbank', import: 'Dokument importieren', importing: 'Import läuft', loading: 'Wird geladen',
+  unsupportedPlatform: 'Intel-Macs unterstützen die Indexierung nicht. Verwende Apple Silicon, Windows oder Linux.',
   search: 'Suchen', searchPlaceholder: 'Dokumentinhalt durchsuchen', workspace: 'Arbeitsbereich', chooseWorkspace: 'Arbeitsbereich auswählen',
   noWorkspaces: 'Füge einen Arbeitsbereich hinzu, um seine Dokumente zu verwalten', refresh: 'Aktualisieren', graph: 'Wissensgraph', documents: 'Dokumente',
   keywords: 'Schlüsselwörter', document: 'Dokument', keyword: 'Schlüsselwort',
@@ -129,6 +135,7 @@ export const de: Record<KnowledgeUiKey, string> = {
 /** Russian management labels. */
 export const ru: Record<KnowledgeUiKey, string> = {
   title: 'База знаний', import: 'Импорт документа', importing: 'Импорт', loading: 'Загрузка',
+  unsupportedPlatform: 'Индексация недоступна на Intel Mac. Используйте Apple Silicon, Windows или Linux.',
   search: 'Поиск', searchPlaceholder: 'Поиск по содержимому', workspace: 'Рабочая область', chooseWorkspace: 'Выберите рабочую область',
   noWorkspaces: 'Добавьте рабочую область для управления документами', refresh: 'Обновить', graph: 'Граф знаний', documents: 'Документы',
   keywords: 'Ключевые слова', document: 'Документ', keyword: 'Ключевое слово',
@@ -149,6 +156,7 @@ export const ru: Record<KnowledgeUiKey, string> = {
 /** Portuguese management labels. */
 export const pt: Record<KnowledgeUiKey, string> = {
   title: 'Base de conhecimento', import: 'Importar documento', importing: 'Importando', loading: 'Carregando',
+  unsupportedPlatform: 'A indexação não está disponível em Mac Intel. Use Apple Silicon, Windows ou Linux.',
   search: 'Pesquisar', searchPlaceholder: 'Pesquisar no conteúdo', workspace: 'Espaço de trabalho', chooseWorkspace: 'Escolher espaço de trabalho',
   noWorkspaces: 'Adicione um espaço de trabalho para gerir os documentos', refresh: 'Atualizar', graph: 'Grafo de conhecimento', documents: 'Documentos',
   keywords: 'Palavras-chave', document: 'Documento', keyword: 'Palavra-chave',

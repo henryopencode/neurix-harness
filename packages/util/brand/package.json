@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-brand",
   "description": "Stateless branded primitive types for the Neurix Harness",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "publishConfig": {
     "access": "public"
   },

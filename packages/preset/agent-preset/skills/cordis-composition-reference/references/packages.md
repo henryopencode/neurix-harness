@@ -84,6 +84,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | `@deepseek-ai/dsh-client-ui-goal` | no | Session goal surface: GoalBar docked above the composer, read from the goal session projection |
 | `@deepseek-ai/dsh-client-ui-input-trigger` | no | Input trigger pipeline: '/' and '@' detection, candidate menu, pick routing to registered sources |
 | `@deepseek-ai/dsh-client-ui-jobs` | no | Session-header background-job list with on-demand streaming record panels |
+| `@deepseek-ai/dsh-client-ui-knowledge-base` | no | Manage workspace documents and explore their source-derived knowledge graph. |
 | `@deepseek-ai/dsh-client-ui-layout` | no | Shell plugin: three-column AppFrame with drag handles, ctx.layout viewing-state service (navigation + panels) |
 | `@deepseek-ai/dsh-client-ui-mcp` | no | Inspect MCP servers and manage their connections from an independent sidebar page |
 | `@deepseek-ai/dsh-client-ui-message-feedback` | no | The Web feedback surface: per-message Like/Dislike in the assistant-message action strip and the feedback dialog behind both ratings and /feedback, backed by the messageFeedback and sessionFeedback Host Remotes |
@@ -159,6 +160,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | `@deepseek-ai/dsh-agent-default-model` | yes | Default model selection shared by Agent entry points |
 | `@deepseek-ai/dsh-agent-loop` | yes | The concrete agent loop plugin for the Neurix Harness |
 | `@deepseek-ai/dsh-agent-tool-presentation` | yes | Deprecated tool presentation selector; use dsh-tool-executor-native or dsh-tool-executor-ptc directly |
+| `@deepseek-ai/dsh-knowledge-base` | yes | Import local documents and retrieve source passages through native agent tools. |
 | `@deepseek-ai/dsh-session` | no | Event-sourced session store for the Neurix Harness |
 | `@deepseek-ai/dsh-system-prompt` | yes | System prompt assembly registry for the Neurix Harness |
 | `@deepseek-ai/dsh-tool-executor-native` | no | Native tool execution plugin |
@@ -208,7 +210,6 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | `@deepseek-ai/dsh-experimental-client-ui-agent-team` | no | Web Agent Teams roster, task board, and teammate navigation |
 | `@deepseek-ai/dsh-experimental-client-ui-claude-code-mods` | no | Web band above the prompt for Claude Code mods: draws each session's mod tree and sends button presses back to the bridge |
 | `@deepseek-ai/dsh-experimental-client-ui-cot-translation` | yes | Optional machine translation of expanded reasoning, preserving original Session text |
-| `@deepseek-ai/dsh-experimental-client-ui-knowledge-base` | no | Manage workspace documents and explore their source-derived knowledge graph. |
 | `@deepseek-ai/dsh-experimental-client-ui-voice-input` | no | Record speech and insert editable text into the conversation draft |
 | `@deepseek-ai/dsh-experimental-computer-control` | yes | Optional foreground macOS application control with editable defaults |
 | `@deepseek-ai/dsh-experimental-computer-use-cua-driver-mcp` | yes | Experimental computer use through an installed Cua Driver MCP executable |
@@ -216,7 +217,6 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | `@deepseek-ai/dsh-experimental-computer-use-unified` | yes | Session-owned browser and macOS control with verified observations |
 | `@deepseek-ai/dsh-experimental-cua-macos` | yes | macOS native provider for shared Computer Use application and window objects |
 | `@deepseek-ai/dsh-experimental-inspector` | yes | Experimental cross-realm CDP hub for Host debugging and Client Runtime inspection |
-| `@deepseek-ai/dsh-experimental-knowledge-base` | yes | Import local documents and retrieve source passages through native agent tools. |
 | `@deepseek-ai/dsh-experimental-mobile-access` | yes | Connect a phone to the running Desktop or Web Agent and its existing conversations |
 | `@deepseek-ai/dsh-experimental-ptc-runtime-python` | yes | CPython subprocess implementation of the Neurix Harness PTC execution seam |
 | `@deepseek-ai/dsh-experimental-session-inspector` | no | Experimental virtualized Session log and live Chat group/node inspectors |

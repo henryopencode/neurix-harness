@@ -109,18 +109,18 @@ const GROUP_ORDER = [
 const SERVICE_ROLES: ServiceRole[] = [
   {
     key: 'knowledgeBase',
-    pkg: 'experimental-knowledge-base',
+    pkg: 'knowledge-base',
     title: 'Workspace document knowledge',
     mode: 'core',
-    consumers: ['experimental-knowledge-base', 'experimental-client-ui-knowledge-base'],
+    consumers: ['knowledge-base', 'client-ui-knowledge-base'],
     note: 'The service, LanceDB provider, and native tool consumer share one optional package; document snapshots retain source revisions independently of personal memory.',
   },
   {
     key: 'knowledgeController',
-    pkg: 'experimental-knowledge-base',
+    pkg: 'knowledge-base',
     title: 'Workspace knowledge management Remote',
     mode: 'core',
-    consumers: ['experimental-client-ui-knowledge-base'],
+    consumers: ['client-ui-knowledge-base'],
     note: 'Workspace resource authorization covers uploaded documents, exact source reads, and keyword associations.',
   },
   {
