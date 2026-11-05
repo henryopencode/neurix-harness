@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-util-file-drag",
   "description": "Shared file drag names and native transfer requests",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "publishConfig": {
     "access": "public"
   },

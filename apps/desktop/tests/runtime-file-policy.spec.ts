@@ -17,6 +17,7 @@ it('omits development artifacts while preserving executable modules, assets and 
     'example/index.js.map', 'example/index.mjs.map', 'example/index.cjs.map',
     'example/style.css.map', 'example/index.d.ts.map', 'example/index.d.mts.map',
     'example/index.d.cts.map', 'example/tsconfig.tsbuildinfo',
+    'tr46/lib/.gitkeep', 'outer/node_modules/tr46/lib/.gitkeep',
     'fs-ext/build/Release/obj/fs_ext/native.obj', 'fs-ext/build/Release/fs_ext.pdb',
     'fs-ext/build/Release/fs_ext.lib', 'fs-ext/build/Release/fs_ext.exp',
     'fs-ext/build/Release/fs_ext.iobj', 'fs-ext/build/Release/fs_ext.ipdb',
