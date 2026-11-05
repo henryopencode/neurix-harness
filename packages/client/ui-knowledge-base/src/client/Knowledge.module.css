@@ -49,7 +49,7 @@
 .graphPanel, .documentsPanel {
   min-width: 0;
   border: 0.5px solid var(--dsw-alias-border-l3);
-  border-radius: var(--dsw-radius-lg, 12px);
+  border-radius: var(--dsw-radius-lg);
 }
 .graphPanel { position: relative; min-height: 520px; overflow: hidden; }
 .documentsPanel { display: flex; flex-direction: column; min-height: 0; overflow: auto; }
@@ -127,12 +127,12 @@
   cursor: pointer;
   touch-action: manipulation;
 }
-.documentNode { width: 44px; height: 44px; border-radius: 14px; background: var(--dsw-alias-button-primary-fill); color: var(--dsw-alias-label-primary-foreground); border-color: transparent; }
+.documentNode { width: 44px; height: 44px; border-radius: var(--dsw-radius-lg); background: var(--dsw-alias-button-primary-fill); color: var(--dsw-alias-label-primary-foreground); border-color: transparent; }
 .documentLabel { position: absolute; top: calc(100% + 9px); left: 50%; transform: translateX(-50%); width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dsw-alias-label-primary); font-size: 12px; }
-.keywordNode { min-height: 34px; max-width: 140px; border-radius: 18px; padding: 6px 13px; }
+.keywordNode { min-height: 34px; max-width: 140px; border-radius: 999px; corner-shape: round; padding: 6px 13px; }
 .keywordLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .documentNode[aria-pressed='true'], .keywordNode[aria-pressed='true'] { outline: 3px solid var(--dsw-alias-button-primary-fill); outline-offset: 4px; }
-.documentNode:focus-visible, .keywordNode:focus-visible, .documentOpen:focus-visible { outline: 2px solid var(--dsw-alias-label-primary); outline-offset: 4px; }
+.documentNode:focus-visible, .keywordNode:focus-visible, .documentOpen:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: 4px; }
 .graphControls { position: absolute; right: 14px; bottom: 14px; z-index: 2; display: flex; gap: 5px; padding: 4px; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-base); }
 
 @media (hover: hover) {
