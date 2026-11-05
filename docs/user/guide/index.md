@@ -24,6 +24,7 @@ The agent can read and edit workspace files, run commands, delegate work, and ma
 
 ## Continue
 
+- [Add document knowledge](./knowledge-base.md)
 - [Configure models](./providers.md)
 - [Use the Python SDK](./python-sdk.md)
 - [Publish the Web UI behind a reverse proxy](./public-deployments.md)

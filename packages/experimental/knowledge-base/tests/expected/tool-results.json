@@ -1,0 +1,42 @@
+[
+  {
+    "turn": 1,
+    "step": 1,
+    "message": {
+      "role": "tool",
+      "source": {
+        "kind": "tool",
+        "callId": "knowledge-1"
+      },
+      "toolCallId": "knowledge-1",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"documentId\":\"{{document-id}}\",\"source\":\"{{source}}\",\"title\":\"guide.md\",\"version\":\"1178b212c15d9238ccd58ba941ea3e3c8fa113c9a55e7e3c3a817cdf32bebc2a\",\"chunks\":1}"
+        }
+      ],
+      "isError": false,
+      "id": "{{message-1}}"
+    }
+  },
+  {
+    "turn": 1,
+    "step": 2,
+    "message": {
+      "role": "tool",
+      "source": {
+        "kind": "tool",
+        "callId": "knowledge-2"
+      },
+      "toolCallId": "knowledge-2",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"mode\":\"keyword\",\"passages\":[{\"documentId\":\"{{document-id}}\",\"source\":\"{{source}}\",\"title\":\"guide.md\",\"version\":\"1178b212c15d9238ccd58ba941ea3e3c8fa113c9a55e7e3c3a817cdf32bebc2a\",\"chunks\":1,\"chunk\":0,\"text\":\"# 发布规范\\n发布前检查字幕和封面。\",\"page\":null,\"startLine\":1,\"endLine\":2}]}"
+        }
+      ],
+      "isError": false,
+      "id": "{{message-2}}"
+    }
+  }
+]

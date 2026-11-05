@@ -304,6 +304,8 @@
     "@deepseek-ai/dsh-experimental-cua-macos": "workspace:*",
     "@deepseek-ai/dsh-action-cards": "workspace:*",
     "@deepseek-ai/dsh-experimental-computer-use-unified": "workspace:*",
-    "@deepseek-ai/dsh-experimental-computer-control": "workspace:*"
+    "@deepseek-ai/dsh-experimental-computer-control": "workspace:*",
+    "@deepseek-ai/dsh-experimental-knowledge-base": "workspace:*",
+    "@deepseek-ai/dsh-experimental-client-ui-knowledge-base": "workspace:*"
   }
 }

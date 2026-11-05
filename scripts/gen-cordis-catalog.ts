@@ -50,6 +50,8 @@ export { REGION_BEGIN, REGION_END }
  * errors, so the partition can never silently drift from the service API.
  */
 export const SERVICE_PAGE: Record<string, string> = {
+  knowledgeBase: 'knowledge-base.md',
+  knowledgeController: 'knowledge-base.md',
   headlessStartup: 'boot.md',
   translator: 'translation.md',
   cotTranslation: 'translation.md',
@@ -295,6 +297,17 @@ export const EVENT_WALK_EXEMPTIONS: Record<string, string> = {
  * appear on more than one page.
  */
 export const LINK_MAP: Readonly<Record<string, string>> = {
+  KnowledgeSpace: 'knowledge-base.md',
+  KnowledgeDocumentId: 'knowledge-base.md',
+  KnowledgeDocument: 'knowledge-base.md',
+  KnowledgePassage: 'knowledge-base.md',
+  KnowledgeSearch: 'knowledge-base.md',
+  KnowledgeDocumentList: 'knowledge-base.md',
+  KnowledgeRemoval: 'knowledge-base.md',
+  KnowledgeDashboard: 'knowledge-base.md',
+  KnowledgeGraphNode: 'knowledge-base.md',
+  KnowledgeGraphNodeId: 'knowledge-base.md',
+  KnowledgeGraphEdge: 'knowledge-base.md',
   McpConnectionSnapshot: 'mcp.md',
   Principal: 'typert.md',
   PrincipalMap: 'typert.md',
