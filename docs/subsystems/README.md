@@ -6,6 +6,7 @@ One page per subsystem of the Neurix Harness: what it is, the data structures it
 
 | Page | Owns |
 |---|---|
+| [knowledge-base.md](knowledge-base.md) | workspace-scoped document snapshots, source citations, and keyword or hybrid retrieval |
 | [boot.md](boot.md) | Current-profile plugin management and launcher reload coordination |
 | [core.md](core.md) | how `packages/core` controls the agent loop: the package-by-package loop description, agent creation and ownership (`AgentHandle`), the `Agent` handle's delivery/cancellation/interception contracts, and the repo-wide type patterns (`…Map → derived-union`, branded ids) |
 | [llm-streaming.md](llm-streaming.md) | the `packages/llm` conversation types — `Message`/`ContentBlock`, the assembled model request, the `StreamChunk` wire protocol and adapter contract, `BlockAssembler`, and the `LlmAdapter` provider contract |

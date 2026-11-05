@@ -1610,6 +1610,86 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'knowledgeBase',
+    summary: 'A workspace-scoped document index with replaceable source snapshots and native tools.',
+    description: 'A workspace-scoped document index with replaceable source snapshots and native tools.',
+    methods: [
+      {
+        signature: 'async importDocument(space: KnowledgeSpace, path: string, cwd: string, signal: AbortSignal): Promise<KnowledgeDocument>',
+        description: 'Read a size-bounded file through the configured filesystem and import its snapshot.',
+        parameters: [{ name: 'space', description: 'Authorized original workspace; trusted callers derive it from Session ownership.' }, { name: 'path', description: 'Source file to import.' }, { name: 'cwd', description: 'Execution-world directory for relative paths.' }, { name: 'signal', description: 'Cancellation for file reads and indexing preparation.' }],
+        returns: 'Document ID, content revision, and passage count after atomic publication.',
+      },
+      {
+        signature: 'search(space: KnowledgeSpace, query: string, limit: number, signal: AbortSignal): Promise<KnowledgeSearch>',
+        description: 'Search reference passages within one authorized original workspace.',
+        parameters: [{ name: 'space', description: 'Caller-owned workspace identity.' }, { name: 'query', description: 'Natural-language query.' }, { name: 'limit', description: 'Maximum requested passages.' }, { name: 'signal', description: 'Cancellation for embedding and result delivery.' }],
+        returns: 'Bounded passages with source locations and revisions.',
+      },
+      {
+        signature: 'read(space: KnowledgeSpace, id: KnowledgeDocumentId, chunk: number, version: string, signal: AbortSignal): Promise<KnowledgePassage>',
+        description: 'Read a passage from an exact imported revision; source files are not reread.',
+        parameters: [{ name: 'space', description: 'Caller-owned workspace identity.' }, { name: 'id', description: 'Imported document ID.' }, { name: 'chunk', description: 'Zero-based passage number.' }, { name: 'version', description: 'Exact imported content revision.' }, { name: 'signal', description: 'Cancellation for result delivery.' }],
+        returns: 'Indexed source text with its original page or line range.',
+      },
+      {
+        signature: 'list(space: KnowledgeSpace, offset: number, limit: number, signal: AbortSignal): Promise<KnowledgeDocumentList>',
+        description: 'List imported document metadata in the authorized workspace.',
+        parameters: [{ name: 'space', description: 'Caller-owned workspace identity.' }, { name: 'offset', description: 'Header offset from a previous page, or zero.' }, { name: 'limit', description: 'Requested document count.' }, { name: 'signal', description: 'Cancellation for result delivery.' }],
+        returns: 'Bounded metadata and the next offset when more documents exist.',
+      },
+      {
+        signature: 'remove(space: KnowledgeSpace, id: KnowledgeDocumentId, signal: AbortSignal): Promise<KnowledgeRemoval>',
+        description: 'Remove indexed passages while retaining original files and memory records.',
+        parameters: [{ name: 'space', description: 'Caller-owned workspace identity.' }, { name: 'id', description: 'Document confirmed by the user.' }, { name: 'signal', description: 'Cancellation observed before the delete transaction.' }],
+        returns: 'Removed document identity; repeated removal is safe.',
+      },
+      {
+        signature: 'importUploaded( space: KnowledgeSpace, name: string, base64: string, replace: boolean, signal: AbortSignal, ): Promise<KnowledgeDocument>',
+        description: 'Import a browser-selected source without writing into the user\'s workspace.',
+        parameters: [{ name: 'space', description: 'Authorized original workspace identity.' }, { name: 'name', description: 'Plain filename of the selected document.' }, { name: 'base64', description: 'Canonical base64 source bytes, bounded before decoding.' }, { name: 'replace', description: 'Explicit confirmation that an existing uploaded filename may be updated.' }, { name: 'signal', description: 'Cancellation before atomic publication.' }],
+        returns: 'The imported snapshot; uploading the same filename replaces its uploaded revision.',
+      },
+      {
+        signature: 'dashboard(space: KnowledgeSpace, query: string, offset: number, signal: AbortSignal): Promise<KnowledgeDashboard>',
+        description: 'Read document metadata, source matches, and literal keyword associations.',
+        parameters: [{ name: 'space', description: 'Authorized original workspace identity.' }, { name: 'query', description: 'Optional source-text query.' }, { name: 'offset', description: 'Header offset when query is empty.' }, { name: 'signal', description: 'Cancellation for source retrieval and optional embeddings.' }],
+        returns: 'A bounded management snapshot with source-derived graph nodes and links.',
+      },
+    ],
+  },
+  {
+    key: 'knowledgeController',
+    summary: 'One Remote namespace for knowledge management, without changing the Agent tools.',
+    description: 'One Remote namespace for knowledge management, without changing the Agent tools.',
+    methods: [
+      {
+        signature: '@Remote({ resources: { workspace: (workspaceId: WorkspaceId) => workspaceId } }) dashboard(workspaceId: WorkspaceId, query: string, offset: number, signal: AbortSignal): Promise<KnowledgeDashboard>',
+        description: 'Read one authorized workspace\'s document page and source-derived graph.',
+        parameters: [{ name: 'workspaceId', description: 'Existing workspace whose documents the caller may read.' }, { name: 'query', description: 'Optional full-text query.' }, { name: 'offset', description: 'Non-negative header offset when the query is empty.' }, { name: 'signal', description: 'Caller cancellation.' }],
+        returns: 'Document counts, bounded metadata, source matches, and keyword associations.',
+      },
+      {
+        signature: '@Remote({ resources: { workspace: (workspaceId: WorkspaceId) => workspaceId } }) upload(workspaceId: WorkspaceId, filename: string, base64: string, replace: boolean, signal: AbortSignal): Promise<KnowledgeDocument>',
+        description: 'Import a browser-selected document into one authorized workspace\'s index.',
+        parameters: [{ name: 'workspaceId', description: 'Existing workspace whose knowledge the caller may update.' }, { name: 'filename', description: 'Plain source filename.' }, { name: 'base64', description: 'Complete canonical base64 content.' }, { name: 'replace', description: 'Explicit user confirmation for replacing an existing uploaded filename.' }, { name: 'signal', description: 'Caller cancellation.' }],
+        returns: 'The published document identity and revision.',
+      },
+      {
+        signature: '@Remote({ resources: { workspace: (workspaceId: WorkspaceId) => workspaceId } }) read( workspaceId: WorkspaceId, documentId: KnowledgeDocumentId, chunk: number, version: string, signal: AbortSignal, ): Promise<KnowledgePassage>',
+        description: 'Read an exact imported passage for one authorized workspace.',
+        parameters: [{ name: 'workspaceId', description: 'Existing workspace whose document the caller may read.' }, { name: 'documentId', description: 'Imported document identity.' }, { name: 'chunk', description: 'Non-negative zero-based passage number.' }, { name: 'version', description: 'Exact imported revision from the document metadata.' }, { name: 'signal', description: 'Caller cancellation.' }],
+        returns: 'Source text and its original page or line location.',
+      },
+      {
+        signature: '@Remote({ resources: { workspace: (workspaceId: WorkspaceId) => workspaceId } }) deleteDocument(workspaceId: WorkspaceId, documentId: KnowledgeDocumentId, signal: AbortSignal): Promise<KnowledgeRemoval>',
+        description: 'Remove an authorized workspace\'s indexed document while retaining its original file.',
+        parameters: [{ name: 'workspaceId', description: 'Existing workspace whose knowledge the caller may update.' }, { name: 'documentId', description: 'Document confirmed by the user.' }, { name: 'signal', description: 'Caller cancellation before the delete transaction.' }],
+        returns: 'The removed document identity; repeated removal is safe.',
+      },
+    ],
+  },
+  {
     key: 'llm',
     summary: 'The abstract `llm` service: an adapter registry plus a streaming model-call API, interceptable via the `llm/stream` waterfall.',
     description: 'The abstract `llm` service: an adapter registry plus a streaming model-call API, interceptable via the `llm/stream` waterfall.',
@@ -6253,6 +6333,50 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'JsonValue',
     declaration: 'export type JsonValue = null | boolean | number | string | JsonValue[] | {\n    [key: string]: JsonValue;\n};',
+  },
+  {
+    name: 'KnowledgeDashboard',
+    declaration: 'export interface KnowledgeDashboard {\n    readonly totalDocuments: number;\n    readonly totalPassages: number;\n    readonly documents: KnowledgeDocument[];\n    readonly passages: KnowledgePassage[];\n    readonly nodes: KnowledgeGraphNode[];\n    readonly edges: KnowledgeGraphEdge[];\n    readonly nextOffset: number | null;\n    readonly truncated: boolean;\n    readonly pageSize: number;\n    readonly maxFileBytes: number;\n}',
+  },
+  {
+    name: 'KnowledgeDocument',
+    declaration: 'export interface KnowledgeDocument {\n    readonly documentId: KnowledgeDocumentId;\n    readonly source: string;\n    readonly title: string;\n    readonly version: string;\n    readonly chunks: number;\n}',
+  },
+  {
+    name: 'KnowledgeDocumentId',
+    declaration: 'export type KnowledgeDocumentId = Branded<\'KnowledgeDocumentId\'>;',
+  },
+  {
+    name: 'KnowledgeDocumentList',
+    declaration: 'export interface KnowledgeDocumentList {\n    readonly documents: KnowledgeDocument[];\n    readonly nextOffset: number | null;\n}',
+  },
+  {
+    name: 'KnowledgeGraphEdge',
+    declaration: 'export interface KnowledgeGraphEdge {\n    readonly source: KnowledgeGraphNodeId;\n    readonly target: KnowledgeGraphNodeId;\n    readonly occurrences: number;\n}',
+  },
+  {
+    name: 'KnowledgeGraphNode',
+    declaration: 'export interface KnowledgeGraphNode {\n    readonly id: KnowledgeGraphNodeId;\n    readonly kind: \'document\' | \'keyword\';\n    readonly label: string;\n    readonly documentId: KnowledgeDocumentId | null;\n}',
+  },
+  {
+    name: 'KnowledgeGraphNodeId',
+    declaration: 'export type KnowledgeGraphNodeId = Branded<\'KnowledgeGraphNodeId\'>;',
+  },
+  {
+    name: 'KnowledgePassage',
+    declaration: 'export interface KnowledgePassage extends KnowledgeDocument {\n    readonly chunk: number;\n    readonly text: string;\n    readonly page: number | null;\n    readonly startLine: number | null;\n    readonly endLine: number | null;\n}',
+  },
+  {
+    name: 'KnowledgeRemoval',
+    declaration: 'export interface KnowledgeRemoval {\n    readonly documentId: KnowledgeDocumentId;\n    readonly removed: true;\n}',
+  },
+  {
+    name: 'KnowledgeSearch',
+    declaration: 'export interface KnowledgeSearch {\n    readonly mode: \'keyword\' | \'hybrid\';\n    readonly passages: KnowledgePassage[];\n}',
+  },
+  {
+    name: 'KnowledgeSpace',
+    declaration: 'export type KnowledgeSpace = Branded<\'KnowledgeSpace\'>;',
   },
   {
     name: 'KvFacet',

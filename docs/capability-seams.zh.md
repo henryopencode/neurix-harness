@@ -9,6 +9,10 @@
 
 ```mermaid
 flowchart LR
+  pkg_experimental_knowledge_base["experimental-knowledge-base"]
+  svc_knowledgeBase["ctx.knowledgeBase<br/>Workspace document knowledge"]
+  pkg_experimental_client_ui_knowledge_base["experimental-client-ui-knowledge-base"]
+  svc_knowledgeController["ctx.knowledgeController<br/>Workspace knowledge management Remote"]
   pkg_experimental_browser_control["experimental-browser-control"]
   svc_browserPreview["ctx.browserPreview<br/>Hidden browser preview Remote"]
   pkg_experimental_computer_control["experimental-computer-control"]
@@ -366,6 +370,8 @@ flowchart LR
   pkg_experimental_computer_control --> svc_computerPreview
   pkg_experimental_computer_use_cua_driver_mcp --> svc_computerUse
   pkg_experimental_computer_use_cua_driver_native --> svc_computerUse
+  pkg_experimental_knowledge_base --> svc_knowledgeBase
+  pkg_experimental_knowledge_base --> svc_knowledgeController
   pkg_experimental_ptc_runtime_python --> svc_ptcRuntime
   pkg_experimental_speech_to_text --> svc_speechToText
   pkg_experimental_speech_to_text_sensevoice --> svc_speechToText
@@ -523,6 +529,9 @@ flowchart LR
   svc_jobs --> pkg_tool_jobs
   svc_jobs --> pkg_tool_pwsh
   svc_jobs --> pkg_tool_terminal
+  svc_knowledgeBase --> pkg_experimental_client_ui_knowledge_base
+  svc_knowledgeBase --> pkg_experimental_knowledge_base
+  svc_knowledgeController --> pkg_experimental_client_ui_knowledge_base
   svc_llm --> pkg_agent_loop
   svc_llm --> pkg_compaction_basic
   svc_lsp --> pkg_tool_lsp
@@ -639,6 +648,8 @@ flowchart LR
 
 | ctx 键 | 角色 | 所属包 | 实现 | 直接消费方 | 配套插件 | 说明 |
 | --- | --- | --- | --- | --- | --- | --- |
+| `ctx.knowledgeBase` | `core` | [`experimental-knowledge-base`](../packages/experimental/knowledge-base) | - | [`experimental-knowledge-base`](../packages/experimental/knowledge-base), [`experimental-client-ui-knowledge-base`](../packages/experimental/client-ui-knowledge-base) | - | 服务、LanceDB 提供方和原生工具消费者位于同一个可选包；文档快照保留来源版本，并与个人记忆分开保存。 |
+| `ctx.knowledgeController` | `core` | [`experimental-knowledge-base`](../packages/experimental/knowledge-base) | - | [`experimental-client-ui-knowledge-base`](../packages/experimental/client-ui-knowledge-base) | - | 工作区资源授权覆盖上传文档、精确原文读取及关键词关联。 |
 | `ctx.browserPreview` | `core` | [`experimental-browser-control`](../packages/experimental/browser-control) | - | - | - | 返回会话自有标签页的纯展示截图，不访问原生应用。 |
 | `ctx.computerPreview` | `core` | [`experimental-computer-control`](../packages/experimental/computer-control) | - | - | - | 返回所选 Session 的只读截图，不激活 Agent，也不发送输入。 |
 | `ctx.actionCards` | `service` | [`action-cards`](../packages/experimental/action-cards) | - | [`creation-recommendations`](../packages/experimental/creation-recommendations), [`client-ui-action-cards`](../packages/experimental/client-ui-action-cards) | - | 负责卡片工具、卡片状态、用户操作和状态通知；各卡片种类注册自己的动作和处理器。 |

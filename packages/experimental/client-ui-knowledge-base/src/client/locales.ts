@@ -1,0 +1,167 @@
+/** Knowledge management copy owned by this client feature. */
+
+/** Stable localization namespace. */
+export const NS = 'knowledgeBase'
+
+/** English management labels. */
+export const en = {
+  title: 'Knowledge base', import: 'Import document', importing: 'Importing', loading: 'Loading',
+  search: 'Search', searchPlaceholder: 'Search document content', workspace: 'Workspace', chooseWorkspace: 'Choose a workspace',
+  noWorkspaces: 'Add a workspace to manage its documents', refresh: 'Refresh', graph: 'Knowledge graph', documents: 'Documents',
+  keywords: 'Keywords', document: 'Document', keyword: 'Keyword',
+  emptyTitle: 'No documents yet', supported: 'Markdown, TXT and text PDFs', emptyMatches: 'No matching documents',
+  clearSearch: 'Clear search', showAll: 'All documents', openDocument: 'Read source',
+  remove: 'Remove', removeTitle: 'Remove document', removeConfirm: 'Remove “{name}” from this knowledge base? The original file is retained.',
+  replaceTitle: 'Update document', replaceConfirm: '“{name}” already exists. Replace its indexed version with this file?', update: 'Update',
+  cancel: 'Cancel', close: 'Close', previous: 'Previous passage', next: 'Next passage', passage: 'Passage {current} of {total}',
+  page: 'Page {page}', lines: 'Lines {from}–{to}', summary: '{documents} documents · {passages} passages',
+  nextPage: 'Next page', previousPage: 'Previous page', retry: 'Retry',
+  loadFailed: 'Could not load the knowledge base. Retry to reconnect.', readFailed: 'Could not read this passage. Refresh and retry.',
+  importSuccess: 'Imported {name}', removeSuccess: 'Removed {name}', actionFailed: 'The outcome could not be confirmed. Refresh before retrying.',
+  tooLarge: 'The file exceeds {size} MB. Choose a smaller file.', unsupported: 'Choose a Markdown, UTF-8 TXT or text PDF file',
+  zoomIn: 'Zoom in', zoomOut: 'Zoom out', resetView: 'Reset view', clearSelection: 'Clear selection',
+  chunks: '{count} passages', limited: 'Showing {count} documents',
+}
+
+/** Keys shared by every management dictionary. */
+export type KnowledgeUiKey = keyof typeof en
+
+/** Chinese management labels. */
+export const zh: Record<KnowledgeUiKey, string> = {
+  title: '知识库', import: '导入文档', importing: '导入中', loading: '加载中',
+  search: '搜索', searchPlaceholder: '搜索文档内容', workspace: '工作区', chooseWorkspace: '选择工作区',
+  noWorkspaces: '先添加一个工作区，再管理其中的资料', refresh: '刷新', graph: '知识图谱', documents: '文档',
+  keywords: '关键词', document: '文档', keyword: '关键词',
+  emptyTitle: '还没有文档', supported: '支持 Markdown、TXT 和文字 PDF', emptyMatches: '没有匹配的资料',
+  clearSearch: '清除搜索', showAll: '全部文档', openDocument: '查看原文',
+  remove: '移除', removeTitle: '移除文档', removeConfirm: '将《{name}》从此知识库中移除？原文件会保留',
+  replaceTitle: '更新文档', replaceConfirm: '《{name}》已存在，是否用这份文件更新索引版本？', update: '更新',
+  cancel: '取消', close: '关闭', previous: '上一段', next: '下一段', passage: '第 {current}/{total} 段',
+  page: '第 {page} 页', lines: '第 {from}–{to} 行', summary: '{documents} 个文档 · {passages} 个片段',
+  nextPage: '下一页', previousPage: '上一页', retry: '重试',
+  loadFailed: '暂时无法加载知识库，请重试', readFailed: '暂时无法读取这段原文，请刷新后重试',
+  importSuccess: '已导入 {name}', removeSuccess: '已移除 {name}', actionFailed: '暂时无法确认操作结果，请刷新后再重试',
+  tooLarge: '文件超过 {size} MB，请选择更小的文件', unsupported: '请选择 Markdown、UTF-8 TXT 或文字 PDF 文件',
+  zoomIn: '放大', zoomOut: '缩小', resetView: '重置视角', clearSelection: '清除选择',
+  chunks: '{count} 个片段', limited: '当前显示 {count} 篇文档',
+}
+
+/** Japanese management labels. */
+export const ja: Record<KnowledgeUiKey, string> = {
+  title: 'ナレッジベース', import: '文書を取り込む', importing: '取り込み中', loading: '読み込み中',
+  search: '検索', searchPlaceholder: '文書の内容を検索', workspace: 'ワークスペース', chooseWorkspace: 'ワークスペースを選択',
+  noWorkspaces: '文書を管理するワークスペースを追加してください', refresh: '更新', graph: 'ナレッジグラフ', documents: '文書',
+  keywords: 'キーワード', document: '文書', keyword: 'キーワード',
+  emptyTitle: '文書はまだありません', supported: 'Markdown、TXT、テキスト PDF に対応', emptyMatches: '一致する文書がありません',
+  clearSearch: '検索をクリア', showAll: 'すべての文書', openDocument: '原文を読む',
+  remove: '削除', removeTitle: '文書を削除', removeConfirm: '「{name}」をナレッジベースから削除しますか？元のファイルは残ります。',
+  replaceTitle: '文書を更新', replaceConfirm: '「{name}」は既に存在します。このファイルで索引を更新しますか？', update: '更新',
+  cancel: 'キャンセル', close: '閉じる', previous: '前の段落', next: '次の段落', passage: '段落 {current}/{total}',
+  page: '{page} ページ', lines: '{from}～{to} 行', summary: '文書 {documents} 件 · 段落 {passages} 件',
+  nextPage: '次のページ', previousPage: '前のページ', retry: '再試行',
+  loadFailed: 'ナレッジベースを読み込めませんでした。再試行してください。', readFailed: '原文を読み込めませんでした。更新して再試行してください。',
+  importSuccess: '{name} を取り込みました', removeSuccess: '{name} を削除しました', actionFailed: '結果を確認できませんでした。更新してから再試行してください。',
+  tooLarge: 'ファイルが {size} MB を超えています。小さいファイルを選んでください。', unsupported: 'Markdown、UTF-8 TXT、テキスト PDF を選んでください',
+  zoomIn: '拡大', zoomOut: '縮小', resetView: '表示をリセット', clearSelection: '選択を解除',
+  chunks: '段落 {count} 件', limited: '文書 {count} 件を表示',
+}
+
+/** Spanish management labels. */
+export const es: Record<KnowledgeUiKey, string> = {
+  title: 'Base de conocimiento', import: 'Importar documento', importing: 'Importando', loading: 'Cargando',
+  search: 'Buscar', searchPlaceholder: 'Buscar en los documentos', workspace: 'Espacio de trabajo', chooseWorkspace: 'Elegir espacio de trabajo',
+  noWorkspaces: 'Añade un espacio de trabajo para gestionar sus documentos', refresh: 'Actualizar', graph: 'Grafo de conocimiento', documents: 'Documentos',
+  keywords: 'Palabras clave', document: 'Documento', keyword: 'Palabra clave',
+  emptyTitle: 'Todavía no hay documentos', supported: 'Markdown, TXT y PDF con texto', emptyMatches: 'No hay documentos coincidentes',
+  clearSearch: 'Borrar búsqueda', showAll: 'Todos los documentos', openDocument: 'Leer original',
+  remove: 'Quitar', removeTitle: 'Quitar documento', removeConfirm: '¿Quitar «{name}» de esta base de conocimiento? El archivo original se conserva.',
+  replaceTitle: 'Actualizar documento', replaceConfirm: '«{name}» ya existe. ¿Actualizar su índice con este archivo?', update: 'Actualizar',
+  cancel: 'Cancelar', close: 'Cerrar', previous: 'Pasaje anterior', next: 'Pasaje siguiente', passage: 'Pasaje {current} de {total}',
+  page: 'Página {page}', lines: 'Líneas {from}–{to}', summary: '{documents} documentos · {passages} pasajes',
+  nextPage: 'Página siguiente', previousPage: 'Página anterior', retry: 'Reintentar',
+  loadFailed: 'No se pudo cargar la base. Reintenta la conexión.', readFailed: 'No se pudo leer este pasaje. Actualiza y reintenta.',
+  importSuccess: '{name} importado', removeSuccess: '{name} eliminado', actionFailed: 'No se pudo confirmar el resultado. Actualiza antes de reintentar.',
+  tooLarge: 'El archivo supera {size} MB. Elige uno más pequeño.', unsupported: 'Elige un archivo Markdown, TXT UTF-8 o PDF con texto',
+  zoomIn: 'Ampliar', zoomOut: 'Reducir', resetView: 'Restablecer vista', clearSelection: 'Borrar selección',
+  chunks: '{count} pasajes', limited: 'Mostrando {count} documentos',
+}
+
+/** French management labels. */
+export const fr: Record<KnowledgeUiKey, string> = {
+  title: 'Base de connaissances', import: 'Importer un document', importing: 'Importation', loading: 'Chargement',
+  search: 'Rechercher', searchPlaceholder: 'Rechercher dans les documents', workspace: 'Espace de travail', chooseWorkspace: 'Choisir un espace de travail',
+  noWorkspaces: 'Ajoutez un espace de travail pour gérer ses documents', refresh: 'Actualiser', graph: 'Graphe de connaissances', documents: 'Documents',
+  keywords: 'Mots-clés', document: 'Document', keyword: 'Mot-clé',
+  emptyTitle: 'Aucun document pour le moment', supported: 'Markdown, TXT et PDF textuels', emptyMatches: 'Aucun document correspondant',
+  clearSearch: 'Effacer la recherche', showAll: 'Tous les documents', openDocument: 'Lire la source',
+  remove: 'Retirer', removeTitle: 'Retirer le document', removeConfirm: 'Retirer « {name} » de cette base ? Le fichier original est conservé.',
+  replaceTitle: 'Mettre à jour le document', replaceConfirm: '« {name} » existe déjà. Remplacer sa version indexée par ce fichier ?', update: 'Mettre à jour',
+  cancel: 'Annuler', close: 'Fermer', previous: 'Passage précédent', next: 'Passage suivant', passage: 'Passage {current} sur {total}',
+  page: 'Page {page}', lines: 'Lignes {from}–{to}', summary: '{documents} documents · {passages} passages',
+  nextPage: 'Page suivante', previousPage: 'Page précédente', retry: 'Réessayer',
+  loadFailed: 'Impossible de charger la base. Réessayez la connexion.', readFailed: 'Impossible de lire ce passage. Actualisez puis réessayez.',
+  importSuccess: '{name} importé', removeSuccess: '{name} retiré', actionFailed: 'Le résultat ne peut pas être confirmé. Actualisez avant de réessayer.',
+  tooLarge: 'Le fichier dépasse {size} Mo. Choisissez un fichier plus petit.', unsupported: 'Choisissez un fichier Markdown, TXT UTF-8 ou PDF textuel',
+  zoomIn: 'Agrandir', zoomOut: 'Réduire', resetView: 'Réinitialiser la vue', clearSelection: 'Effacer la sélection',
+  chunks: '{count} passages', limited: '{count} documents affichés',
+}
+
+/** German management labels. */
+export const de: Record<KnowledgeUiKey, string> = {
+  title: 'Wissensdatenbank', import: 'Dokument importieren', importing: 'Import läuft', loading: 'Wird geladen',
+  search: 'Suchen', searchPlaceholder: 'Dokumentinhalt durchsuchen', workspace: 'Arbeitsbereich', chooseWorkspace: 'Arbeitsbereich auswählen',
+  noWorkspaces: 'Füge einen Arbeitsbereich hinzu, um seine Dokumente zu verwalten', refresh: 'Aktualisieren', graph: 'Wissensgraph', documents: 'Dokumente',
+  keywords: 'Schlüsselwörter', document: 'Dokument', keyword: 'Schlüsselwort',
+  emptyTitle: 'Noch keine Dokumente', supported: 'Markdown, TXT und textbasierte PDFs', emptyMatches: 'Keine passenden Dokumente',
+  clearSearch: 'Suche löschen', showAll: 'Alle Dokumente', openDocument: 'Quelle lesen',
+  remove: 'Entfernen', removeTitle: 'Dokument entfernen', removeConfirm: '„{name}“ aus dieser Wissensdatenbank entfernen? Die Originaldatei bleibt erhalten.',
+  replaceTitle: 'Dokument aktualisieren', replaceConfirm: '„{name}“ existiert bereits. Die indexierte Version durch diese Datei ersetzen?', update: 'Aktualisieren',
+  cancel: 'Abbrechen', close: 'Schließen', previous: 'Vorheriger Abschnitt', next: 'Nächster Abschnitt', passage: 'Abschnitt {current} von {total}',
+  page: 'Seite {page}', lines: 'Zeilen {from}–{to}', summary: '{documents} Dokumente · {passages} Abschnitte',
+  nextPage: 'Nächste Seite', previousPage: 'Vorherige Seite', retry: 'Erneut versuchen',
+  loadFailed: 'Die Wissensdatenbank konnte nicht geladen werden. Versuche es erneut.', readFailed: 'Der Abschnitt konnte nicht geladen werden. Aktualisiere und versuche es erneut.',
+  importSuccess: '{name} importiert', removeSuccess: '{name} entfernt', actionFailed: 'Das Ergebnis konnte nicht bestätigt werden. Vor einem neuen Versuch aktualisieren.',
+  tooLarge: 'Die Datei ist größer als {size} MB. Wähle eine kleinere Datei.', unsupported: 'Wähle Markdown, UTF-8-TXT oder ein textbasiertes PDF',
+  zoomIn: 'Vergrößern', zoomOut: 'Verkleinern', resetView: 'Ansicht zurücksetzen', clearSelection: 'Auswahl aufheben',
+  chunks: '{count} Abschnitte', limited: '{count} Dokumente werden angezeigt',
+}
+
+/** Russian management labels. */
+export const ru: Record<KnowledgeUiKey, string> = {
+  title: 'База знаний', import: 'Импорт документа', importing: 'Импорт', loading: 'Загрузка',
+  search: 'Поиск', searchPlaceholder: 'Поиск по содержимому', workspace: 'Рабочая область', chooseWorkspace: 'Выберите рабочую область',
+  noWorkspaces: 'Добавьте рабочую область для управления документами', refresh: 'Обновить', graph: 'Граф знаний', documents: 'Документы',
+  keywords: 'Ключевые слова', document: 'Документ', keyword: 'Ключевое слово',
+  emptyTitle: 'Документов пока нет', supported: 'Markdown, TXT и текстовые PDF', emptyMatches: 'Совпадений не найдено',
+  clearSearch: 'Очистить поиск', showAll: 'Все документы', openDocument: 'Читать источник',
+  remove: 'Удалить', removeTitle: 'Удаление документа', removeConfirm: 'Удалить «{name}» из этой базы знаний? Исходный файл сохранится.',
+  replaceTitle: 'Обновление документа', replaceConfirm: '«{name}» уже существует. Заменить индексированную версию этим файлом?', update: 'Обновить',
+  cancel: 'Отмена', close: 'Закрыть', previous: 'Предыдущий фрагмент', next: 'Следующий фрагмент', passage: 'Фрагмент {current} из {total}',
+  page: 'Страница {page}', lines: 'Строки {from}–{to}', summary: 'Документов: {documents} · Фрагментов: {passages}',
+  nextPage: 'Следующая страница', previousPage: 'Предыдущая страница', retry: 'Повторить',
+  loadFailed: 'Не удалось загрузить базу знаний. Повторите подключение.', readFailed: 'Не удалось прочитать фрагмент. Обновите и повторите.',
+  importSuccess: 'Импортирован {name}', removeSuccess: 'Удалён {name}', actionFailed: 'Результат не подтверждён. Обновите данные перед повтором.',
+  tooLarge: 'Файл превышает {size} МБ. Выберите файл меньшего размера.', unsupported: 'Выберите Markdown, TXT в UTF-8 или текстовый PDF',
+  zoomIn: 'Приблизить', zoomOut: 'Отдалить', resetView: 'Сбросить вид', clearSelection: 'Снять выделение',
+  chunks: 'Фрагментов: {count}', limited: 'Показано документов: {count}',
+}
+
+/** Portuguese management labels. */
+export const pt: Record<KnowledgeUiKey, string> = {
+  title: 'Base de conhecimento', import: 'Importar documento', importing: 'Importando', loading: 'Carregando',
+  search: 'Pesquisar', searchPlaceholder: 'Pesquisar no conteúdo', workspace: 'Espaço de trabalho', chooseWorkspace: 'Escolher espaço de trabalho',
+  noWorkspaces: 'Adicione um espaço de trabalho para gerir os documentos', refresh: 'Atualizar', graph: 'Grafo de conhecimento', documents: 'Documentos',
+  keywords: 'Palavras-chave', document: 'Documento', keyword: 'Palavra-chave',
+  emptyTitle: 'Ainda não há documentos', supported: 'Markdown, TXT e PDF com texto', emptyMatches: 'Nenhum documento correspondente',
+  clearSearch: 'Limpar pesquisa', showAll: 'Todos os documentos', openDocument: 'Ler original',
+  remove: 'Remover', removeTitle: 'Remover documento', removeConfirm: 'Remover «{name}» desta base? O ficheiro original será mantido.',
+  replaceTitle: 'Atualizar documento', replaceConfirm: '«{name}» já existe. Substituir a versão indexada por este ficheiro?', update: 'Atualizar',
+  cancel: 'Cancelar', close: 'Fechar', previous: 'Trecho anterior', next: 'Trecho seguinte', passage: 'Trecho {current} de {total}',
+  page: 'Página {page}', lines: 'Linhas {from}–{to}', summary: '{documents} documentos · {passages} trechos',
+  nextPage: 'Página seguinte', previousPage: 'Página anterior', retry: 'Tentar novamente',
+  loadFailed: 'Não foi possível carregar a base. Tente ligar novamente.', readFailed: 'Não foi possível ler o trecho. Atualize e tente novamente.',
+  importSuccess: '{name} importado', removeSuccess: '{name} removido', actionFailed: 'Não foi possível confirmar o resultado. Atualize antes de tentar novamente.',
+  tooLarge: 'O ficheiro excede {size} MB. Escolha um menor.', unsupported: 'Escolha um ficheiro Markdown, TXT UTF-8 ou PDF com texto',
+  zoomIn: 'Ampliar', zoomOut: 'Reduzir', resetView: 'Repor vista', clearSelection: 'Limpar seleção',
+  chunks: '{count} trechos', limited: 'A mostrar {count} documentos',
+}

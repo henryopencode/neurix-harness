@@ -1,0 +1,9 @@
+version: 1
+scenario: knowledge-base
+profile: headless
+composition: knowledge-base
+recording: authored
+header:
+  class: knowledge-base
+  pin: true
+  systemPromptSource: text-turn

@@ -1,0 +1,8 @@
+version: 1
+scenario: knowledge-base
+profile: web
+composition: web-knowledge-base
+recording: authored
+header:
+  class: web-knowledge-base
+  pin: true
