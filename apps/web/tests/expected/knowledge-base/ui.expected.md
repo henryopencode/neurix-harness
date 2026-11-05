@@ -1,0 +1,28 @@
+- heading "Knowledge base" [level=1]
+- paragraph: 1 documents · 1 passages
+- combobox "Workspace":
+  - option "workspace" [selected]
+- button "Refresh"
+- button "Import document"
+- textbox "Search":
+  - /placeholder: Search document content
+- button "Search"
+- region "Knowledge graph":
+  - text: Documents Keywords
+  - 'button "Document: guide.md" [pressed]': guide.md
+  - 'button "Keyword: publishing"': publishing
+  - 'button "Keyword: before"': before
+  - 'button "Keyword: check"': check
+  - 'button "Keyword: cover"': cover
+  - 'button "Keyword: guide"': guide
+  - button "Zoom out"
+  - button "Zoom in"
+  - button "Reset view"
+- complementary "Documents":
+  - button "All documents"
+  - heading "guide.md" [level=2]
+  - button "Previous passage" [disabled]
+  - text: Passage 1 of 1
+  - button "Next passage" [disabled]
+  - paragraph: Lines 1–2
+  - text: "# Publishing guide Check subtitles and cover before publishing."

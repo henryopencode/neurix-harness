@@ -53,6 +53,7 @@ export const DEFAULT_PROFILE_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-bas
  * [admission](../../../../.agents/notes/implemented/architecture/2026-09-21-experimental-capabilities-as-optional-bundles.md)).
  */
 export const OPTIONAL_BUNDLES: readonly string[] = [
+  '@deepseek-ai/dsh-experimental-knowledge-base',
   '@deepseek-ai/dsh-image-generation-bundle',
   '@deepseek-ai/dsh-experimental-computer-control',
   '@deepseek-ai/dsh-experimental-browser-control',
