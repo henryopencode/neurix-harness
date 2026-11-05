@@ -6,7 +6,7 @@ Query reference manuals and project documents across sessions while your existin
 
 ## Enable knowledge management
 
-In an installed Web or Desktop release, open Plugins and enable **Knowledge base**. Open its sidebar entry to import and manage workspace documents. The index stays on this machine; the memory system continues to manage preferences separately.
+In Web and Desktop, open **Knowledge base** directly in the sidebar. It is built in and enabled by default. Open its sidebar entry to import and manage workspace documents. The index stays on this machine; the memory system continues to manage preferences separately.
 
 ### Source-checkout example
 
@@ -32,4 +32,4 @@ A same-name upload asks before updating the imported revision. Removing a docume
 
 ## Optional semantic retrieval
 
-The example uses local keyword retrieval without credentials. An existing Ollama embedding server and model can enable semantic and keyword retrieval together; the [package reference](../../../packages/experimental/knowledge-base/README.md#retrieval-and-limits) defines configuration and reindexing requirements. Passages are sent to the embedding endpoint only when you explicitly configure it.
+The example uses local keyword retrieval without credentials. An existing Ollama embedding server and model can enable semantic and keyword retrieval together; the [package reference](../../../packages/core/knowledge-base/README.md#retrieval-and-limits) defines configuration and reindexing requirements. Passages are sent to the embedding endpoint only when you explicitly configure it.

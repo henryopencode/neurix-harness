@@ -1,9 +1,9 @@
 ---
 description: "Workspace document knowledge for deployments importing local Markdown, TXT, and PDF references with native tools, source citations, and optional Ollama embeddings."
-kind: "package-bundle"
+kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-knowledge-base
+# @deepseek-ai/dsh-knowledge-base
 
 English | [中文](README.zh.md)
 
@@ -25,14 +25,12 @@ Import reference documents and retrieve their original passages across sessions 
 <a id="use-this-package"></a>
 ## Use this package
 
-Enable **Knowledge base** on the Web or Desktop Plugins page to add document management and native Agent tools. Shipped profiles offer the bundle switched off. It stores the index under `$DSH_HOME/storages/knowledge-base`, separate from Session logs and memory databases. Apple Silicon macOS, Linux, and Windows are supported; Intel macOS has no native LanceDB binding for this version.
-
-The bundle's [patch](cordis.patch.yml) mounts this service and its [management UI](../client-ui-knowledge-base/README.md). Disabling it removes their tools and page while retaining indexed documents. A custom composition can mount the service directly when it provides `tools`, `fs`, and `workingDirectory`.
+Knowledge is mounted by the base-backed profiles. Web and Desktop show its sidebar management page immediately; the Plugins page has no enable/disable switch. The index remains under `$DSH_HOME/storages/knowledge-base`, and an empty collection imports no files automatically. Intel macOS shows an explicit unsupported-platform status without loading the native binding. Custom compositions can mount this service when they provide `tools`, `fs`, and `workingDirectory`.
 
 ### Minimal configuration
 
 ```yaml
-- name: '@deepseek-ai/dsh-experimental-knowledge-base'
+- name: '@deepseek-ai/dsh-knowledge-base'
   config:
     path: /absolute/path/to/knowledge-index
 ```
@@ -43,14 +41,14 @@ The original Session workspace determines access. Changing the current working d
 
 ### Document management
 
-In Web or Desktop compositions providing the Workspace controller and typed Gateway, the plugin also exposes workspace-authorized document management. Mount [the optional UI package](../client-ui-knowledge-base/README.md) to add a sidebar entry, browser file import, source reading, and a document/keyword graph. Uploaded filenames use a separate source identity; uploading the same name requires explicit replacement confirmation. The graph is derived from bounded source samples and records literal keyword co-occurrence, without inferring semantic facts.
+In Web or Desktop compositions providing the Workspace controller and typed Gateway, the plugin also exposes workspace-authorized document management. The Web bundle mounts [the built-in UI package](../../client/ui-knowledge-base/README.md) to add a sidebar entry, browser file import, source reading, and a document/keyword graph. Uploaded filenames use a separate source identity; uploading the same name requires explicit replacement confirmation. The graph is derived from bounded source samples and records literal keyword co-occurrence, without inferring semantic facts.
 
 <a id="retrieval-and-limits"></a>
 ### Retrieval and limits
 
 The default retrieves Chinese and other text through a local ICU-tokenized full-text index. To enable hybrid retrieval, configure `embedding.baseUrl` and `embedding.model` for an Ollama embedding model already installed on that server. Imported passages and queries are sent to that configured endpoint. The plugin neither downloads a model nor selects a chat model for embeddings. Changing the embedding target requires a new index directory and reimporting documents.
 
-The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-experimental-knowledge-base) owns every field and default. File-byte, extracted-text, passage-count, search-count, and complete UTF-8 result limits are independently enforced. A single passage that cannot fit rejects visibly; search and list pages reduce their item counts to fit. Adjacent passages do not overlap, so repeated source text retains correct line citations; use `knowledge_read` for surrounding passages.
+The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-knowledge-base) owns every field and default. File-byte, extracted-text, passage-count, search-count, and complete UTF-8 result limits are independently enforced. A single passage that cannot fit rejects visibly; search and list pages reduce their item counts to fit. Adjacent passages do not overlap, so repeated source text retains correct line citations; use `knowledge_read` for surrounding passages.
 
 ### Failures and recovery
 
@@ -107,7 +105,7 @@ Tool results append to existing history. Enabling or disabling the plugin change
 
 <a id="known-limitations-and-deferred-work"></a>
 
-The following limits apply to this optional implementation.
+The following limits apply to the built-in implementation.
 
 - Text PDFs only: OCR, office formats, website synchronization, and directory watching are unavailable.
 - Native LanceDB requires a supported runtime architecture; the selected release supports Apple Silicon macOS, Linux, and Windows, and does not provide Intel macOS bindings.

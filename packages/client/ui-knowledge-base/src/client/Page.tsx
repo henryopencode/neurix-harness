@@ -48,6 +48,7 @@ export function KnowledgePage({
     : `dsh-resource://knowledge-dashboard/${encodeURIComponent(workspace.workspaceId)}?query=${encodeURIComponent(view.query)}&offset=${view.offset}`
   const resource = useResource<'knowledge-dashboard'>(address)
   const data = resource.value
+  const unsupportedPlatform = data?.availability === 'unsupported-platform'
   const [draft, setDraft] = useState('')
   const [selection, setSelection] = useState<Selection | null>(null)
   const current = selection?.workspaceId === workspace?.workspaceId ? selection : null
@@ -128,7 +129,7 @@ export function KnowledgePage({
         </select>
         <Tooltip label={t('refresh')} portal><Button aria-label={t('refresh')} disabled={workspace === undefined || busy}
           onClick={refresh}><IconRefreshOutlineRegular size={16} /></Button></Tooltip>
-        <Button variant="primary" disabled={workspace === undefined || data === undefined || busy}
+        <Button variant="primary" disabled={workspace === undefined || data === undefined || unsupportedPlatform || busy}
           icon={<IconPlusOutlineRegular size={16} />} onClick={() => { fileInput.current?.click() }}>
           {t(reading || view.busy === 'import' ? 'importing' : 'import')}
         </Button>
@@ -142,11 +143,11 @@ export function KnowledgePage({
     </header>
     <form className={css.searchBar} onSubmit={(event) => { event.preventDefault(); search(draft); setSelection(null) }}>
       <Input value={draft} placeholder={t('searchPlaceholder')} aria-label={t('search')}
-        icon={<IconSearchOutlineRegular size={16} />} disabled={workspace === undefined}
+        icon={<IconSearchOutlineRegular size={16} />} disabled={workspace === undefined || unsupportedPlatform}
         onChange={(event) => { setDraft(event.target.value) }} />
       {draft !== '' && <Tooltip label={t('clearSearch')} portal><Button type="button" aria-label={t('clearSearch')}
         onClick={() => { setDraft(''); search(''); setSelection(null) }}><IconCloseOutlineRegular size={14} /></Button></Tooltip>}
-      <Button type="submit" disabled={workspace === undefined}>{t('search')}</Button>
+      <Button type="submit" disabled={workspace === undefined || unsupportedPlatform}>{t('search')}</Button>
     </form>
     {resource.status === 'failed' && <div className={css.notice} role="alert">
       <span>{t('loadFailed')}</span><Button onClick={refresh}>{t('retry')}</Button>
@@ -154,70 +155,74 @@ export function KnowledgePage({
     {workspace === undefined ? workspacesPending ? loading : <div className={css.empty}><IconBookmarkOutlineRegular size={36} />
       <p>{t(workspaces.length > 0 ? 'chooseWorkspace' : 'noWorkspaces')}</p></div>
       : data === undefined ? resource.status === 'failed' ? null : loading
-        : empty ? <div className={css.empty}><IconBookmarkOutlineRegular size={40} />
-          <h2>{t(view.query === '' ? 'emptyTitle' : 'emptyMatches')}</h2>
-          {view.query === '' && <p>{t('supported')}</p>}
-        </div> : <div className={css.body}>
-          <section className={css.graphPanel}>
-            <KnowledgeGraph key={workspace.workspaceId} nodes={data.nodes} edges={data.edges}
-              selected={selectedNode?.id ?? null} select={choose} t={t} />
-            {data.truncated && <span className={css.graphSummary}>{t('limited', { count: data.documents.length })}</span>}
-          </section>
-          <aside className={css.documentsPanel} aria-label={t('documents')}>
-            {document === undefined ? <>
-              <div className={css.panelHead}>
-                <h2>{selectedNode?.kind === 'keyword' ? selectedNode.label : t('documents')}</h2>
-                <span>{visibleDocuments.length}</span>
-                {selectedNode !== undefined && <Tooltip label={t('clearSelection')} portal><Button aria-label={t('clearSelection')}
-                  onClick={() => { setSelection(null) }}><IconCloseOutlineRegular size={14} /></Button></Tooltip>}
-              </div>
-              <div className={css.documentList}>
-                {visibleDocuments.map(item => <article key={item.documentId} className={css.documentCard}>
-                  <button type="button" className={css.documentOpen} aria-label={`${t('openDocument')}: ${item.title}`}
-                    onClick={() => { open(item) }}>
-                    <FileTypeIcon path={item.title} size={24} />
-                    <span className={css.documentMeta}><strong>{item.title}</strong><small>{t('chunks', { count: item.chunks })}</small></span>
-                  </button>
-                  <div className={css.documentActions}>
-                    <Tooltip label={t('remove')} portal><Button aria-label={`${t('remove')} ${item.title}`} disabled={busy}
-                      onClick={() => { setRemoving({ workspaceId: workspace.workspaceId, document: item }) }}>
-                      <IconTrashOutlineRegular size={14} /></Button></Tooltip>
-                  </div>
-                </article>)}
-              </div>
-              {view.query === '' && (view.offset > 0 || data.nextOffset !== null) && <div className={css.pagination}>
-                <Button disabled={view.offset === 0} onClick={() => { page(Math.max(0, view.offset - data.pageSize)); setSelection(null) }}>
-                  {t('previousPage')}
-                </Button>
-                <Button disabled={data.nextOffset === null} onClick={() => {
-                  if (data.nextOffset !== null) { page(data.nextOffset); setSelection(null) }
-                }}>{t('nextPage')}</Button>
-              </div>}
-            </> : <>
-              <div className={css.readerHead}>
-                <Button onClick={() => { setSelection(null) }}>{t('showAll')}</Button>
-                <h2>{document.title}</h2>
-                {!document.source.startsWith('knowledge-upload://') && <p className={css.source}>{document.source}</p>}
-              </div>
-              <div className={css.passageControls}>
-                <Button disabled={chunk === 0} onClick={() => { if (current !== null) setSelection({ ...current, chunk: chunk - 1 }) }}>
-                  {t('previous')}
-                </Button>
-                <span>{t('passage', { current: chunk + 1, total: document.chunks })}</span>
-                <Button disabled={chunk + 1 >= document.chunks}
-                  onClick={() => { if (current !== null) setSelection({ ...current, chunk: chunk + 1 }) }}>{t('next')}</Button>
-              </div>
-              {passage.status === 'failed' && <p className={css.notice} role="alert">{t('readFailed')}</p>}
-              {passage.value === undefined ? passage.status === 'failed' ? null : <div className={css.loading}><span className={css.spinner} role="status"
-                aria-label={t('loading')} /></div> : <div className={css.passage}>
-                <p className={css.location}>{passage.value.page !== null ? t('page', { page: passage.value.page })
-                  : passage.value.startLine !== null && passage.value.endLine !== null
-                    ? t('lines', { from: passage.value.startLine, to: passage.value.endLine }) : null}</p>
-                <pre>{passage.value.text}</pre>
-              </div>}
-            </>}
-          </aside>
-        </div>}
+        : unsupportedPlatform ? <div className={css.empty} role="status"><IconBookmarkOutlineRegular size={40} />
+          <p>{t('unsupportedPlatform')}</p></div>
+          : empty ? <div className={css.empty}><IconBookmarkOutlineRegular size={40} />
+            <h2>{t(view.query === '' ? 'emptyTitle' : 'emptyMatches')}</h2>
+            {view.query === '' && <p>{t('supported')}</p>}
+          </div> : <div className={css.body}>
+            <section className={css.graphPanel}>
+              <KnowledgeGraph key={workspace.workspaceId} nodes={data.nodes} edges={data.edges}
+                selected={selectedNode?.id ?? null} select={choose} t={t} />
+              {data.truncated && <span className={css.graphSummary}>{t('limited', { count: data.documents.length })}</span>}
+            </section>
+            <aside className={css.documentsPanel} aria-label={t('documents')}>
+              {document === undefined ? <>
+                <div className={css.panelHead}>
+                  <h2>{selectedNode?.kind === 'keyword' ? selectedNode.label : t('documents')}</h2>
+                  <span>{visibleDocuments.length}</span>
+                  {selectedNode !== undefined && <Tooltip label={t('clearSelection')} portal><Button aria-label={t('clearSelection')}
+                    onClick={() => { setSelection(null) }}><IconCloseOutlineRegular size={14} /></Button></Tooltip>}
+                </div>
+                <div className={css.documentList}>
+                  {visibleDocuments.map(item => <article key={item.documentId} className={css.documentCard}>
+                    <button type="button" className={css.documentOpen} aria-label={`${t('openDocument')}: ${item.title}`}
+                      onClick={() => { open(item) }}>
+                      <FileTypeIcon path={item.title} size={24} />
+                      <span className={css.documentMeta}><strong>{item.title}</strong><small>{t('chunks', { count: item.chunks })}</small></span>
+                    </button>
+                    <div className={css.documentActions}>
+                      <Tooltip label={t('remove')} portal><Button aria-label={`${t('remove')} ${item.title}`} disabled={busy}
+                        onClick={() => { setRemoving({ workspaceId: workspace.workspaceId, document: item }) }}>
+                        <IconTrashOutlineRegular size={14} /></Button></Tooltip>
+                    </div>
+                  </article>)}
+                </div>
+                {view.query === '' && (view.offset > 0 || data.nextOffset !== null) && <div className={css.pagination}>
+                  <Button disabled={view.offset === 0} onClick={() => {
+                    page(Math.max(0, view.offset - data.pageSize)); setSelection(null)
+                  }}>
+                    {t('previousPage')}
+                  </Button>
+                  <Button disabled={data.nextOffset === null} onClick={() => {
+                    if (data.nextOffset !== null) { page(data.nextOffset); setSelection(null) }
+                  }}>{t('nextPage')}</Button>
+                </div>}
+              </> : <>
+                <div className={css.readerHead}>
+                  <Button onClick={() => { setSelection(null) }}>{t('showAll')}</Button>
+                  <h2>{document.title}</h2>
+                  {!document.source.startsWith('knowledge-upload://') && <p className={css.source}>{document.source}</p>}
+                </div>
+                <div className={css.passageControls}>
+                  <Button disabled={chunk === 0} onClick={() => { if (current !== null) setSelection({ ...current, chunk: chunk - 1 }) }}>
+                    {t('previous')}
+                  </Button>
+                  <span>{t('passage', { current: chunk + 1, total: document.chunks })}</span>
+                  <Button disabled={chunk + 1 >= document.chunks}
+                    onClick={() => { if (current !== null) setSelection({ ...current, chunk: chunk + 1 }) }}>{t('next')}</Button>
+                </div>
+                {passage.status === 'failed' && <p className={css.notice} role="alert">{t('readFailed')}</p>}
+                {passage.value === undefined ? passage.status === 'failed' ? null : <div className={css.loading}><span className={css.spinner} role="status"
+                  aria-label={t('loading')} /></div> : <div className={css.passage}>
+                  <p className={css.location}>{passage.value.page !== null ? t('page', { page: passage.value.page })
+                    : passage.value.startLine !== null && passage.value.endLine !== null
+                      ? t('lines', { from: passage.value.startLine, to: passage.value.endLine }) : null}</p>
+                  <pre>{passage.value.text}</pre>
+                </div>}
+              </>}
+            </aside>
+          </div>}
     <Modal open={removing !== null} title={t('removeTitle')} closeLabel={t('close')}
       onClose={() => { if (!busy) setRemoving(null) }}>
       <p className={css.dialogText}>{t('removeConfirm', { name: removing?.document.title ?? '' })}</p>

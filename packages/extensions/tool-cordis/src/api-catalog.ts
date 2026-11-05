@@ -6336,7 +6336,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'KnowledgeDashboard',
-    declaration: 'export interface KnowledgeDashboard {\n    readonly totalDocuments: number;\n    readonly totalPassages: number;\n    readonly documents: KnowledgeDocument[];\n    readonly passages: KnowledgePassage[];\n    readonly nodes: KnowledgeGraphNode[];\n    readonly edges: KnowledgeGraphEdge[];\n    readonly nextOffset: number | null;\n    readonly truncated: boolean;\n    readonly pageSize: number;\n    readonly maxFileBytes: number;\n}',
+    declaration: 'export interface KnowledgeDashboard {\n    readonly availability: \'ready\' | \'unsupported-platform\';\n    readonly totalDocuments: number;\n    readonly totalPassages: number;\n    readonly documents: KnowledgeDocument[];\n    readonly passages: KnowledgePassage[];\n    readonly nodes: KnowledgeGraphNode[];\n    readonly edges: KnowledgeGraphEdge[];\n    readonly nextOffset: number | null;\n    readonly truncated: boolean;\n    readonly pageSize: number;\n    readonly maxFileBytes: number;\n}',
   },
   {
     name: 'KnowledgeDocument',

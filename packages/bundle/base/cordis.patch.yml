@@ -13,6 +13,11 @@
 # driven); the grouping is for readers.
 
 - insert:
+    - id: knowledge-base
+      name: '@deepseek-ai/dsh-knowledge-base'
+      config:
+        path: !!js dshHomePath('storages', 'knowledge-base')
+
     - id: tool-plugin-manager
       name: '@deepseek-ai/dsh-plugin-manager/tools'
       disabled: true

@@ -10,7 +10,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-resources/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type {} from '@deepseek-ai/dsh-experimental-knowledge-base/remote'
+import type {} from '@deepseek-ai/dsh-knowledge-base/remote'
 import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
 import { KnowledgePage } from './Page.tsx'
 import { KnowledgeNotice } from './Notice.tsx'
@@ -19,7 +19,7 @@ import { createKnowledgeSource, waitForRefresh } from './source.ts'
 import { de, en, es, fr, ja, pt, ru, zh, NS } from './locales.ts'
 import type { Dashboard, KnowledgePageInjected } from './types.ts'
 
-/** Client services consumed directly by this optional management feature. */
+/** Client services consumed directly by this built-in management feature. */
 export const inject = ['remote', 'remoteAccess', 'slots', 'locale', 'resources', 'workspaces']
 
 function unavailable(signal: AbortSignal): RemoteResult<never> | undefined {

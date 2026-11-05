@@ -23,14 +23,7 @@ describe.skipIf(MODE === 'record')('workspace knowledge management', () => {
   beforeAll(async () => {
     scaffold = await launchWebScaffold({
       replayFixture: FIXTURE, compareReplaySession: true,
-      extraOverlayPath: [
-        fileURLToPath(new URL('../../../packages/experimental/knowledge-base/cordis.patch.yml', import.meta.url)),
-        fileURLToPath(new URL('./pin-browse-picker.overlay.yml', import.meta.url)),
-      ],
-      extraInstallAnchors: [
-        fileURLToPath(new URL('../../../packages/experimental/knowledge-base/package.json', import.meta.url)),
-        fileURLToPath(new URL('../../../packages/experimental/client-ui-knowledge-base/package.json', import.meta.url)),
-      ],
+      extraOverlayPath: fileURLToPath(new URL('./pin-browse-picker.overlay.yml', import.meta.url)),
     })
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
@@ -45,6 +38,9 @@ describe.skipIf(MODE === 'record')('workspace knowledge management', () => {
   })
 
   it('imports, reads, searches through native tools, and removes only after confirmation', async () => {
+    await page.getByRole('button', { name: 'Plugins', exact: true }).click()
+    await page.getByRole('button', { name: 'Refresh', exact: true }).waitFor()
+    expect(await page.getByRole('switch', { name: /Knowledge base/ }).count()).toBe(0)
     await page.getByRole('button', { name: 'Knowledge base', exact: true }).click()
     await page.getByRole('heading', { name: 'No documents yet', exact: true }).waitFor()
     await page.locator('input[type="file"]').setInputFiles({ name: 'guide.md', mimeType: 'text/markdown', buffer: Buffer.from(CONTENT) })

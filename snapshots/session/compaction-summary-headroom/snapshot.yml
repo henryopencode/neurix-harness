@@ -8,5 +8,5 @@ header:
   class: compaction-summary-headroom
   pin: true
   systemPromptSource: compaction-recovery
-  toolSchemasSource: compaction-recovery
+  toolSchemasSource: compaction-output-reserve
   changes: 1

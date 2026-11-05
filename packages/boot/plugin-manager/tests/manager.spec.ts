@@ -825,11 +825,24 @@ it('refuses management bundle disablement and permits repeated bundle selections
   expect(await manager.setBundleEnabled('extra', true)).toMatchObject({ application: 'applied', changed: false })
 })
 
+it('hides the retired knowledge bundle even when its profile dependency remains installed', async () => {
+  const { manager, dir, bundle } = await fixture('startup')
+  const name = '@deepseek-ai/dsh-experimental-knowledge-base'
+  bundle(name, [])
+  const path = join(dir, 'package.json')
+  const manifest = readProfileManifest('test', dir)
+  manifest.dependencies = { ...manifest.dependencies, [name]: '1.0.8' }
+  writeFileSync(path, JSON.stringify(manifest))
+  expect((await manager.listBundles()).some(row => row.name === name)).toBe(false)
+})
+
 it.each([
   '@deepseek-ai/dsh-host-plugin-inventory',
   '@deepseek-ai/dsh-typert-registry',
   '@deepseek-ai/dsh-api-remotes',
   '@deepseek-ai/dsh-api-remote-access',
+  '@deepseek-ai/dsh-knowledge-base',
+  '@deepseek-ai/dsh-client-ui-knowledge-base',
 ])('protects the management dependency %s and its containing bundle', async (name) => {
   const { ctx, manager, bundle, profile, dir } = await fixture('startup')
   bundle('extra', [{ id: 'dependency', name, disabled: true }])

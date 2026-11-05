@@ -7,6 +7,7 @@ import type { Branded } from '@deepseek-ai/dsh-brand'
 export type KnowledgeErrorCode = 'KNOWLEDGE_INVALID_INPUT' | 'KNOWLEDGE_NOT_FOUND'
   | 'KNOWLEDGE_TOO_LARGE' | 'KNOWLEDGE_UNSUPPORTED' | 'KNOWLEDGE_CLOSED'
   | 'KNOWLEDGE_FORMAT_MISMATCH' | 'KNOWLEDGE_UNAUTHORIZED' | 'KNOWLEDGE_WRITE_UNKNOWN' | 'KNOWLEDGE_ALREADY_EXISTS'
+  | 'KNOWLEDGE_UNSUPPORTED_PLATFORM'
 
 
 /** Original workspace identity; tools derive it from the calling Session. */
@@ -70,6 +71,8 @@ export interface KnowledgeGraphEdge {
 
 /** Bounded management snapshot derived from committed document passages. */
 export interface KnowledgeDashboard {
+  /** Whether this installation can open its native index. */
+  readonly availability: 'ready' | 'unsupported-platform'
   readonly totalDocuments: number
   readonly totalPassages: number
   readonly documents: KnowledgeDocument[]

@@ -1297,52 +1297,6 @@ export interface InspectorOptions {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-inspector -->
 
-<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-knowledge-base -->
-<a id="deepseek-aidsh-experimental-knowledge-base"></a>
-
-## `@deepseek-ai/dsh-experimental-knowledge-base`
-
-- `inject`: `tools` · `fs` · `workingDirectory`
-- `source`: [`packages/experimental/knowledge-base/src/config.ts:8`](../packages/experimental/knowledge-base/src/config.ts)
-
-```ts config-catalog
-/** Deployment policy; embedding is opt-in and uses the named Ollama server. */
-export interface Config {
-  /** Absolute local directory owned by this knowledge index. */
-  path: string
-  /** Maximum characters per passage; defaults to 1200. */
-  chunkSize?: number
-  /** Maximum bytes read from one source; defaults to 20 MiB. */
-  maxFileBytes?: number
-  /** Maximum decoded characters per document; defaults to 2000000. */
-  maxDocumentChars?: number
-  /** Maximum passages in one document; defaults to 5000. */
-  maxChunks?: number
-  /** Maximum passages returned by search; defaults to 8. */
-  maxResults?: number
-  /** Maximum UTF-8 bytes in a complete tool result; defaults to 32768. */
-  maxResultBytes?: number
-  /** Maximum documents in one management page and its graph; defaults to 30. */
-  graphDocuments?: number
-  /** Maximum keyword nodes shared by a graph; defaults to 24. */
-  graphKeywords?: number
-  /** Maximum keyword associations retained per document; defaults to 5. */
-  graphKeywordsPerDocument?: number
-  /** Maximum leading passages sampled from one document for graph keywords; defaults to 8. */
-  graphChunksPerDocument?: number
-  /** Maximum UTF-8 bytes in a complete management snapshot; defaults to 262144. */
-  maxDashboardBytes?: number
-  /** Explicit embedding server and model; omit for local keyword retrieval. */
-  embedding?: {
-    /** Ollama HTTP endpoint; document passages are sent to this configured server. */
-    baseUrl: string
-    /** Explicit embedding model already installed on the selected Ollama server. */
-    model: string
-  } | null
-}
-```
-<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-knowledge-base -->
-
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-mobile-access -->
 <a id="deepseek-aidsh-experimental-mobile-access"></a>
 
@@ -2032,6 +1986,52 @@ export interface Config {
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-jobs-local -->
+
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-knowledge-base -->
+<a id="deepseek-aidsh-knowledge-base"></a>
+
+## `@deepseek-ai/dsh-knowledge-base`
+
+- `inject`: `tools` · `fs` · `workingDirectory`
+- `source`: [`packages/core/knowledge-base/src/config.ts:8`](../packages/core/knowledge-base/src/config.ts)
+
+```ts config-catalog
+/** Deployment policy; embedding is opt-in and uses the named Ollama server. */
+export interface Config {
+  /** Absolute local directory owned by this knowledge index. */
+  path: string
+  /** Maximum characters per passage; defaults to 1200. */
+  chunkSize?: number
+  /** Maximum bytes read from one source; defaults to 20 MiB. */
+  maxFileBytes?: number
+  /** Maximum decoded characters per document; defaults to 2000000. */
+  maxDocumentChars?: number
+  /** Maximum passages in one document; defaults to 5000. */
+  maxChunks?: number
+  /** Maximum passages returned by search; defaults to 8. */
+  maxResults?: number
+  /** Maximum UTF-8 bytes in a complete tool result; defaults to 32768. */
+  maxResultBytes?: number
+  /** Maximum documents in one management page and its graph; defaults to 30. */
+  graphDocuments?: number
+  /** Maximum keyword nodes shared by a graph; defaults to 24. */
+  graphKeywords?: number
+  /** Maximum keyword associations retained per document; defaults to 5. */
+  graphKeywordsPerDocument?: number
+  /** Maximum leading passages sampled from one document for graph keywords; defaults to 8. */
+  graphChunksPerDocument?: number
+  /** Maximum UTF-8 bytes in a complete management snapshot; defaults to 262144. */
+  maxDashboardBytes?: number
+  /** Explicit embedding server and model; omit for local keyword retrieval. */
+  embedding?: {
+    /** Ollama HTTP endpoint; document passages are sent to this configured server. */
+    baseUrl: string
+    /** Explicit embedding model already installed on the selected Ollama server. */
+    model: string
+  } | null
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-knowledge-base -->
 
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-llm-deepseek-account -->
 <a id="deepseek-aidsh-llm-deepseek-account"></a>
@@ -5021,6 +5021,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-client-ui-goal` | — | [`packages/client/ui-goal/src/index.ts`](../packages/client/ui-goal/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-input-trigger` | — | [`packages/client/ui-input-trigger/src/index.ts`](../packages/client/ui-input-trigger/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-jobs` | — | [`packages/client/ui-jobs/src/index.ts`](../packages/client/ui-jobs/src/index.ts) |
+| `@deepseek-ai/dsh-client-ui-knowledge-base` | — | [`packages/client/ui-knowledge-base/src/index.ts`](../packages/client/ui-knowledge-base/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-layout` | — | [`packages/client/ui-layout/src/index.ts`](../packages/client/ui-layout/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-mcp` | — | [`packages/client/ui-mcp/src/index.ts`](../packages/client/ui-mcp/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-message-feedback` | — | [`packages/client/ui-message-feedback/src/index.ts`](../packages/client/ui-message-feedback/src/index.ts) |
@@ -5072,7 +5073,6 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-experimental-auto-review` | `approval` · `llm` · `permissionPresets` · `sessions` · `tools` · `workingDirectory` | [`packages/experimental/auto-review/src/index.ts`](../packages/experimental/auto-review/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-agent-team` | — | [`packages/experimental/client-ui-agent-team/src/index.ts`](../packages/experimental/client-ui-agent-team/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-claude-code-mods` | — | [`packages/experimental/client-ui-claude-code-mods/src/index.ts`](../packages/experimental/client-ui-claude-code-mods/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-client-ui-knowledge-base` | — | [`packages/experimental/client-ui-knowledge-base/src/index.ts`](../packages/experimental/client-ui-knowledge-base/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-voice-input` | — | [`packages/experimental/client-ui-voice-input/src/index.ts`](../packages/experimental/client-ui-voice-input/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-computer-use-cua-driver-native` | `computerUse` · `tools` · `systemPrompt` | [`packages/experimental/computer-use-cua-driver-native/src/index.ts`](../packages/experimental/computer-use-cua-driver-native/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-session-inspector` | — | [`packages/experimental/session-inspector/src/index.ts`](../packages/experimental/session-inspector/src/index.ts) |
