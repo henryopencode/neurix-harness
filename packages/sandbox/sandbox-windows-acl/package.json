@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-sandbox-windows-acl",
   "description": "Windows ACL write-restriction sandbox backend (restricted-token spawn with capability-SID write allowlist) for the Neurix Harness sandbox seam",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "publishConfig": {
     "access": "public"
   },

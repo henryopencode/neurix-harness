@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-jobs-local",
   "description": "Process-local implementation of the Neurix Harness background job registry seam",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "publishConfig": {
     "access": "public"
   },

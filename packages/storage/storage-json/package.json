@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-storage-json",
   "description": "JSON file KV storage backend for the Neurix Harness storage hub",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "publishConfig": {
     "access": "public"
   },
