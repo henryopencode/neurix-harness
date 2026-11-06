@@ -14,11 +14,11 @@ const workspaceId = brandString<WorkspaceId>('workspace-a')
 const sourceDocument: Document = { documentId: brandString<Document['documentId']>('document-a'),
   source: 'knowledge-upload://guide.md', title: 'guide.md', version: 'revision-a', chunks: 1 }
 const dashboard: Dashboard = {
-  availability: 'ready', totalDocuments: 1, totalPassages: 1, documents: [sourceDocument], passages: [], nextOffset: null,
+  availability: 'ready', totalDocuments: 1, totalPassages: 1, documents: [{ ...sourceDocument, workspaceId, workspaceTitle: 'Project' }], passages: [], nextOffset: null,
   truncated: false, pageSize: 30, maxFileBytes: 1024,
   nodes: [
-    { id: brandString<Dashboard['nodes'][number]['id']>('document:a'), kind: 'document', label: sourceDocument.title, documentId: sourceDocument.documentId },
-    { id: brandString<Dashboard['nodes'][number]['id']>('keyword:a'), kind: 'keyword', label: 'subtitles', documentId: null },
+    { id: brandString<Dashboard['nodes'][number]['id']>('document:a'), kind: 'document', workspaceId, label: sourceDocument.title, documentId: sourceDocument.documentId },
+    { id: brandString<Dashboard['nodes'][number]['id']>('keyword:a'), kind: 'keyword', workspaceId: null, label: 'subtitles', documentId: null },
   ],
   edges: [{ source: brandString<Dashboard['nodes'][number]['id']>('document:a'), target: brandString<Dashboard['nodes'][number]['id']>('keyword:a'), occurrences: 2 }],
 }
@@ -69,7 +69,7 @@ it('captures the document workspace when removal is opened and mutates only afte
   expect(props.remove).not.toHaveBeenCalled()
   switchWorkspace()
   fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Remove' }))
-  await waitFor(() => { expect(props.remove).toHaveBeenCalledWith(workspaceId, sourceDocument) })
+  await waitFor(() => { expect(props.remove).toHaveBeenCalledWith(workspaceId, expect.objectContaining(sourceDocument)) })
   await waitFor(() => { expect(screen.queryByRole('dialog')).toBeNull() })
 })
 

@@ -27,6 +27,7 @@
 
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import { Select } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { apiKeyFailure } from './apiKey.ts'
 import { ApiKeyInput } from './ApiKeyInput.tsx'
@@ -269,15 +270,14 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
       {baseUrlInvalid ? <p className={styles['error']}>{t('customBaseUrlInvalid')}</p> : null}
       <div className={styles['field']}>
         <span className={styles['fieldLabel']}>{t('customApi')}</span>
-        <select
-          className={`${styles['input']} ${styles['selectInput']}`}
+        <Select
+          className={`${styles['input']}`}
           value={protocol}
           aria-label={t('customApi')}
           disabled={profileDisabled}
-          onChange={(event) => { setProtocol(event.target.value) }}
-        >
-          {protocols.map(choice => <option key={choice} value={choice}>{protocolLabel(t, choice)}</option>)}
-        </select>
+          onValueChange={setProtocol}
+          options={protocols.map(choice => ({ value: choice, label: protocolLabel(t, choice) }))}
+        />
       </div>
       <div className={styles['field']}>
         <span className={styles['fieldLabel']}>{t('keyInput')}</span>

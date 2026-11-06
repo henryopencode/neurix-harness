@@ -9,7 +9,7 @@ import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts, launchWebScaffold,
   seedSession, selectedSessionFixture, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage } from './support.ts'
+import { selectField, connectFreshWorkspace, newEnglishPage } from './support.ts'
 
 const directory = fileURLToPath(new URL('../../../snapshots/web/session-inspector', import.meta.url))
 const fixture = fileURLToPath(new URL('../../../snapshots/web/fresh-round-trip/session.v4.jsonl', import.meta.url))
@@ -45,7 +45,7 @@ it.skipIf(webSnapshotMode() === 'record')('inspects a replayed Session log and C
   await page.getByRole('button', { name: 'Open right sidebar', exact: true }).click()
   await page.locator('[data-sidebar-right-guide-entry="session-inspector-log"]').click()
   const mode = page.getByRole('combobox', { name: 'Presentation', exact: true })
-  expect(await mode.inputValue()).toBe('session-log')
+  expect(await mode.getAttribute('value')).toBe('session-log')
   const raw = page.getByRole('table', { name: 'Raw log', exact: true })
   await raw.getByRole('button', { name: 'Filter types', exact: true }).click()
   await page.getByRole('combobox', { name: 'Type keyword', exact: true }).fill('user/message')
@@ -65,7 +65,7 @@ it.skipIf(webSnapshotMode() === 'record')('inspects a replayed Session log and C
     .map(value => [value, '{{time}}'] as const)
   await compareOrRefreshGolden(join(directory, 'log.expected.md'),
     await captureStableAria(page, 'section[aria-label="Raw log"] table', scaffold.workspaceCwd, { replacements }), webSnapshotMode())
-  await mode.selectOption('chat-node')
+  await selectField(mode, 'chat-node')
   const groups = page.getByRole('table', { name: 'Chat group', exact: true })
   expect(await groups.getByRole('columnheader', { name: 'Time (UTC)' }).count()).toBe(0)
   await groups.getByRole('button', { name: 'assistant-step', exact: true }).first().click()

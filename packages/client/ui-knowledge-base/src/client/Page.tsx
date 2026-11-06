@@ -2,20 +2,22 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
-  Button, FileTypeIcon, IconBookmarkOutlineRegular, IconCloseOutlineRegular, IconPlusOutlineRegular,
-  IconRefreshOutlineRegular, IconSearchOutlineRegular, IconTrashOutlineRegular, Input, Modal, Tooltip,
+  Button, FileTypeIcon, IconBookOpenOutlineRegular, IconCloseOutlineRegular, IconPlusOutlineRegular,
+  IconChevronLeftOutlineRegular, IconChevronRightOutlineRegular, IconSearchOutlineRegular, IconTrashOutlineRegular,
+  Input, Modal, Select, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
 import { KnowledgeGraph } from './Graph.tsx'
-import type { Document, GraphNode, KnowledgePageInjected } from './types.ts'
+import type { Document, GraphNode, KnowledgePageInjected, ScopedDocument } from './types.ts'
 import css from './Knowledge.module.css'
 
 /** Complete page props assembled by the main Slot. */
 export type KnowledgePageProps = PropsRuntime<'main'> & PropsLocale<'knowledgeBase'> & InjectFace<KnowledgePageInjected>
 
 interface Selection {
-  workspaceId: WorkspaceId
+  scope: WorkspaceId | null
+  workspaceId: WorkspaceId | null
   nodeId: GraphNode['id'] | null
   documentId: Document['documentId'] | null
   chunk: number
@@ -33,7 +35,7 @@ interface PendingRemoval {
 }
 
 /**
- * Render document management, a literal keyword graph, and exact-revision source reads.
+ * Render project or global document management, a source graph, and exact-revision passages.
  * @param props - Framework resource hooks, localized copy, reactive intent, and plain operation callbacks.
  * @returns The responsive management page; source values remain owned by useResource.
  */
@@ -44,20 +46,34 @@ export function KnowledgePage({
   const workspaces = useWorkspaces(value => value.items)
   const workspacesPending = useWorkspaces(value => value.phase === 'pending' && value.error === null)
   const workspace = workspaces.find(item => item.workspaceId === view.workspaceId)
-  const address = workspace === undefined ? ''
-    : `dsh-resource://knowledge-dashboard/${encodeURIComponent(workspace.workspaceId)}?query=${encodeURIComponent(view.query)}&offset=${view.offset}`
+  const address = workspaces.length === 0 ? ''
+    : `dsh-resource://knowledge-dashboard/${encodeURIComponent(view.workspaceId ?? 'all')}?query=${encodeURIComponent(view.query)}&offset=${view.offset}`
   const resource = useResource<'knowledge-dashboard'>(address)
   const data = resource.value
   const unsupportedPlatform = data?.availability === 'unsupported-platform'
   const [draft, setDraft] = useState('')
   const [selection, setSelection] = useState<Selection | null>(null)
-  const current = selection?.workspaceId === workspace?.workspaceId ? selection : null
+  const current = selection?.scope === view.workspaceId ? selection : null
   const selectedNode = data?.nodes.find(node => node.id === current?.nodeId)
-  const document = data?.documents.find(item => item.documentId === current?.documentId)
-  const chunk = Math.min(current?.chunk ?? 0, Math.max(0, (document?.chunks ?? 1) - 1))
-  const passageAddress = workspace === undefined || document === undefined ? ''
-    : `dsh-resource://knowledge-passage/${encodeURIComponent(workspace.workspaceId)}/${encodeURIComponent(document.documentId)}?version=${encodeURIComponent(document.version)}&chunk=${chunk}`
+  const keywordDocuments = selectedNode?.kind === 'keyword'
+    ? new Set(data?.edges.filter(edge => edge.target === selectedNode.id).map(edge => edge.source)) : undefined
+  const visibleDocuments = data?.documents.filter(item => keywordDocuments === undefined
+    || data.nodes.some(node => node.documentId === item.documentId && node.workspaceId === item.workspaceId
+      && keywordDocuments.has(node.id))) ?? []
+  const document = visibleDocuments.find(item => current !== null
+    && item.documentId === current.documentId && item.workspaceId === current.workspaceId)
+    ?? visibleDocuments[0]
+  const matching = data?.passages.find(item => document !== undefined
+    && item.documentId === document.documentId && item.workspaceId === document.workspaceId)
+  const selectedDocument = current?.documentId === document?.documentId && current?.workspaceId === document?.workspaceId
+  const chunk = Math.min(selectedDocument ? current?.chunk ?? 0 : matching?.chunk ?? 0,
+    Math.max(0, (document?.chunks ?? 1) - 1))
+  const passageAddress = document === undefined ? ''
+    : `dsh-resource://knowledge-passage/${encodeURIComponent(document.workspaceId)}/${encodeURIComponent(document.documentId)}?version=${encodeURIComponent(document.version)}&chunk=${chunk}`
   const passage = useResource<'knowledge-passage'>(passageAddress)
+  const [importTarget, setImportTarget] = useState<WorkspaceId | null>(null)
+  const [choosingImport, setChoosingImport] = useState(false)
+  const importDestination = useRef<WorkspaceId | null>(null)
   const [reading, setReading] = useState(false)
   const [removing, setRemoving] = useState<PendingRemoval | null>(null)
   const [replacement, setReplacement] = useState<PendingUpload | null>(null)
@@ -65,25 +81,22 @@ export function KnowledgePage({
   const reader = useRef<FileReader | null>(null)
   useEffect(() => () => { reader.current?.abort() }, [])
   const busy = view.busy !== null || reading
-  const keywordDocuments = selectedNode?.kind === 'keyword'
-    ? new Set(data?.edges.filter(edge => edge.target === selectedNode.id).map(edge => edge.source)) : undefined
-  const visibleDocuments = data?.documents.filter(item => keywordDocuments === undefined
-    || data.nodes.some(node => node.documentId === item.documentId && keywordDocuments.has(node.id))) ?? []
-
   function choose(node: GraphNode): void {
-    if (workspace === undefined) return
-    setSelection({ workspaceId: workspace.workspaceId, nodeId: node.id, documentId: node.documentId, chunk: 0 })
+    setSelection({ scope: view.workspaceId, workspaceId: node.workspaceId, nodeId: node.id, documentId: node.documentId, chunk: 0 })
   }
 
-  function open(item: Document): void {
-    if (workspace === undefined) return
-    const node = data?.nodes.find(candidate => candidate.documentId === item.documentId)
-    const matching = data?.passages.find(candidate => candidate.documentId === item.documentId)
-    setSelection({ workspaceId: workspace.workspaceId, nodeId: node?.id ?? null, documentId: item.documentId, chunk: matching?.chunk ?? 0 })
+  function open(item: ScopedDocument, chunk = 0): void {
+    const node = data?.nodes.find(candidate => candidate.documentId === item.documentId && candidate.workspaceId === item.workspaceId)
+    setSelection({ scope: view.workspaceId, workspaceId: item.workspaceId, nodeId: node?.id ?? null, documentId: item.documentId, chunk })
   }
 
-  async function importFile(file: File): Promise<void> {
-    if (workspace === undefined || data === undefined || busy) return
+  function pickFile(workspaceId: WorkspaceId): void {
+    importDestination.current = workspaceId
+    fileInput.current?.click()
+  }
+
+  async function importFile(file: File, workspaceId: WorkspaceId): Promise<void> {
+    if (data === undefined || busy) return
     if (!/\.(?:md|markdown|txt|pdf)$/iu.test(file.name)) { report(t('unsupported')); return }
     if (file.size > data.maxFileBytes) { report(t('tooLarge', { size: Math.round(data.maxFileBytes / 1048576) })); return }
     setReading(true)
@@ -99,8 +112,8 @@ export function KnowledgePage({
         selectedReader.onabort = () => { reject(new DOMException('File read aborted', 'AbortError')) }
         selectedReader.readAsDataURL(file)
       })
-      const result = await upload(workspace.workspaceId, file.name, base64, false)
-      if (result === 'exists') setReplacement({ workspaceId: workspace.workspaceId, name: file.name, base64 })
+      const result = await upload(workspaceId, file.name, base64, false)
+      if (result === 'exists') setReplacement({ workspaceId, name: file.name, base64 })
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) report(t('actionFailed'))
     } finally {
@@ -113,61 +126,60 @@ export function KnowledgePage({
   const empty = data !== undefined && data.documents.length === 0
   const loading = <div className={css.loading}><span className={css.spinner} role="status" aria-label={t('loading')} /></div>
   return <section className={css.page}>
-    <header className={css.pageHead}>
+    <header className={css.pageHead} data-window-drag>
       <div className={css.heading}>
         <h1>{t('title')}</h1>
-        {data !== undefined && count > 0 && <p>{t('summary', { documents: count, passages: data.totalPassages })}</p>}
+        <p>{data !== undefined ? t('summary', { documents: count }) : null}</p>
       </div>
       <div className={css.headActions}>
-        <select className={css.workspace} aria-label={t('workspace')} value={workspace?.workspaceId ?? ''} disabled={busy}
-          onChange={(event) => {
-            const selected = workspaces.find(item => item.workspaceId === event.target.value)
-            if (selected !== undefined) { selectWorkspace(selected.workspaceId); setDraft(''); setSelection(null) }
+        <div className={css.workspace}><Select aria-label={t('workspace')} value={view.workspaceId ?? ''} disabled={busy}
+          options={[{ value: '', label: t('allWorkspaces') }, ...workspaces.map(item => ({ value: item.workspaceId, label: item.title }))]}
+          onValueChange={(value) => {
+            const selected = workspaces.find(item => item.workspaceId === value)
+            selectWorkspace(selected?.workspaceId ?? null); setDraft(''); setSelection(null)
+          }} /></div>
+        <Button variant="primary" disabled={workspaces.length === 0 || data === undefined || unsupportedPlatform || busy}
+          icon={<IconPlusOutlineRegular size={16} />} onClick={() => {
+            if (workspace !== undefined) pickFile(workspace.workspaceId)
+            else { setImportTarget(workspaces[0]?.workspaceId ?? null); setChoosingImport(true) }
           }}>
-          {workspace === undefined && <option value="">{t('chooseWorkspace')}</option>}
-          {workspaces.map(item => <option key={item.workspaceId} value={item.workspaceId}>{item.title}</option>)}
-        </select>
-        <Tooltip label={t('refresh')} portal><Button aria-label={t('refresh')} disabled={workspace === undefined || busy}
-          onClick={refresh}><IconRefreshOutlineRegular size={16} /></Button></Tooltip>
-        <Button variant="primary" disabled={workspace === undefined || data === undefined || unsupportedPlatform || busy}
-          icon={<IconPlusOutlineRegular size={16} />} onClick={() => { fileInput.current?.click() }}>
           {t(reading || view.busy === 'import' ? 'importing' : 'import')}
         </Button>
         <input ref={fileInput} type="file" hidden accept=".md,.markdown,.txt,.pdf" aria-label={t('import')}
           onChange={(event) => {
             const file = event.currentTarget.files?.[0]
             event.currentTarget.value = ''
-            if (file !== undefined) void importFile(file)
+            if (file !== undefined && importDestination.current !== null) void importFile(file, importDestination.current)
           }} />
       </div>
     </header>
     <form className={css.searchBar} onSubmit={(event) => { event.preventDefault(); search(draft); setSelection(null) }}>
       <Input value={draft} placeholder={t('searchPlaceholder')} aria-label={t('search')}
-        icon={<IconSearchOutlineRegular size={16} />} disabled={workspace === undefined || unsupportedPlatform}
+        icon={<IconSearchOutlineRegular size={16} />} disabled={workspaces.length === 0 || unsupportedPlatform}
         onChange={(event) => { setDraft(event.target.value) }} />
       {draft !== '' && <Tooltip label={t('clearSearch')} portal><Button type="button" aria-label={t('clearSearch')}
         onClick={() => { setDraft(''); search(''); setSelection(null) }}><IconCloseOutlineRegular size={14} /></Button></Tooltip>}
-      <Button type="submit" disabled={workspace === undefined || unsupportedPlatform}>{t('search')}</Button>
+      <Button type="submit" disabled={workspaces.length === 0 || unsupportedPlatform}>{t('search')}</Button>
     </form>
     {resource.status === 'failed' && <div className={css.notice} role="alert">
       <span>{t('loadFailed')}</span><Button onClick={refresh}>{t('retry')}</Button>
     </div>}
-    {workspace === undefined ? workspacesPending ? loading : <div className={css.empty}><IconBookmarkOutlineRegular size={36} />
-      <p>{t(workspaces.length > 0 ? 'chooseWorkspace' : 'noWorkspaces')}</p></div>
-      : data === undefined ? resource.status === 'failed' ? null : loading
-        : unsupportedPlatform ? <div className={css.empty} role="status"><IconBookmarkOutlineRegular size={40} />
-          <p>{t('unsupportedPlatform')}</p></div>
-          : empty ? <div className={css.empty}><IconBookmarkOutlineRegular size={40} />
-            <h2>{t(view.query === '' ? 'emptyTitle' : 'emptyMatches')}</h2>
-            {view.query === '' && <p>{t('supported')}</p>}
-          </div> : <div className={css.body}>
-            <section className={css.graphPanel}>
-              <KnowledgeGraph key={workspace.workspaceId} nodes={data.nodes} edges={data.edges}
-                selected={selectedNode?.id ?? null} select={choose} t={t} />
-              {data.truncated && <span className={css.graphSummary}>{t('limited', { count: data.documents.length })}</span>}
-            </section>
-            <aside className={css.documentsPanel} aria-label={t('documents')}>
-              {document === undefined ? <>
+    <div className={css.content}>
+      {workspaces.length === 0 ? workspacesPending ? loading : <div className={css.empty}><IconBookOpenOutlineRegular size={36} />
+        <p>{t('noWorkspaces')}</p></div>
+        : data === undefined ? resource.status === 'failed' ? null : loading
+          : unsupportedPlatform ? <div className={css.empty} role="status"><IconBookOpenOutlineRegular size={40} />
+            <p>{t('unsupportedPlatform')}</p></div>
+            : empty ? <div className={css.empty}><IconBookOpenOutlineRegular size={40} />
+              <h2>{t(view.query === '' ? 'emptyTitle' : 'emptyMatches')}</h2>
+              {view.query === '' && <p>{t('supported')}</p>}
+            </div> : <div className={css.body}>
+              <section className={css.graphPanel}>
+                <KnowledgeGraph key={view.workspaceId ?? 'all'} nodes={data.nodes} edges={data.edges}
+                  selected={selectedNode?.id ?? null} select={choose} t={t} />
+                {data.truncated && <span className={css.graphSummary}>{t('limited', { count: data.documents.length })}</span>}
+              </section>
+              <aside className={css.documentsPanel} aria-label={t('documents')}>
                 <div className={css.panelHead}>
                   <h2>{selectedNode?.kind === 'keyword' ? selectedNode.label : t('documents')}</h2>
                   <span>{visibleDocuments.length}</span>
@@ -175,15 +187,23 @@ export function KnowledgePage({
                     onClick={() => { setSelection(null) }}><IconCloseOutlineRegular size={14} /></Button></Tooltip>}
                 </div>
                 <div className={css.documentList}>
-                  {visibleDocuments.map(item => <article key={item.documentId} className={css.documentCard}>
+                  {visibleDocuments.map(item => <article key={`${item.workspaceId}:${item.documentId}`} className={css.documentCard}
+                    data-selected={document?.workspaceId === item.workspaceId && document.documentId === item.documentId}>
                     <button type="button" className={css.documentOpen} aria-label={`${t('openDocument')}: ${item.title}`}
-                      onClick={() => { open(item) }}>
+                      aria-pressed={document?.workspaceId === item.workspaceId && document.documentId === item.documentId}
+                      onClick={() => {
+                        open(item, data.passages.find(match => match.workspaceId === item.workspaceId
+                        && match.documentId === item.documentId)?.chunk ?? 0)
+                      }}>
                       <FileTypeIcon path={item.title} size={24} />
-                      <span className={css.documentMeta}><strong>{item.title}</strong><small>{t('chunks', { count: item.chunks })}</small></span>
+                      <span className={css.documentMeta}><strong>{item.title}</strong>
+                        {view.workspaceId === null && <small>{item.workspaceTitle}</small>}
+                        <small>{t('chunks', { count: item.chunks })}</small>
+                      </span>
                     </button>
                     <div className={css.documentActions}>
                       <Tooltip label={t('remove')} portal><Button aria-label={`${t('remove')} ${item.title}`} disabled={busy}
-                        onClick={() => { setRemoving({ workspaceId: workspace.workspaceId, document: item }) }}>
+                        onClick={() => { setRemoving({ workspaceId: item.workspaceId, document: item }) }}>
                         <IconTrashOutlineRegular size={14} /></Button></Tooltip>
                     </div>
                   </article>)}
@@ -198,31 +218,42 @@ export function KnowledgePage({
                     if (data.nextOffset !== null) { page(data.nextOffset); setSelection(null) }
                   }}>{t('nextPage')}</Button>
                 </div>}
-              </> : <>
-                <div className={css.readerHead}>
-                  <Button onClick={() => { setSelection(null) }}>{t('showAll')}</Button>
-                  <h2>{document.title}</h2>
-                  {!document.source.startsWith('knowledge-upload://') && <p className={css.source}>{document.source}</p>}
-                </div>
-                <div className={css.passageControls}>
-                  <Button disabled={chunk === 0} onClick={() => { if (current !== null) setSelection({ ...current, chunk: chunk - 1 }) }}>
-                    {t('previous')}
-                  </Button>
-                  <span>{t('passage', { current: chunk + 1, total: document.chunks })}</span>
-                  <Button disabled={chunk + 1 >= document.chunks}
-                    onClick={() => { if (current !== null) setSelection({ ...current, chunk: chunk + 1 }) }}>{t('next')}</Button>
-                </div>
-                {passage.status === 'failed' && <p className={css.notice} role="alert">{t('readFailed')}</p>}
-                {passage.value === undefined ? passage.status === 'failed' ? null : <div className={css.loading}><span className={css.spinner} role="status"
-                  aria-label={t('loading')} /></div> : <div className={css.passage}>
-                  <p className={css.location}>{passage.value.page !== null ? t('page', { page: passage.value.page })
-                    : passage.value.startLine !== null && passage.value.endLine !== null
-                      ? t('lines', { from: passage.value.startLine, to: passage.value.endLine }) : null}</p>
-                  <pre>{passage.value.text}</pre>
-                </div>}
-              </>}
-            </aside>
-          </div>}
+                {document !== undefined && <section className={css.reader} aria-label={t('sourcePassages')}>
+                  <div className={css.readerHead}>
+                    <h2>{t('sourcePassages')}</h2>
+                    {!document.source.startsWith('knowledge-upload://') && <p className={css.source}>{document.source}</p>}
+                  </div>
+                  {document.chunks > 1 && <div className={css.passageControls}>
+                    <Tooltip label={t('previous')} portal><Button aria-label={t('previous')} disabled={chunk === 0}
+                      onClick={() => { open(document, chunk - 1) }}><IconChevronLeftOutlineRegular size={16} /></Button></Tooltip>
+                    <Select aria-label={t('sourcePassages')} value={String(chunk)}
+                      options={Array.from({ length: document.chunks }, (_, index) => ({ value: String(index), label: t('passage', { current: index + 1, total: document.chunks }) }))}
+                      onValueChange={(value) => { open(document, Number(value)) }} />
+                    <Tooltip label={t('next')} portal><Button aria-label={t('next')} disabled={chunk + 1 >= document.chunks}
+                      onClick={() => { open(document, chunk + 1) }}><IconChevronRightOutlineRegular size={16} /></Button></Tooltip>
+                  </div>}
+                  {passage.status === 'failed' && <div className={css.notice} role="alert"><span>{t('readFailed')}</span>
+                    <Button onClick={refresh}>{t('retry')}</Button></div>}
+                  {passage.value === undefined ? passage.status === 'failed' ? null : loading : <div className={css.passage}>
+                    <p className={css.location}>{passage.value.page !== null ? t('page', { page: passage.value.page })
+                      : passage.value.startLine !== null && passage.value.endLine !== null
+                        ? t('lines', { from: passage.value.startLine, to: passage.value.endLine }) : null}</p>
+                    <pre>{passage.value.text}</pre>
+                  </div>}
+                </section>}
+
+              </aside>
+            </div>}
+    </div>
+    <Modal open={choosingImport} title={t('importWorkspace')} closeLabel={t('close')} onClose={() => { setChoosingImport(false) }}>
+      <Select aria-label={t('workspace')} value={importTarget ?? ''}
+        options={workspaces.map(item => ({ value: item.workspaceId, label: item.title }))}
+        onValueChange={(value) => { setImportTarget(workspaces.find(item => item.workspaceId === value)?.workspaceId ?? null) }} />
+      <div className={css.dialogActions}><Button onClick={() => { setChoosingImport(false) }}>{t('cancel')}</Button>
+        <Button variant="primary" disabled={importTarget === null} onClick={() => {
+          if (importTarget !== null) { setChoosingImport(false); pickFile(importTarget) }
+        }}>{t('chooseFile')}</Button></div>
+    </Modal>
     <Modal open={removing !== null} title={t('removeTitle')} closeLabel={t('close')}
       onClose={() => { if (!busy) setRemoving(null) }}>
       <p className={css.dialogText}>{t('removeConfirm', { name: removing?.document.title ?? '' })}</p>

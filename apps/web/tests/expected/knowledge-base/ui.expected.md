@@ -1,8 +1,6 @@
 - heading "Knowledge base" [level=1]
-- paragraph: 1 documents · 1 passages
-- combobox "Workspace":
-  - option "workspace" [selected]
-- button "Refresh"
+- paragraph: "Documents: 1"
+- combobox "Workspace": All projects
 - button "Import document"
 - textbox "Search":
   - /placeholder: Search document content
@@ -15,14 +13,17 @@
   - 'button "Keyword: check"': check
   - 'button "Keyword: cover"': cover
   - 'button "Keyword: guide"': guide
-  - button "Zoom out"
-  - button "Zoom in"
   - button "Reset view"
 - complementary "Documents":
-  - button "All documents"
-  - heading "guide.md" [level=2]
-  - button "Previous passage" [disabled]
-  - text: Passage 1 of 1
-  - button "Next passage" [disabled]
-  - paragraph: Lines 1–2
-  - text: "# Publishing guide Check subtitles and cover before publishing."
+  - heading "Documents" [level=2]
+  - text: "1"
+  - button "Clear selection"
+  - article:
+    - 'button "Read source: guide.md" [pressed]':
+      - strong: guide.md
+      - text: "workspace Source passages: 1"
+    - button "Remove guide.md"
+  - region "Source passages":
+    - heading "Source passages" [level=2]
+    - paragraph: Lines 1–2
+    - text: "# Publishing guide Check subtitles and cover before publishing."

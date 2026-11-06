@@ -12,6 +12,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-knowledge-base/remote'
 import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
+import { loadDashboard } from './dashboard.ts'
 import { KnowledgePage } from './Page.tsx'
 import { KnowledgeNotice } from './Notice.tsx'
 import { KnowledgeIcon } from './icon.tsx'
@@ -38,26 +39,23 @@ export async function mountKnowledgeUi(ctx: Context, contribution: TypertRemoteC
   const ui = ctx.inject(['remote.knowledge'], (owner) => {
     const source = createKnowledgeSource(owner.remote.knowledge, owner.locale.bind(NS))
     owner.effect(() => () => source.close())
-    const initializeWorkspace = (): void => {
-      if (source.view.getSnapshot().workspaceId !== null) return
-      const first = owner.workspaces.list.getSnapshot().items[0]
-      if (first !== undefined) source.selectWorkspace(first.workspaceId)
-    }
-    owner.effect(() => owner.workspaces.list.subscribe(initializeWorkspace))
-    initializeWorkspace()
+    owner.effect(() => owner.workspaces.list.subscribe(source.refresh))
     owner.on('connection/reset', source.refresh)
     owner.effect(() => owner.resources.register<'knowledge-dashboard'>({
       protocol: 'knowledge-dashboard',
       async *open(address, { signal }) {
         const url = new URL(address)
-        const workspaceId = brandString<WorkspaceId>(decodeURIComponent(url.pathname.slice(1)))
+        const scope = decodeURIComponent(url.pathname.slice(1))
+        const workspaceId = scope === 'all' ? null : brandString<WorkspaceId>(scope)
         const query = url.searchParams.get('query') ?? ''
         const offset = Number(url.searchParams.get('offset') ?? 0)
         let seen = -1
         while (await waitForRefresh(source.revision, seen, signal)) {
           seen = source.revision.getSnapshot()
           try {
-            const result = await owner.remote.knowledge.dashboard(workspaceId, query, offset, signal)
+            const result = await loadDashboard(
+              owner.remote.knowledge.dashboard, owner.workspaces.list.getSnapshot().items, workspaceId, query, offset, signal,
+            )
             signal.throwIfAborted()
             if (!result.ok) console.error('Knowledge dashboard request failed', result.error.code, result.error.message)
             yield result
@@ -76,15 +74,20 @@ export async function mountKnowledgeUi(ctx: Context, contribution: TypertRemoteC
         const parts = url.pathname.slice(1).split('/')
         const workspaceId = brandString<WorkspaceId>(decodeURIComponent(parts[0] ?? ''))
         const documentId = brandString<Dashboard['documents'][number]['documentId']>(decodeURIComponent(parts[1] ?? ''))
-        try {
-          const result = await owner.remote.knowledge.read(
-            workspaceId, documentId, Number(url.searchParams.get('chunk') ?? 0), url.searchParams.get('version') ?? '', signal,
-          )
-          signal.throwIfAborted()
-          yield result
-        } catch (_error) {
-          const failure = unavailable(signal)
-          if (failure !== undefined) yield failure
+        let seen = -1
+        while (await waitForRefresh(source.revision, seen, signal)) {
+          seen = source.revision.getSnapshot()
+          try {
+            const result = await owner.remote.knowledge.read(
+              workspaceId, documentId, Number(url.searchParams.get('chunk') ?? 0), url.searchParams.get('version') ?? '', signal,
+            )
+            signal.throwIfAborted()
+            yield result
+          } catch (_error) {
+            const failure = unavailable(signal)
+            if (failure === undefined) return
+            yield failure
+          }
         }
       },
     }))

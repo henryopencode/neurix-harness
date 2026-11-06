@@ -11,7 +11,7 @@ import {
   captureStableAria, compareOrRefreshGolden, fixtureUserPrompts, launchWebScaffold, webSnapshotMode, watchConsole,
   type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage } from './support.ts'
+import { selectField, connectFreshWorkspace, newEnglishPage } from './support.ts'
 
 const fixture = fileURLToPath(new URL('../../../snapshots/web/fresh-round-trip/session.v3.jsonl', import.meta.url))
 const expected = fileURLToPath(new URL('../../../snapshots/web/voice-input/ui.expected.md', import.meta.url))
@@ -143,8 +143,8 @@ it.skipIf(webSnapshotMode() === 'record')('guides voice setup, records from stan
   const devices = await page.evaluate(async () => (await navigator.mediaDevices.enumerateDevices())
     .filter(device => device.kind === 'audioinput' && device.deviceId !== 'default'))
   const selectedDevice = devices[0]!
-  await devicePicker.selectOption(selectedDevice.deviceId)
-  await expect.poll(() => devicePicker.inputValue()).toBe(selectedDevice.deviceId)
+  await selectField(devicePicker, selectedDevice.deviceId)
+  await expect.poll(() => devicePicker.getAttribute('value')).toBe(selectedDevice.deviceId)
   await expect.poll(() => page.evaluate(() => {
     const streams = (window as Window & { voiceTestStreams?: MediaStream[] }).voiceTestStreams!
     return streams.filter(stream => stream.getTracks().some(track => track.readyState === 'live')).length
@@ -158,7 +158,9 @@ it.skipIf(webSnapshotMode() === 'record')('guides voice setup, records from stan
       (window as Window & { voiceTestExcluded?: string[] }).voiceTestExcluded = ids
       navigator.mediaDevices.dispatchEvent(new Event('devicechange'))
     }, excluded)
+    if (await devicePicker.getAttribute('aria-expanded') !== 'true') await devicePicker.click()
     await expect.poll(() => page.getByRole('option', { name: otherDevice.label, exact: true }).count()).toBe(excluded.length ? 0 : 1)
+    await page.keyboard.press('Escape')
     expect(await page.evaluate(() => (window as Window & { voiceTestStreams?: MediaStream[] }).voiceTestStreams!.length)).toBe(acquisitions)
     await level.waitFor()
   }
@@ -169,18 +171,20 @@ it.skipIf(webSnapshotMode() === 'record')('guides voice setup, records from stan
     track.stop(); track.dispatchEvent(new Event('ended'))
     navigator.mediaDevices.dispatchEvent(new Event('devicechange'))
   }, selectedDevice.deviceId)
+  if (await devicePicker.getAttribute('aria-expanded') !== 'true') await devicePicker.click()
   const missing = page.getByRole('option', { name: `${selectedDevice.label} — Unavailable`, exact: true })
   await expect.poll(() => missing.count()).toBe(1)
   expect(await missing.isDisabled()).toBe(true)
   await level.waitFor({ state: 'hidden' })
-  expect(await devicePicker.evaluate(element => (element as HTMLSelectElement).selectedOptions[0]?.textContent)).toContain('Unavailable')
+  expect(await devicePicker.textContent()).toContain('Unavailable')
+  await page.keyboard.press('Escape')
   await compareOrRefreshGolden(fileURLToPath(new URL('../../../snapshots/web/voice-input/device-missing.expected.md', import.meta.url)),
     await captureStableAria(page, '[data-voice-input-device]', scaffold.workspaceCwd), webSnapshotMode())
   await page.evaluate(() => {
     (window as Window & { voiceTestExcluded?: string[] }).voiceTestExcluded = []
     navigator.mediaDevices.dispatchEvent(new Event('devicechange'))
   })
-  await expect.poll(() => devicePicker.evaluate(element => (element as HTMLSelectElement).selectedOptions[0]?.textContent))
+  await expect.poll(() => devicePicker.textContent())
     .not.toContain('Unavailable')
   await level.waitFor()
   expect(await page.evaluate(() => (window as Window & { voiceTestStreams?: MediaStream[] })
@@ -192,7 +196,7 @@ it.skipIf(webSnapshotMode() === 'record')('guides voice setup, records from stan
     (window as Window & { voiceTestNames?: Record<string, string> }).voiceTestNames![id] = label
     navigator.mediaDevices.dispatchEvent(new Event('devicechange'))
   }, { id: selectedDevice.deviceId, label: longName })
-  await expect.poll(() => devicePicker.evaluate(element => (element as HTMLSelectElement).selectedOptions[0]?.textContent)).toBe(longName)
+  await expect.poll(() => devicePicker.textContent()).toBe(longName)
   await page.setViewportSize({ width: 360, height: 900 })
   await level.waitFor()
   await devicePicker.scrollIntoViewIfNeeded()

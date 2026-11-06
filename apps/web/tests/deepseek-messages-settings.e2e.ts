@@ -8,7 +8,7 @@ import {
   captureStableAria, compareOrRefreshGolden, launchWebScaffold,
   watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { openSettings, connectFreshWorkspaceZh, saveFailureShot, ZH_BROWSER_LOCALE } from './support.ts'
+import { selectField, openSettings, connectFreshWorkspaceZh, saveFailureShot, ZH_BROWSER_LOCALE } from './support.ts'
 
 const EXPECTED = fileURLToPath(new URL('./expected/deepseek-messages-settings/', import.meta.url))
 
@@ -83,7 +83,7 @@ describe.skipIf(webSnapshotMode() === 'record')('web e2e: DeepSeek Messages sett
     expect(scaffold.ctx.agentDefaultModel.currentSelection()).toEqual({ provider: 'deepseek-official', model: 'deepseek-flash' })
     await page.getByRole('dialog', { name: '开始使用', exact: true }).getByRole('button', { name: '添加 API Key', exact: true }).click()
     const onboarding = page.getByRole('dialog', { name: '连接模型服务' })
-    await onboarding.getByRole('combobox', { name: '提供商', exact: true }).selectOption('provider:deepseek-official')
+    await selectField(onboarding.getByRole('combobox', { name: '提供商', exact: true }), 'provider:deepseek-official')
     await onboarding.getByRole('group', { name: 'DeepSeek', exact: true }).getByLabel('API 密钥', { exact: true }).fill('sk-messages-onboarding')
     await onboarding.getByRole('button', { name: '保存并继续' }).click()
     await onboarding.waitFor({ state: 'detached' })
@@ -174,7 +174,7 @@ it('deletes and re-adds DeepSeek through the ordinary provider controls', async 
     await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
     await page.getByRole('dialog', { name: '开始使用', exact: true }).getByRole('button', { name: '添加 API Key', exact: true }).click()
     const onboarding = page.getByRole('dialog', { name: '连接模型服务' })
-    await onboarding.getByRole('combobox', { name: '提供商', exact: true }).selectOption('provider:deepseek-official')
+    await selectField(onboarding.getByRole('combobox', { name: '提供商', exact: true }), 'provider:deepseek-official')
     await onboarding.getByRole('group', { name: 'DeepSeek', exact: true }).getByLabel('API 密钥', { exact: true }).fill('sk-deepseek-removal-fixture')
     await onboarding.getByRole('button', { name: '保存并继续' }).click()
     await onboarding.waitFor({ state: 'detached' })
@@ -190,7 +190,7 @@ it('deletes and re-adds DeepSeek through the ordinary provider controls', async 
     await compareOrRefreshGolden(join(EXPECTED, 'removed.expected.md'),
       await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd), webSnapshotMode())
     await dialog.getByRole('button', { name: '添加模型提供商', exact: true }).click()
-    await dialog.getByRole('combobox', { name: '提供商', exact: true }).selectOption('deepseek-official')
+    await selectField(dialog.getByRole('combobox', { name: '提供商', exact: true }), 'deepseek-official')
     await dialog.getByRole('button', { name: '保存', exact: true }).click()
     await expect.poll(() => scaffold.ctx.llm.listProviders().some(provider => provider.id === 'deepseek-official')).toBe(true)
     await dialog.getByRole('button', { name: '删除 DeepSeek (deepseek-official)', exact: true }).waitFor()

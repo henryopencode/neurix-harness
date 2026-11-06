@@ -9,7 +9,7 @@ import {
   captureStableAria, compareOrRefreshGolden, launchWebScaffold,
   watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { openSettings, saveFailureShot, ZH_BROWSER_LOCALE } from './support.ts'
+import { selectField, openSettings, saveFailureShot, ZH_BROWSER_LOCALE } from './support.ts'
 
 const EXPECTED = fileURLToPath(new URL('./expected/models-settings-recovery/stored-error.expected.md', import.meta.url))
 const FAILURE = 'llm-pi-ai: provider "openrouter" model "111" needs an api; '
@@ -69,7 +69,7 @@ describe('web e2e: repairs a stored provider after catalog drift', () => {
     // Both modes stay offered beside a failed route: the card opens on the
     // third-party mode with the custom-API segment enabled.
     expect(await dialog.getByRole('tab', { name: '自定义模型 API' }).isEnabled()).toBe(true)
-    await dialog.getByLabel('提供商', { exact: true }).selectOption('minimax-cn')
+    await selectField(dialog.getByLabel('提供商', { exact: true }), 'minimax-cn')
     await dialog.getByRole('button', { name: '保存', exact: true }).click()
     await dialog.getByText('已保存 minimax-cn。', { exact: true }).waitFor()
     expect(await readFile(join(home, 'profiles', 'scaffold', 'cordis.patch.yml'), 'utf8')).toContain('minimax-cn: {}')

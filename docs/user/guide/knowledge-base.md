@@ -26,7 +26,7 @@ The Agent uses `knowledge_import`, `knowledge_search`, `knowledge_read`, `knowle
 
 ## Manage documents and explore associations
 
-Choose the workspace in the knowledge page, then import a Markdown, TXT, or text PDF file. Select a document node or its list entry to read the imported text with its original page or line range. Select a keyword to filter the associated documents. Search checks document content; graph zoom and pan help inspect the current page.
+The knowledge page opens on **All projects**; use the project selector to filter one workspace. Imports from the global view ask which project should own the file. Select a document node or list entry to read its original text in the right panel. Long documents are split into searchable source passages; the passage selector and previous/next actions show each passage with its original page or line range. Select a keyword to filter related documents. Use the mouse wheel to zoom, drag a node to rearrange it, or drag empty space to pan. Reset appears while hovering or focusing the graph and remains visible on touch devices.
 
 A same-name upload asks before updating the imported revision. Removing a document asks for confirmation and affects only that workspace’s index. The graph shows literal document/keyword associations from bounded samples; it does not assert semantic relationships.
 
