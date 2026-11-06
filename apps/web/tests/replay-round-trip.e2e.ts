@@ -13,7 +13,7 @@ import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 // (page.clock.setFixedTime) and one routed Remote mux socket
 // (page.routeWebSocket) serve every step below, so the reconnect checkpoints
 // rely on both without re-pinning or re-routing them.
-import { readFile } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Browser, Page, Route, WebSocketRoute } from 'playwright'
@@ -42,6 +42,7 @@ const UI_EXPANDED_EXPECTED = fileURLToPath(
   new URL('../../../snapshots/web/fresh-round-trip/ui-expanded.expected.md', import.meta.url),
 )
 const WEB_CONTEXT_EXPECTED = fileURLToPath(new URL('../../../snapshots/web/fresh-round-trip/web-context.expected.md', import.meta.url))
+const CONTEXT_HISTORY_EXPECTED = join(SNAPSHOT_DIR, 'context-history.expected.md')
 const MODE = webSnapshotMode()
 
 // The scenario's one drive prompt. Record sends it; replay asserts the
@@ -341,6 +342,49 @@ describe('web e2e: fresh round trip through the real assembly', () => {
     await expect.poll(() => think.getAttribute('aria-expanded'), { timeout: 5_000 }).toBe('false')
   })
 
+  it.skipIf(MODE === 'record')('diagnoses recorded request usage without changing the conversation', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-context-diagnostics'))
+    await page.getByRole('tab', { name: 'Trajectory', exact: true }).click()
+    const trigger = page.getByRole('button', { name: 'Context diagnostics', exact: true })
+    await trigger.click()
+    const dialog = page.getByRole('dialog', { name: 'Context diagnostics', exact: true })
+    await dialog.waitFor()
+    expect(await dialog.getByRole('button', { name: 'Turn 1 · Step 2', exact: true }).getAttribute('aria-pressed')).toBe('true')
+    expect(await dialog.getByRole('cell', { name: '+103', exact: true }).count()).toBe(1)
+    // Provider usage is portable; heuristic composition depends on rendered runtime paths.
+    await compareOrRefreshGolden(CONTEXT_HISTORY_EXPECTED,
+      await captureStableAria(page, '[role="dialog"] [role="region"]', scaffold.workspaceCwd), MODE)
+    await dialog.getByRole('button', { name: 'Turn 1 · Step 1', exact: true }).click()
+    expect(await dialog.getByRole('heading', { name: 'Tool definitions · Turn 1 · Step 1', exact: true }).count()).toBe(1)
+    const screenshots = join(REPO_ROOT, '.artifacts/context-diagnostics')
+    await mkdir(screenshots, { recursive: true })
+    for (const colorScheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme })
+      await expect.poll(() => page.locator('body').evaluate(body => body.hasAttribute('data-ds-dark-theme')))
+        .toBe(colorScheme === 'dark')
+      for (const width of [1_200, 390]) {
+        await page.setViewportSize({ width, height: 900 })
+        const bounds = await dialog.boundingBox()
+        if (bounds === null) throw new Error('context diagnostics dialog is not visible')
+        expect(bounds.x).toBeGreaterThanOrEqual(0)
+        expect(bounds.x + bounds.width).toBeLessThanOrEqual(width)
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+        if (width === 390) {
+          expect(await dialog.locator('[role="region"]').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+        }
+        expect(await dialog.getByRole('button', { name: 'Close details', exact: true }).isVisible()).toBe(true)
+        await page.screenshot({ path: join(screenshots, `${colorScheme}-${width}.png`) })
+      }
+    }
+    await page.setViewportSize({ width: 1_200, height: 900 })
+    await page.emulateMedia({ colorScheme: null })
+    await page.keyboard.press('Escape')
+    await dialog.waitFor({ state: 'detached' })
+    expect(await trigger.evaluate(element => element === document.activeElement)).toBe(true)
+    await page.getByRole('tab', { name: 'Chat', exact: true }).click()
+    expect(await page.getByText('DONE', { exact: true }).count()).toBeGreaterThanOrEqual(1)
+  })
+
   it.skipIf(MODE === 'record')('stayed clean after the intentional reconnect: no pageerrors or server errors', async () => {
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
@@ -354,6 +398,7 @@ describe('web e2e: fresh round trip through the real assembly', () => {
       'web-context.expected.md',
       'ui.expected.md',
       'ui-expanded.expected.md',
+      'context-history.expected.md',
     ])
   })
 })
