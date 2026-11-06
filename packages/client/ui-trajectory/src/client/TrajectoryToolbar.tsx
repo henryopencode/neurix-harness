@@ -26,6 +26,8 @@ export interface TrajectoryToolbarProps {
   searchQuery: string
   /** Update the live ledger search query. */
   onSearchQueryChange: (query: string) => void
+  /** Open read-only context diagnostics for this Session. */
+  onOpenContext?: () => void
   /** Translate a toolbar dictionary key. */
   t: TranslateNS<typeof NS>
 }
@@ -46,6 +48,7 @@ export function TrajectoryToolbar({
   onToggleAllAssistants,
   searchQuery,
   onSearchQueryChange,
+  onOpenContext,
   t,
 }: TrajectoryToolbarProps) {
   return (
@@ -111,6 +114,9 @@ export function TrajectoryToolbar({
             {t('toolbar.calls')}
           </button>
         </div>
+        {onOpenContext !== undefined && <button type="button" className={css.toggle} aria-haspopup="dialog" onClick={onOpenContext}>
+          {t('diagnostics.open')}
+        </button>}
         <div className={css.search}>
           <IconSearchOutlineRegular size={11} className={css.searchIcon} />
           <input

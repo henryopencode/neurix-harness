@@ -67,6 +67,7 @@
   - button "Use actual duration": Duration
   - button "Collapse turns": Turns
   - button "Collapse calls": Calls
+  - button "Context diagnostics"
   - searchbox "Search trajectory"
 - region "Trajectory timeline"
 - table:
