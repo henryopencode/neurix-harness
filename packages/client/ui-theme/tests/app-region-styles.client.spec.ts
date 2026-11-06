@@ -73,6 +73,12 @@ const CHROME_ROWS: readonly ChromeRow[] = [
     inset: ['padding-top', '28px'],
   },
   {
+    file: 'client/ui-schedule/src/client/TaskManagerPage.module.css',
+    selector: '.pageHeading',
+    markup: 'client/ui-schedule/src/client/TaskManagerPage.tsx',
+    inset: ['padding-top', '28px'],
+  },
+  {
     file: 'client/ui-mcp/src/client/McpPage.module.css',
     selector: '.header',
     markup: 'client/ui-mcp/src/client/McpPage.tsx',
