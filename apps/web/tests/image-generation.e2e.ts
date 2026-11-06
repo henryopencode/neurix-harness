@@ -10,7 +10,7 @@ import { parseSessionLog } from '@deepseek-ai/dsh-llm-replay'
 import {
   captureStableAria, compareOrRefreshGolden, launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspaceZh, expandTurnProcesses, openSettings, PLUGIN_TOGGLE_SETTLE_MS, saveFailureShot, ZH_BROWSER_LOCALE } from './support.ts'
+import { selectField, connectFreshWorkspaceZh, expandTurnProcesses, openSettings, PLUGIN_TOGGLE_SETTLE_MS, saveFailureShot, ZH_BROWSER_LOCALE } from './support.ts'
 
 const FIXTURE = fileURLToPath(new URL('../../../snapshots/session/generate-image/session.v4.jsonl', import.meta.url))
 const MINIMAX_FIXTURE = fileURLToPath(new URL('../../../snapshots/session/generate-image-minimax/session.v4.jsonl', import.meta.url))
@@ -94,7 +94,7 @@ describe('web e2e: image generation', () => {
     expect(await form.getByRole('button', { name: '保存', exact: true }).isDisabled()).toBe(true)
     await form.getByLabel('生图接口地址', { exact: true }).fill(endpoint)
     await form.getByLabel('图片模型', { exact: true }).fill(model)
-    if (provider === 'minimax') await form.getByRole('combobox', { name: '默认图片比例', exact: true }).selectOption(defaultRatio)
+    if (provider === 'minimax') await selectField(form.getByRole('combobox', { name: '默认图片比例', exact: true }), defaultRatio)
     const apiKey = form.getByLabel('API Key', { exact: true })
     expect(await apiKey.getAttribute('type')).toBe('password')
     await apiKey.fill('fixture-key')

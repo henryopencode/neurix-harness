@@ -69,7 +69,7 @@ describe('SettingsValueField', () => {
       onEdit={onEdit} onReset={vi.fn()} />)
     const control = screen.getByRole('combobox', { name: frame.label })
     expect(control).toHaveProperty('value', '1:1')
-    fireEvent.change(control, { target: { value: '2:3' } })
+    chooseOption(control, '2:3')
     expect(onEdit).toHaveBeenCalledWith('2:3')
     rerender(<SettingsValueField {...frame} disabled text="2:3"
       choices={[{ value: '2:3', label: 'Portrait' }]} onEdit={onEdit} onReset={vi.fn()} />)
@@ -169,3 +169,10 @@ describe('SettingsSecretField', () => {
     expect(screen.getByLabelText('API key')).toHaveProperty('disabled', true)
   })
 })
+
+function chooseOption(control: HTMLElement, value: string): void {
+  fireEvent.click(control)
+  const option = screen.getAllByRole<HTMLButtonElement>('option').find(item => item.value === value)
+  if (option === undefined) throw new Error(`Missing option: ${value}`)
+  fireEvent.click(option)
+}

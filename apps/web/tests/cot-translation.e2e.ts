@@ -12,7 +12,7 @@ import {
   acknowledgeReloadConnectionLoss, assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
   launchWebScaffold, readPersistedEvents, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import {
+import { selectField,
   connectFreshWorkspaceZh, expandOwningTurnProcess, PLUGIN_TOGGLE_SETTLE_MS, saveFailureShot, ZH_BROWSER_LOCALE,
 } from './support.ts'
 
@@ -207,7 +207,7 @@ it.skipIf(MODE === 'record')('persists Bing reasoning translation across reopen 
   const provider = panel.getByLabel('翻译服务', { exact: true })
   const target = panel.getByLabel('目标语言', { exact: true })
   await provider.waitFor()
-  expect(await provider.inputValue()).toBe('bing')
+  expect(await provider.getAttribute('value')).toBe('bing')
   expect(await target.inputValue()).toBe('auto')
   await panel.getByText('展开的思考内容会发送给所选翻译服务，可能包含私有代码或对话细节。', { exact: true }).waitFor()
   await panel.getByText(`v${bundleVersion}`, { exact: true }).waitFor()
@@ -290,7 +290,7 @@ it.skipIf(MODE === 'record')('persists Bing reasoning translation across reopen 
   expect(calls).toHaveLength(1)
   expect(await readPersistedEvents(scaffold, sessionId)).toEqual(savedBing)
 
-  await provider.selectOption('google')
+  await selectField(provider, 'google')
   await target.fill('zh')
   expect(calls).toHaveLength(1)
   const save = panel.getByRole('button', { name: '保存', exact: true })

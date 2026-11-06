@@ -7,6 +7,7 @@
 import type { TrackProductEvent } from '@deepseek-ai/dsh-client-product-analytics/client'
 import { useEffect, useId, useState } from 'react'
 import type { ReactNode } from 'react'
+import { Select } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { InjectFace, PropsRuntime, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ModelsSettingsState, ModelsSettingsStore } from './store.ts'
@@ -136,19 +137,17 @@ export function DeepSeekOnboardingDialog(props: DeepSeekOnboardingDialogProps): 
     <OnboardingModal title={t('onboardingTitle')}>
       {options.length > 1 ? <div className={formStyles['field']}>
         <label className={formStyles['fieldLabel']} htmlFor={id}>{t('provider')}</label>
-        <select
+        <Select
           id={id}
-          className={`${formStyles['input']} ${formStyles['selectInput']}`}
+          className={`${formStyles['input']}`}
           value={mode}
           disabled={customBusy || providerBusy}
-          onChange={(event) => {
-            const next = event.target.value
+          onValueChange={(next) => {
             setChoice(next)
             setVisited(previous => new Set([...previous, next]))
           }}
-        >
-          {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
+          options={options}
+        />
       </div> : null}
       <p className={styles.description}>{t('onboardingDescription')}</p>
       {customAvailable && (visited.has('custom') || mode === 'custom') ? <div

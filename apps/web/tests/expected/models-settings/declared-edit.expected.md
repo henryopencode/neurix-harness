@@ -5,16 +5,12 @@
     - button "模型"
     - button "内置插件"
     - button "Agent 预设"
+    - button "关于"
   - button "打开配置文件"
   - button "关闭"
   - heading "模型" [level=2]
   - paragraph: 填入各提供商的 API 密钥即可使用其模型。
   - list:
-    - listitem:
-      - text: minimax-cn
-      - img "API 密钥已配置"
-      - button "编辑 minimax-cn": 编辑
-      - button "删除 minimax-cn": 删除
     - listitem:
       - text: Acme Gateway 自定义
       - button "编辑 Acme Gateway (acme-gateway)": 编辑
@@ -32,10 +28,7 @@
           - /placeholder: https://gateway.acme.example/v1
           - text: https://gateway.acme.example/v1
         - text: API 协议
-        - combobox "API 协议":
-          - option "OpenAI Chat Completions" [selected]
-          - option "OpenAI Responses"
-          - option "Anthropic Messages"
+        - combobox "API 协议": OpenAI Chat Completions
         - region "模型目录":
           - text: 模型目录 已自定义模型目录
           - button "恢复默认模型"
@@ -64,31 +57,16 @@
             - text: 推理等级
             - button "推理等级说明": "?"
             - switch "推理等级 1" [checked]
-            - combobox "档位 1":
-              - option "off" [selected]
-              - option "minimal"
-              - option "medium"
-              - option "xhigh"
-              - option "max"
+            - combobox "档位 1": "off"
             - textbox "off API 参数值" [disabled]:
               - /placeholder: 关闭思考
             - button "删除档位 off"
-            - combobox "档位 2":
-              - option "minimal"
-              - option "low" [selected]
-              - option "medium"
-              - option "xhigh"
-              - option "max"
+            - combobox "档位 2": low
             - textbox "low API 参数值":
               - /placeholder: low
               - text: low
             - button "删除档位 low"
-            - combobox "档位 3":
-              - option "minimal"
-              - option "medium"
-              - option "high" [selected]
-              - option "xhigh"
-              - option "max"
+            - combobox "档位 3": high
             - textbox "high API 参数值":
               - /placeholder: high
               - text: high
@@ -97,4 +75,9 @@
           - button "添加模型"
       - button "取消"
       - button "保存"
+    - listitem:
+      - text: minimax-cn
+      - img "API 密钥已配置"
+      - button "编辑 minimax-cn": 编辑
+      - button "删除 minimax-cn": 删除
   - button "添加模型提供商"

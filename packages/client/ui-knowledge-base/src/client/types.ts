@@ -15,7 +15,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     knowledgeBase: KnowledgeUiKey
   }
   interface ResourceProtocolMap {
-    /** One authorized workspace's document page and source graph. */
+    /** A bounded project or global document page and source graph. */
     'knowledge-dashboard': Dashboard
     /** One exact imported source passage. */
     'knowledge-passage': Passage
@@ -25,15 +25,25 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 /** The generated knowledge management Remote face. */
 export type KnowledgeApi = TypertClientRemote['knowledge']
 /** Dashboard values come from the Host's generated method result. */
-export type Dashboard = Extract<Awaited<ReturnType<KnowledgeApi['dashboard']>>, { ok: true }>['value']
+export type DashboardResult = Extract<Awaited<ReturnType<KnowledgeApi['dashboard']>>, { ok: true }>['value']
 /** Passage values come from the Host's generated method result. */
 export type Passage = Extract<Awaited<ReturnType<KnowledgeApi['read']>>, { ok: true }>['value']
+/** Workspace metadata used to retain the owner of every global result. */
+export type KnowledgeWorkspace = ReturnType<IWorkspaces['list']['getSnapshot']>['items'][number]
+/** A document's project remains explicit even when several projects share a filename. */
+export type ScopedDocument = Document & { readonly workspaceId: WorkspaceId; readonly workspaceTitle: string }
+/** A bounded project or global page, with source ownership attached to every result. */
+export type Dashboard = Omit<DashboardResult, 'documents' | 'nodes' | 'passages'> & {
+  readonly documents: ScopedDocument[]
+  readonly nodes: GraphNode[]
+  readonly passages: (Passage & { readonly workspaceId: WorkspaceId })[]
+}
 /** One management header in the current dashboard. */
-export type Document = Dashboard['documents'][number]
+export type Document = DashboardResult['documents'][number]
 /** One source-derived graph node. */
-export type GraphNode = Dashboard['nodes'][number]
+export type GraphNode = DashboardResult['nodes'][number] & { readonly workspaceId: WorkspaceId | null }
 /** One source-derived graph association. */
-export type GraphEdge = Dashboard['edges'][number]
+export type GraphEdge = DashboardResult['edges'][number]
 /** Feature translation function. */
 export type Translate = PropsLocale<'knowledgeBase'>['t']
 
@@ -58,7 +68,7 @@ export interface KnowledgePageInjected {
     readonly view: ObservableSnapshot<ViewState>
     readonly workspaces: IWorkspaces['list']
   }
-  readonly selectWorkspace: (workspaceId: WorkspaceId) => void
+  readonly selectWorkspace: (workspaceId: WorkspaceId | null) => void
   readonly search: (query: string) => void
   readonly page: (offset: number) => void
   readonly refresh: () => void

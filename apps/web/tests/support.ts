@@ -338,3 +338,14 @@ export async function openSettings(page: Page, locale: 'en' | 'zh' | 'ja'): Prom
   await page.getByRole('button', { name: labels[locale][0], exact: true }).click()
   await page.getByRole('menuitem', { name: labels[locale][1], exact: true }).click()
 }
+
+/**
+ * Choose one value through the product's shared accessible selector.
+ * @param control - Visible combobox trigger; its popup is portaled to the page root.
+ * @param value - Exact option value.
+ * @returns Resolves after the option is activated and its popup closes.
+ */
+export async function selectField(control: Locator, value: string): Promise<void> {
+  if (await control.getAttribute('aria-expanded') !== 'true') await control.click()
+  await control.page().getByRole('listbox').locator(`[role="option"][value=${JSON.stringify(value)}]`).click()
+}

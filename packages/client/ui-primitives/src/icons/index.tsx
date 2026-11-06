@@ -11,6 +11,12 @@ import type { IconProps } from './props.ts'
 export type { IconProps } from './props.ts'
 export { ICON_MEDIUM_STROKE, ICON_REGULAR_STROKE, ICON_SYMBOLS, type IconSymbolId } from './artwork.ts'
 
+/** Regular open-book outline for knowledge and reference collections. */
+export const IconBookOpenOutlineRegular = productIcon('book-open-outline', 'regular')
+
+/** Medium open-book outline for knowledge and reference collections. */
+export const IconBookOpenOutlineMedium = productIcon('book-open-outline', 'medium')
+
 /** Regular bookmark outline for unsaved items. */
 export const IconBookmarkOutlineRegular = productIcon('bookmark-outline', 'regular')
 

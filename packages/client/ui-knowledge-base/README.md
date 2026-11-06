@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Import and manage reference documents from a dedicated sidebar page. Explore their literal keyword associations, search their contents, and read the original passage with its page or line range. Each workspace keeps its own collection, separate from personal memory.
+Import and manage reference documents from a dedicated sidebar page. Explore their literal keyword associations, search their contents, and read the original passage with its page or line range. The page opens on all projects; filtering by workspace keeps each collection separate from personal memory.
 
 ## Table of Contents
 
@@ -34,9 +34,9 @@ The Web bundle mounts this built-in page alongside [document knowledge](../../co
 - name: '@deepseek-ai/dsh-client-ui-knowledge-base'
 ```
 
-Open **Knowledge base**, select a workspace, and import Markdown, TXT, or text PDF. A document node opens its exact imported source; a keyword filters associated documents. Search operates on document content. The graph supports pan, zoom, and view reset, with the document list below it on narrow screens.
+Open **Knowledge base** using the book icon in the sidebar to browse all projects or filter one workspace using the shared selector. Import Markdown, TXT, or text PDF; imports from the global view ask for the destination project. The heading shows the document count. The right panel shows the selected document’s original passages and page or line ranges. Switching projects or documents keeps the graph and reading area at a stable height; the document list and source text scroll independently. A passage is a portion of the imported source used for retrieval. Choose a passage directly or step between passages. Document nodes open their source; keyword nodes filter related documents. Wheel input zooms around the pointer; dragging moves a node or pans empty space. Reset appears on hover or keyboard focus and stays visible on touch devices. Narrow screens place documents below the graph. On macOS Desktop, drag the page heading or its empty header space to move the window; header controls remain clickable.
 
-Uploading the same normalized filename asks before replacing its imported revision. Removal also requires confirmation and retains the original file. Operations keep the workspace captured when the dialog opens. Failed requests appear in place or as a shell notice; an uncertain mutation outcome asks the user to refresh before retrying.
+Uploading the same normalized filename asks before replacing its imported revision. Removal also requires confirmation and retains the original file. Operations keep the workspace captured when the dialog opens. Failed requests appear in place or as a shell notice; an uncertain mutation outcome asks the user to reopen the knowledge base before retrying.
 
 -----
 
@@ -46,7 +46,7 @@ Uploading the same normalized filename asks before replacing its imported revisi
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The Host authorizes every call against its Workspace resource and uses the same index as the native tools. Shared Client resources own dashboards and exact-revision passage reads. Feature state holds only selection intent, mutation progress, and notices. Mutation requests belong to one cancellable activation; disposal waits for them before withdrawing the generated Remote methods. D3 computes a stopped, deterministic layout without retaining background simulation timers.
+The Host authorizes every call against its Workspace resource and uses the same index as the native tools. Shared Client resources own dashboards and exact-revision passage reads. Global pages combine existing workspace-authorized requests within one configured document-page limit and retain each document’s workspace identity; Agent tools remain workspace-scoped. Feature state holds only selection intent, mutation progress, and notices. Mutation requests belong to one cancellable activation; disposal waits for them before withdrawing the generated Remote methods. D3 computes a stopped, deterministic layout without retaining background simulation timers.
 
 Sources: [resource and sidebar bindings](src/client/mount.ts), [page](src/client/Page.tsx), [graph](src/client/Graph.tsx), and [mutation ownership](src/client/source.ts).
 

@@ -1,13 +1,13 @@
-/** Existing bookmark artwork for the knowledge navigation entry. */
+/** Open-book navigation artwork for the knowledge document collection. */
 
 import type { ReactNode } from 'react'
-import { IconBookmarkOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconBookOpenOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 
 /**
- * Render the existing library icon at the sidebar's requested size.
+ * Render the shared open-book icon at the sidebar's requested size.
  * @param props - Geometry owned by the sidebar.
  * @returns The knowledge navigation glyph.
  */
 export function KnowledgeIcon({ size }: { size: number }): ReactNode {
-  return <IconBookmarkOutlineRegular size={size} />
+  return <IconBookOpenOutlineRegular size={size} />
 }

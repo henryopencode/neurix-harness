@@ -52,7 +52,7 @@ export function createKnowledgeSource(api: MutationApi, t: Translate): Knowledge
   }
   return {
     view, notice, revision,
-    selectWorkspace(this: void, workspaceId: WorkspaceId): void {
+    selectWorkspace(this: void, workspaceId: WorkspaceId | null): void {
       view.set({ ...view.getSnapshot(), workspaceId, query: '', offset: 0 })
     },
     search(this: void, query: string): void { view.set({ ...view.getSnapshot(), query: query.trim(), offset: 0 }) },

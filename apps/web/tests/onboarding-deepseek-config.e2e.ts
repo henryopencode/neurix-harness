@@ -17,7 +17,7 @@ import {
   WELCOME_NOTICE_ACK_FIELD, WELCOME_NOTICE_COPY, WELCOME_NOTICE_SETTINGS_NAMESPACE,
   WELCOME_NOTICE_VERSION,
 } from './scaffold.ts'
-import { openSettings, ZH_BROWSER_LOCALE, connectFreshWorkspaceZh, saveFailureShot } from './support.ts'
+import { selectField, openSettings, ZH_BROWSER_LOCALE, connectFreshWorkspaceZh, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./expected/onboarding-deepseek-config', import.meta.url))
 const WELCOME_EXPECTED = join(SNAPSHOT_DIR, 'welcome.expected.md')
@@ -85,8 +85,8 @@ describe.skipIf(MODE === 'record')('web e2e: first-run DeepSeek credential setup
     const initial = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(MISSING_EXPECTED, initial, MODE)
 
-    expect(await credentialStep.getByRole('combobox', { name: '提供商', exact: true }).inputValue()).toBe('custom')
-    await credentialStep.getByRole('combobox', { name: '提供商', exact: true }).selectOption('provider:deepseek-official')
+    expect(await credentialStep.getByRole('combobox', { name: '提供商', exact: true }).getAttribute('value')).toBe('custom')
+    await selectField(credentialStep.getByRole('combobox', { name: '提供商', exact: true }), 'provider:deepseek-official')
     const keyInput = credentialStep.getByRole('group', { name: 'DeepSeek', exact: true }).getByLabel('API 密钥', { exact: true })
 
     const secret = `dsh_onboarding_${randomBytes(12).toString('hex')}`
@@ -344,7 +344,7 @@ describe.skipIf(MODE === 'record')('web e2e: third-party first-run connection', 
     await page.getByRole('dialog', { name: '开始使用', exact: true }).getByRole('button', { name: '添加 API Key', exact: true }).click()
     const setup = page.getByRole('dialog', { name: '连接模型服务', exact: true })
     await setup.waitFor()
-    expect(await setup.getByRole('combobox', { name: '提供商', exact: true }).inputValue()).toBe('custom')
+    expect(await setup.getByRole('combobox', { name: '提供商', exact: true }).getAttribute('value')).toBe('custom')
     expect(await setup.getByRole('tab').count()).toBe(0)
     expect(await setup.getByLabel('提供商 ID', { exact: true }).count()).toBe(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)

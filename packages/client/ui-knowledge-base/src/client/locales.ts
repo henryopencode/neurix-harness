@@ -5,6 +5,10 @@ export const NS = 'knowledgeBase'
 
 /** English management labels. */
 export const en = {
+  allWorkspaces: 'All projects',
+  importWorkspace: 'Import into project',
+  chooseFile: 'Choose file',
+  sourcePassages: 'Source passages',
   title: 'Knowledge base', import: 'Import document', importing: 'Importing', loading: 'Loading',
   unsupportedPlatform: 'Knowledge indexing is unavailable on Intel macOS. Use Apple Silicon macOS, Windows, or Linux.',
   search: 'Search', searchPlaceholder: 'Search document content', workspace: 'Workspace', chooseWorkspace: 'Choose a workspace',
@@ -15,13 +19,13 @@ export const en = {
   remove: 'Remove', removeTitle: 'Remove document', removeConfirm: 'Remove “{name}” from this knowledge base? The original file is retained.',
   replaceTitle: 'Update document', replaceConfirm: '“{name}” already exists. Replace its indexed version with this file?', update: 'Update',
   cancel: 'Cancel', close: 'Close', previous: 'Previous passage', next: 'Next passage', passage: 'Passage {current} of {total}',
-  page: 'Page {page}', lines: 'Lines {from}–{to}', summary: '{documents} documents · {passages} passages',
+  page: 'Page {page}', lines: 'Lines {from}–{to}', summary: 'Documents: {documents}',
   nextPage: 'Next page', previousPage: 'Previous page', retry: 'Retry',
-  loadFailed: 'Could not load the knowledge base. Retry to reconnect.', readFailed: 'Could not read this passage. Refresh and retry.',
-  importSuccess: 'Imported {name}', removeSuccess: 'Removed {name}', actionFailed: 'The outcome could not be confirmed. Refresh before retrying.',
+  loadFailed: 'Could not load the knowledge base. Retry to reconnect.', readFailed: 'Could not read this passage. Try again.',
+  importSuccess: 'Imported {name}', removeSuccess: 'Removed {name}', actionFailed: 'The outcome could not be confirmed. Reopen the knowledge base before retrying.',
   tooLarge: 'The file exceeds {size} MB. Choose a smaller file.', unsupported: 'Choose a Markdown, UTF-8 TXT or text PDF file',
   zoomIn: 'Zoom in', zoomOut: 'Zoom out', resetView: 'Reset view', clearSelection: 'Clear selection',
-  chunks: '{count} passages', limited: 'Showing {count} documents',
+  chunks: 'Source passages: {count}', limited: 'Showing {count} documents',
 }
 
 /** Keys shared by every management dictionary. */
@@ -29,6 +33,10 @@ export type KnowledgeUiKey = keyof typeof en
 
 /** Chinese management labels. */
 export const zh: Record<KnowledgeUiKey, string> = {
+  allWorkspaces: '全部项目',
+  importWorkspace: '选择导入项目',
+  chooseFile: '选择文件',
+  sourcePassages: '原文段落',
   title: '知识库', import: '导入文档', importing: '导入中', loading: '加载中',
   unsupportedPlatform: 'Intel Mac 暂不支持知识库索引。请使用 Apple Silicon Mac、Windows 或 Linux。',
   search: '搜索', searchPlaceholder: '搜索文档内容', workspace: '工作区', chooseWorkspace: '选择工作区',
@@ -39,17 +47,21 @@ export const zh: Record<KnowledgeUiKey, string> = {
   remove: '移除', removeTitle: '移除文档', removeConfirm: '将《{name}》从此知识库中移除？原文件会保留',
   replaceTitle: '更新文档', replaceConfirm: '《{name}》已存在，是否用这份文件更新索引版本？', update: '更新',
   cancel: '取消', close: '关闭', previous: '上一段', next: '下一段', passage: '第 {current}/{total} 段',
-  page: '第 {page} 页', lines: '第 {from}–{to} 行', summary: '{documents} 个文档 · {passages} 个片段',
+  page: '第 {page} 页', lines: '第 {from}–{to} 行', summary: '{documents} 个文档',
   nextPage: '下一页', previousPage: '上一页', retry: '重试',
-  loadFailed: '暂时无法加载知识库，请重试', readFailed: '暂时无法读取这段原文，请刷新后重试',
-  importSuccess: '已导入 {name}', removeSuccess: '已移除 {name}', actionFailed: '暂时无法确认操作结果，请刷新后再重试',
+  loadFailed: '暂时无法加载知识库，请重试', readFailed: '暂时无法读取这段原文，请重试',
+  importSuccess: '已导入 {name}', removeSuccess: '已移除 {name}', actionFailed: '暂时无法确认操作结果，请重新打开知识库后重试',
   tooLarge: '文件超过 {size} MB，请选择更小的文件', unsupported: '请选择 Markdown、UTF-8 TXT 或文字 PDF 文件',
   zoomIn: '放大', zoomOut: '缩小', resetView: '重置视角', clearSelection: '清除选择',
-  chunks: '{count} 个片段', limited: '当前显示 {count} 篇文档',
+  chunks: '{count} 段可检索原文', limited: '当前显示 {count} 篇文档',
 }
 
 /** Japanese management labels. */
 export const ja: Record<KnowledgeUiKey, string> = {
+  allWorkspaces: 'すべてのプロジェクト',
+  importWorkspace: '取り込み先のプロジェクト',
+  chooseFile: 'ファイルを選択',
+  sourcePassages: '原文の段落',
   title: 'ナレッジベース', import: '文書を取り込む', importing: '取り込み中', loading: '読み込み中',
   unsupportedPlatform: 'Intel Mac では索引を利用できません。Apple Silicon Mac、Windows、Linux をご利用ください。',
   search: '検索', searchPlaceholder: '文書の内容を検索', workspace: 'ワークスペース', chooseWorkspace: 'ワークスペースを選択',
@@ -60,7 +72,7 @@ export const ja: Record<KnowledgeUiKey, string> = {
   remove: '削除', removeTitle: '文書を削除', removeConfirm: '「{name}」をナレッジベースから削除しますか？元のファイルは残ります。',
   replaceTitle: '文書を更新', replaceConfirm: '「{name}」は既に存在します。このファイルで索引を更新しますか？', update: '更新',
   cancel: 'キャンセル', close: '閉じる', previous: '前の段落', next: '次の段落', passage: '段落 {current}/{total}',
-  page: '{page} ページ', lines: '{from}～{to} 行', summary: '文書 {documents} 件 · 段落 {passages} 件',
+  page: '{page} ページ', lines: '{from}～{to} 行', summary: '文書 {documents} 件',
   nextPage: '次のページ', previousPage: '前のページ', retry: '再試行',
   loadFailed: 'ナレッジベースを読み込めませんでした。再試行してください。', readFailed: '原文を読み込めませんでした。更新して再試行してください。',
   importSuccess: '{name} を取り込みました', removeSuccess: '{name} を削除しました', actionFailed: '結果を確認できませんでした。更新してから再試行してください。',
@@ -71,6 +83,10 @@ export const ja: Record<KnowledgeUiKey, string> = {
 
 /** Spanish management labels. */
 export const es: Record<KnowledgeUiKey, string> = {
+  allWorkspaces: 'Todos los proyectos',
+  importWorkspace: 'Importar al proyecto',
+  chooseFile: 'Elegir archivo',
+  sourcePassages: 'Pasajes originales',
   title: 'Base de conocimiento', import: 'Importar documento', importing: 'Importando', loading: 'Cargando',
   unsupportedPlatform: 'El índice no está disponible en Mac Intel. Usa un Mac Apple Silicon, Windows o Linux.',
   search: 'Buscar', searchPlaceholder: 'Buscar en los documentos', workspace: 'Espacio de trabajo', chooseWorkspace: 'Elegir espacio de trabajo',
@@ -81,7 +97,7 @@ export const es: Record<KnowledgeUiKey, string> = {
   remove: 'Quitar', removeTitle: 'Quitar documento', removeConfirm: '¿Quitar «{name}» de esta base de conocimiento? El archivo original se conserva.',
   replaceTitle: 'Actualizar documento', replaceConfirm: '«{name}» ya existe. ¿Actualizar su índice con este archivo?', update: 'Actualizar',
   cancel: 'Cancelar', close: 'Cerrar', previous: 'Pasaje anterior', next: 'Pasaje siguiente', passage: 'Pasaje {current} de {total}',
-  page: 'Página {page}', lines: 'Líneas {from}–{to}', summary: '{documents} documentos · {passages} pasajes',
+  page: 'Página {page}', lines: 'Líneas {from}–{to}', summary: '{documents} documentos',
   nextPage: 'Página siguiente', previousPage: 'Página anterior', retry: 'Reintentar',
   loadFailed: 'No se pudo cargar la base. Reintenta la conexión.', readFailed: 'No se pudo leer este pasaje. Actualiza y reintenta.',
   importSuccess: '{name} importado', removeSuccess: '{name} eliminado', actionFailed: 'No se pudo confirmar el resultado. Actualiza antes de reintentar.',
@@ -92,6 +108,10 @@ export const es: Record<KnowledgeUiKey, string> = {
 
 /** French management labels. */
 export const fr: Record<KnowledgeUiKey, string> = {
+  allWorkspaces: 'Tous les projets',
+  importWorkspace: 'Importer dans le projet',
+  chooseFile: 'Choisir un fichier',
+  sourcePassages: 'Passages du document',
   title: 'Base de connaissances', import: 'Importer un document', importing: 'Importation', loading: 'Chargement',
   unsupportedPlatform: 'L’indexation est indisponible sur Mac Intel. Utilisez un Mac Apple Silicon, Windows ou Linux.',
   search: 'Rechercher', searchPlaceholder: 'Rechercher dans les documents', workspace: 'Espace de travail', chooseWorkspace: 'Choisir un espace de travail',
@@ -102,17 +122,21 @@ export const fr: Record<KnowledgeUiKey, string> = {
   remove: 'Retirer', removeTitle: 'Retirer le document', removeConfirm: 'Retirer « {name} » de cette base ? Le fichier original est conservé.',
   replaceTitle: 'Mettre à jour le document', replaceConfirm: '« {name} » existe déjà. Remplacer sa version indexée par ce fichier ?', update: 'Mettre à jour',
   cancel: 'Annuler', close: 'Fermer', previous: 'Passage précédent', next: 'Passage suivant', passage: 'Passage {current} sur {total}',
-  page: 'Page {page}', lines: 'Lignes {from}–{to}', summary: '{documents} documents · {passages} passages',
+  page: 'Page {page}', lines: 'Lignes {from}–{to}', summary: 'Documents: {documents}',
   nextPage: 'Page suivante', previousPage: 'Page précédente', retry: 'Réessayer',
   loadFailed: 'Impossible de charger la base. Réessayez la connexion.', readFailed: 'Impossible de lire ce passage. Actualisez puis réessayez.',
   importSuccess: '{name} importé', removeSuccess: '{name} retiré', actionFailed: 'Le résultat ne peut pas être confirmé. Actualisez avant de réessayer.',
   tooLarge: 'Le fichier dépasse {size} Mo. Choisissez un fichier plus petit.', unsupported: 'Choisissez un fichier Markdown, TXT UTF-8 ou PDF textuel',
   zoomIn: 'Agrandir', zoomOut: 'Réduire', resetView: 'Réinitialiser la vue', clearSelection: 'Effacer la sélection',
-  chunks: '{count} passages', limited: '{count} documents affichés',
+  chunks: 'Source passages: {count}', limited: '{count} documents affichés',
 }
 
 /** German management labels. */
 export const de: Record<KnowledgeUiKey, string> = {
+  allWorkspaces: 'Alle Projekte',
+  importWorkspace: 'In Projekt importieren',
+  chooseFile: 'Datei auswählen',
+  sourcePassages: 'Originalabschnitte',
   title: 'Wissensdatenbank', import: 'Dokument importieren', importing: 'Import läuft', loading: 'Wird geladen',
   unsupportedPlatform: 'Intel-Macs unterstützen die Indexierung nicht. Verwende Apple Silicon, Windows oder Linux.',
   search: 'Suchen', searchPlaceholder: 'Dokumentinhalt durchsuchen', workspace: 'Arbeitsbereich', chooseWorkspace: 'Arbeitsbereich auswählen',
@@ -123,7 +147,7 @@ export const de: Record<KnowledgeUiKey, string> = {
   remove: 'Entfernen', removeTitle: 'Dokument entfernen', removeConfirm: '„{name}“ aus dieser Wissensdatenbank entfernen? Die Originaldatei bleibt erhalten.',
   replaceTitle: 'Dokument aktualisieren', replaceConfirm: '„{name}“ existiert bereits. Die indexierte Version durch diese Datei ersetzen?', update: 'Aktualisieren',
   cancel: 'Abbrechen', close: 'Schließen', previous: 'Vorheriger Abschnitt', next: 'Nächster Abschnitt', passage: 'Abschnitt {current} von {total}',
-  page: 'Seite {page}', lines: 'Zeilen {from}–{to}', summary: '{documents} Dokumente · {passages} Abschnitte',
+  page: 'Seite {page}', lines: 'Zeilen {from}–{to}', summary: '{documents} Dokumente',
   nextPage: 'Nächste Seite', previousPage: 'Vorherige Seite', retry: 'Erneut versuchen',
   loadFailed: 'Die Wissensdatenbank konnte nicht geladen werden. Versuche es erneut.', readFailed: 'Der Abschnitt konnte nicht geladen werden. Aktualisiere und versuche es erneut.',
   importSuccess: '{name} importiert', removeSuccess: '{name} entfernt', actionFailed: 'Das Ergebnis konnte nicht bestätigt werden. Vor einem neuen Versuch aktualisieren.',
@@ -134,6 +158,10 @@ export const de: Record<KnowledgeUiKey, string> = {
 
 /** Russian management labels. */
 export const ru: Record<KnowledgeUiKey, string> = {
+  allWorkspaces: 'Все проекты',
+  importWorkspace: 'Импортировать в проект',
+  chooseFile: 'Выбрать файл',
+  sourcePassages: 'Фрагменты оригинала',
   title: 'База знаний', import: 'Импорт документа', importing: 'Импорт', loading: 'Загрузка',
   unsupportedPlatform: 'Индексация недоступна на Intel Mac. Используйте Apple Silicon, Windows или Linux.',
   search: 'Поиск', searchPlaceholder: 'Поиск по содержимому', workspace: 'Рабочая область', chooseWorkspace: 'Выберите рабочую область',
@@ -144,7 +172,7 @@ export const ru: Record<KnowledgeUiKey, string> = {
   remove: 'Удалить', removeTitle: 'Удаление документа', removeConfirm: 'Удалить «{name}» из этой базы знаний? Исходный файл сохранится.',
   replaceTitle: 'Обновление документа', replaceConfirm: '«{name}» уже существует. Заменить индексированную версию этим файлом?', update: 'Обновить',
   cancel: 'Отмена', close: 'Закрыть', previous: 'Предыдущий фрагмент', next: 'Следующий фрагмент', passage: 'Фрагмент {current} из {total}',
-  page: 'Страница {page}', lines: 'Строки {from}–{to}', summary: 'Документов: {documents} · Фрагментов: {passages}',
+  page: 'Страница {page}', lines: 'Строки {from}–{to}', summary: 'Документов: {documents}',
   nextPage: 'Следующая страница', previousPage: 'Предыдущая страница', retry: 'Повторить',
   loadFailed: 'Не удалось загрузить базу знаний. Повторите подключение.', readFailed: 'Не удалось прочитать фрагмент. Обновите и повторите.',
   importSuccess: 'Импортирован {name}', removeSuccess: 'Удалён {name}', actionFailed: 'Результат не подтверждён. Обновите данные перед повтором.',
@@ -155,6 +183,10 @@ export const ru: Record<KnowledgeUiKey, string> = {
 
 /** Portuguese management labels. */
 export const pt: Record<KnowledgeUiKey, string> = {
+  allWorkspaces: 'Todos os projetos',
+  importWorkspace: 'Importar para o projeto',
+  chooseFile: 'Escolher ficheiro',
+  sourcePassages: 'Trechos originais',
   title: 'Base de conhecimento', import: 'Importar documento', importing: 'Importando', loading: 'Carregando',
   unsupportedPlatform: 'A indexação não está disponível em Mac Intel. Use Apple Silicon, Windows ou Linux.',
   search: 'Pesquisar', searchPlaceholder: 'Pesquisar no conteúdo', workspace: 'Espaço de trabalho', chooseWorkspace: 'Escolher espaço de trabalho',
@@ -165,7 +197,7 @@ export const pt: Record<KnowledgeUiKey, string> = {
   remove: 'Remover', removeTitle: 'Remover documento', removeConfirm: 'Remover «{name}» desta base? O ficheiro original será mantido.',
   replaceTitle: 'Atualizar documento', replaceConfirm: '«{name}» já existe. Substituir a versão indexada por este ficheiro?', update: 'Atualizar',
   cancel: 'Cancelar', close: 'Fechar', previous: 'Trecho anterior', next: 'Trecho seguinte', passage: 'Trecho {current} de {total}',
-  page: 'Página {page}', lines: 'Linhas {from}–{to}', summary: '{documents} documentos · {passages} trechos',
+  page: 'Página {page}', lines: 'Linhas {from}–{to}', summary: '{documents} documentos',
   nextPage: 'Página seguinte', previousPage: 'Página anterior', retry: 'Tentar novamente',
   loadFailed: 'Não foi possível carregar a base. Tente ligar novamente.', readFailed: 'Não foi possível ler o trecho. Atualize e tente novamente.',
   importSuccess: '{name} importado', removeSuccess: '{name} removido', actionFailed: 'Não foi possível confirmar o resultado. Atualize antes de tentar novamente.',

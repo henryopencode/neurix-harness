@@ -9,6 +9,7 @@ import { isBehindModal } from './useModalLayer.ts'
 import { observeComposition } from './keyboard-composition.ts'
 import { focusWithoutRing } from './focus.ts'
 import { ShortcutKeys } from './ShortcutKeys.tsx'
+import { ownsPortaledListbox } from './nested-listbox.ts'
 import { MenuSurface } from './MenuSurface.tsx'
 import css from './Menu.module.css'
 
@@ -165,13 +166,19 @@ const MEASURE_STYLE: CSSProperties = { visibility: 'hidden', left: 0, top: 0 }
  * with no check (`'fill'`, for icon-labelled rows where a trailing glyph
  * crowds the cell).
  * @param props.className - extra class on the anchor wrapper span.
+ * @param props.listRole - menu by default, or a flat listbox for a selection field.
+ * @param props.listId - popup id referenced by the controlling field.
  * @param props.listClassName - extra class on the dropdown card itself; the
  * only style hook that reaches a portaled list, which renders under
  * document.body outside the owner's DOM subtree.
  * @returns anchor wrapper with the conditional list.
  */
-export function Menu({ open, anchor, items = [], children, selectedId, selectedIds, onSelect, onClose, align = 'start', side = 'bottom', portal = false, closeOnPointerLeave = false, dense = false, compact = false, autoFocus = false, selection = 'check', getAnchorRect, minWidthFromAnchor = false, footer, className, listClassName }: {
+export function Menu({ open, anchor, items = [], children, selectedId, selectedIds, onSelect, onClose, align = 'start', side = 'bottom', portal = false, closeOnPointerLeave = false, dense = false, compact = false, autoFocus = false, selection = 'check', getAnchorRect, minWidthFromAnchor = false, footer, className, listClassName, listRole = 'menu', listId }: {
   open: boolean
+  /** Accessible popup semantics; listboxes contain flat selectable options. */
+  listRole?: 'menu' | 'listbox'
+  /** Stable popup identifier used by a controlling field. */
+  listId?: string
   autoFocus?: boolean
   anchor: ReactNode
   items?: readonly MenuEntry[]
@@ -204,6 +211,7 @@ export function Menu({ open, anchor, items = [], children, selectedId, selectedI
    */
   const triggerRef = useRef<HTMLElement | null>(null)
   const selectingWithTab = useRef(false)
+  const typeahead = useRef({ text: '', time: 0 })
 
   /**
    * Hand the keyboard back to the trigger that opened the menu — or, when the
@@ -322,10 +330,11 @@ export function Menu({ open, anchor, items = [], children, selectedId, selectedI
 
   useEffect(() => {
     if (!open || !autoFocus) return
-    const first = listRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')
+    const first = (listRole === 'listbox' ? listRef.current?.querySelector<HTMLButtonElement>('button[aria-selected="true"]:not(:disabled)') : null)
+      ?? listRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')
     walkIndex.current = first === undefined || first === null ? null : 0
     if (first != null) focusWithoutRing(first)
-  }, [open, autoFocus])
+  }, [open, autoFocus, listRole])
 
   useEffect(() => {
     if (!open) {
@@ -339,6 +348,7 @@ export function Menu({ open, anchor, items = [], children, selectedId, selectedI
       // The portaled list is outside the anchor subtree; check both.
       if (rootRef.current?.contains(e.target) === true) return
       if (listRef.current?.contains(e.target) === true) return
+      if (ownsPortaledListbox(e.target, [rootRef.current, listRef.current])) return
       onClose()
     }
     const onKeyDown = (e: KeyboardEvent) => {
@@ -346,6 +356,7 @@ export function Menu({ open, anchor, items = [], children, selectedId, selectedI
       // Where the keyboard is, computed once: the menu owns it when it holds a
       // row or sits on its anchor region.
       const focused = document.activeElement
+      if (ownsPortaledListbox(focused, [rootRef.current, listRef.current])) return
       const insideList = listRef.current?.contains(focused) === true
       const anchored = rootRef.current?.contains(focused) === true || insideList
       if (e.key === 'Escape' && !e.shiftKey) {
@@ -375,7 +386,7 @@ export function Menu({ open, anchor, items = [], children, selectedId, selectedI
         // button inside an error strip) and a list with no enabled row keep the
         // browser's traversal instead of being swallowed.
         if (insideList) {
-          if (focused instanceof Element && focused.getAttribute('role') === 'menuitem') {
+          if (focused instanceof Element && ['menuitem', 'option'].includes(focused.getAttribute('role') ?? '')) {
             e.preventDefault()
             selectingWithTab.current = true
             try { (focused as HTMLElement).click() }
@@ -398,6 +409,17 @@ export function Menu({ open, anchor, items = [], children, selectedId, selectedI
       // that refused focus (a hidden portal frame, a detached node) would
       // otherwise re-enter at the near end on every press and the walk would
       // alternate between two rows.
+      if (listRole === 'listbox' && anchored && e.key.length === 1 && e.key !== ' ') {
+        const previous = typeahead.current
+        const now = performance.now()
+        const text = (now - previous.time < 700 ? previous.text : '') + e.key.toLocaleLowerCase()
+        typeahead.current = { text, time: now }
+        const buttons = Array.from(listRef.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [])
+        const match = buttons.find(button => button.textContent.trim().toLocaleLowerCase().startsWith(text))
+          ?? buttons.find(button => button.textContent.trim().toLocaleLowerCase().startsWith(e.key.toLocaleLowerCase()))
+        if (match !== undefined) { e.preventDefault(); match.focus() }
+        return
+      }
       if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return
       const list = listRef.current
       if (list === null || !anchored) return
@@ -433,7 +455,7 @@ export function Menu({ open, anchor, items = [], children, selectedId, selectedI
       document.removeEventListener('keydown', onEscape, true)
       window.removeEventListener('blur', onWindowBlur)
     }
-  }, [open, onClose, autoFocus])
+  }, [open, onClose, autoFocus, listRole])
 
   // A close from selection/Escape/outside click outruns a pending grace close;
   // left armed it would shut a list reopened inside the grace window. Its own
@@ -466,7 +488,9 @@ export function Menu({ open, anchor, items = [], children, selectedId, selectedI
       >
         <button
           type="button"
-          role="menuitem"
+          role={listRole === 'listbox' ? 'option' : 'menuitem'}
+          value={entry.id}
+          aria-selected={listRole === 'listbox' ? selected : undefined}
           className={clsx(css.item, selected && (selection === 'fill' ? css.selectedFill : css.selected), entry.danger === true && css.danger)}
           disabled={entry.disabled}
           aria-keyshortcuts={entry.shortcut?.aria}
@@ -515,7 +539,7 @@ export function Menu({ open, anchor, items = [], children, selectedId, selectedI
   // focus, data row or component row — closes the open card. A parent opens
   // its card in its own handlers; rows inside the card are not top-level rows.
   const collapseSubmenuFrom = (e: SyntheticEvent<HTMLDivElement>): void => {
-    const row = e.target instanceof Element ? e.target.closest('button[role="menuitem"]') : null
+    const row = e.target instanceof Element ? e.target.closest('button[role="menuitem"], button[role="option"]') : null
     if (row === null || row.getAttribute('aria-haspopup') === 'menu') return
     if (row.closest('[role="menu"]') !== e.currentTarget) return
     setOpenSubmenuId(null)
@@ -530,7 +554,8 @@ export function Menu({ open, anchor, items = [], children, selectedId, selectedI
       ref={listRef}
       className={clsx(css.list, listClassName, dense && css.denseList, compact && css.compactList, scrollable && css.scrollable, portal && css.portal, side === 'top' && !portal && css.sideTop, align === 'end' && !portal && css.alignEnd)}
       style={portal ? fixedPos ?? MEASURE_STYLE : undefined}
-      role="menu"
+      role={listRole}
+      id={listId}
       // React portals bubble synthetic events through the REACT tree: without
       // this stop, an item click re-fires the anchor row's own onClick
       // (open/toggle) after onSelect. The same bubble is where every row's
@@ -539,7 +564,7 @@ export function Menu({ open, anchor, items = [], children, selectedId, selectedI
       // own handler ran; a submenu parent only opened its card.
       onClick={(e) => {
         e.stopPropagation()
-        const row = e.target instanceof Element ? e.target.closest('button[role="menuitem"]') : null
+        const row = e.target instanceof Element ? e.target.closest('button[role="menuitem"], button[role="option"]') : null
         if (row !== null && row.getAttribute('aria-haspopup') !== 'menu') refocusAfterSelection()
       }}
       onMouseOver={collapseSubmenuFrom}
