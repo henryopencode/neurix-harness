@@ -9,6 +9,7 @@ import { installModelSelection } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-preset-registry'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type { Session, SessionId } from '@deepseek-ai/dsh-session'
+import { SessionFormatUnsupportedError } from '@deepseek-ai/dsh-session-persistence'
 import { SessionQueryError, type SessionObservation } from '@deepseek-ai/dsh-session-query'
 import { RemoteError, remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from '@deepseek-ai/dsh-typert-registry'
@@ -225,8 +226,9 @@ export class ApiSessionAgentController {
    * the configured default when the request names none; the preset it recorded
    * is not resolved, and a change is logged as `agent-preset/selected` before
    * the Agent is published. A named Session that has started a turn, fails the
-   * caller's placement rule, or is written by another owner stays unchanged,
-   * and a new Session is created instead. Requests naming one identity run in
+   * caller's placement rule, has an unsupported log, or is written by another
+   * owner stays unchanged, and a new Session is created instead. Other read
+   * failures reject creation. Requests naming one identity run in
    * arrival order, including their preset resolution, and check the named
    * Session's directory and ownership before resolving the preset.
    * @param request - optional Session to reuse, directory, preset, and placement rule.
@@ -357,8 +359,15 @@ export class ApiSessionAgentController {
     try {
       observation = await this.ctx.sessionQuery.observeSession(sessionId)
     } catch (error: unknown) {
-      if (!(error instanceof SessionQueryError) || error.code !== 'SESSION_QUERY_SESSION_NOT_FOUND') throw error
-      return this.createAgent(sessionId, request.cwd, await this.composeAgent(request.agentPreset))
+      if (error instanceof SessionQueryError) {
+        if (error.code === 'SESSION_QUERY_SESSION_NOT_FOUND') {
+          return this.createAgent(sessionId, request.cwd, await this.composeAgent(request.agentPreset))
+        }
+        if (error.code === 'SESSION_QUERY_PERSISTENCE_FAILED' && error.cause instanceof SessionFormatUnsupportedError) {
+          return this.createMinted(request.cwd, await this.composeAgent(request.agentPreset))
+        }
+      }
+      throw error
     }
     let reusable: boolean
     {
