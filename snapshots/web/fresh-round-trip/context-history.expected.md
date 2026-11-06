@@ -1,0 +1,27 @@
+- region "Request history":
+  - table:
+    - rowgroup:
+      - row "Request Model Input Input change Cache read share Output":
+        - columnheader "Request"
+        - columnheader "Model"
+        - columnheader "Input"
+        - columnheader "Input change"
+        - columnheader "Cache read share"
+        - columnheader "Output"
+    - rowgroup:
+      - row "Turn 1 · Step 1 deepseek-v4-flash 7,802 — 98% 85":
+        - rowheader "Turn 1 · Step 1":
+          - button "Turn 1 · Step 1"
+        - cell "deepseek-v4-flash"
+        - cell "7,802"
+        - cell "—"
+        - cell "98%"
+        - cell "85"
+      - row "Turn 1 · Step 2 deepseek-v4-flash 7,905 +103 99% 26":
+        - rowheader "Turn 1 · Step 2":
+          - button "Turn 1 · Step 2" [pressed]
+        - cell "deepseek-v4-flash"
+        - cell "7,905"
+        - cell "+103"
+        - cell "99%"
+        - cell "26"

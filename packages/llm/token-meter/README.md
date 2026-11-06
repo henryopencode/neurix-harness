@@ -105,7 +105,7 @@ Each `measure()` call synchronizes the fold to the current durable tail, then re
 
 `contextBreakdown` retains only the surviving `system/message` nodes with their heuristic prices, one running surface total, and at most one armed shadow-price claim; a replacement subtracts the adjacent claim, whose `shadowedSeqs` also name the system prompts it removes, or the retained price of the one system prompt it rewrites ([decision](../../../.agents/notes/implemented/architecture/2026-10-13-context-breakdown-system-prompt-state.md)). Its state follows the number of surviving system prompts, not the message count; state version 6 invalidates positional checkpoints. `contextPressure` is the other scalar shadow-price consumer: replacements without adjacent claims contribute zero delta. The usage fold retains one last-sample slot because legal logs never report usage for an earlier step after a later step reports usage.
 
-`./estimate` exports the stateless text/content estimators used by tool-result retention. Model adapters supply request-image costs through `imageRequestPricing`.
+`./estimate` exports the stateless text/content estimators used by tool-result retention; `./client` also exports `estimateToolsTokens` for browser consumers. Model adapters supply request-image costs through `imageRequestPricing`.
 
 </details>
 
