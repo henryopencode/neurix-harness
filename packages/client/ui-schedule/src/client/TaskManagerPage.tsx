@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
-  Button, IconClockOutlineRegular, IconCloseOutlineRegular, IconEllipsisOutlineRegular, IconPlusOutlineRegular,
+  Button, IconClockOutlineRegular, IconCloseOutlineRegular, IconEllipsisOutlineRegular,
   IconSearchOutlineRegular, IconTrashOutlineRegular, Input, Menu, Modal, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { HostObservable, InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -21,11 +21,6 @@ import css from './TaskManagerPage.module.css'
 export interface TaskManagerInjected extends TaskDetailInjected {
   /** Host task catalog with its query and deletion state. */
   readonly hooks: { readonly catalog: HostObservable<CatalogSnapshot<ScheduleCatalogEntry>> }
-  /**
-   * Start a new Session, where a reminder is created by asking the model to
-   * schedule it. The page deliberately has no creation form of its own.
-   */
-  readonly onNewTask: () => void
   /**
    * Remove every ended Host task, after this page has confirmed the action.
    *
@@ -51,7 +46,7 @@ type StatusFilter = 'all' | ScheduleCatalogEntry['status']
  * @returns the searchable task list beside the selected task's detail.
  */
 export function TaskManagerPage(props: TaskManagerPageProps) {
-  const { useCatalog, onNewTask, onClearEnded, onRetry, t } = props
+  const { useCatalog, onClearEnded, onRetry, t } = props
   const catalog = useCatalog(snapshot => snapshot)
   const { records, status } = catalog
   const [search, setSearch] = useState('')
@@ -183,11 +178,8 @@ export function TaskManagerPage(props: TaskManagerPageProps) {
       <div className={css.listPane}>
         <div className={css.pageScroll}>
           <div className={css.pageContent}>
-            <div className={css.pageHeading}>
+            <div className={css.pageHeading} data-window-drag>
               <h1 ref={headingRef} tabIndex={-1}>{t('title')}</h1>
-              <div className={css.creationActions}>
-                <Button variant="primary" size="sm" className={css.headerAction} icon={<IconPlusOutlineRegular size={13} />} onClick={onNewTask}>{t('new.action')}</Button>
-              </div>
             </div>
             <div className={css.filters}>
               <div className={css.filterTabs} role="group" aria-label={t('statusFilter.label')}>
@@ -254,9 +246,6 @@ export function TaskManagerPage(props: TaskManagerPageProps) {
               {status === 'ready' && rows.length === 0 && <div className={css.empty} role="status">
                 <ScheduleEmptyIllustration className={css.emptyIllustration} />
                 <h2>{t(emptyTitle)}</h2>
-                <Button variant="outline" className={css.emptyAction} onClick={onNewTask}>
-                  {t('empty.action')}
-                </Button>
               </div>}
               <ul className={css.listRows} aria-label={t('list.label')} aria-busy={status === 'loading'}>
                 {rows.map((record) => {

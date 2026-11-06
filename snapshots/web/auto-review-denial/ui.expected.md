@@ -7,7 +7,6 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-  - button "More conversation views"
 - text: Inspect the protected operation, but do not run it unless authorized. {{clock}}
 - button "Copy"
 - status: Completed
@@ -34,7 +33,6 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-  - button "More conversation views"
 - text: Inspect the protected operation, but do not run it unless authorized. {{clock}}
 - button "Copy"
 - status: Completed
@@ -65,7 +63,6 @@
   - tablist:
     - tab "Chat"
     - tab "Trajectory" [selected]
-  - button "More conversation views"
 - toolbar "Trajectory toolbar":
   - button "Use actual duration": Duration
   - button "Collapse turns": Turns
