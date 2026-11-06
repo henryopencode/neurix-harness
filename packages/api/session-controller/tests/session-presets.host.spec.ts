@@ -10,6 +10,7 @@ import type { Agent, AgentFactory } from '@deepseek-ai/dsh-agent'
 import { agentPresetProjectionDefinition } from '@deepseek-ai/dsh-agent-preset-registry'
 import SessionStore, { SESSION_FORMAT_VERSION, SessionId, SessionSeq } from '@deepseek-ai/dsh-session'
 import type { Session, SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
+import { SessionFormatUnsupportedError, SessionPersistenceCorruptionError, SessionPersistenceRevision } from '@deepseek-ai/dsh-session-persistence'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import type { WorkspaceId } from '@deepseek-ai/dsh-workspace'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -450,6 +451,43 @@ describe('session.create reuse of a live blank Session', () => {
 })
 
 describe('session.create reuse of a stored blank Session', () => {
+  it('creates an independent Session when the reuse candidate has an unsupported log', async () => {
+    const { ctx, remote, resumed, presetOf } = await harness({ presets: ['standard', 'minimal'] })
+    const draft = SessionId('unsupported-draft')
+    const failure = new SessionFormatUnsupportedError('unknown required event model-group/configured')
+    const open = vi.spyOn(ctx.sessionPersistence, 'open').mockRejectedValue(failure)
+    vi.spyOn(ctx.sessionPersistence, 'stat').mockResolvedValue({
+      header: storedHeader(draft, '/old-workspace'),
+      revision: SessionPersistenceRevision('unsupported-draft'),
+    })
+
+    const created = await remote.create({ sessionId: draft, agentPreset: 'minimal' })
+
+    if (!created.ok) throw new Error(`create failed: ${created.error.message}`)
+    expect(created.value.sessionId).not.toBe(draft)
+    expect(presetOf(created.value.sessionId)).toBe('minimal')
+    expect(ctx.sessions.get(draft)).toBeUndefined()
+    expect(resumed).toEqual([])
+    expect(open).toHaveBeenCalledExactlyOnceWith(draft, 'read', undefined)
+    await expect(ctx.sessionQuery.observeSession(draft)).rejects.toMatchObject({ cause: failure })
+  })
+
+  it.each([
+    new Error('storage offline'),
+    new SessionPersistenceCorruptionError('invalid stored event', { cause: new TypeError('invalid data') }),
+  ])('reports a failed candidate read without creating another Session: $name', async (failure) => {
+    const { ctx, remote } = await harness({ presets: ['standard'] })
+    const draft = SessionId('unreadable-draft')
+    vi.spyOn(ctx.sessionPersistence, 'stat').mockResolvedValue({
+      header: storedHeader(draft, '/workspace'),
+      revision: SessionPersistenceRevision('unreadable-draft'),
+    })
+    vi.spyOn(ctx.sessionPersistence, 'open').mockRejectedValue(failure)
+
+    expect(await remote.create({ sessionId: draft })).toMatchObject({ ok: false, error: { code: 'gateway/internal' } })
+    expect(ctx.agents.list()).toEqual([])
+  })
+
   it('resumes a blank Session whose recorded preset is no longer declared under the default', async () => {
     const draft = SessionId('stale-draft')
     const cwd = realpathSync(mkdtempSync(join(tmpdir(), 'dsh-session-preset-stored-')))

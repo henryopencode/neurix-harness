@@ -11,14 +11,16 @@
 // are host RPCs with no model involvement, and the one session row the
 // flat/hover/menu/archive scenarios need comes from a seeded fixture (the
 // seeded-history seed reused verbatim — no new recording).
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join, sep } from 'node:path'
 import type { Browser, Locator, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { SESSION_FORMAT_VERSION, SessionId } from '@deepseek-ai/dsh-session'
+import type { SessionHeader } from '@deepseek-ai/dsh-session'
 import { logPath } from '../../../packages/session/session-persistence-jsonl/src/format.ts'
+import { compressZstdFrame } from '../../../packages/session/session-persistence-jsonl/src/zstd.ts'
 import {
   acknowledgeReloadConnectionLoss, assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
   launchWebScaffold, readPersistedEvents, seedSession, watchConsole, webSnapshotMode, type WebScaffold,
@@ -1007,6 +1009,70 @@ describe('web e2e: workspace management (create / rename / grouping / hover affo
 })
 
 describe('web e2e: New Session after an outdated blank cache', () => {
+  it('creates a new conversation when a stored blank contains a retired required event', async () => {
+    const scaffold = await launchWebScaffold({})
+    let browser: Browser | undefined
+    try {
+      const now = Date.UTC(2026, 8, 16)
+      const id = await seedSession(scaffold, await readFile(SEED, 'utf8'), 'new-session-readable-history',
+        undefined, { createdAt: now - 60_000 })
+      using recorded = await scaffold.ctx.sessionQuery.observeSession(id)
+      await scaffold.ctx.sessionProjectionCache.write(scaffold.ctx.sessions.prepare(id, {
+        meta: recorded.header, seed: [...recorded.events],
+      }))
+      const legacy = SessionId('new-session-unsupported-blank')
+      const header: SessionHeader = {
+        version: SESSION_FORMAT_VERSION, id: legacy, cwd: scaffold.workspaceCwd,
+        createdAt: now - 30_000, isSeeded: false,
+      }
+      const handle = await scaffold.ctx.sessionPersistence.create(header)
+      await handle.flush()
+      await handle.close()
+      const path = logPath(scaffold.persistenceRoot, header.cwd, legacy, 'zstd')
+      // The old writer emitted this required event before its feature was removed.
+      await appendFile(path, await compressZstdFrame(`${JSON.stringify({
+        type: 'model-group/configured', seq: 0, time: now - 30_000,
+        data: { mode: 'single', leader: '', members: [], stopped: false, direct: [], stoppedMembers: [] },
+      })}\n`))
+      const original = await readFile(path)
+      await scaffold.ctx.sessionProjectionCache.write(scaffold.ctx.sessions.prepare(legacy, { meta: header }))
+      const workspace = await scaffold.ctx.workspaceRegistry.create(scaffold.workspaceCwd, 'New session regression')
+      await workspace.attachSession(id)
+      await workspace.attachSession(legacy)
+      browser = await chromium.launch()
+      const page = await newEnglishPage(browser)
+      await page.clock.setFixedTime(now)
+      const tripwire = watchConsole(page)
+      onTestFailed(() => saveFailureShot(page, 'web-e2e-new-session-unsupported-blank'))
+
+      const creation = page.waitForResponse('**/api/session/create')
+      await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
+      const response = await creation
+      expect(response.request().postDataJSON()).toHaveProperty('payload.args.request.sessionId', legacy)
+      expect(await response.json()).toMatchObject({ result: { ok: true } })
+      const selected = page.locator('[role="treeitem"][aria-selected="true"]')
+      await expect.poll(() => selected.innerText()).toBe('New Session')
+      await expect.poll(() => workspace.sessionIds.length).toBe(3)
+      expect(scaffold.ctx.sessions.get(legacy)).toBeUndefined()
+      expect(await readFile(path)).toEqual(original)
+      await page.getByRole('treeitem', { name: /^Use the read tool twice/ }).click()
+      await page.getByRole('tab', { name: 'Chat', exact: true }).waitFor()
+      const before = await captureStableAria(page, '[role="tree"]', scaffold.workspaceCwd)
+
+      await page.getByRole('button', { name: 'New session', exact: true }).last().click()
+      await expect.poll(() => selected.innerText()).toBe('New Session')
+      await page.getByRole('tab', { name: 'Chat', exact: true }).waitFor({ state: 'hidden' })
+      const after = await captureStableAria(page, '[role="tree"]', scaffold.workspaceCwd)
+      await compareOrRefreshGolden(join(SNAPSHOT_DIR, 'new-session.expected.md'),
+        `Before New Session\n${before}\nAfter New Session\n${after}`, MODE)
+      expect(tripwire.pageErrors).toEqual([])
+      expect(tripwire.warnings).toEqual([])
+    } finally {
+      await browser?.close()
+      await scaffold.close()
+    }
+  })
+
   it('returns to the startup blank instead of reusing the recorded conversation', async () => {
     const scaffold = await launchWebScaffold({})
     let browser: Browser | undefined
