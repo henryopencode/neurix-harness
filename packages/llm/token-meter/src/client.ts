@@ -5,5 +5,6 @@
  */
 
 export type * from './projection.ts'
+export { estimateToolsTokens } from './estimate.ts'
 export { deriveTurnTokenUsage } from './turn-usage.ts'
 export type { TurnTokenUsage, TurnTokenUsageRoute } from './turn-usage.ts'

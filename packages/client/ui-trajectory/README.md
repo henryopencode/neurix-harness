@@ -27,6 +27,10 @@ The Trajectory tab lets you inspect agent activity as a turn-aware ledger and in
 
 Open the Trajectory tab in the conversation's view ring to inspect agent activity as an event ledger and timeline. The ledger covers records with an explicit loading row until the initial tail is positioned; while an older prefix remains unloaded, a first-row control loads one earlier page on click and shows the shared ongoing loader while that page is pending.
 
+Open **Context diagnostics** from the toolbar to inspect the projected next-input size, estimated composition, reported request usage, and selected request's largest tool definitions. Current figures use complete-log Host projections; request rows and catalogs cover loaded history, with **Load earlier history** to extend it.
+
+Input includes uncached, cache-read and cache-write tokens. Changes compare adjacent ordinary requests on the same recorded provider/model; missing usage remains unknown. Each tool is estimated as a standalone catalog, so individual prices are not additive. Closing diagnostics preserves the ledger state; a paging failure keeps existing data and permits retry.
+
 ### Inspecting records
 
 Calls are identified by their recorded tool name. For `run_code`, the row shows the program description and the inspector opens numbered, highlighted source. The Code tab provides wrapping, a `{}` toggle for the original JSON arguments, and exact source copying, including trailing newlines. Copying the original arguments retains their recorded JSON whitespace. Each newly opened code view takes the last wrapping choice; changing it leaves other open views as they are. Output preserves the recorded text, using a tree for complete JSON objects or arrays. Highlighting uses only an unambiguous TypeScript or Python hint in the recorded tool schema; missing or conflicting hints leave plain source.

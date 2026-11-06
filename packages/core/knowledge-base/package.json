@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-knowledge-base",
   "description": "Import local documents and retrieve source passages through native agent tools.",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",

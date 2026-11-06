@@ -49,7 +49,8 @@ it('submits all staged choices in one revision-fenced save', async () => {
   try {
     b.host.mutate.mockResolvedValue(true)
     render(<BrowserCard {...b.props} />)
-    fireEvent.change(screen.getByLabelText(en.browserChannel), { target: { value: 'msedge' } })
+    fireEvent.click(screen.getByRole('combobox', { name: en.browserChannel }))
+    fireEvent.click(screen.getByRole('option', { name: en.msedge }))
     fireEvent.click(screen.getByLabelText(en.screenshots))
     fireEvent.change(screen.getByLabelText(en.operationTimeoutMs), { target: { value: '20000' } })
     fireEvent.change(screen.getByLabelText(en.navigationTimeoutMs), { target: { value: '40000' } })
@@ -98,7 +99,12 @@ it.each(['browserChannel', 'operationTimeoutMs', 'navigationTimeoutMs'] as const
       expect(screen.queryByText(en.overridden)).toBeNull()
       expect(screen.queryByRole('button', { name: en.reset })).toBeNull()
       expect(screen.getByLabelText(en[field])).toHaveProperty('value', String(changed))
-      fireEvent.change(screen.getByLabelText(en[field]), { target: { value: String(defaults[field]) } })
+      if (field === 'browserChannel') {
+        fireEvent.click(screen.getByRole('combobox', { name: en.browserChannel }))
+        fireEvent.click(screen.getByRole('option', { name: en[defaults.browserChannel] }))
+      } else {
+        fireEvent.change(screen.getByLabelText(en[field]), { target: { value: String(defaults[field]) } })
+      }
       expect(screen.getByRole('button', { name: en.save })).toHaveProperty('disabled', false)
       expect(b.hooks.browserCard.getSnapshot()[field].text).toBe(String(defaults[field]))
     } finally { b.controller.dispose() }

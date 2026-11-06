@@ -9,6 +9,9 @@
   ],
   "references": [
     {
+      "path": "../../llm/token-meter"
+    },
+    {
       "path": "../../../vendor/cordis"
     },
     {
