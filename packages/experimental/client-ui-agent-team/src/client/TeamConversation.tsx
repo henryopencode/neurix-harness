@@ -1,19 +1,12 @@
-/** Role-attributed Team replies and controls over the existing conversation. */
-import { useState } from 'react'
-import { IconStopFillRegular, MarkdownText, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+/** Role-attributed Team replies in the existing conversation. */
+import { MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { TeamPost as Post } from '@deepseek-ai/dsh-experimental-agent-team/client'
 import type { ChatNode } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { ConversationNodeDefinition } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-experimental-model-group-runtime/types'
 import css from './TeamModels.module.css'
-
-/** Authenticated human Team command. */
-export interface TeamCommands {
-  /** @param line - Team command suffix. @returns After command acceptance, rejecting visibly on failure. */
-  readonly command: (line: string) => Promise<void>
-}
 
 declare module '@deepseek-ai/dsh-client-ui-chat/client' {
   interface ChatNodeDataMap { 'team-post': Post }
@@ -52,43 +45,6 @@ export function TeamPost({ node, t }: Pick<PropsRuntime<'conversation.chat.node'
     {node.data.failure === undefined ? null : <p role="alert" className={css.error}>{t('failed')}</p>}
     {node.data.text === '' ? null : <MarkdownText text={node.data.text} labels={{ code: { copyLabel: t('copy'), copiedLabel: t('copied') }, footnotes: t('footnotes') }} />}
   </article>
-}
-
-/**
- * One row of actual responsibilities with their independently selected models.
- * @param props - Session projections, editor actions and human commands.
- * @returns Team controls without a collaboration mode selector.
- */
-export function TeamDock({ sessionId, useSession, useSessions, useSessionStatus, inputActions, command, t }:
-  Pick<PropsRuntime<'conversation.input.dock'>, 'sessionId' | 'useSession' | 'useSessions' | 'useSessionStatus'>
-  & { inputActions: Pick<PropsRuntime<'conversation.input.dock'>['inputActions'], 'insertText' | 'captureInsertion'> }
-  & InjectFace<TeamCommands> & PropsLocale<'team-models'>) {
-  const team = useSessions(state => state.projectionsBySession[sessionId]?.values.agentTeam)
-  const selection = useSessions(state => state.projectionsBySession[sessionId]?.values.teamModels)
-  const projections = useSessions(state => state.projectionsBySession)
-  const subagent = useSession(state => state.subagent)
-  const statuses = useSessionStatus(state => state)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  if (subagent !== null || team === undefined || ((selection?.models.length ?? 0) === 0 && team.members.length < 2)) return null
-  return <section className={css.roster} aria-label={t('title')}>
-    <div className={css.members}>{team.members.map((member) => {
-      const model = projections[member.id]?.values.modelSelection?.next?.model
-      const label = selection?.models.find(candidate => candidate.model === model)?.label ?? model
-      const running = statuses.get(member.id)?.running === true
-      return <div key={member.id} className={css.member}>
-        <button type="button" aria-label={`${t('mention')}: ${member.name}`} onClick={() => { inputActions.insertText(`@${member.name} `, inputActions.captureInsertion()) }}>
-          <span>{member.role === 'lead' ? t('leader') : member.name}</span>{label === undefined ? null : <span className={css.secondary}>{label}</span>}
-          {running ? <span className={css.running}>{t('running')}</span> : null}
-        </button>
-        {running && member.role !== 'lead' ? <Tooltip portal label={`${t('stop')}: ${member.name}`} side="top"><button type="button" disabled={busy} aria-label={`${t('stop')}: ${member.name}`} onClick={() => {
-          setBusy(true); setError(null)
-          void command(`stop ${member.name}`).catch((reason: unknown) => { setError(reason instanceof Error ? reason.message : t('operationFailed')) }).finally(() => { setBusy(false) })
-        }}><IconStopFillRegular size={14} /></button></Tooltip> : null}
-      </div>
-    })}</div>
-    {error === null ? null : <p role="alert" className={css.error}>{error}</p>}
-  </section>
 }
 
 /** @param props - Captured candidates and current model. @returns Lead attribution in ordinary chat. */
