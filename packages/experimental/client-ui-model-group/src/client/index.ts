@@ -17,7 +17,7 @@ import { GroupDelivery, GroupDock, GroupLeaderHeader, GroupMode, GroupPost, type
 import { GroupToolRow } from './GroupToolRow.tsx'
 import { GroupSettings } from './GroupSettings.tsx'
 import { GroupSettingsController, type GroupSettingsValues } from './settings.ts'
-import { en, zh, type GroupKey } from './locales.ts'
+import { en, zh, ja, es, fr, de, ru, pt, type GroupKey } from './locales.ts'
 import { groupDeliveryDefinition, groupPostDefinition } from './post.ts'
 import { resolveModelRecipients } from './mentions.ts'
 export type {} from './post.ts'
@@ -37,7 +37,7 @@ export const inject = ['slots', 'locale', 'sessions', 'remote', 'remote.commands
  */
 export function apply(ctx: Context): void {
   const namespace = 'model-group'
-  ctx.effect(() => ctx.locale.register(namespace, { en, zh }), 'model-group: locales')
+  ctx.effect(() => ctx.locale.register(namespace, { en, zh, ja, es, fr, de, ru, pt }), 'model-group: locales')
   const t = ctx.locale.bind(namespace)
   const groupOf = (id: SessionId) => ctx.sessions.list.getSnapshot().projectionsBySession[id]?.values.modelGroup
   ctx.effect(() => ctx.modelDirectories.lockSelection({

@@ -12,7 +12,7 @@ import type { CommandClaim, InputTriggerSource } from '@deepseek-ai/dsh-client-u
 import { TeamSettingsController, type TeamSettingsValues } from './settings.ts'
 import { TeamSettings } from './TeamSettings.tsx'
 import { TeamDock, TeamLeader, TeamPost, teamPostDefinition } from './TeamConversation.tsx'
-import { modelEn, modelZh, type ModelKey } from './model-locales.ts'
+import { modelEn, modelZh, modelJa, modelEs, modelFr, modelDe, modelRu, modelPt, type ModelKey } from './model-locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap { 'team-models': ModelKey }
@@ -24,7 +24,9 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
  */
 export function registerTeamModels(ctx: Context): void {
   ctx.inject(['modelDirectories', 'configForms', 'uiConversation', 'inputTriggers', 'remote.commands', 'uiSession'], (scope) => {
-    scope.effect(() => scope.locale.register('team-models', { en: modelEn, zh: modelZh }), 'team: model copy')
+    scope.effect(() => scope.locale.register('team-models', {
+      en: modelEn, zh: modelZh, ja: modelJa, es: modelEs, fr: modelFr, de: modelDe, ru: modelRu, pt: modelPt,
+    }), 'team: model copy')
     const selection = (id: SessionId) => scope.sessions.list.getSnapshot().projectionsBySession[id]?.values.teamModels
     const members = (id: SessionId) => scope.sessions.list.getSnapshot().projectionsBySession[id]?.values.agentTeam?.members ?? []
     const candidates = (id: SessionId) => {
