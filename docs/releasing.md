@@ -37,6 +37,12 @@ For a build rehearsal, run the release workflow manually with **validation_only*
 pnpm exec tsx scripts/release/desktop-stable.ts --plan
 ```
 
+To rebuild an existing reservation after workflow or test-fixture repairs, set **existing_tag** to its `v<version>` tag and leave **version** empty. The paired tags, manifest version, reservation metadata, and master ancestry must agree. Installers use the original tagged commit; updated reservation tests are copied only after packaging. Release notes identify both the packaged source and qualification workflow commit. A qualification-only repair merges after its PR checks pass, with `[skip ci]` in the merge subject to avoid reserving another version; then run the manual retry from `master`:
+
+```sh
+gh workflow run neurix-desktop-release.yml --ref master -f existing_tag=v1.1.0 -f validation_only=false
+```
+
 <a id="installed-update-checks"></a>
 ## Installed update checks
 
