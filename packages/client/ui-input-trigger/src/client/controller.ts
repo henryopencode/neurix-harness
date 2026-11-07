@@ -58,6 +58,14 @@ export interface InputTriggerControllerDeps {
  * pointer picks back through {@link InputTriggerController.pick}.
  */
 export class InputTriggerController {
+  /**
+   * Check hot source-owned message routes without fetching candidates.
+   * @param line - Plain editor text with atomic references and quotes masked by U+FFFC.
+   * @returns Whether a registered source requests enter-time arbitration.
+   */
+  claimsMessage(line: string): boolean {
+    return !this.disposed && this.deps.roster.all().some(source => source.claimsMessage?.(this.project(), line) === true)
+  }
   /** Menu state store (per-session; survives session switches, dies with the scope). */
   readonly menu: SnapshotStore<MenuState> = createSnapshotStore<MenuState>(MENU_CLOSED)
   /**
@@ -376,7 +384,7 @@ export class InputTriggerController {
    * Enter last adjudication: polls sources' matchEnter in registration
    * order, first non-undefined wins. The outcome returns to the caller (the
    * input machine applies it inside the same submit attempt — no event).
-   * @param line - trimmed draft; the leading char selects the trigger roster.
+   * @param line - trimmed draft; a leading trigger or an explicit source claim selects its handler.
    * @param signal - attempt-scoped abort from the input machine.
    * @param envelope - non-text submission state accompanying the draft.
    * @returns the winning outcome or undefined (default sink). Rejects when a
@@ -389,7 +397,8 @@ export class InputTriggerController {
       if (signal.aborted) {
         throw signal.reason instanceof Error ? signal.reason : new Error('slash adjudication aborted')
       }
-      if (src.matchEnter === undefined || !line.startsWith(src.trigger)) continue
+      if (src.matchEnter === undefined
+        || (!line.startsWith(src.trigger) && src.claimsMessage?.(projection, envelope.routingText ?? line) !== true)) continue
       const outcome = await src.matchEnter(projection, line, signal, envelope)
       if (outcome !== undefined) return outcome
     }

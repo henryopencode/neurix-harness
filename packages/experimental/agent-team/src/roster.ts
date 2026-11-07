@@ -126,17 +126,18 @@ export class TeamRoster {
   list(membership: TeamMembership): TeamMemberView[] {
     const { root } = membership
     const state = this.journal.state(root)
+    const leadModel = root.model.current()?.model
     const result: TeamMemberView[] = [{
       id: root.id,
       name: 'lead',
       role: 'lead',
       status: availability(root),
-      ...root.options.model === undefined ? {} : { model: root.options.model },
+      ...leadModel === undefined ? {} : { model: leadModel },
       diagnostics: [],
     }]
     for (const member of state.members) {
       const live = this.ctx.agents.get(member.id)
-      const model = live?.options.model ?? root.options.model
+      const model = live?.model.current()?.model
       result.push({
         id: member.id,
         name: member.name,
@@ -149,6 +150,7 @@ export class TeamRoster {
         description: member.description,
         provider: member.provider,
         context: member.context,
+        ...member.coordinationOwner === undefined ? {} : { coordinationOwner: member.coordinationOwner },
         ...model === undefined ? {} : { model },
         diagnostics: member.error === undefined ? [] : [member.error],
       })
@@ -247,6 +249,7 @@ export class TeamRoster {
       provider: requiredText(request.provider, 'provider', 200),
       context: request.context,
       phase: 'provisioning',
+      ...request.coordinationOwner === undefined ? {} : { coordinationOwner: requiredText(request.coordinationOwner, 'coordinationOwner', 200) },
     }
 
     await this.journal.transact(root.id, async () => {
@@ -269,6 +272,7 @@ export class TeamRoster {
         request: {
           prompt: request.prompt,
           parent: root,
+          ...(request.agentOptions === undefined ? {} : { agentOptions: request.agentOptions }),
         },
         signal,
       })
@@ -419,6 +423,7 @@ export class TeamRoster {
   /** Build one runtime member row after successful creation. */
   private memberView(member: TeamMemberSnapshot & { readonly phase: 'active' }): TeamMemberView {
     const live = this.ctx.agents.get(member.id)
+    const model = live?.model.current()?.model
     return {
       id: member.id,
       name: member.name,
@@ -427,7 +432,7 @@ export class TeamRoster {
       description: member.description,
       provider: member.provider,
       context: member.context,
-      ...live?.options.model === undefined ? {} : { model: live.options.model },
+      ...model === undefined ? {} : { model },
       diagnostics: [],
     }
   }

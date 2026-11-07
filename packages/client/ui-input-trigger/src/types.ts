@@ -108,6 +108,8 @@ export interface HeaderRequest {
 export interface SubmitEnvelope {
   /** Number of attachments accompanying the draft. */
   readonly attachments: number
+  /** Plain editor text with atomic references and quotes masked by U+FFFC. */
+  readonly routingText?: string
 }
 
 /** Candidate request passed to a source. The signal is superseded on query change / menu close. */
@@ -158,6 +160,13 @@ export interface ReferenceCodec {
  * from hot state, while enter may await the source's own warmup.
  */
 export interface InputTriggerSource {
+  /**
+   * Synchronous opt-in for message routing beyond leading slash commands.
+   * @param session - Session identity.
+   * @param line - Plain draft text with atomic references and quotes masked by U+FFFC.
+   * @returns Whether enter must adjudicate this message.
+   */
+  claimsMessage?(session: ClientSessionContext, line: string): boolean
   readonly trigger: TriggerChar
   /** Menu group label; unique per trigger — duplicate registration throws. */
   readonly name: string

@@ -863,12 +863,19 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-experimental-agent-team`
 
-- `inject`: `agents` · `sessions` · `sessionPersistence` · `sessionProjections` · `subagents`
-- `source`: [`packages/experimental/agent-team/src/types.ts:153`](../packages/experimental/agent-team/src/types.ts)
+- `inject`: `agents` · `sessions` · `sessionPersistence` · `sessionProjections` · `subagents` · `llm`
+- `refs`: `Volatile` (`@deepseek-ai/cordis`)
+- `source`: [`packages/experimental/agent-team/src/types.ts:207`](../packages/experimental/agent-team/src/types.ts)
 
 ```ts config-catalog
 /** Team-service deployment limits. */
 export interface Config {
+  /** Candidate model routes and strengths; empty retains inherited model selection. */
+  readonly models?: Volatile<TeamModel[]>
+  /** Candidate alias used by the Lead; empty preserves the Lead's current selection. */
+  readonly leaderModel?: Volatile<string>
+  /** Maximum simultaneously active teammates per Team. */
+  readonly maxParallel?: Volatile<number>
   /** Maximum immutable teammate names retained by one Team. */
   readonly maxMembers?: number
   /** Maximum non-deleted tasks retained by one Team. */
@@ -877,6 +884,20 @@ export interface Config {
   readonly maxMessageBytes?: number
   /** Maximum milliseconds for shared operation settlement and for each Team child drain. */
   readonly disposalTimeoutMs?: number
+}
+
+/** One available model; responsibilities belong to teammates rather than model entries. */
+export interface TeamModel {
+  /** Unique alias selected by the Lead when creating a responsibility. */
+  readonly name: string
+  /** Display name in Team settings and attributed replies. */
+  readonly label: string
+  /** Registered LLM provider route. */
+  readonly provider: string
+  /** Exact provider-owned model identifier. */
+  readonly model: string
+  /** User-authored task guidance for model selection. */
+  readonly strengths: string
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-agent-team -->
@@ -1322,6 +1343,53 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-mobile-access -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-model-group-runtime -->
+<a id="deepseek-aidsh-experimental-model-group-runtime"></a>
+
+## `@deepseek-ai/dsh-experimental-model-group-runtime`
+
+- `inject`: `agents` · `sessions` · `sessionProjections` · `sessionPersistence` · `subagents` · `agentTeams` · `commands` · `tools` · `systemPrompt` · `llm`
+- `refs`: `Volatile` (`@deepseek-ai/cordis`)
+- `source`: [`packages/experimental/model-group-runtime/src/index.ts:45`](../packages/experimental/model-group-runtime/src/index.ts)
+
+```ts config-catalog
+/**
+ * Live member defaults follow unused conversations; started conversations retain their routes.
+ */
+export interface Config {
+  /** Execution mode captured by subsequently created conversations. */
+  readonly defaultMode: Volatile<ModelGroupMode>
+  /** Name of the configured model that coordinates new groups. */
+  readonly leader: Volatile<string>
+  /** Exact model routes and editable strengths followed until a conversation starts. */
+  readonly members: Volatile<ModelGroupMember[]>
+  /** Live worker-model limit per group; the leader does not consume a slot. */
+  readonly maxParallel: Volatile<number>
+}
+
+/**
+ * Conversation-local execution mode.
+ */
+export type ModelGroupMode = 'single' | 'multi'
+
+/**
+ * A named exact model route; strengths guide assignment without fixing its role.
+ */
+export interface ModelGroupMember {
+  /** Unique lowercase model alias used in mentions and task assignment. */
+  readonly name: string
+  /** Model name shown in the group roster and public replies. */
+  readonly label: string
+  /** Registered LLM provider route. */
+  readonly provider: string
+  /** Provider-owned exact model identifier. */
+  readonly model: string
+  /** User-authored task strengths used by the leader when choosing models. */
+  readonly strengths: string
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-model-group-runtime -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-ptc-runtime-python -->
 <a id="deepseek-aidsh-experimental-ptc-runtime-python"></a>
 
@@ -1506,7 +1574,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-experimental-tool-agent-team`
 
 - `inject`: `agents` · `agentTeams` · `tools` · `systemPrompt`
-- `source`: [`packages/experimental/tool-agent-team/src/index.ts:17`](../packages/experimental/tool-agent-team/src/index.ts)
+- `source`: [`packages/experimental/tool-agent-team/src/index.ts:18`](../packages/experimental/tool-agent-team/src/index.ts)
 
 ```ts config-catalog
 /** Tool routing configuration. */
@@ -5073,6 +5141,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-experimental-auto-review` | `approval` · `llm` · `permissionPresets` · `sessions` · `tools` · `workingDirectory` | [`packages/experimental/auto-review/src/index.ts`](../packages/experimental/auto-review/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-agent-team` | — | [`packages/experimental/client-ui-agent-team/src/index.ts`](../packages/experimental/client-ui-agent-team/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-claude-code-mods` | — | [`packages/experimental/client-ui-claude-code-mods/src/index.ts`](../packages/experimental/client-ui-claude-code-mods/src/index.ts) |
+| `@deepseek-ai/dsh-experimental-client-ui-model-group` | — | [`packages/experimental/client-ui-model-group/src/index.ts`](../packages/experimental/client-ui-model-group/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-voice-input` | — | [`packages/experimental/client-ui-voice-input/src/index.ts`](../packages/experimental/client-ui-voice-input/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-computer-use-cua-driver-native` | `computerUse` · `tools` · `systemPrompt` | [`packages/experimental/computer-use-cua-driver-native/src/index.ts`](../packages/experimental/computer-use-cua-driver-native/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-session-inspector` | — | [`packages/experimental/session-inspector/src/index.ts`](../packages/experimental/session-inspector/src/index.ts) |
@@ -5169,6 +5238,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 | `@deepseek-ai/dsh-experimental-cot-translation-bundle` | — | [`packages/experimental/cot-translation-bundle/src/index.ts`](../packages/experimental/cot-translation-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-inspector-profile` | — | [`packages/experimental/inspector-profile/src/index.ts`](../packages/experimental/inspector-profile/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-liveshare-protocol` | — | [`packages/experimental/liveshare-protocol/src/index.ts`](../packages/experimental/liveshare-protocol/src/index.ts) |
+| `@deepseek-ai/dsh-experimental-model-group` | — | [`packages/experimental/model-group/src/index.ts`](../packages/experimental/model-group/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-plugin-market-bundle` | — | [`packages/experimental/plugin-market-bundle/src/index.ts`](../packages/experimental/plugin-market-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-ralph-bundle` | — | [`packages/experimental/ralph-bundle/src/index.ts`](../packages/experimental/ralph-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-session-search` | — | [`packages/experimental/session-search/src/index.ts`](../packages/experimental/session-search/src/index.ts) |

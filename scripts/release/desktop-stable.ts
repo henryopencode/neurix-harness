@@ -47,6 +47,7 @@ function reserved(source: string): StableDesktopRelease | undefined {
 /**
  * Commit aligned workspace versions and atomically push master with both release tags.
  * Concurrent merges retry against the newer master without overwriting remote work.
+ * A reservation creates a commit even when manifests already use the selected version.
  * @param source - Merged commit that caused this release, retained for retry identity.
  * @param requested - Optional explicit stable version.
  * @returns The reserved release, including a previous successful reservation on retry.
@@ -78,7 +79,7 @@ export function reserveStableDesktopRelease(source: string, requested?: string):
     capture(pnpm, [...prefix, 'install', '--lockfile-only', '--ignore-scripts'])
     capture('git', ['add', 'pnpm-lock.yaml', ...planned.map(entry => entry.manifestPath)])
     capture('git', ['-c', 'user.name=github-actions[bot]', '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com',
-      'commit', '-m', `release(desktop): ${version} [skip ci]\n\nNeurix-Release-Source: ${source}`])
+      'commit', '--allow-empty', '-m', `release(desktop): ${version} [skip ci]\n\nNeurix-Release-Source: ${source}`])
     const releaseTags = [`v${version}`, `dsh-v${version}`]
     for (const tag of releaseTags) capture('git', ['tag', tag])
     const result = attempt('git', ['push', '--atomic', 'origin', 'HEAD:refs/heads/master', ...releaseTags.map(tag => `refs/tags/${tag}`)])

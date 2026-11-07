@@ -497,6 +497,9 @@ const WORKTREE_CHECKOUT_FILTER = "printf 'FILTERED CHECKOUT CONTENT\\n'"
 const WORKTREE_CHECKOUT_ATTRIBUTES = 'tracked.txt filter=dsh-snapshot-checkout\n'
 
 const workspaceSetups: Record<string, (cwd: string) => Promise<void>> = {
+  async 'memory-documents'(cwd) {
+    await cp(join(repoRoot, '.agents/skills/dsh-memory-documents'), join(cwd, '.dsh/skills/dsh-memory-documents'), { recursive: true })
+  },
   async 'windows-acl-skill'(cwd) {
     const target = join(cwd, '.dsh', 'skills', 'diagnose-windows-sandbox-acl', 'SKILL.md')
     await mkdir(dirname(target), { recursive: true })
@@ -925,12 +928,18 @@ async function verifyHeaders(scenario: HeadlessScenario, actualLogs: readonly Se
 
   const childPrompts = new Map<number, string>()
   const childSchemas = new Map<number, unknown[][]>()
+  const childHeaders = new Map<number, unknown[]>()
   for (const index of scenario.manifest.header.childSystemPrompts ?? []) {
     childPrompts.set(index, await readFile(join(scenario.dir, `system-prompt.${index}.expected.md`), 'utf8'))
   }
   for (const index of scenario.manifest.header.childToolSchemas ?? []) {
     const child = parseToolSchemasSnapshot(await readFile(join(scenario.dir, `tool-schemas.${index}.expected.json`), 'utf8'))
     childSchemas.set(index, [child.initial, ...child.changes])
+    const fixtureFiles = sessionFixtureNames(await readdir(scenario.dir))
+    const childFile = fixtureFiles[index]
+    if (childFile === undefined) throw new Error(`${scenario.name}: missing pinned child ${index}`)
+    const childFixture = await readFile(join(scenario.dir, childFile), 'utf8')
+    childHeaders.set(index, normalizedHeaders(childFixture, fixtureContext(childFixture)))
   }
 
   for (const [logIndex, log] of actualLogs.entries()) {
@@ -943,7 +952,8 @@ async function verifyHeaders(scenario: HeadlessScenario, actualLogs: readonly Se
     }
     for (const [index, header] of headers.entries()) {
       const selectedSchemas = childSchemas.get(logIndex)?.[index]
-      const base = reconstructed[index] ?? reconstructed[0]
+      const ownedHeaders = childHeaders.get(logIndex)
+      const base = ownedHeaders === undefined ? reconstructed[index] ?? reconstructed[0] : ownedHeaders[index] ?? ownedHeaders[0]
       const expected = selectedSchemas === undefined ? base : { ...base as JsonObject, tools: selectedSchemas }
       expect(header, `${scenario.name}: request header ${index + 1}`).toEqual(expected)
     }
@@ -1363,6 +1373,17 @@ describe('headless recorded-session snapshots', () => {
               expect(results).toHaveLength(4)
               expect(results.every(result => result.isError === false)).toBe(true)
               expect(log).toContain('# Office task routing')
+            }
+            if (scenario.name === 'memory-documents') {
+              const results = parseSessionLog(actualLogs[0]!.content).flatMap(event => event.type === 'tool/result' ? [event.data.message] : [])
+              expect(results).toHaveLength(4)
+              expect(results.every(result => result.isError === false)).toBe(true)
+              const outputs = results.map(result => result.content.flatMap(block => block.type === 'text' ? [block.text] : []).join('\n'))
+              expect(outputs[1]).toContain('"total":1')
+              expect(outputs[1]).toContain('琥珀色按钮位于卡片右下角。')
+              expect(outputs[2]).toContain('保持标题与内容之间的留白。')
+              expect(outputs[2]).toContain('"absolutePath":')
+              expect(results[3]?.content.some(block => block.type === 'image')).toBe(true)
             }
             if (scenario.name === 'advanced-toolchain') verifyAdvancedToolchain(actualLogs)
             if (scenario.name === 'session-query-spill') {

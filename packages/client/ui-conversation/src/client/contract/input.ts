@@ -43,6 +43,8 @@ export interface CommandClaim {
   readonly token: string
   readonly hint?: string
   readonly attachments?: boolean
+  /** Pass the complete original message to submit; useful for inline recipient references. Omission removes the leading token. */
+  readonly wholeMessage?: true
   /**
    * Submit the claimed command.
    * @param args - command text after the claimed token.
@@ -98,6 +100,12 @@ export interface InputTriggerHit {
 
 /** Structural per-Session trigger provider consumed by the input shell. */
 export interface InputTriggerController {
+  /**
+   * Request enter-time arbitration for a provider-owned inline message.
+   * @param line - Plain editor text with atomic references and quotes masked by U+FFFC.
+   * @returns Whether a hot source claims routing.
+   */
+  claimsMessage?(line: string): boolean
   readonly launcher: ObservableSnapshot<string | null>
   readonly lexicon: ObservableSnapshot<ReadonlyMap<'/' | '@', readonly string[]>>
   /** @param draft - current draft. @param caret - caret offset. @param guard - availability tier. @param draftRev - input revision. */
@@ -117,7 +125,7 @@ export interface InputTriggerController {
   adjudicate(
     line: string,
     signal: AbortSignal,
-    envelope: { readonly attachments: number },
+    envelope: { readonly attachments: number; readonly routingText?: string },
   ): Promise<PickOutcome>
   /**
    * Resolve the claim a persisted command chip names without acting on it.
@@ -338,7 +346,7 @@ export type InputEvent =
   /** The editor inserted a command chip: enter claimed. */
   | { readonly type: 'claim'; readonly claim: CommandClaim }
   /** Enter submission with the current clipboard projection. */
-  | { readonly type: 'enter'; readonly mode: InputSubmitMode; readonly draft: string; readonly submission?: MessageSubmission }
+  | { readonly type: 'enter'; readonly mode: InputSubmitMode; readonly draft: string; readonly submission?: MessageSubmission; readonly adjudicate?: boolean }
   | { readonly type: 'adjudicated'; readonly attempt: SubmitAttempt; readonly outcome: PickOutcome }
   | { readonly type: 'adjudication-failed'; readonly attempt: SubmitAttempt; readonly message: string }
   /** Settlement carries the leading command chip's claim, which the claim follows after a failure. */

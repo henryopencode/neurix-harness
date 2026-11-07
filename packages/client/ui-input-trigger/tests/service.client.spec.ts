@@ -784,6 +784,21 @@ describe('header / drilled descent', () => {
 })
 
 describe('lexicon', () => {
+  it('adjudicates a claimed inline recipient without requiring a leading trigger', async () => {
+    const claim = { ...claimOf('@model-b '), wholeMessage: true as const }
+    const source = deferredSource('@', 'models', {
+      claimsMessage: (_session, line) => line.includes('@model-b'),
+      matchEnter: () => Promise.resolve({ claim }),
+    }).source
+    const { root, controller } = controllerBench([source])
+    try {
+      expect(controller.claimsMessage('请 @model-b 检查')).toBe(true)
+      await expect(controller.adjudicate('请 @model-b 检查', new AbortController().signal, { attachments: 0 }))
+        .resolves.toEqual({ claim })
+      await expect(controller.adjudicate('普通任务', new AbortController().signal, { attachments: 0 })).resolves.toBeUndefined()
+    } finally { controller.dispose(); await root.fiber.dispose() }
+  })
+
   function lexSource(trigger: TriggerChar, name: string, roll?: readonly string[]  , hasHook = true): InputTriggerSource {
     return {
       trigger,

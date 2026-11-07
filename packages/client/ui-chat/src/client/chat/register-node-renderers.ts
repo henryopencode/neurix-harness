@@ -52,6 +52,7 @@ export function registerChatNodeRenderers(
     key: 'assistant-step',
     locale: NS,
     children: {
+      'conversation.chat.assistant.header': { kind: 'list', scope: 'session' },
       'conversation.chat.reasoning.body': { kind: 'single', scope: 'session' },
       'conversation.chat.message.images': { kind: 'single', scope: 'session' },
     },

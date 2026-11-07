@@ -57,6 +57,7 @@
   ],
   "references": [
     { "path": "./packages/client/ui-knowledge-base" },
+    { "path": "packages/experimental/client-ui-model-group" },
     { "path": "./packages/experimental/client-ui-action-cards" },
     { "path": "./packages/experimental/client-ui-creation-recommendations" },
     { "path": "./packages/experimental/client-ui-plugin-recommendations" },

@@ -265,6 +265,8 @@
   ],
   "references": [
     { "path": "./packages/core/knowledge-base" },
+    { "path": "packages/experimental/model-group-runtime" },
+    { "path": "packages/experimental/model-group" },
     { "path": "./packages/experimental/action-cards" },
     { "path": "./packages/experimental/creation-recommendations" },
     { "path": "./packages/experimental/plugin-recommendations" },
