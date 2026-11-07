@@ -9,6 +9,8 @@
 
 ```mermaid
 flowchart LR
+  pkg_experimental_model_group_runtime["experimental-model-group-runtime"]
+  svc_modelGroups["ctx.modelGroups<br/>Optional model-group coordination"]
   pkg_knowledge_base["knowledge-base"]
   svc_knowledgeBase["ctx.knowledgeBase<br/>Workspace document knowledge"]
   pkg_client_ui_knowledge_base["client-ui-knowledge-base"]
@@ -370,6 +372,7 @@ flowchart LR
   pkg_experimental_computer_control --> svc_computerPreview
   pkg_experimental_computer_use_cua_driver_mcp --> svc_computerUse
   pkg_experimental_computer_use_cua_driver_native --> svc_computerUse
+  pkg_experimental_model_group_runtime --> svc_modelGroups
   pkg_experimental_ptc_runtime_python --> svc_ptcRuntime
   pkg_experimental_speech_to_text --> svc_speechToText
   pkg_experimental_speech_to_text_sensevoice --> svc_speechToText
@@ -648,6 +651,7 @@ flowchart LR
 
 | ctx 键 | 角色 | 所属包 | 实现 | 直接消费方 | 配套插件 | 说明 |
 | --- | --- | --- | --- | --- | --- | --- |
+| `ctx.modelGroups` | `core` | [`experimental-model-group-runtime`](../packages/experimental/model-group-runtime) | - | - | - | 通过共享 Team 任务与逐会话用户控制协调已配置的模型路由。 |
 | `ctx.knowledgeBase` | `core` | [`knowledge-base`](../packages/core/knowledge-base) | - | [`knowledge-base`](../packages/core/knowledge-base), [`client-ui-knowledge-base`](../packages/client/ui-knowledge-base) | - | 服务、LanceDB 提供方和原生工具消费者位于同一个可选包；文档快照保留来源版本，并与个人记忆分开保存。 |
 | `ctx.knowledgeController` | `core` | [`knowledge-base`](../packages/core/knowledge-base) | - | [`client-ui-knowledge-base`](../packages/client/ui-knowledge-base) | - | 工作区资源授权覆盖上传文档、精确原文读取及关键词关联。 |
 | `ctx.browserPreview` | `core` | [`experimental-browser-control`](../packages/experimental/browser-control) | - | - | - | 返回会话自有标签页的纯展示截图，不访问原生应用。 |

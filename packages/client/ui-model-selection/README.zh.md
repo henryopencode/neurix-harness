@@ -45,6 +45,8 @@ composer 菜单中的模型名称和推理等级均使用 400（regular）字重
 
 展开的控件无法排在同一行时，composer 将模型与推理强度文字替换为模型图标；空间足够后恢复文字。触发器的无障碍名称、提示和菜单仍提供完整选择。
 
+`modelDirectories` 服务还通过 `catalogSource()` 和 `refreshCatalog()` 为设置中的模型选择提供目录。它们与普通选择器共用目录，并同步提供商、设置、凭据和连接的变化。
+
 ### 模型名称扩展
 
 `conversation.input.model.label` 是会话作用域的内联 `single` slot，覆盖 composer 触发按钮（`placement: 'trigger'`）、根菜单中的当前值（`'menu'`）和各模型选项（`'option'`）。owner props 提供 `provider: { id, name }`、准确的目录 `model`、`placement` 和 `selected`。提供方名称是本地化显示名称；按 `provider.id` 匹配渠道，按提供方与模型 ID 的组合识别模型。slot 不接收连接 URL 或凭据。
@@ -62,6 +64,8 @@ composer 菜单中的模型名称和推理等级均使用 400（regular）字重
 当会话被其他写句柄占用时，模型选择失败提示用户退出其他正在运行的 DSH 后重试。
 
 -----
+
+功能可通过 `ctx.modelDirectories.lockSelection()` 管理会话的模型路由。锁定的选择器保留推理强度控制，同时禁止选择其他模型；释放注册后恢复普通选择。Host 模型实现方在选择操作时执行相应规则。
 
 <a id="understand-the-implementation"></a>
 ## 理解实现

@@ -131,7 +131,8 @@ export function apply(ctx: ClientContext): void {
       label: () => t('command.label'),
       description: () => t('command.description'),
       icon: IconDataOutlineRegular,
-      available: session => sessions.subagentAddress(session.sessionId) === undefined,
+      available: session => sessions.subagentAddress(session.sessionId) === undefined
+        && !models.selectionLocked(session.sessionId),
       ui: {
         kind: 'popupSelect',
         searchMode: 'fuzzy-label',

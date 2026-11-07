@@ -192,7 +192,7 @@ const homeAndGuide = pairedPages([
     label: { root: '文档知识库', en: 'Document knowledge' },
     sidebar: { root: 'zh-guide', en: 'en-guide' },
     section: { root: '集成', en: 'Integrations' },
-    order: 3,
+    order: 4,
   },
   {
     source: 'docs/user/guide/memory-documents.md',

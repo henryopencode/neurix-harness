@@ -462,6 +462,8 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * registration replaces the shipped gallery; without one, images are omitted.
      */
     'conversation.chat.message.images': { kind: 'single'; scope: 'session'; owner: MessageImagesOwnerProps }
+    /** Optional ordered headings before an Assistant's visible response; absent for reasoning-only and tool-only rows. */
+    'conversation.chat.assistant.header': { kind: 'list'; scope: 'session'; owner: { node: ChatNode<'assistant-step'> } }
     /** User-message images, including pending and local-echo previews, independently replaceable from output images. */
     'conversation.chat.user.images': { kind: 'single'; scope: 'session'; owner: MessageImagesOwnerProps }
     /**

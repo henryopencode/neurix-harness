@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "模型群",
+    "description": "由指定的 leader 协调已配置的模型，支持直接 @ 和公共任务板。",
+    "detail": "docs/DETAIL.zh.md"
+  }
+}

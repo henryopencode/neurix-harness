@@ -45,6 +45,8 @@ Both entries group models by provider, with providers in ascending ID order and 
 
 The composer replaces the model and effort text with the Models icon when the expanded controls cannot share one line, and restores the text when space permits. The full selection remains available in the trigger's accessible name, tooltip, and menu.
 
+The `modelDirectories` service also supplies `catalogSource()` and `refreshCatalog()` to settings model pickers. They share the selectors’ catalog and its provider, settings, credential, and connection invalidations.
+
 ### Model label extensions
 
 `conversation.input.model.label` is a session-scoped, inline `single` slot for the composer trigger (`placement: 'trigger'`), the root menu's current value (`'menu'`), and each model option (`'option'`). Its owner props provide `provider: { id, name }`, the exact catalog `model`, `placement`, and `selected`. Provider names are localized display names; match channels by `provider.id`, and identify a model by the provider/model ID pair. Connection URLs and credentials are not passed to the slot.
@@ -62,6 +64,8 @@ Catalog availability does not block sending with a saved selection; request exec
 When another writer owns the Session, model-selection failures tell the user to quit other running DSH instances and retry.
 
 -----
+
+A feature can own a conversation’s model route through `ctx.modelDirectories.lockSelection()`. A locked selector preserves reasoning-effort controls while disabling other model choices; withdrawing the registration restores ordinary selection. The Host model provider enforces the corresponding policy at selection time.
 
 <a id="understand-the-implementation"></a>
 ## Understand the implementation
