@@ -1249,7 +1249,6 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       'client-ui-conversation QueueDock id \'queue\'',
       'client-ui-conversation TodoDock id \'todo\'',
       'client-ui-goal GoalDock id \'goal\'',
-      'experimental-client-ui-agent-team TeamDock id \'agent-team\'',
       'experimental-client-ui-claude-code-mods Band id \'claude-code-mods\'',
       'experimental-client-ui-model-group GroupDock id \'model-group\'',
     ],

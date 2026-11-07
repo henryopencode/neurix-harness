@@ -3,10 +3,10 @@ export const modelEn = {
   title: 'Agent team', models: 'Candidate models', leaderModel: 'Lead model', maxParallel: 'Parallel teammate limit',
   strengths: 'Suitable tasks', unavailable: 'Settings are unavailable', readOnly: 'These settings are read-only',
   saveFailed: 'Could not save these settings', save: 'Save', saving: 'Saving…', loadFailed: 'Could not load the model list', retry: 'Retry',
-  invalid: 'Select a Lead model from the candidate models', mention: 'Message', stop: 'Stop',
+  invalid: 'Select a Lead model from the candidate models',
   failed: 'This teammate did not return a complete reply. Mention it to try again later.', operationFailed: 'Could not complete this action',
   leader: 'Lead', copy: 'Copy', copied: 'Copied', footnotes: 'Footnotes',
-  messageTeam: 'Message a teammate or model', running: 'Running',
+  messageTeam: 'Message a teammate or model',
 } as const
 /** Locale-owned Team model copy. */
 export type ModelKey = keyof typeof modelEn
@@ -15,10 +15,10 @@ export const modelZh: Record<ModelKey, string> = {
   title: '智能体团队', models: '候选模型', leaderModel: '组长模型', maxParallel: '并行队友上限',
   strengths: '擅长的任务', unavailable: '设置暂不可用', readOnly: '当前设置为只读',
   saveFailed: '未能保存设置', save: '保存', saving: '保存中…', loadFailed: '未能加载模型列表', retry: '重试',
-  invalid: '请从候选模型中选择组长模型', mention: '发消息给', stop: '停止',
+  invalid: '请从候选模型中选择组长模型',
   failed: '此队友未返回完整回复，可稍后 @ 此队友重试', operationFailed: '未能完成此操作',
   leader: '组长', copy: '复制', copied: '已复制', footnotes: '脚注',
-  messageTeam: '发消息给队友或模型', running: '运行中',
+  messageTeam: '发消息给队友或模型',
 }
 
 /** Japanese collaboration copy. */
@@ -36,8 +36,6 @@ export const modelJa: Record<ModelKey, string> = {
   loadFailed: 'モデル一覧を読み込めませんでした',
   retry: '再試行',
   invalid: '候補モデルからリーダーモデルを選んでください',
-  mention: 'メッセージを送信',
-  stop: '停止',
   failed: 'このチームメイトから完全な返信を受信できませんでした。後でこのチームメイトを @ して再試行してください。',
   operationFailed: 'この操作を完了できませんでした',
   leader: 'リーダー',
@@ -45,7 +43,6 @@ export const modelJa: Record<ModelKey, string> = {
   copied: 'コピーしました',
   footnotes: '脚注',
   messageTeam: 'チームメイトまたはモデルにメッセージを送信',
-  running: '実行中',
 }
 
 /** Spanish collaboration copy. */
@@ -63,8 +60,6 @@ export const modelEs: Record<ModelKey, string> = {
   loadFailed: 'No se pudo cargar la lista de modelos',
   retry: 'Reintentar',
   invalid: 'Selecciona un modelo líder entre los candidatos',
-  mention: 'Enviar mensaje',
-  stop: 'Detener',
   failed: 'Este compañero no devolvió una respuesta completa. Menciónalo para reintentarlo más tarde.',
   operationFailed: 'No se pudo completar esta acción',
   leader: 'Líder',
@@ -72,7 +67,6 @@ export const modelEs: Record<ModelKey, string> = {
   copied: 'Copiado',
   footnotes: 'Notas al pie',
   messageTeam: 'Enviar un mensaje a un compañero o modelo',
-  running: 'En ejecución',
 }
 
 /** French collaboration copy. */
@@ -90,8 +84,6 @@ export const modelFr: Record<ModelKey, string> = {
   loadFailed: 'Impossible de charger la liste des modèles',
   retry: 'Réessayer',
   invalid: 'Sélectionnez un modèle responsable parmi les candidats',
-  mention: 'Envoyer un message',
-  stop: 'Arrêter',
   failed: 'Ce coéquipier n’a pas renvoyé de réponse complète. Mentionnez-le pour réessayer plus tard.',
   operationFailed: 'Impossible de terminer cette action',
   leader: 'Responsable',
@@ -99,7 +91,6 @@ export const modelFr: Record<ModelKey, string> = {
   copied: 'Copié',
   footnotes: 'Notes de bas de page',
   messageTeam: 'Envoyer un message à un coéquipier ou à un modèle',
-  running: 'En cours',
 }
 
 /** German collaboration copy. */
@@ -117,8 +108,6 @@ export const modelDe: Record<ModelKey, string> = {
   loadFailed: 'Die Modellliste konnte nicht geladen werden',
   retry: 'Erneut versuchen',
   invalid: 'Wähle ein Leitmodell aus den Kandidatenmodellen',
-  mention: 'Nachricht senden',
-  stop: 'Stoppen',
   failed: 'Dieses Teammitglied hat keine vollständige Antwort geliefert. Erwähne es, um es später erneut zu versuchen.',
   operationFailed: 'Diese Aktion konnte nicht abgeschlossen werden',
   leader: 'Leitung',
@@ -126,7 +115,6 @@ export const modelDe: Record<ModelKey, string> = {
   copied: 'Kopiert',
   footnotes: 'Fußnoten',
   messageTeam: 'Einem Teammitglied oder Modell eine Nachricht senden',
-  running: 'Wird ausgeführt',
 }
 
 /** Russian collaboration copy. */
@@ -144,8 +132,6 @@ export const modelRu: Record<ModelKey, string> = {
   loadFailed: 'Не удалось загрузить список моделей',
   retry: 'Повторить',
   invalid: 'Выберите ведущую модель из списка кандидатов',
-  mention: 'Отправить сообщение',
-  stop: 'Остановить',
   failed: 'Этот участник не вернул полный ответ. Упомяните его, чтобы повторить попытку позже.',
   operationFailed: 'Не удалось завершить действие',
   leader: 'Ведущий',
@@ -153,7 +139,6 @@ export const modelRu: Record<ModelKey, string> = {
   copied: 'Скопировано',
   footnotes: 'Сноски',
   messageTeam: 'Отправить сообщение участнику или модели',
-  running: 'Выполняется',
 }
 
 /** Portuguese collaboration copy. */
@@ -171,8 +156,6 @@ export const modelPt: Record<ModelKey, string> = {
   loadFailed: 'Não foi possível carregar a lista de modelos',
   retry: 'Tentar novamente',
   invalid: 'Selecione um modelo líder entre os candidatos',
-  mention: 'Enviar mensagem',
-  stop: 'Parar',
   failed: 'Este colega não retornou uma resposta completa. Mencione-o para tentar novamente mais tarde.',
   operationFailed: 'Não foi possível concluir esta ação',
   leader: 'Líder',
@@ -180,5 +163,4 @@ export const modelPt: Record<ModelKey, string> = {
   copied: 'Copiado',
   footnotes: 'Notas de rodapé',
   messageTeam: 'Enviar uma mensagem a um colega ou modelo',
-  running: 'Em execução',
 }
