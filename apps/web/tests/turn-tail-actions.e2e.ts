@@ -282,13 +282,13 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
     const process = page.locator('[data-turn-process]')
     await expect.poll(() => process.count(), { timeout: 10_000 }).toBe(1)
     expect(await process.getAttribute('aria-expanded')).toBe('false')
-    expect(await process.evaluate(element => getComputedStyle(element).borderBottomWidth)).toBe('1px')
+    expect(await process.evaluate(element => getComputedStyle(element).borderBottomWidth)).toBe('0px')
     const processBottom = await process.evaluate(element =>
       element.closest<HTMLElement>('[data-chat-flow-kind="turn-process"]')?.getBoundingClientRect().bottom)
-    // The hidden reasoning row separates the folded control from the intermediate reply, so it keeps the 12px reply gap.
+    // The hidden reasoning row retains the reply's 24px clearance from the folded control.
     const leadTop = await page.getByText('Reading the workspace now.', { exact: true }).evaluate(element =>
       element.closest<HTMLElement>('[data-chat-flow-kind="assistant-step"]')?.getBoundingClientRect().top)
-    expect(leadTop).toBe((processBottom ?? 0) + 12)
+    expect(leadTop).toBe((processBottom ?? 0) + 24)
     await process.focus()
     const completed = await captureStableAria(page, '[class*="centerCol"]', scaffold!.workspaceCwd)
     await compareOrRefreshGolden(COMPLETED_EXPECTED, completed, MODE)

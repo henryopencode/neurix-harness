@@ -1,0 +1,7 @@
+- insert:
+    - id: agent-team
+      name: '@deepseek-ai/dsh-experimental-agent-team'
+    - id: model-group
+      name: '@deepseek-ai/dsh-experimental-model-group-runtime'
+    - id: model-group-ui
+      name: '@deepseek-ai/dsh-experimental-client-ui-model-group'

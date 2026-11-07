@@ -14,13 +14,14 @@ import type { Scoped } from '@deepseek-ai/dsh-scope'
 import type { Session, SessionEvent, SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
 import type { ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
 import { installTurnArchiveAdmission } from './archive-admission.ts'
-import type { Agent, TurnBoundaryProjection } from './types.ts'
-import type { AgentOptions, SessionStartSource } from './runtime-types.ts'
+import { ModelSelectionDeniedError } from './model-selection.ts'
+import type { Agent, ModelSelection, TurnBoundaryProjection } from './types.ts'
+import type { AgentOptions, ModelSelectionGuard, SessionStartSource } from './runtime-types.ts'
 import { turnBoundaryProjectionDefinition } from './projection.ts'
 
 export * from './runtime-types.ts'
 export * from './types.ts'
-export { AgentModel, modelSelectionProjectionDefinition, installModelSelection } from './model-selection.ts'
+export { AgentModel, ModelSelectionDeniedError, modelSelectionProjectionDefinition, installModelSelection } from './model-selection.ts'
 export type { ModelSelectionProjectionState } from './model-selection.ts'
 export type * from './projection.ts'
 export * from './consumed-work.ts'
@@ -255,6 +256,33 @@ export class AgentRegistry extends Service {
   private turnBoundaryProjectionHandle!: ProjectionHandle<TurnBoundaryProjection>
   private store = new Map<SessionId, AgentEntry>()
   private factory: FactorySlot | undefined
+  private readonly modelSelectionGuards = new Set<{ readonly guard: ModelSelectionGuard }>()
+
+  /**
+   * Register a model-choice restriction until its owning plugin unloads.
+   * @param guard - Returns a denial reason or permits the choice by returning undefined.
+   * @returns Disposer removing this exact restriction.
+   */
+  guardModelSelection(guard: ModelSelectionGuard): () => Promise<void> {
+    return this.ctx.effect(() => {
+      const entry = { guard }
+      this.modelSelectionGuards.add(entry)
+      return () => { this.modelSelectionGuards.delete(entry) }
+    }, 'agents: model selection guard')
+  }
+
+  /**
+   * Enforce registered restrictions at a model provider's selection operation.
+   * @param agent - Agent whose model is being selected, including during setup.
+   * @param selection - Complete proposed model choice.
+   * @throws When an active plugin rejects the choice; no selection is recorded.
+   */
+  assertModelSelection(agent: Agent, selection: Readonly<ModelSelection>): void {
+    for (const { guard } of this.modelSelectionGuards) {
+      const reason = guard(agent, selection)
+      if (reason !== undefined) throw new ModelSelectionDeniedError(agent.id, { ...selection }, reason)
+    }
+  }
   private readonly initiators = new AsyncLocalStorage<Agent | undefined>()
   private readonly initiatorRuns = new AsyncLocalStorage<InitiatorRun>()
   private initiatorState: 'active' | 'closing' | 'disposed' = 'active'

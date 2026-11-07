@@ -25,7 +25,9 @@ This package adds an Agent Teams action to the Web conversation header, where a 
 <a id="use-this-package"></a>
 ## Use this package
 
-Enable this package through [`@deepseek-ai/dsh-experimental-agent-team-profile`](../agent-team-profile/README.md), which supplies the Team service, tools, and Web UI together. The Web Client loader mounts the `/client` export; the root Host export is inert, and the package has no user configuration fields.
+The Team bundle settings edit the shared model catalog selection, Lead model, strengths, and parallelism. Conversation controls show actual responsibility names and model routes, with individual stop icons. The resident Stop cancels the Team, including when only teammates run. The @ source addresses teammates and candidate models; role-attributed replies appear in the root conversation. Historical model-group reply records remain readable. Model discovery and credentials use the existing model directory and settings services.
+
+Enable this package through [`@deepseek-ai/dsh-experimental-agent-team-profile`](../agent-team-profile/README.md), which supplies the Team service, tools, and Web UI together. The Web Client loader mounts the `/client` export; the root Host export is inert, and its configuration form edits the Team service entry.
 
 ### Inspect and navigate the roster
 

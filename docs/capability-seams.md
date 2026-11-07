@@ -7,6 +7,8 @@ A service can be a core spine service, a swappable capability seam, a bundle/com
 
 ```mermaid
 flowchart LR
+  pkg_experimental_model_group_runtime["experimental-model-group-runtime"]
+  svc_modelGroups["ctx.modelGroups<br/>Optional model-group coordination"]
   pkg_knowledge_base["knowledge-base"]
   svc_knowledgeBase["ctx.knowledgeBase<br/>Workspace document knowledge"]
   pkg_client_ui_knowledge_base["client-ui-knowledge-base"]
@@ -368,6 +370,7 @@ flowchart LR
   pkg_experimental_computer_control --> svc_computerPreview
   pkg_experimental_computer_use_cua_driver_mcp --> svc_computerUse
   pkg_experimental_computer_use_cua_driver_native --> svc_computerUse
+  pkg_experimental_model_group_runtime --> svc_modelGroups
   pkg_experimental_ptc_runtime_python --> svc_ptcRuntime
   pkg_experimental_speech_to_text --> svc_speechToText
   pkg_experimental_speech_to_text_sensevoice --> svc_speechToText
@@ -646,6 +649,7 @@ flowchart LR
 
 | ctx key | Role | Owner | Implementations | Direct consumers | Companion plugins | Note |
 | --- | --- | --- | --- | --- | --- | --- |
+| `ctx.modelGroups` | `core` | [`experimental-model-group-runtime`](../packages/experimental/model-group-runtime) | - | - | - | Coordinates configured model routes through shared Team tasks and conversation-local human controls. |
 | `ctx.knowledgeBase` | `core` | [`knowledge-base`](../packages/core/knowledge-base) | - | [`knowledge-base`](../packages/core/knowledge-base), [`client-ui-knowledge-base`](../packages/client/ui-knowledge-base) | - | The service, LanceDB provider, and native tool consumer share one optional package; document snapshots retain source revisions independently of personal memory. |
 | `ctx.knowledgeController` | `core` | [`knowledge-base`](../packages/core/knowledge-base) | - | [`client-ui-knowledge-base`](../packages/client/ui-knowledge-base) | - | Workspace resource authorization covers uploaded documents, exact source reads, and keyword associations. |
 | `ctx.browserPreview` | `core` | [`experimental-browser-control`](../packages/experimental/browser-control) | - | - | - | Returns display-only captures of Session-owned tabs without native application access. |

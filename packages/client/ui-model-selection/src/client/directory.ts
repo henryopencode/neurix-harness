@@ -17,6 +17,8 @@ import type { ModelCatalogDirectory } from './catalog.ts'
 
 /** Directory snapshot both entries render from. */
 export interface ModelDirectoryState {
+  /** Present while a feature owns the model route; effort selection remains available. */
+  readonly selectionLocked?: true
   /** Saved selection, retained even when its provider or model leaves the catalog. */
   current: ModelSelection | null
   /** Saved effort caption retained when the selected model is unavailable. */
@@ -47,6 +49,7 @@ export class ModelDirectory {
   private disposed = false
   private readonly unsubscribeCatalog: () => void
   private readonly unsubscribeSelection: () => void
+  private readonly unsubscribePolicy: (() => void) | undefined
 
   /**
    * @param sessions - the session wire face (captured from the plugin's root connection).
@@ -65,9 +68,11 @@ export class ModelDirectory {
     private readonly projected: ObservableSnapshot<unknown>,
     private readonly isBlank: () => boolean,
     private readonly track?: TrackProductEvent,
+    private readonly policy?: ObservableSnapshot<boolean>,
   ) {
     this.unsubscribeCatalog = catalog.store.subscribe(() => { this.syncInputs() })
     this.unsubscribeSelection = projected.subscribe(() => { this.syncInputs() })
+    this.unsubscribePolicy = policy?.subscribe(() => { this.syncInputs() })
     this.syncInputs()
   }
 
@@ -147,6 +152,7 @@ export class ModelDirectory {
     this.disposed = true
     this.unsubscribeSelection()
     this.unsubscribeCatalog()
+    this.unsubscribePolicy?.()
   }
 
   private assertAvailable(): void {
@@ -166,6 +172,7 @@ export class ModelDirectory {
       : reasoning?.efforts.find(level => level.id === effort)?.name ?? effort
     if (catalog.status !== 'ready' || catalog.value === null || projected === undefined) {
       this.store.set({
+        ...this.policy?.getSnapshot() === true ? { selectionLocked: true as const } : {},
         current: catalog.value === null ? null : this.store.getSnapshot().current,
         ...retainedEffort === undefined ? {} : { retainedEffort },
         routable: null,
@@ -181,6 +188,7 @@ export class ModelDirectory {
     const routable = catalog.value.groups.some(group => group.id === selection.provider
       && group.models.some(model => model.id === selection.model))
     this.store.set({
+      ...this.policy?.getSnapshot() === true ? { selectionLocked: true as const } : {},
       current: selection,
       ...retainedEffort === undefined ? {} : { retainedEffort },
       routable,

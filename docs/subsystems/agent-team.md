@@ -16,6 +16,8 @@ interface TeamMemberSnapshot {
   readonly description: string
   readonly provider: string
   readonly context: 'fresh' | 'fork'
+  /** Immutable coordination namespace that created this member; omission leaves it unassigned to a coordinator. */
+  readonly coordinationOwner?: string
   readonly phase: TeamMemberPhase
   readonly error?: string
 }
@@ -87,6 +89,8 @@ interface TeamMemberProjection {
   readonly role: 'lead' | 'teammate'
   /** Durable lifecycle; the Lead row is always `active`. Turn activity comes from Session status. */
   readonly phase: TeamMemberPhase
+  /** Coordination namespace that created this member. */
+  readonly coordinationOwner?: string
   readonly error?: string
 }
 ```
@@ -124,6 +128,25 @@ interface TeamProjection {
 
 The `agentTeam` Session projection replays one root Session into the roster, task board, and historical queued-minus-delivered mailbox. It selects records by `TeamId`, so events inherited by an ordinary fork retain the ancestor id and never enter the new root's state. Session event `seq` and `time` remain the ordering and timing record; Team snapshots do not duplicate them. Roster and task reads reach callers as views; pending mail is not exposed to callers. The package [README](../../packages/experimental/agent-team/README.md) owns operation, authorization, recovery, and limit behavior.
 
+<a id="model-groups"></a>
+
+## Model assignment
+
+The [Agent Teams bundle](../../packages/experimental/agent-team-profile/README.md) configures candidate models and an initial Lead model. `TeamModel` identifies a candidate route and its strengths; `TeamModelSelection` records the pool and Lead choice. The Lead creates task-specific responsibility names through `spawn_teammate`, selecting a `model` alias separately from `name` and `description`. The Team service validates aliases, stop state, model availability, and parallel capacity before roster creation. `TeamPost` retains the role, actual model route, source Session, and output sequence.
+
+### Historical model-group records
+
+Historical model-group records remain readable through their original event discriminators. They do not add a collaboration mode to the Team workflow.
+
+| Type | Meaning |
+|---|---|
+| `ModelGroupMode` | `single` or `multi` for one conversation. |
+| `ModelGroupMember` | A unique mention alias, display label, exact provider/model route, and user-authored strengths. |
+| `ModelGroupSnapshot` | Captured mode, leader, members, stop state, and members whose latest activation serves a direct human message. |
+| `ModelGroupDispatchReceipt` | Accepted member name, target Session id, and optional shared task id; settlement notices use that Session id. |
+| `ModelGroupDelivery` | Public direct-message sequence, accepted execution receipts, and failed or unconfirmed recipients; acceptance does not assert completion. |
+| `ModelGroupPost` | Public member text or failure, attributed to its source Session and optional assistant-message sequence. |
+
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
 <a id="cordis-surface"></a>
@@ -160,6 +183,32 @@ listMembers(agent: Agent): TeamMemberView[]
  * @returns the active roster row.
  */
 async spawnTeammate(caller: Agent, request: SpawnTeammateRequest): Promise<SpawnTeammateResult>
+
+/**
+ * Read the candidate models captured by this member's Lead.
+ * @param caller - Exact live Team member.
+ * @returns Its Lead's configured candidate models.
+ */
+modelSelection(caller: Agent): TeamModelSelection | null
+
+/**
+ * Stop the Team or one responsibility, retaining the roster and shared tasks.
+ * @param caller - Exact live Lead.
+ * @param target - Teammate name; omission stops the whole Team.
+ * @returns After selected executions and pending creation have settled.
+ */
+async stop(caller: Agent, target?: string): Promise<void>
+
+/**
+ * Deliver direct human input to responsibilities or configured model aliases.
+ * @param caller - Live Lead conversation.
+ * @param targets - Member names or candidate model aliases.
+ * @param content - Complete accepted human input.
+ * @param provider - Continuable execution provider for a newly addressed model.
+ * @param signal - Caller-owned admission cancellation.
+ * @returns After every selected target has accepted its input; partial failures reject visibly.
+ */
+async tell(caller: Agent, targets: readonly string[], content: import('@deepseek-ai/dsh-llm').ContentBlock[], provider: string, signal: AbortSignal): Promise<void>
 
 /**
  * Steer one peer message into the target inbox or reject the attempt.
@@ -225,7 +274,52 @@ interrupt(caller: Agent, targetName: string): { previousStatus: 'running' | 'ina
 tryMembership(agent: Agent): TeamMembership | undefined
 ```
 
-Types: [Agent](core.md)
+Types: [Agent](core.md) · [ContentBlock](llm-streaming.md)
 
 Source: [`packages/experimental/agent-team/src/index.ts`](../../packages/experimental/agent-team/src/index.ts)
+
+<a id="ctxmodelgroups--modelgroups"></a>
+
+### `ctx.modelGroups` — `ModelGroups`
+
+Model groups with independent model routes, shared tasks, and direct human addressing.
+
+```ts cordis-catalog
+/**
+ * Read one conversation's durable model-group selection.
+ * @param agent - Exact live root.
+ * @returns Its group selection, if configured.
+ */
+snapshot(agent: Agent): ModelGroupSnapshot | null
+
+/**
+ * Change only this conversation after stopping existing executions.
+ * @param agent - Live root.
+ * @param mode - Desired mode.
+ */
+async setMode(agent: Agent, mode: ModelGroupMode): Promise<void>
+
+/**
+ * Stop current work and close new assignment admission.
+ * @param agent - Live root.
+ * @param member - Optional single model name.
+ */
+async stop(agent: Agent, member?: string): Promise<void>
+
+/**
+ * Dispatch one admitted model task.
+ * @param agent - Live leader.
+ * @param name - Configured model name.
+ * @param prompt - Logged task input.
+ * @param direct - Human-directed delivery.
+ * @param signal - Admission cancellation.
+ * @param taskId - Existing ready task; omission creates a new task.
+ * @returns Accepted model, target Session, and shared task identities.
+ */
+assign( agent: Agent, name: string, prompt: ContentBlock[], direct: boolean, signal: AbortSignal, taskId?: TeamTaskId, ): Promise<ModelGroupDispatchReceipt>
+```
+
+Types: [Agent](core.md) · [ContentBlock](llm-streaming.md)
+
+Source: [`packages/experimental/model-group-runtime/src/index.ts`](../../packages/experimental/model-group-runtime/src/index.ts)
 <!-- END GENERATED cordis-surface -->

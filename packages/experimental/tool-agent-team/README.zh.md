@@ -25,6 +25,8 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
+配置团队候选模型后，`spawn_teammate` 通过 `model` 选择候选别名，通过 `name` 和 `description` 定义本次职责。组长在有记录的运行时上下文中读取候选模型与擅长任务。`send_message`、共享任务和等待保持原有团队语义。用户命令为 `/team tell <成员或模型> <消息>` 和 `/team stop [成员]`，可以直接联系候选模型，不创建第二种协作模式。
+
 当模型应该通过工具运行一支团队时，在 `@deepseek-ai/dsh-experimental-agent-team` 之上挂载本包。挂载后，每个团队成员——Lead 与每个 teammate——都会获得相同的九个工具，以及相同的协作策略。`spawn_teammate` 原样发送初始任务；每个成员通过必需的 runtime context 接收当前角色和名字。
 
 ### 何时选择

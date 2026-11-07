@@ -9,7 +9,6 @@ import { installModelSelection } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-preset-registry'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type { Session, SessionId } from '@deepseek-ai/dsh-session'
-import { SessionFormatUnsupportedError } from '@deepseek-ai/dsh-session-persistence'
 import { SessionQueryError, type SessionObservation } from '@deepseek-ai/dsh-session-query'
 import { RemoteError, remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from '@deepseek-ai/dsh-typert-registry'
@@ -363,8 +362,11 @@ export class ApiSessionAgentController {
         if (error.code === 'SESSION_QUERY_SESSION_NOT_FOUND') {
           return this.createAgent(sessionId, request.cwd, await this.composeAgent(request.agentPreset))
         }
-        if (error.code === 'SESSION_QUERY_PERSISTENCE_FAILED' && error.cause instanceof SessionFormatUnsupportedError) {
-          return this.createMinted(request.cwd, await this.composeAgent(request.agentPreset))
+        if (error.code === 'SESSION_QUERY_PERSISTENCE_FAILED' && this.ctx.get('sessionPersistence') !== undefined) {
+          const { SessionFormatUnsupportedError } = await import('@deepseek-ai/dsh-session-persistence')
+          if (error.cause instanceof SessionFormatUnsupportedError) {
+            return this.createMinted(request.cwd, await this.composeAgent(request.agentPreset))
+          }
         }
       }
       throw error

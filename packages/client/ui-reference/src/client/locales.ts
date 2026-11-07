@@ -14,8 +14,8 @@ export const NS = 'reference'
  */
 export const zh = {
   'section.files': '文件与文件夹',
-  'section.subagents': '子智能体',
-  'section.sessions': '对话',
+  'section.subagents': '引用子智能体',
+  'section.sessions': '引用历史对话',
   'candidate.noCwd': '（无工作目录）',
   'crumb.root': '工作区',
   'fileOpen.title': '无法打开文件',
@@ -43,8 +43,8 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 /** English dictionary, checked complete against the zh key set. */
 export const en = {
   'section.files': 'Files & folders',
-  'section.subagents': 'Subagents',
-  'section.sessions': 'Sessions',
+  'section.subagents': 'Reference subagents',
+  'section.sessions': 'Reference chats',
   'candidate.noCwd': '(no cwd)',
   'crumb.root': 'Workspace',
   'fileOpen.title': 'Couldn’t open file',
@@ -62,8 +62,8 @@ export const en = {
 /** Japanese copy, checked against the English keys. */
 export const ja = {
   'section.files': 'ファイルとフォルダ',
-  'section.subagents': 'サブエージェント',
-  'section.sessions': 'セッション',
+  'section.subagents': 'サブエージェントを参照',
+  'section.sessions': '会話を参照',
   'candidate.noCwd': '（cwdなし）',
   'crumb.root': 'ワークスペース',
   'fileOpen.title': 'ファイルを開けませんでした',
@@ -81,8 +81,8 @@ export const ja = {
 /** Spanish dictionary, checked against the English keys. */
 export const es = {
   'section.files': 'Archivos y carpetas',
-  'section.subagents': 'Subagentes',
-  'section.sessions': 'Sesiones',
+  'section.subagents': 'Citar subagentes',
+  'section.sessions': 'Citar conversaciones',
   'candidate.noCwd': '(sin cwd)',
   'crumb.root': 'Espacio de trabajo',
   'fileOpen.title': 'No se pudo abrir el archivo',
@@ -100,8 +100,8 @@ export const es = {
 /** French dictionary, checked against the English keys. */
 export const fr = {
   'section.files': 'Fichiers et dossiers',
-  'section.subagents': 'Sous-agents',
-  'section.sessions': 'Séances',
+  'section.subagents': 'Citer des sous-agents',
+  'section.sessions': 'Citer des conversations',
   'candidate.noCwd': '(pas de cwd)',
   'crumb.root': 'Espace de travail',
   'fileOpen.title': "Impossible d'ouvrir le fichier",
@@ -119,8 +119,8 @@ export const fr = {
 /** German dictionary, checked against the English keys. */
 export const de = {
   'section.files': 'Dateien und Ordner',
-  'section.subagents': 'Subagenten',
-  'section.sessions': 'Sitzungen',
+  'section.subagents': 'Subagenten zitieren',
+  'section.sessions': 'Chats zitieren',
   'candidate.noCwd': '(kein CWD)',
   'crumb.root': 'Arbeitsbereich',
   'fileOpen.title': 'Datei konnte nicht geöffnet werden',
@@ -138,8 +138,8 @@ export const de = {
 /** Russian dictionary, checked against the English keys. */
 export const ru = {
   'section.files': 'Файлы и папки',
-  'section.subagents': 'Субагенты',
-  'section.sessions': 'Сессии',
+  'section.subagents': 'Ссылки на субагентов',
+  'section.sessions': 'Ссылки на чаты',
   'candidate.noCwd': '(без КДВ)',
   'crumb.root': 'Рабочая область',
   'fileOpen.title': 'Не удалось открыть файл',
@@ -157,8 +157,8 @@ export const ru = {
 /** Portuguese dictionary, checked against the English keys. */
 export const pt = {
   'section.files': 'Arquivos e pastas',
-  'section.subagents': 'Subagentes',
-  'section.sessions': 'Sessões',
+  'section.subagents': 'Citar subagentes',
+  'section.sessions': 'Citar conversas',
   'candidate.noCwd': '(sem cwd)',
   'crumb.root': 'Espaço de trabalho',
   'fileOpen.title': 'Não foi possível abrir o arquivo',

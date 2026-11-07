@@ -18,6 +18,22 @@ export interface Agent {
   readonly id: SessionId
 }
 
+/**
+ * Merge-extensible agent options. Route fields may be live accessors until the
+ * Session records a selection or request; step preparation captures their value.
+ * Persona belongs to system-prompt sections.
+ */
+export interface AgentOptions {
+  /** Provider route (must have a registered adapter at call time). */
+  provider?: string
+  /** Model id interpreted by the selected provider adapter. */
+  model?: string
+  /** Adapter-owned reasoning effort for the selected provider/model route. */
+  reasoningEffort?: ReasoningEffortId | undefined
+  /** Maximum output tokens for each conversation-model request. */
+  maxTokens?: number
+}
+
 declare module '@deepseek-ai/dsh-workspace/types' {
   interface SessionActivityKindMap {
     /** The session's own Agent is inside a turn, including one waiting for an approval or an answer. */

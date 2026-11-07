@@ -265,6 +265,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'Agent service (`ctx.agents`): tracks live agents and carries the initiating Agent through one process-local asynchronous driver chain. Agent *creation* is provided by whichever plugin implements the AgentFactory (`@deepseek-ai/dsh-agent-loop`), registered via setFactory.\n\nInitiator methods provide same-process causal attribution only. Ambient presence is neither liveness proof nor authorization; subjects and owners remain explicit, as does identity at worker, process, persistence, and wire boundaries. Returned Promise boundaries drain during teardown, except a nested lineage that starts an owning-fiber unload is excluded from its own drain.',
     methods: [
       {
+        signature: 'guardModelSelection(guard: ModelSelectionGuard): () => Promise<void>',
+        description: 'Register a model-choice restriction until its owning plugin unloads.',
+        parameters: [{ name: 'guard', description: 'Returns a denial reason or permits the choice by returning undefined.' }],
+        returns: 'Disposer removing this exact restriction.',
+      },
+      {
+        signature: 'assertModelSelection(agent: Agent, selection: Readonly<ModelSelection>): void',
+        description: 'Enforce registered restrictions at a model provider\'s selection operation.',
+        parameters: [{ name: 'agent', description: 'Agent whose model is being selected, including during setup.' }, { name: 'selection', description: 'Complete proposed model choice.' }],
+        throws: ['When an active plugin rejects the choice; no selection is recorded.'],
+      },
+      {
         signature: 'turnBoundaryOf(session: Session): TurnBoundaryProjection',
         description: 'Read the turn and step positions recorded in a Session.',
         parameters: [{ name: 'session', description: 'Session whose committed events are read.' }],
@@ -383,6 +395,24 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Create one named, continuable direct child of the Team Lead.',
         parameters: [{ name: 'caller', description: 'exact live Lead Agent.' }, { name: 'request', description: 'immutable name, description, prompt, context mode, provider, and cancellation.' }],
         returns: 'the active roster row.',
+      },
+      {
+        signature: 'modelSelection(caller: Agent): TeamModelSelection | null',
+        description: 'Read the candidate models captured by this member\'s Lead.',
+        parameters: [{ name: 'caller', description: 'Exact live Team member.' }],
+        returns: 'Its Lead\'s configured candidate models.',
+      },
+      {
+        signature: 'async stop(caller: Agent, target?: string): Promise<void>',
+        description: 'Stop the Team or one responsibility, retaining the roster and shared tasks.',
+        parameters: [{ name: 'caller', description: 'Exact live Lead.' }, { name: 'target', description: 'Teammate name; omission stops the whole Team.' }],
+        returns: 'After selected executions and pending creation have settled.',
+      },
+      {
+        signature: 'async tell(caller: Agent, targets: readonly string[], content: import(\'@deepseek-ai/dsh-llm\').ContentBlock[], provider: string, signal: AbortSignal): Promise<void>',
+        description: 'Deliver direct human input to responsibilities or configured model aliases.',
+        parameters: [{ name: 'caller', description: 'Live Lead conversation.' }, { name: 'targets', description: 'Member names or candidate model aliases.' }, { name: 'content', description: 'Complete accepted human input.' }, { name: 'provider', description: 'Continuable execution provider for a newly addressed model.' }, { name: 'signal', description: 'Caller-owned admission cancellation.' }],
+        returns: 'After every selected target has accepted its input; partial failures reject visibly.',
       },
       {
         signature: 'async sendMessage(caller: Agent, request: SendTeamMessageRequest): Promise<SendTeamMessageResult>',
@@ -1853,6 +1883,35 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Delete one item after checking its version; absence succeeds without an event.',
         parameters: [{ name: 'request', description: 'Session, message, and observed item version.' }],
         returns: 'the stable absent postcondition or an explicit failure.',
+      },
+    ],
+  },
+  {
+    key: 'modelGroups',
+    summary: 'Model groups with independent model routes, shared tasks, and direct human addressing.',
+    description: 'Model groups with independent model routes, shared tasks, and direct human addressing.',
+    methods: [
+      {
+        signature: 'snapshot(agent: Agent): ModelGroupSnapshot | null',
+        description: 'Read one conversation\'s durable model-group selection.',
+        parameters: [{ name: 'agent', description: 'Exact live root.' }],
+        returns: 'Its group selection, if configured.',
+      },
+      {
+        signature: 'async setMode(agent: Agent, mode: ModelGroupMode): Promise<void>',
+        description: 'Change only this conversation after stopping existing executions.',
+        parameters: [{ name: 'agent', description: 'Live root.' }, { name: 'mode', description: 'Desired mode.' }],
+      },
+      {
+        signature: 'async stop(agent: Agent, member?: string): Promise<void>',
+        description: 'Stop current work and close new assignment admission.',
+        parameters: [{ name: 'agent', description: 'Live root.' }, { name: 'member', description: 'Optional single model name.' }],
+      },
+      {
+        signature: 'assign( agent: Agent, name: string, prompt: ContentBlock[], direct: boolean, signal: AbortSignal, taskId?: TeamTaskId, ): Promise<ModelGroupDispatchReceipt>',
+        description: 'Dispatch one admitted model task.',
+        parameters: [{ name: 'agent', description: 'Live leader.' }, { name: 'name', description: 'Configured model name.' }, { name: 'prompt', description: 'Logged task input.' }, { name: 'direct', description: 'Human-directed delivery.' }, { name: 'signal', description: 'Admission cancellation.' }, { name: 'taskId', description: 'Existing ready task; omission creates a new task.' }],
+        returns: 'Accepted model, target Session, and shared task identities.',
       },
     ],
   },
@@ -6735,6 +6794,22 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ModelCatalogModel {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n}',
   },
   {
+    name: 'ModelGroupDispatchReceipt',
+    declaration: 'export interface ModelGroupDispatchReceipt {\n    readonly member: string;\n    readonly sessionId: SessionId;\n    readonly taskId?: Branded<\'TeamTaskId\'>;\n    readonly accepted: true;\n}',
+  },
+  {
+    name: 'ModelGroupMember',
+    declaration: 'export interface ModelGroupMember {\n    readonly name: string;\n    readonly label: string;\n    readonly provider: string;\n    readonly model: string;\n    readonly strengths: string;\n}',
+  },
+  {
+    name: 'ModelGroupMode',
+    declaration: 'export type ModelGroupMode = \'single\' | \'multi\';',
+  },
+  {
+    name: 'ModelGroupSnapshot',
+    declaration: 'export interface ModelGroupSnapshot {\n    readonly mode: ModelGroupMode;\n    readonly leader: string;\n    readonly members: readonly ModelGroupMember[];\n    readonly stopped: boolean;\n    readonly direct: readonly string[];\n    readonly stoppedMembers: readonly string[];\n}',
+  },
+  {
     name: 'ModelMessageSource',
     declaration: 'export interface ModelMessageSource extends AssistantProviderMetadata {\n    kind: \'model\';\n}',
   },
@@ -6757,6 +6832,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ModelReasoningEffort',
     declaration: 'export interface ModelReasoningEffort {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n}',
+  },
+  {
+    name: 'ModelSelectionGuard',
+    declaration: 'export type ModelSelectionGuard = (agent: Agent, selection: Readonly<ModelSelection>) => string | undefined;',
   },
   {
     name: 'ModEvents',
@@ -8284,7 +8363,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SpawnTeammateRequest',
-    declaration: 'export interface SpawnTeammateRequest {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: ContentBlock[];\n    readonly context: \'fresh\' | \'fork\';\n    readonly provider: string;\n    readonly signal: AbortSignal;\n}',
+    declaration: 'export interface SpawnTeammateRequest {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: ContentBlock[];\n    readonly context: \'fresh\' | \'fork\';\n    readonly provider: string;\n    readonly model?: string;\n    readonly agentOptions?: AgentOptions;\n    readonly coordinationOwner?: string;\n    readonly signal: AbortSignal;\n}',
   },
   {
     name: 'SpawnTeammateResult',
@@ -8616,7 +8695,15 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamMemberView',
-    declaration: 'export interface TeamMemberView {\n    readonly id: SessionId;\n    readonly name: string;\n    readonly role: \'lead\' | \'teammate\';\n    readonly status: \'running\' | \'inactive\' | \'provisioning\' | \'failed\';\n    readonly description?: string;\n    readonly provider?: string;\n    readonly context?: \'fresh\' | \'fork\';\n    readonly model?: string;\n    readonly diagnostics: string[];\n}',
+    declaration: 'export interface TeamMemberView {\n    readonly id: SessionId;\n    readonly name: string;\n    readonly role: \'lead\' | \'teammate\';\n    readonly status: \'running\' | \'inactive\' | \'provisioning\' | \'failed\';\n    readonly description?: string;\n    readonly provider?: string;\n    readonly context?: \'fresh\' | \'fork\';\n    readonly coordinationOwner?: string;\n    readonly model?: string;\n    readonly diagnostics: string[];\n}',
+  },
+  {
+    name: 'TeamModel',
+    declaration: 'export interface TeamModel {\n    readonly name: string;\n    readonly label: string;\n    readonly provider: string;\n    readonly model: string;\n    readonly strengths: string;\n}',
+  },
+  {
+    name: 'TeamModelSelection',
+    declaration: 'export interface TeamModelSelection {\n    readonly leader: string;\n    readonly models: readonly TeamModel[];\n}',
   },
   {
     name: 'TeamTaskAction',

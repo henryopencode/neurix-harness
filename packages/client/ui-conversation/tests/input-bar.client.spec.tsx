@@ -81,6 +81,7 @@ interface BenchOptions {
   }
   draft?: string
   running?: boolean
+  associatedRunning?: boolean
   subagent?: Exclude<SessionSnapshot['subagent'], null>
   disabled?: boolean
   inert?: boolean
@@ -216,6 +217,7 @@ function bench(over?: BenchOptions) {
     toggleCommandMenu: over?.toggleCommandMenu ?? vi.fn(),
     useBusyEnter: bindSnapshotSelector(busyEnter),
     useStopShortcut: bindSnapshotSelector(stopShortcut),
+    useStopActivity: bindSnapshotSelector(createSnapshotStore(over?.associatedRunning ?? false)),
     useNotices: bindSnapshotSelector(shell.notices),
     useLexicon: bindSnapshotSelector(shell.lexicon),
     useMenuLauncher: bindSnapshotSelector(menuLauncher),
@@ -234,7 +236,7 @@ function bench(over?: BenchOptions) {
   const view = render(<InputBar {...props} />)
   const textarea = view.container.querySelector<HTMLDivElement>('[data-composer-input]')!
   const sendableDraft = (over?.draft?.trim() ?? '') !== '' || (over?.attachments?.length ?? 0) > 0
-  const primaryStops = over?.running === true && over.subagent === undefined
+  const primaryStops = (over?.running === true || over?.associatedRunning === true) && over?.subagent === undefined
     && (!sendableDraft || over.blocked !== undefined)
   // A running steer-capable composer (ordinary session or continuable child
   // with its parent online) labels Send by the delivery mode it performs over
@@ -1000,6 +1002,15 @@ describe('Enter semantics', () => {
 })
 
 describe('running and lock semantics', () => {
+  it('keeps the primary Stop available when only associated workers are running', () => {
+    const { view, stop } = bench({ associatedRunning: true })
+    const button = view.getByRole('button', { name: zh['input.stop'] }) as HTMLButtonElement
+    expect(button.disabled).toBe(false)
+    fireEvent.click(button)
+    expect(stop).toHaveBeenCalledOnce()
+    expect(view.queryByRole('button', { name: zh['input.send'] })).toBeNull()
+  })
+
   it.each([
     { messages: zh, label: '停止生成', trigger: 'hover' },
     { messages: en, label: 'Stop generating', trigger: 'focus' },

@@ -1,0 +1,21 @@
+- id: llm-deepseek
+  disabled: true
+- insert:
+    - id: agent-team
+      name: '@deepseek-ai/dsh-experimental-agent-team'
+    - id: model-group-team-tools
+      name: '@deepseek-ai/dsh-experimental-tool-agent-team'
+    - id: model-group
+      name: '@deepseek-ai/dsh-experimental-model-group-runtime'
+      config:
+        leader: a
+        members:
+          - name: a
+            label: DeepSeek
+            provider: deepseek-official
+            model: model-group-selected
+            strengths: Task analysis
+    - id: model-group-snapshot-model
+      name: '../../../packages/experimental/model-group/tests/fixtures/models.mjs'
+      config:
+        provider: deepseek-official

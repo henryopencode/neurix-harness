@@ -145,6 +145,7 @@ Factory: conversation.content [ConversationContent]
 │     │        ├─ key=user,steering [UserMessageNodeView]
 │     │        │  └─ calls Factory: conversation.chat.user.content
 │     │        ├─ key=assistant-step [AssistantNodeView / AssistantMarkdown]
+│     │        │  ├─ conversation.chat.assistant.header [list]
 │     │        │  ├─ conversation.chat.message.images [MessageImages]
 │     │        │  └─ conversation.chat.reasoning.body [DefaultReasoningBody]
 │     │        │     └─ calls Factory: conversation.chat.reasoning.content

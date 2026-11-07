@@ -25,6 +25,8 @@ English | [中文](README.zh.md)
 <a id="use-this-package"></a>
 ## Use this package
 
+In plugin details, choose a Lead model, candidate models, and the tasks each handles well. The Lead creates responsibilities for each task and selects a candidate model for each teammate. This is one Team workflow: there is no single/model-group mode switch. Candidate edits update unused conversations; started Teams retain their captured model choices.
+
 ### Install into a profile
 
 Add the package to an initialized profile, then run a task that asks the Lead to delegate work:

@@ -1,0 +1,28 @@
+- id: session-persistence-jsonl
+  config:
+    root: './.sessions'
+    compression: none
+- insert:
+    - id: model-group-test-models
+      name: './models.mjs'
+- id: model-group
+  config:
+    defaultMode: multi
+    leader: a
+    maxParallel: 2
+    members:
+      - name: a
+        label: Leader model
+        provider: model-group-test
+        model: leader
+        strengths: Task analysis
+      - name: b
+        label: Model B
+        provider: model-group-test
+        model: worker-b
+        strengths: Code analysis
+      - name: c
+        label: Model C
+        provider: model-group-test
+        model: worker-c
+        strengths: Log analysis

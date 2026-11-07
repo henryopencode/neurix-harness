@@ -1,0 +1,43 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/model-group-runtime/README.md
+/:
+  en: 91cc8118370c5ff9
+  zh: 6de82968b6145c9f
+/deepseek-ai-dsh-experimental-model-group-runtime:
+  en: 5b464dede5672102
+  zh: 2ff68df6d85bd4ff
+/deepseek-ai-dsh-experimental-model-group-runtime/summary:
+  en: e0d784de37155372
+  zh: e0424077e3c21abe
+/deepseek-ai-dsh-experimental-model-group-runtime/table-of-contents:
+  en: 76368b6b1da79c80
+  zh: b4a2a0e132e8ddf8
+/deepseek-ai-dsh-experimental-model-group-runtime/use-this-package:
+  en: 9098e770a1a9d2c8
+  zh: 99786f171ad12293
+/deepseek-ai-dsh-experimental-model-group-runtime/understand-the-implementation:
+  en: 7e861554611d9aeb
+  zh: c761e2afeb24aabf
+/deepseek-ai-dsh-experimental-model-group-runtime/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-experimental-model-group-runtime/model-experience/group-task-delivery:
+  en: 3c2aaf7717e2a5af
+  zh: 014326077d6b5fc2
+/deepseek-ai-dsh-experimental-model-group-runtime/model-experience/group-task-delivery/what-the-model-sees:
+  en: bdbfc56e5ff00fc4
+  zh: cce7208896ca9691
+/deepseek-ai-dsh-experimental-model-group-runtime/model-experience/group-task-delivery/token-effect:
+  en: 7073529098b8a5bd
+  zh: 60e596c4f71b341b
+/deepseek-ai-dsh-experimental-model-group-runtime/model-experience/group-task-delivery/kv-cache-effect:
+  en: 50705a06705ab6cc
+  zh: 6baaf9a3df2d603b
+/deepseek-ai-dsh-experimental-model-group-runtime/known-limitations-and-deferred-work:
+  en: 9dcd5a43ce8b050b
+  zh: d22d409e9784ed09
+/deepseek-ai-dsh-experimental-model-group-runtime/known-limitations-and-deferred-work/dev-note:
+  en: 0a1253c6f7b5e8b9
+  zh: 9f56528562c7c914
