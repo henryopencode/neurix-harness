@@ -37,6 +37,12 @@
 pnpm exec tsx scripts/release/desktop-stable.ts --plan
 ```
 
+工作流或测试夹具修复后，重新构建已有预留版本时，将 **existing_tag** 设为对应的 `v<version>` 标签，并将 **version** 留空。成对标签、清单版本、预留元数据与 master 历史必须一致。安装包仍使用原标签提交；更新的预留测试仅在打包后复制。Release 说明同时记录打包源码与验证工作流提交。仅修复发布验证的 PR 通过检查后，在合并提交标题中加入 `[skip ci]`，避免预留另一个版本，再从 `master` 手动重试：
+
+```sh
+gh workflow run neurix-desktop-release.yml --ref master -f existing_tag=v1.1.0 -f validation_only=false
+```
+
 <a id="installed-update-checks"></a>
 ## 已安装应用的更新检查
 

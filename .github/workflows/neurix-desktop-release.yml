@@ -18,6 +18,10 @@ on:
         description: 'Optional stable version; otherwise start at 1.0.0 and increment the patch'
         type: string
         default: ''
+      existing_tag:
+        description: 'Retry an unchanged reserved tag instead of reserving another version; leave version empty'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -35,9 +39,9 @@ jobs:
     permissions:
       contents: write
     outputs:
-      version: ${{ steps.release.outputs.version || steps.validation.outputs.version }}
-      tag: ${{ steps.release.outputs.tag || steps.validation.outputs.tag }}
-      commit: ${{ steps.release.outputs.commit || steps.validation.outputs.commit }}
+      version: ${{ steps.release.outputs.version || steps.reserved.outputs.version || steps.validation.outputs.version }}
+      tag: ${{ steps.release.outputs.tag || steps.reserved.outputs.tag || steps.validation.outputs.tag }}
+      commit: ${{ steps.release.outputs.commit || steps.reserved.outputs.commit || steps.validation.outputs.commit }}
       matrix: ${{ steps.platforms.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7.0.1
@@ -51,14 +55,26 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Reserve stable version and immutable tags
-        if: github.event_name != 'workflow_dispatch' || !inputs.validation_only
+        if: (github.event_name != 'workflow_dispatch' || !inputs.validation_only) && (github.event_name != 'workflow_dispatch' || inputs.existing_tag == '')
         id: release
         env:
           RELEASE_SOURCE: ${{ github.sha }}
           REQUESTED_VERSION: ${{ inputs.version }}
         run: pnpm exec tsx scripts/release/desktop-stable.ts --version "$REQUESTED_VERSION"
+      - name: Reuse an immutable reservation
+        if: github.event_name == 'workflow_dispatch' && inputs.existing_tag != ''
+        id: reserved
+        env:
+          EXISTING_TAG: ${{ inputs.existing_tag }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          if test -n "$REQUESTED_VERSION"; then
+            echo 'existing_tag and version cannot be supplied together' >&2
+            exit 1
+          fi
+          pnpm exec tsx scripts/release/desktop-reserved.ts --tag "$EXISTING_TAG"
       - name: Select validation source without publication
-        if: github.event_name == 'workflow_dispatch' && inputs.validation_only
+        if: github.event_name == 'workflow_dispatch' && inputs.validation_only && inputs.existing_tag == ''
         id: validation
         env:
           SOURCE_COMMIT: ${{ github.sha }}
@@ -113,7 +129,20 @@ jobs:
       - name: Build and verify installer
         env:
           RELEASE_TARGET: ${{ matrix.target }}
+          NODE_OPTIONS: ${{ matrix.target == 'mac-x64' && '--max-old-space-size=4096' || '' }}
         run: pnpm --dir apps/desktop exec tsx scripts/package-target.ts "$env:RELEASE_TARGET" --unsigned
+      - name: Check out current reservation qualification tests
+        if: github.event_name == 'workflow_dispatch' && inputs.existing_tag != ''
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          path: .release-qualification
+          sparse-checkout-cone-mode: false
+          sparse-checkout: scripts/release/desktop-stable.spec.ts
+      - name: Use the current reservation fixture after packaging
+        if: github.event_name == 'workflow_dispatch' && inputs.existing_tag != ''
+        run: Copy-Item .release-qualification/scripts/release/desktop-stable.spec.ts scripts/release/desktop-stable.spec.ts -Force
       - name: Verify update discovery, transfers and installation handoff
         run: >-
           pnpm exec vitest run
@@ -162,6 +191,7 @@ jobs:
           RELEASE_TAG: ${{ needs.version.outputs.tag }}
           RELEASE_COMMIT: ${{ needs.version.outputs.commit }}
           RELEASE_VERSION: ${{ needs.version.outputs.version }}
+          QUALIFICATION_COMMIT: ${{ github.sha }}
         run: |
           cd release-assets
           for asset in \
@@ -186,6 +216,7 @@ jobs:
             'These downloads do not use the upstream automatic-update service.' > ../release-notes.md
           printf '\nSource: `%s`\nBuild and update checks: %s/%s/actions/runs/%s\n' \
             "$RELEASE_COMMIT" "$GITHUB_SERVER_URL" "$GH_REPO" "$GITHUB_RUN_ID" >> ../release-notes.md
+          printf '\nQualification workflow and tests: `%s`\n' "$QUALIFICATION_COMMIT" >> ../release-notes.md
           if gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft > ../release-is-draft; then
             if test "$(cat ../release-is-draft)" != true; then
               echo 'This immutable release is already published.'
