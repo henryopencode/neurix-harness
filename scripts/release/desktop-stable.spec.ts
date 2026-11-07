@@ -21,7 +21,8 @@ it('reserves and reuses immutable tags when the selected version already matches
   mkdirSync(packageDirectory, { recursive: true })
   mkdirSync(pnpmDirectory)
   const stub = join(pnpmDirectory, 'pnpm.mjs')
-  writeFileSync(stub, 'process.exit(0)\n')
+  const invoked = join(root, 'pnpm-invoked')
+  writeFileSync(stub, `import { writeFileSync } from 'node:fs'; writeFileSync(${JSON.stringify(invoked)}, 'used');\n`)
   writeFileSync(join(repository, 'package.json'), `${JSON.stringify({ name: '@deepseek-ai/dsh-root', private: true, version: '1.1.0' }, null, 2)}\n`)
   writeFileSync(join(packageDirectory, 'package.json'), `${JSON.stringify({ name: '@deepseek-ai/dsh-fixture', version: '1.1.0' }, null, 2)}\n`)
   writeFileSync(join(repository, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\nimporters: {}\n')
@@ -32,6 +33,7 @@ it('reserves and reuses immutable tags when the selected version already matches
   git('config', 'user.email', 'release@example.invalid')
   git('config', 'commit.gpgsign', 'false')
   git('config', 'tag.gpgsign', 'false')
+  git('config', 'core.autocrlf', 'false')
   git('add', '.')
   git('commit', '-m', 'Prepare version 1.1.0')
   git('tag', 'v1.0.11')
@@ -40,13 +42,19 @@ it('reserves and reuses immutable tags when the selected version already matches
   const source = git('rev-parse', 'HEAD')
   const module = new URL('./desktop-stable.ts', import.meta.url).href
   const script = `import { reserveStableDesktopRelease } from ${JSON.stringify(module)}; const first = reserveStableDesktopRelease(${JSON.stringify(source)}); const retry = reserveStableDesktopRelease(${JSON.stringify(source)}); if (first.commit !== retry.commit) throw new Error('Retry changed the reservation');`
+  // Windows preserves inherited key casing but compares environment names without case.
+  const environment = { ...process.env }
+  for (const key of Object.keys(environment)) if (key.toLowerCase() === 'npm_execpath') Reflect.deleteProperty(environment, key)
+  environment.npm_execpath = stub
+  environment.GITHUB_ACTIONS = 'true'
   const child = spawnSync(process.execPath, ['--import', pathToFileURL(createRequire(import.meta.url).resolve('tsx/esm')).href, '--input-type=module', '-e', script], {
     cwd: repository, encoding: 'utf8', timeout: task.timeout,
-    env: { ...process.env, GITHUB_ACTIONS: 'true', npm_execpath: stub },
+    env: environment,
   })
   expect(child.signal, child.stderr).toBeNull()
   expect(child.error).toBeUndefined()
   expect(child.status, child.stderr).toBe(0)
+  expect(readFileSync(invoked, 'utf8')).toBe('used')
   const reservation = git('rev-parse', 'v1.1.0')
   expect(reservation).not.toBe(source)
   expect(git('rev-parse', 'v1.1.0^{tree}')).toBe(git('rev-parse', `${source}^{tree}`))
