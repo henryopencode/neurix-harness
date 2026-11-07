@@ -1,0 +1,8 @@
+- id: skills
+  name: cordis:document-memory-test-skills
+
+- id: filesystem
+  name: cordis:document-memory-test-filesystem
+  config:
+    includeDefaultRoots: false
+    watch: false

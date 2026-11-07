@@ -1,0 +1,24 @@
+{
+  "appearances": [
+    {
+      "theme": "light",
+      "baseColor": "rgb(101, 103, 107)",
+      "highlightColor": "rgb(15, 17, 21)",
+      "accessibleDecoration": true,
+      "clippedDecoration": true,
+      "animationRunning": true
+    },
+    {
+      "theme": "dark",
+      "baseColor": "rgb(173, 178, 184)",
+      "highlightColor": "rgb(249, 250, 251)",
+      "accessibleDecoration": true,
+      "clippedDecoration": true,
+      "animationRunning": true
+    }
+  ],
+  "reducedMotion": {
+    "highlightHidden": true,
+    "textVisible": true
+  }
+}
