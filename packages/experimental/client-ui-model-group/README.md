@@ -42,7 +42,7 @@ Direct messages show their accepted recipients as “Sent to”, independently o
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The Client plugin registers localized controls through Conversation slots, a keyed Chat post renderer, an input-trigger source, and a bundle configuration component. Member selection reads the same configured model catalog as the ordinary model selector, including provider, credential, and connection updates. Staged configuration belongs to an instance-owned controller. Disposal unregisters UI contributions. Existing Session, workspace, attachment, and file services retain their ownership.
+The Client plugin registers localized controls through Conversation slots, a keyed Chat post renderer, an input-trigger source, and a bundle configuration component. Controls and settings support every shipped UI language. Member selection reads the same configured model catalog as the ordinary model selector, including provider, credential, and connection updates. Staged configuration belongs to an instance-owned controller. Disposal unregisters UI contributions. Existing Session, workspace, attachment, and file services retain their ownership.
 
 </details>
 
