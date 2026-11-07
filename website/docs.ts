@@ -176,7 +176,7 @@ const homeAndGuide = pairedPages([
     label: { root: '插件索引', en: 'Plugin indexes' },
     sidebar: { root: 'zh-guide', en: 'en-guide' },
     section: { root: '集成', en: 'Integrations' },
-    order: 2,
+    order: 3,
   },
   {
     source: 'docs/user/guide/mcp-memory.md',
@@ -193,6 +193,14 @@ const homeAndGuide = pairedPages([
     sidebar: { root: 'zh-guide', en: 'en-guide' },
     section: { root: '集成', en: 'Integrations' },
     order: 3,
+  },
+  {
+    source: 'docs/user/guide/memory-documents.md',
+    route: 'guide/memory-documents.md',
+    label: { root: '图文长期记忆', en: 'Document memory' },
+    sidebar: { root: 'zh-guide', en: 'en-guide' },
+    section: { root: '集成', en: 'Integrations' },
+    order: 2,
   },
 ])
 

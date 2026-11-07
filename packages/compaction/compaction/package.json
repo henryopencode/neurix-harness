@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-compaction",
   "description": "Abstract compaction service seam (ctx.compaction) for the Neurix Harness",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "publishConfig": {
     "access": "public"
   },

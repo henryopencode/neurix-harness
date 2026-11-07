@@ -1,0 +1,12 @@
+version: 1
+scenario: memory-documents
+profile: headless
+composition: image
+recording: authored
+header:
+  class: memory-documents
+  pin: true
+  systemPromptSource: read-image
+  toolSchemasSource: text-turn
+workspace:
+  setup: memory-documents

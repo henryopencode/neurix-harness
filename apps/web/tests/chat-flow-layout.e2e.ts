@@ -41,9 +41,9 @@ it.each(['turn-tail-actions', 'goal-multi-turn-actions', 'present'] as const)(
           .toBe(`${String(fontSize)}px`)
         const group = page.locator('[data-process-activity]:visible').first()
         expect(await process.evaluate(element => element.getBoundingClientRect().top))
-          .toBe(await trigger.evaluate(element => element.getBoundingClientRect().bottom) + 16)
+          .toBe(await trigger.evaluate(element => element.getBoundingClientRect().bottom) + 24)
         expect(await group.evaluate(element => element.getBoundingClientRect().top))
-          .toBe(await process.evaluate(element => element.getBoundingClientRect().bottom) + 16)
+          .toBe(await process.evaluate(element => element.getBoundingClientRect().bottom) + 24)
       }
     } else {
       const answer = page.getByText(scenario === 'present' ? 'PRESENT_DONE' : 'DONE', { exact: true })
@@ -55,14 +55,14 @@ it.each(['turn-tail-actions', 'goal-multi-turn-actions', 'present'] as const)(
         return { top, bottom }
       })
       const processBottom = await process.evaluate(element => element.getBoundingClientRect().bottom)
-      // Hidden process rows separate the folded control from the first visible reply, so it keeps the 12px reply gap.
+      // Hidden process rows separate the folded control from the first visible reply, so it keeps the 24px reply gap.
       const lead = scenario === 'present' ? answer : page.getByText('Reading the workspace now.', { exact: true })
       const leadTop = await lead.evaluate((element) => {
         const seat = element.closest('[data-chat-flow-kind="assistant-step"]')
         if (seat === null) throw new Error('first visible reply has no Chat seat')
         return seat.getBoundingClientRect().top
       })
-      expect(leadTop).toBe(processBottom + 12)
+      expect(leadTop).toBe(processBottom + 24)
       if (scenario === 'present') {
         const geometry = await page.locator('[data-presented-files-row]').evaluate((grid) => {
           const root = grid.parentElement
