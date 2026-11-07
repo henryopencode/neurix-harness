@@ -129,7 +129,7 @@ jobs:
       - name: Build and verify installer
         env:
           RELEASE_TARGET: ${{ matrix.target }}
-          NODE_OPTIONS: ${{ matrix.target == 'mac-x64' && '--max-old-space-size=4096' || '' }}
+          NODE_OPTIONS: ${{ startsWith(matrix.target, 'mac-') && '--max-old-space-size=4096' || '' }}
         run: pnpm --dir apps/desktop exec tsx scripts/package-target.ts "$env:RELEASE_TARGET" --unsigned
       - name: Check out current reservation qualification tests
         if: github.event_name == 'workflow_dispatch' && inputs.existing_tag != ''
