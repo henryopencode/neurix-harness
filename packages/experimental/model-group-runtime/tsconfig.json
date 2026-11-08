@@ -1,0 +1,57 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src/*.ts"
+  ],
+  "references": [
+    {
+      "path": "../../../vendor/loader"
+    },
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../../vendor/schemastery"
+    },
+    {
+      "path": "../../core/agent"
+    },
+    {
+      "path": "../../interaction/commands"
+    },
+    {
+      "path": "../agent-team"
+    },
+    {
+      "path": "../../llm/llm"
+    },
+    {
+      "path": "../../core/session"
+    },
+    {
+      "path": "../../session/session-persistence"
+    },
+    {
+      "path": "../../session/session-projection"
+    },
+    {
+      "path": "../../subagent/subagent"
+    },
+    {
+      "path": "../../core/system-prompt"
+    },
+    {
+      "path": "../../core/tools"
+    },
+    {
+      "path": "../../settings/settings"
+    },
+    {
+      "path": "../../util/brand"
+    }
+  ]
+}

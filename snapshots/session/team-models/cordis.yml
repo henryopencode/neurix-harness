@@ -1,0 +1,24 @@
+- id: llm-deepseek
+  disabled: true
+- id: tool-subagent-control
+  disabled: true
+- id: tool-subagent
+  disabled: true
+- id: tool-subagent-fork
+  disabled: true
+- insert:
+    - id: agent-team
+      name: '@deepseek-ai/dsh-experimental-agent-team'
+      config:
+        leaderModel: lead-model
+        maxParallel: 2
+        models:
+          - { name: lead-model, label: Lead model, provider: deepseek-official, model: deepseek-v4-flash, strengths: Planning }
+          - { name: review, label: Review model, provider: deepseek-official, model: review-model, strengths: Architecture review }
+          - { name: research, label: Research model, provider: deepseek-official, model: research-model, strengths: Evidence research }
+    - id: tool-agent-team
+      name: '@deepseek-ai/dsh-experimental-tool-agent-team'
+- insert:
+    - id: team-models-fixture
+      name: '../../../packages/experimental/agent-team-profile/tests/fixtures/models.mjs'
+      config: { provider: deepseek-official }

@@ -67,6 +67,12 @@ interface ChromeRow {
 
 const CHROME_ROWS: readonly ChromeRow[] = [
   {
+    file: 'client/ui-knowledge-base/src/client/Knowledge.module.css',
+    selector: '.pageHead',
+    markup: 'client/ui-knowledge-base/src/client/Page.tsx',
+    inset: ['padding-top', '28px'],
+  },
+  {
     file: 'client/ui-schedule/src/client/TaskManagerPage.module.css',
     selector: '.pageHeading',
     markup: 'client/ui-schedule/src/client/TaskManagerPage.tsx',

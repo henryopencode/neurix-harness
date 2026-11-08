@@ -1,3 +1,7 @@
+# Keep this finite compaction budget independent of reference retrieval.
+- id: knowledge-base
+  disabled: true
+
 # The second request selects a smaller model before its header is committed.
 
 - id: agent-instructions

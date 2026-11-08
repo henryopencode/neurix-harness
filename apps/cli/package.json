@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh",
   "description": "dsh CLI: profile launch, plugin management, and configuration inspection",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "publishConfig": {
     "access": "public"
   },
@@ -112,7 +112,8 @@
     "@deepseek-ai/dsh-image-generation-bundle": "workspace:*",
     "@deepseek-ai/dsh-experimental-computer-control": "workspace:*",
     "@deepseek-ai/dsh-experimental-browser-control": "workspace:*",
-    "@deepseek-ai/dsh-experimental-mobile-access": "workspace:*"
+    "@deepseek-ai/dsh-experimental-mobile-access": "workspace:*",
+    "@deepseek-ai/dsh-experimental-model-group": "workspace:*"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-skill-badge": "workspace:*",

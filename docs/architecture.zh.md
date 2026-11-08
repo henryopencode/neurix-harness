@@ -131,7 +131,7 @@ Session 消费方只了解当前逻辑格式。仅 header 的 `stat` 与 `list` 
 
 **模型可见即已记录。** 每个模型请求都必须能从日志重建。新增模型可见输入需要会话事件。修改现有消息内容的插件注册[纯消息投影](subsystems/session.zh.md#plugin-owned-message-projections)，独立读取器显式传入相同的处理器。 工具变更不依赖能力；[Session 工具历史](../packages/core/session/README.zh.md)提供提供方声明。
 
-**投影 seam。** `dsh-session-projection` 提供 `ctx.sessionProjections`：已注册单元增量折叠已提交事件，载体通过 `snapshot()` 批量取得裁剪后的客户端视图。领域服务在激活时等待注册完成，在内部保留句柄，并向其他插件提供业务方法。释放注册会移除全局参与关系；已有句柄仍可继续折叠 Session 事件。`AgentRegistry` 持有轮次和步骤状态，并提供 `turnBoundaryOf(session)`（[注册生命周期](../packages/session/session-projection/README.zh.md)）。 `AgentLoop` 持有 `modelSelection`，并与 inbox 一起构建每个 Agent 的 `model` 实例。
+**投影 seam。** `dsh-session-projection` 提供 `ctx.sessionProjections`：已注册单元增量折叠已提交事件；载体通过 `snapshot()` 裁剪客户端视图。服务在激活时等待注册完成，保留内部句柄，并提供业务读取方法。取消注册会移除全局参与关系；已有句柄仍继续折叠 Session 事件。`AgentRegistry` 通过 `turnBoundaryOf(session)` 持有轮次和步骤状态（[注册生命周期](../packages/session/session-projection/README.zh.md)）。`AgentLoop` 持有 `modelSelection`，并构建每个 Agent 的 `model` 和 inbox。模型提供方在记录模型选择前执行插件注册的选择限制。
 
 [工作目录](subsystems/working-directory.zh.md) 提供用户上下文和执行路径，不改变原始项目标识、沙箱写入根目录或已有进程目录。
 

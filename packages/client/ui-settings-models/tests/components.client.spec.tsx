@@ -542,6 +542,7 @@ describe('ModelsSection', () => {
     expect(controller.store.getSnapshot().rows.find(row => row.entry.provider === 'deepseek-official'))
       .toMatchObject({ configured: false, removable: true })
     fireEvent.click(screen.getByRole('button', { name: en.add }))
+    fireEvent.click(screen.getByRole('combobox', { name: en.provider }))
     expect(screen.getByRole('option', { name: 'DeepSeek' })).toBeTruthy()
   })
 
@@ -651,6 +652,7 @@ describe('ModelsSection', () => {
     // is the catalog form alone: no mode switch, no custom panel.
     expect(screen.queryByRole('tablist')).toBeNull()
     expect(screen.queryByRole('textbox', { name: en.customRoute })).toBeNull()
+    fireEvent.click(screen.getByRole('combobox', { name: en.provider }))
     expect(screen.queryByRole('option', { name: 'anthropic' })).toBeNull()
     expect(screen.getByRole('option', { name: 'plain' })).toBeTruthy()
   })
@@ -1488,8 +1490,8 @@ describe('ModelsSection', () => {
   it('adds a dormant provider with a derived reference and stores its key', async () => {
     const { mutate, set } = await mountSection()
     fireEvent.click(screen.getByText(en.add))
-    const pick = await screen.findByLabelText<HTMLSelectElement>(en.provider)
-    expect([...pick.options].map(option => option.value)).toEqual(['anthropic', 'broken', 'plain'])
+    const pick = await screen.findByLabelText<HTMLButtonElement>(en.provider)
+    expect(optionValues(pick)).toEqual(['anthropic', 'broken', 'plain'])
     expect(pick.value).toBe('anthropic')
     // A dormant route shows its catalog endpoint and the first variable its
     // provider reads; a typed key still stores under the derived reference.
@@ -1568,10 +1570,10 @@ describe('ModelsSection', () => {
   it('switches the add card target and degrades unknown or broken targets loudly', async () => {
     await mountSection()
     fireEvent.click(screen.getByText(en.add))
-    const pick = await screen.findByLabelText<HTMLSelectElement>(en.provider)
-    fireEvent.change(pick, { target: { value: 'broken' } })
+    const pick = await screen.findByLabelText<HTMLButtonElement>(en.provider)
+    chooseOption(pick, 'broken')
     await screen.findByText(/unresolvable settings path/)
-    fireEvent.change(pick, { target: { value: 'plain' } })
+    chooseOption(pick, 'plain')
     await waitFor(() => {
       expect(screen.getAllByText(content => content.includes(en.advancedHint)).length).toBeGreaterThan(0)
     })
@@ -1890,7 +1892,7 @@ describe('ModelsSection', () => {
     const catalog = screen.getByRole<HTMLButtonElement>('tab', { name: en.addCatalog })
     expect(catalog.disabled).toBe(false)
     fireEvent.click(catalog)
-    expect(screen.getByRole<HTMLSelectElement>('combobox', { name: en.provider }).value).toBe('anthropic')
+    expect(screen.getByRole<HTMLButtonElement>('combobox', { name: en.provider }).value).toBe('anthropic')
     expect(within(screen.getByRole('tabpanel', { name: en.addCatalog })).getByLabelText(en.keyInput)).toBeTruthy()
   })
 
@@ -1918,7 +1920,7 @@ describe('ModelsSection', () => {
   it('forgets the catalog target when the custom form closes, so a later refresh opens no row editor', async () => {
     const { face, controller, mirror } = await mountSection()
     fireEvent.click(screen.getByRole('button', { name: en.add }))
-    expect(screen.getByRole<HTMLSelectElement>('combobox', { name: en.provider }).value).toBe('anthropic')
+    expect(screen.getByRole<HTMLButtonElement>('combobox', { name: en.provider }).value).toBe('anthropic')
     fireEvent.click(screen.getByRole('tab', { name: en.addCustom }))
     fireEvent.click(within(screen.getByRole('tabpanel', { name: en.addCustom })).getByText(en.cancel))
     expect(screen.queryByRole('tablist')).toBeNull()
@@ -2442,3 +2444,17 @@ it.each([es, fr, de, ru, pt])('keeps capacity examples in translated validation 
     }
   }
 })
+
+function chooseOption(control: HTMLElement, value: string): void {
+  fireEvent.click(control)
+  const option = screen.getAllByRole<HTMLButtonElement>('option').find(item => item.value === value)
+  if (option === undefined) throw new Error(`Missing option: ${value}`)
+  fireEvent.click(option)
+}
+
+function optionValues(control: HTMLElement): string[] {
+  fireEvent.click(control)
+  const values = screen.getAllByRole<HTMLButtonElement>('option').map(item => item.value)
+  fireEvent.keyDown(document, { key: 'Escape' })
+  return values
+}

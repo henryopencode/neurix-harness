@@ -1,6 +1,6 @@
 /** Account-free connection link and QR panel in the application menu. @module */
 import { useEffect, useRef, useState } from 'react'
-import { Button, IconLoadingOutlineRegular, useClipboardCopy } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconLoadingOutlineRegular, Select, useClipboardCopy } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { MobileAccessState } from '../types.ts'
 import css from './MobileAccessRow.module.css'
@@ -52,10 +52,9 @@ export function MobileAccessRow({ view, open, close, regenerate, disconnectPhone
         : <>
           <p className={css.hint}>{t(internet ? 'internetHint' : 'hint')}</p>
           {state.connection === undefined ? <div className={css.controls}>
-            {!internet && selected !== '' && <select className={css.network} aria-label={t('network')} value={selected}
-              disabled={busy} onChange={(event) => { setHost(event.target.value) }}>
-              {state.networks.map(network => <option key={network.host} value={network.host}>{network.name} · {network.host}</option>)}
-            </select>}
+            {!internet && selected !== '' && <Select className={css.network} aria-label={t('network')} value={selected}
+              disabled={busy} onValueChange={setHost}
+              options={state.networks.map(network => ({ value: network.host, label: `${network.name} · ${network.host}` }))} />}
             {!internet && selected === '' && <p className={css.hint}>{t('empty')}</p>}
             {selected !== '' && <Button variant="primary" disabled={busy}
               onClick={() => { void update(() => open(selected), 'opened') }}>{t('start')}</Button>}

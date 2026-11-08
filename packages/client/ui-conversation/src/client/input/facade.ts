@@ -452,7 +452,8 @@ export class SessionInputShell implements SessionInput {
       this.notify('error', this.deps.commandAttachments.unsupportedNotice(before.claim?.token ?? before.draft))
       return
     }
-    this.dispatchRun({ type: 'enter', mode, draft: this.projection.clipboardText, submission })
+    this.dispatchRun({ type: 'enter', mode, draft: this.projection.clipboardText, submission,
+      adjudicate: this.deps.inputTriggers?.()?.claimsMessage?.(this.projection.detectText) === true })
     const phase = this.snapshot.phase
     if (phase === 'adjudicating' || phase === 'submitting') {
       this.deps.popup?.()?.dismiss()
@@ -874,7 +875,9 @@ export class SessionInputShell implements SessionInput {
       this.dispatchRun(({ type: 'adjudicated', attempt, outcome: undefined }))
       return
     }
-    inputTriggers.adjudicate(draft.trim(), attempt.signal, { attachments: this.attachmentIds.length }).then(
+    inputTriggers.adjudicate(draft.trim(), attempt.signal, {
+      attachments: this.attachmentIds.length, routingText: this.projection.detectText,
+    }).then(
       (outcome: PickOutcome) => {
         if (this.dead(attempt)) return
         this.dispatchRun(({ type: 'adjudicated', attempt, outcome }))

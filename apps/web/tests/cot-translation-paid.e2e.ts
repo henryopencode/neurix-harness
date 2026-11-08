@@ -15,7 +15,7 @@ import {
   acknowledgeReloadConnectionLoss, assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
   launchWebScaffold, readPersistedEvents, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import {
+import { selectField,
   connectFreshWorkspaceZh, expandOwningTurnProcess, PLUGIN_TOGGLE_SETTLE_MS, saveFailureShot, ZH_BROWSER_LOCALE,
 } from './support.ts'
 
@@ -183,11 +183,12 @@ it.skipIf(MODE === 'record')('reuses saved native Account Flash translations acr
   await expect.poll(() => toggle.getAttribute('aria-checked'), { timeout: PLUGIN_TOGGLE_SETTLE_MS }).toBe('true')
   await card.getByRole('button').first().click()
   const provider = panel.getByLabel('翻译服务', { exact: true })
-  await provider.waitFor(); expect(await provider.inputValue()).toBe('bing')
-  await provider.getByRole('option', { name: 'DeepSeek Flash · 账号（付费）', exact: true }).waitFor({ state: 'attached' })
-  expect(await provider.getByRole('option', { name: /官方 API（付费）/ }).count()).toBe(0)
+  await provider.waitFor(); expect(await provider.getAttribute('value')).toBe('bing')
+  await provider.click()
+  await settings.getByRole('option', { name: 'DeepSeek Flash · 账号（付费）', exact: true }).waitFor({ state: 'attached' })
+  expect(await settings.getByRole('option', { name: /官方 API（付费）/ }).count()).toBe(0)
   expect(calls).toEqual([])
-  await provider.selectOption('deepseek-account')
+  await selectField(provider, 'deepseek-account')
   await panel.getByText(COST, { exact: true }).waitFor()
   expect(calls).toEqual([])
   const save = panel.getByRole('button', { name: '保存', exact: true })

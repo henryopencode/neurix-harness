@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { chromium, type Browser } from 'playwright'
 import { expect, it, onTestFinished } from 'vitest'
 import { captureStableAria, compareOrRefreshGolden, launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold } from './scaffold.ts'
-import { newEnglishPage } from './support.ts'
+import { selectField, newEnglishPage } from './support.ts'
 
 const bundle = fileURLToPath(new URL('../../../packages/experimental/voice-input-bundle', import.meta.url))
 const expected = fileURLToPath(new URL('./expected/voice-download.expected.md', import.meta.url))
@@ -108,7 +108,7 @@ it.each([{ winner: 0, manual: false }, { winner: 1, manual: false }, { winner: 0
     await page.locator('[data-plugin-package="@deepseek-ai/dsh-experimental-voice-input-bundle"]').getByRole('button').click()
     const picker = page.getByLabel('Model download source', { exact: true })
     await picker.waitFor()
-    if (manual) await picker.selectOption(origins[winner]!)
+    if (manual) await selectField(picker, origins[winner]!)
     await page.getByRole('button', { name: 'Download and prepare', exact: true }).click()
     const alert = page.getByRole('alert').filter({ hasText: 'Download source' })
     await alert.waitFor()
@@ -116,7 +116,7 @@ it.each([{ winner: 0, manual: false }, { winner: 1, manual: false }, { winner: 0
     expect(requestedPaths).toHaveLength(manual ? 1 : 4)
     expect(requestedPaths.every(path => path === '/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/2365baeacb507f821a0c8120fcee3d484dba7a07/model.int8.onnx')).toBe(true)
     const failedOrigin = origins[manual ? winner : 1 - winner]!
-    expect(await picker.inputValue()).toBe(manual ? origins[winner] : '')
+    expect(await picker.getAttribute('value')).toBe(manual ? origins[winner] : '')
     expect(await alert.textContent()).toContain(manual ? 'HTTP 503' : 'HTTP 502')
     expect(await alert.textContent()).toContain(`Download source: ${failedOrigin}`)
     await compareOrRefreshGolden(manual ? expected : fileURLToPath(new URL('./expected/voice-download-fallback.expected.md', import.meta.url)),

@@ -34,8 +34,8 @@ function renderGroup(initial: DeepSeekModelDraft, options: { disabled?: boolean;
 }
 
 const toggle = () => screen.getByRole('switch', { name: `${en.modelReasoning} 1` })
-const levels = () => screen.queryAllByRole<HTMLSelectElement>('combobox').map(select => select.value)
-const select = (row: number) => screen.getByRole<HTMLSelectElement>('combobox', { name: `${en.modelReasoningLevel} ${String(row)}` })
+const levels = () => screen.queryAllByRole<HTMLButtonElement>('combobox').map(select => select.value)
+const select = (row: number) => screen.getByRole<HTMLButtonElement>('combobox', { name: `${en.modelReasoningLevel} ${String(row)}` })
 const value = (level: string) => screen.getByRole<HTMLInputElement>('textbox', { name: `${level} ${en.modelReasoningValue}` })
 const remove = (level: string) => screen.getByRole<HTMLButtonElement>('button', { name: `${en.modelReasoningRemove} ${level}` })
 const add = () => screen.getByRole<HTMLButtonElement>('button', { name: en.modelReasoningAdd })
@@ -63,7 +63,7 @@ describe('ModelReasoningEfforts', () => {
     expect(value('max').value).toBe('ultra')
     expect(value('high').value).toBe('high')
     // Each select offers its own level and the levels no other row uses.
-    expect([...select(3).options].map(option => option.value)).toEqual(['minimal', 'low', 'medium', 'high', 'xhigh'])
+    expect(optionValues(select(3))).toEqual(['minimal', 'low', 'medium', 'high', 'xhigh'])
     expect(screen.queryByText(en.modelReasoningValueRequired)).toBeNull()
   })
 
@@ -103,14 +103,14 @@ describe('ModelReasoningEfforts', () => {
 
   it('changes a level in place, carrying a custom value only between thinking levels', () => {
     const { efforts } = renderGroup({ id: 'chat', reasoningEfforts: { low: 'low', high: 'deep', max: 'max' } })
-    fireEvent.change(select(1), { target: { value: 'xhigh' } })
+    chooseOption(select(1), 'xhigh')
     expect(levels()).toEqual(['xhigh', 'high', 'max'])
     expect(entriesOf(efforts())).toEqual([['xhigh', 'xhigh'], ['high', 'deep'], ['max', 'max']])
-    fireEvent.change(select(2), { target: { value: 'medium' } })
+    chooseOption(select(2), 'medium')
     expect(entriesOf(efforts())).toEqual([['xhigh', 'xhigh'], ['medium', 'deep'], ['max', 'max']])
-    fireEvent.change(select(2), { target: { value: 'off' } })
+    chooseOption(select(2), 'off')
     expect(entriesOf(efforts())).toEqual([['xhigh', 'xhigh'], ['off', null], ['max', 'max']])
-    fireEvent.change(select(2), { target: { value: 'low' } })
+    chooseOption(select(2), 'low')
     expect(entriesOf(efforts())).toEqual([['xhigh', 'xhigh'], ['low', 'low'], ['max', 'max']])
   })
 
@@ -177,7 +177,7 @@ describe('ModelReasoningEfforts', () => {
     const { efforts } = renderGroup({ id: 'gateway' }, { levels: ['off', 'low', 'high', 'ultra'] })
     fireEvent.click(toggle())
     expect(entriesOf(efforts())).toEqual([['off', null], ['low', 'low'], ['high', 'high']])
-    expect([...select(3).options].map(option => option.value)).toEqual(['high', 'ultra'])
+    expect(optionValues(select(3))).toEqual(['high', 'ultra'])
     fireEvent.click(add())
     expect(levels()).toEqual(['off', 'low', 'high', 'ultra'])
     expect(add().disabled).toBe(true)
@@ -186,7 +186,7 @@ describe('ModelReasoningEfforts', () => {
   it('keeps a stored key the offered levels do not name', () => {
     const { efforts } = renderGroup({ id: 'gateway', reasoningEfforts: { turbo: 'turbo-x', high: 'high' } })
     expect(levels()).toEqual(['turbo', 'high'])
-    expect([...select(1).options].map(option => option.value)).toEqual(['turbo', 'off', 'minimal', 'low', 'medium', 'xhigh', 'max'])
+    expect(optionValues(select(1))).toEqual(['turbo', 'off', 'minimal', 'low', 'medium', 'xhigh', 'max'])
     fireEvent.change(value('high'), { target: { value: 'deep' } })
     expect(entriesOf(efforts())).toEqual([['turbo', 'turbo-x'], ['high', 'deep']])
   })
@@ -300,3 +300,17 @@ describe('reasoning levels in the model list', () => {
     expect(screen.queryByRole('switch', { name: `${en.modelReasoning} 1` })).toBeNull()
   })
 })
+
+function chooseOption(control: HTMLElement, value: string): void {
+  fireEvent.click(control)
+  const option = screen.getAllByRole<HTMLButtonElement>('option').find(item => item.value === value)
+  if (option === undefined) throw new Error(`Missing option: ${value}`)
+  fireEvent.click(option)
+}
+
+function optionValues(control: HTMLElement): string[] {
+  fireEvent.click(control)
+  const values = screen.getAllByRole<HTMLButtonElement>('option').map(item => item.value)
+  fireEvent.keyDown(document, { key: 'Escape' })
+  return values
+}

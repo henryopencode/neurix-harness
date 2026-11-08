@@ -187,6 +187,14 @@ const homeAndGuide = pairedPages([
     order: 1,
   },
   {
+    source: 'docs/user/guide/knowledge-base.md',
+    route: 'guide/knowledge-base.md',
+    label: { root: '文档知识库', en: 'Document knowledge' },
+    sidebar: { root: 'zh-guide', en: 'en-guide' },
+    section: { root: '集成', en: 'Integrations' },
+    order: 4,
+  },
+  {
     source: 'docs/user/guide/memory-documents.md',
     route: 'guide/memory-documents.md',
     label: { root: '图文长期记忆', en: 'Document memory' },
@@ -336,6 +344,7 @@ const subsystemGroups = [
     ['session-telemetry.md', '遥测', 'SessionTelemetryBackend'],
   ]],
   ['模型与上下文', 'Model and context', [
+    ['knowledge-base.md', '文档知识库', 'Document knowledge'],
     ['llm-streaming.md', 'LLM 流式响应', 'LLM streaming'],
     ['token-meter.md', 'Token 计量', 'Token metering'],
     ['system-prompt.md', '系统提示词', 'System prompts'],

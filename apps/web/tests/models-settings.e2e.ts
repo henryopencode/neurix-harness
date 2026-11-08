@@ -26,7 +26,7 @@ import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
   launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { openSettings, ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
+import { selectField, openSettings, ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./expected/models-settings', import.meta.url))
 const EMPTY_EXPECTED = join(SNAPSHOT_DIR, 'empty.expected.md')
@@ -120,17 +120,18 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     expect(await modes.getByRole('tab', { name: '第三方模型提供商' }).getAttribute('aria-selected')).toBe('true')
     const pick = dialog.getByLabel('提供商', { exact: true })
     await pick.waitFor({ timeout: 10_000 })
-    await expect.poll(async () => pick.locator('option').count(), { timeout: 10_000 }).toBeGreaterThan(30)
-    const options = await pick.locator('option').allTextContents()
+    await pick.click()
+    await expect.poll(async () => page.getByRole('listbox').getByRole('option').count(), { timeout: 10_000 }).toBeGreaterThan(30)
+    const options = await page.getByRole('listbox').getByRole('option').allTextContents()
     expect(options).toContain('anthropic')
     expect(options).toContain('minimax-cn')
-    await pick.selectOption('openai-codex')
+    await selectField(pick, 'openai-codex')
     await expect.poll(async () => dialog.getByRole('textbox', { name: 'API 密钥', exact: true }).count(), { timeout: 10_000 }).toBe(0)
     expect(await dialog.getByRole('button', { name: '认证说明', exact: true }).count()).toBe(0)
     expect(await dialog.textContent()).not.toMatch(/oauth/i)
     const nativeSnapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(NATIVE_KEYLESS_EXPECTED, nativeSnapshot, MODE)
-    await pick.selectOption('minimax-cn')
+    await selectField(pick, 'minimax-cn')
     await dialog.getByRole('textbox', { name: 'API 密钥', exact: true }).waitFor({ timeout: 10_000 })
     const snapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(EMPTY_EXPECTED, snapshot, MODE)
@@ -351,7 +352,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     // than sending the user to cordis.patch.yml for what only this route names.
     const protocol = dialog.getByLabel('API 协议')
     await protocol.waitFor({ timeout: 10_000 })
-    expect(await protocol.inputValue()).toBe('openai-completions')
+    expect(await protocol.getAttribute('value')).toBe('openai-completions')
     const name = dialog.getByLabel('显示名称', { exact: true })
     expect(await name.inputValue()).toBe('Acme Gateway')
     await dialog.getByRole('button', { name: '模型选项 1' }).click()
@@ -365,7 +366,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     const snapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(DECLARED_EDIT_EXPECTED, snapshot, MODE)
 
-    await protocol.selectOption('anthropic-messages')
+    await selectField(protocol, 'anthropic-messages')
     await name.fill('Acme 网关')
     await dialog.getByRole('group', { name: '输入类型 1' }).getByRole('checkbox', { name: '图片' }).uncheck()
     // A gateway with its own spelling for the top level.

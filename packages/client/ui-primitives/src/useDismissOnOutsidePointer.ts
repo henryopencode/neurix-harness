@@ -4,6 +4,7 @@
  */
 import { useEffect } from 'react'
 import type { RefObject } from 'react'
+import { ownsPortaledListbox } from './nested-listbox.ts'
 
 /**
  * Close an open popover when a pointerdown lands outside its root element.
@@ -24,7 +25,8 @@ export function useDismissOnOutsidePointer(
     const closeOutside = (event: PointerEvent): void => {
       if (event.target instanceof Node
         && root.current?.contains(event.target) !== true
-        && portal?.current?.contains(event.target) !== true) {
+        && portal?.current?.contains(event.target) !== true
+        && !ownsPortaledListbox(event.target, [root.current, portal?.current])) {
         setOpen(false)
       }
     }

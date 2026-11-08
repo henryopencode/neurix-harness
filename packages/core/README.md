@@ -24,6 +24,7 @@ Use the core packages to build or extend an agent that records durable session h
 
 | Package | Role | ctx key |
 |---|---|---|
+| [`knowledge-base/`](knowledge-base/README.md) | Workspace reference indexing, source retrieval, and management API | `ctx.knowledgeBase` |
 | [`scope/`](scope/README.md) | Scoped registration and event routing that isolate one agent's contributions | library — no ctx key |
 | [`session/`](session/README.md) | The append-only session event log every agent's history derives from | `ctx.sessions` |
 | [`system-prompt/`](system-prompt/README.md) | System-prompt assembly from ordered sections, tool schemas, and variables | `ctx.systemPrompt` |
@@ -40,6 +41,7 @@ Use the core packages to build or extend an agent that records durable session h
 <a id="related-documentation"></a>
 ## Related documentation
 
+- [Document knowledge](../../docs/subsystems/knowledge-base.md) — workspace reference indexing and retrieval.
 - [Core subsystem](../../docs/subsystems/core.md) — the package-by-package loop map and the `Agent` handle contracts.
 - [Session subsystem](../../docs/subsystems/session.md) — the session event vocabulary and derived history.
 - [System-prompt subsystem](../../docs/subsystems/system-prompt.md) — prompt section, dynamic context, and tool-schema types.

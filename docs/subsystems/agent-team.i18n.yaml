@@ -18,5 +18,11 @@
   en: 6af99eff8036597a
   zh: f172f994e01f12c1
 /agent-teams/replay:
-  en: fe32f71c6d799ebc
-  zh: aa2b6ccddba8cfd5
+  en: a52f1c057472c9ba
+  zh: db86144374e92068
+/agent-teams/model-assignment:
+  en: 71685b355c96ca27
+  zh: 2b698c4ff2050e40
+/agent-teams/model-assignment/historical-model-group-records:
+  en: 1c3376e57d53fb6e
+  zh: f5968479935814f1

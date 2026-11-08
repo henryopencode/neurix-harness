@@ -28,6 +28,10 @@
     // not declaration path aliases, keep each package/vendor source compiled
     // under its own tsconfig boundary.
     "paths": {
+      "@deepseek-ai/dsh-client-ui-knowledge-base": ["./packages/client/ui-knowledge-base/src/index.ts"],
+      "@deepseek-ai/dsh-client-ui-knowledge-base/client": ["./packages/client/ui-knowledge-base/src/client/index.ts"],
+      "@deepseek-ai/dsh-knowledge-base": ["./packages/core/knowledge-base/src/index.ts"],
+      "@deepseek-ai/dsh-knowledge-base/types": ["./packages/core/knowledge-base/src/types.ts"],
       "@deepseek-ai/dsh-client-ui-entry-customization": ["./packages/client/ui-entry-customization/src/index.ts"],
       "@deepseek-ai/dsh-client-ui-entry-customization/client": ["./packages/client/ui-entry-customization/src/client/index.ts"],
       "@deepseek-ai/dsh-client-ui-entry-customization/src/*": ["./packages/client/ui-entry-customization/src/*"],
@@ -382,6 +386,11 @@
       "@deepseek-ai/dsh-sdk-protocol": ["./packages/sdk/protocol/src"],
       "@deepseek-ai/dsh-sdk-jsonrpc-server": ["./packages/sdk/server/src"],
       "@deepseek-ai/dsh-experimental-agent-team": ["./packages/experimental/agent-team/src"],
+      "@deepseek-ai/dsh-experimental-model-group-runtime": ["./packages/experimental/model-group-runtime/src/index.ts"],
+      "@deepseek-ai/dsh-experimental-model-group-runtime/types": ["./packages/experimental/model-group-runtime/src/types.ts"],
+      "@deepseek-ai/dsh-experimental-client-ui-model-group": ["./packages/experimental/client-ui-model-group/src/index.ts"],
+      "@deepseek-ai/dsh-experimental-client-ui-model-group/client": ["./packages/experimental/client-ui-model-group/src/client/index.ts"],
+      "@deepseek-ai/dsh-experimental-model-group": ["./packages/experimental/model-group/src/index.ts"],
       "@deepseek-ai/dsh-experimental-auto-review": ["./packages/experimental/auto-review/src"],
       "@deepseek-ai/dsh-experimental-claude-code-mods": ["./packages/experimental/claude-code-mods/src"],
       "@deepseek-ai/dsh-experimental-agent-team-profile": ["./packages/experimental/agent-team-profile/src"],

@@ -108,6 +108,29 @@ const GROUP_ORDER = [
 
 const SERVICE_ROLES: ServiceRole[] = [
   {
+    key: 'modelGroups',
+    pkg: 'experimental-model-group-runtime',
+    title: 'Optional model-group coordination',
+    mode: 'core',
+    note: 'Coordinates configured model routes through shared Team tasks and conversation-local human controls.',
+  },
+  {
+    key: 'knowledgeBase',
+    pkg: 'knowledge-base',
+    title: 'Workspace document knowledge',
+    mode: 'core',
+    consumers: ['knowledge-base', 'client-ui-knowledge-base'],
+    note: 'The service, LanceDB provider, and native tool consumer share one optional package; document snapshots retain source revisions independently of personal memory.',
+  },
+  {
+    key: 'knowledgeController',
+    pkg: 'knowledge-base',
+    title: 'Workspace knowledge management Remote',
+    mode: 'core',
+    consumers: ['client-ui-knowledge-base'],
+    note: 'Workspace resource authorization covers uploaded documents, exact source reads, and keyword associations.',
+  },
+  {
     key: 'browserPreview',
     pkg: 'experimental-browser-control',
     title: 'Hidden browser preview Remote',

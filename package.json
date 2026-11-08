@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-root",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -304,6 +304,8 @@
     "@deepseek-ai/dsh-experimental-cua-macos": "workspace:*",
     "@deepseek-ai/dsh-action-cards": "workspace:*",
     "@deepseek-ai/dsh-experimental-computer-use-unified": "workspace:*",
-    "@deepseek-ai/dsh-experimental-computer-control": "workspace:*"
+    "@deepseek-ai/dsh-experimental-computer-control": "workspace:*",
+    "@deepseek-ai/dsh-knowledge-base": "workspace:*",
+    "@deepseek-ai/dsh-client-ui-knowledge-base": "workspace:*"
   }
 }

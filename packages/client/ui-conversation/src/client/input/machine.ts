@@ -72,7 +72,7 @@ export class SubmitMachine {
     switch (ev.type) {
       case 'draft-changed': return this.followCommand(ev.command)
       case 'claim': return this.followCommand(ev.claim)
-      case 'enter': return this.onEnter(ev.mode, ev.draft, ev.submission)
+      case 'enter': return this.onEnter(ev.mode, ev.draft, ev.submission, ev.adjudicate)
       case 'adjudicated': return this.onAdjudicated(ev.attempt, ev.outcome)
       case 'adjudication-failed': return this.onAdjudicationFailed(ev.attempt, ev.message)
       case 'submit-settled': return this.onSubmitSettled(ev)
@@ -134,16 +134,16 @@ export class SubmitMachine {
     ]
   }
 
-  private onEnter(mode: InputSubmitMode, draft: string, submission?: MessageSubmission): readonly InputEffect[] {
+  private onEnter(mode: InputSubmitMode, draft: string, submission?: MessageSubmission, adjudicate = false): readonly InputEffect[] {
     if (this.phase === 'adjudicating' || this.phase === 'submitting') return []
     if (this.phase === 'claimed' && this.claim !== undefined) {
       const attempt = this.beginAttempt(mode, draft, submission)
       this.phase = 'submitting'
-      return [{ type: 'begin-submit', attempt, claim: this.claim, args: argsAfter(draft, this.claim.token) }]
+      return [{ type: 'begin-submit', attempt, claim: this.claim, args: this.claim.wholeMessage ? draft : argsAfter(draft, this.claim.token) }]
     }
     const trimmed = draft.trim()
     if (trimmed === '') return []
-    if (trimmed.startsWith('/')) {
+    if (trimmed.startsWith('/') || adjudicate) {
       const attempt = this.beginAttempt(mode, draft, submission)
       this.phase = 'adjudicating'
       return [{ type: 'adjudicate', attempt, draft }]
@@ -164,7 +164,7 @@ export class SubmitMachine {
         type: 'begin-submit',
         attempt,
         claim: outcome.claim,
-        args: argsAfter(attempt.draftSnapshot, outcome.claim.token),
+        args: outcome.claim.wholeMessage ? attempt.draftSnapshot : argsAfter(attempt.draftSnapshot, outcome.claim.token),
       }]
     }
     this.inflight = undefined

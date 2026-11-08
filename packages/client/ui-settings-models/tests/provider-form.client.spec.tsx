@@ -1030,7 +1030,7 @@ describe('hand-declared providers', () => {
     // control could only be set to a value some of them reject — which would
     // take the whole provider out of the picker. The composer's model picker
     // owns the choice, and a switch there records provider+model+effort together.
-    const fields = () => [...document.querySelectorAll('input,select')]
+    const fields = () => [...document.querySelectorAll('input,[role=combobox]')]
       .map(el => el.getAttribute('aria-label')).filter(Boolean)
 
     mountCard()
@@ -1155,9 +1155,9 @@ describe('hand-declared providers', () => {
     })
     openEditor('acme-gateway')
 
-    const protocol = screen.getByLabelText<HTMLSelectElement>(en.customApi)
+    const protocol = screen.getByLabelText<HTMLButtonElement>(en.customApi)
     expect(protocol.value).toBe('openai-completions')
-    fireEvent.change(protocol, { target: { value: 'anthropic-messages' } })
+    chooseOption(protocol, 'anthropic-messages')
     fireEvent.click(screen.getByText(en.apply))
 
     await waitFor(() => { expect(mutate).toHaveBeenCalledTimes(1) })
@@ -1180,7 +1180,7 @@ describe('hand-declared providers', () => {
     })
     openEditor('acme-gateway')
 
-    expect(screen.getByLabelText<HTMLSelectElement>(en.customApi).value).toBe('')
+    expect(screen.getByLabelText<HTMLButtonElement>(en.customApi).value).toBe('')
   })
 
   it.each([
@@ -1543,12 +1543,12 @@ describe('hand-declared providers', () => {
     const protocol = screen.getByLabelText(en.customApi)
 
     expect(baseUrl.placeholder).toBe('https://gateway.example/v1')
-    fireEvent.change(protocol, { target: { value: 'openai-responses' } })
+    chooseOption(protocol, 'openai-responses')
     expect(baseUrl.placeholder).toBe('https://gateway.example/v1')
 
     fireEvent.change(screen.getByLabelText(en.customRoute), { target: { value: 'acme' } })
     fireEvent.change(baseUrl, { target: { value: 'https://acme.test/anthropic' } })
-    fireEvent.change(protocol, { target: { value: 'anthropic-messages' } })
+    chooseOption(protocol, 'anthropic-messages')
     expect(baseUrl.placeholder).toBe('https://gateway.example')
     expect(baseUrl.value).toBe('https://acme.test/anthropic')
     fireEvent.click(screen.getByRole('button', { name: en.addModel }))
@@ -1569,7 +1569,7 @@ describe('hand-declared providers', () => {
 
   it('offers no protocol when the namespace declares none', () => {
     mountCard({ protocols: [] })
-    expect(screen.getByLabelText<HTMLSelectElement>(en.customApi).value).toBe('')
+    expect(screen.getByLabelText<HTMLButtonElement>(en.customApi).value).toBe('')
   })
 
   it('closes without writing on cancel, and honors a read-only deployment', () => {
@@ -1610,8 +1610,9 @@ describe('hand-declared providers', () => {
 
   it('names each protocol by its product name and falls back to the identifier of an unknown one', () => {
     mountCard({ protocols: [...PROTOCOLS, 'google-generative-ai'] })
-    const protocol = screen.getByLabelText<HTMLSelectElement>(en.customApi)
-    const labels = [...protocol.options].map(option => [option.value, option.textContent])
+    const protocol = screen.getByLabelText<HTMLButtonElement>(en.customApi)
+    fireEvent.click(protocol)
+    const labels = screen.getAllByRole<HTMLButtonElement>('option').map(option => [option.value, option.textContent])
     expect(labels).toEqual([
       ['openai-completions', en.protocolOpenAiCompletions],
       ['openai-responses', en.protocolOpenAiResponses],
@@ -1800,3 +1801,10 @@ describe('API key field', () => {
     expect(screen.queryByRole('textbox', { name: en.customRoute })).toBeNull()
   })
 })
+
+function chooseOption(control: HTMLElement, value: string): void {
+  fireEvent.click(control)
+  const option = screen.getAllByRole<HTMLButtonElement>('option').find(item => item.value === value)
+  if (option === undefined) throw new Error(`Missing option: ${value}`)
+  fireEvent.click(option)
+}

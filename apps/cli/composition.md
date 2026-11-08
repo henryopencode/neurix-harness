@@ -8,6 +8,8 @@ The dsh-base bundle patch shared by the web, headless, sdk, and acp profiles; th
 ```mermaid
 flowchart LR
   cfg["packages/bundle/base/cordis.patch.yml<br/>cordis.yml"]
+  plugin_dsh_base_knowledge_base["knowledge-base<br/>@deepseek-ai/dsh-knowledge-base"]
+  cfg --> plugin_dsh_base_knowledge_base
   plugin_dsh_base_tool_plugin_manager["tool-plugin-manager<br/>@deepseek-ai/dsh-plugin-manager/tools"]
   cfg --> plugin_dsh_base_tool_plugin_manager
   plugin_dsh_base_plugin_manager["plugin-manager<br/>@deepseek-ai/dsh-plugin-manager"]
@@ -206,6 +208,7 @@ flowchart LR
 
 | Plugin id | Package / module |
 | --- | --- |
+| `knowledge-base` | `@deepseek-ai/dsh-knowledge-base` |
 | `tool-plugin-manager` | `@deepseek-ai/dsh-plugin-manager/tools` |
 | `plugin-manager` | `@deepseek-ai/dsh-plugin-manager` |
 | `timer` | `@deepseek-ai/cordis-plugin-timer` |

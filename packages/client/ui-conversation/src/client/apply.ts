@@ -78,6 +78,10 @@ const ABSENT_NOTICES = {
   getSnapshot: (): InputNotice | null => null,
   subscribe: () => () => {},
 }
+const ABSENT_STOP_ACTIVITY = {
+  getSnapshot: () => false,
+  subscribe: () => () => {},
+}
 const ABSENT_BLOCK = {
   getSnapshot: (): ComposerBlock | undefined => undefined,
   subscribe: () => () => {},
@@ -262,8 +266,15 @@ export function apply(ctx: Context, config: Config = Config({})): void {
   }, 'ui-conversation: View selection')
 
   const stop = (sessionId: SessionId): void => {
-    scopedConversation(sessions, sessionId).cancel().catch((_error: unknown) => {
-      // Stop failure is published through Session promptError.
+    const associatedStop = uiConversation.stops.cancel(sessionId)
+    if (associatedStop === undefined) {
+      scopedConversation(sessions, sessionId).cancel().catch((_error: unknown) => {
+        // Ordinary Session stop failures are published through promptError.
+      })
+      return
+    }
+    void associatedStop.catch((error: unknown) => {
+      inputHub.shell(sessionId).notify('error', error instanceof Error ? error.message : String(error))
     })
   }
   const stopShortcut = createSnapshotStore<readonly string[]>([])
@@ -481,6 +492,7 @@ export function apply(ctx: Context, config: Config = Config({})): void {
           toggleCommandMenu: undefined,
           stop: undefined,
           hooks: {
+            stopActivity: ABSENT_STOP_ACTIVITY,
             stopShortcut,
             busyEnter: submissionPolicy.busyEnter,
             fileUploads: ABSENT_FILE_UPLOADS,
@@ -559,6 +571,7 @@ export function apply(ctx: Context, config: Config = Config({})): void {
           },
         stop: () => { stop(sessionId) },
         hooks: {
+          stopActivity: uiConversation.stops.activity(sessionId),
           stopShortcut,
           busyEnter: submissionPolicy.busyEnter,
           fileUploads: conversation.fileUploads,
