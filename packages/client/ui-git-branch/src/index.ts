@@ -4,7 +4,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type { WorkspaceFileScope } from '@deepseek-ai/dsh-api-workspace-files'
-import type {} from '@deepseek-ai/dsh-subprocess'
+import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 import { readHead } from './head.ts'
 import type { GitHead } from './types.ts'
 
@@ -56,6 +56,10 @@ export default class GitBranch extends TypertRemoteService {
       yield { kind: 'unavailable' }
       return
     }
+    if (!await gitExecutableReady(this.ctx.subprocess, executable, this.config.timeoutMs, signal)) {
+      yield { kind: 'unavailable' }
+      return
+    }
     let previous: string | undefined
     while (!isAborted()) {
       const head = await readHead(this.ctx.subprocess, executable, workspaceFileScope.workspaceRoot, this.config.timeoutMs, signal)
@@ -72,4 +76,26 @@ export default class GitBranch extends TypertRemoteService {
       }
     }
   }
+}
+
+/** Apple's Git launcher needs selected developer tools; the execution provider may run on another OS. */
+async function gitExecutableReady(
+  subprocess: SubprocessRuntime, executable: string, timeoutMs: number, signal: AbortSignal,
+): Promise<boolean> {
+  if (executable !== '/usr/bin/git') return true
+  let selector: string
+  try {
+    selector = await subprocess.resolveExecutable('xcode-select', undefined, signal)
+  } catch (_error) {
+    signal.throwIfAborted()
+    return true
+  }
+  const bounded = AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
+  const child = subprocess.spawn({
+    argv: [selector, '-p'], cwd: '/', signal: bounded, graceMs: 1000,
+    stdio: { stdin: 'ignore', stdout: { maxBytes: 4096 }, stderr: { maxBytes: 4096 } },
+  })
+  const outcome = await child.done
+  bounded.throwIfAborted()
+  return outcome.exitCode === 0
 }
