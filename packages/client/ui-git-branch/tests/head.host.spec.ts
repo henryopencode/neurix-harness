@@ -94,3 +94,18 @@ it('reports unavailable Git without attempting a repository command', async () =
   for await (const value of service.follow({ sessionId: SessionId('missing-git'), workspaceRoot: b.cwd }, new AbortController().signal)) values.push(value)
   expect(values).toEqual([{ kind: 'unavailable' }])
 })
+
+it('avoids Apple’s installer launcher when developer tools are not selected', async () => {
+  const b = await bench()
+  vi.spyOn(b.ctx.subprocess, 'resolveExecutable').mockResolvedValueOnce('/usr/bin/git').mockResolvedValueOnce(process.execPath)
+  const spawn = b.ctx.subprocess.spawn.bind(b.ctx.subprocess)
+  const commands = vi.spyOn(b.ctx.subprocess, 'spawn').mockImplementationOnce(spec => spawn({
+    ...spec, argv: [process.execPath, '-e', 'process.exit(1)'],
+  }))
+  const service = new GitBranch(b.ctx, { refreshMs: 1, timeoutMs: 30_000 })
+  const values = []
+  for await (const value of service.follow({ sessionId: SessionId('git-installer'), workspaceRoot: b.cwd }, new AbortController().signal)) values.push(value)
+  expect(values).toEqual([{ kind: 'unavailable' }])
+  expect(commands.mock.calls).toHaveLength(1)
+  expect(commands.mock.calls[0]?.[0].argv).toEqual([process.execPath, '-p'])
+})
