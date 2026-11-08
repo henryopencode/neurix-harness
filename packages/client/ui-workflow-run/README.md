@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Use `dsh-client-ui-workflow-run` to inspect each durable top-level workflow run as an independent Chat node. Expand a run to see its phases and expand a phase to see members; running, failed, cancelled, and interrupted levels open by default, while completed levels remain closed. A running member can open its child Session only when it belongs to the current Session and is available locally. The node shows identities and statuses only; scripts, outputs, errors, logs, usage, topology, and controls remain outside this surface.
+Inspect complex tasks as a live workflow canvas with planned steps, explicit prerequisites, stage folding, and task details. Multi-step plans appear in Chat automatically, and the Workflow tab also shows earlier loaded plans and recorded workflow runs. Task details open in the existing right sidebar with completion criteria, results, and deliverable links. Recorded child execution outcomes update explicitly linked tasks. The compact run disclosure remains available beside the canvas.
 
 ## Table of Contents
 
@@ -26,6 +26,12 @@ Use `dsh-client-ui-workflow-run` to inspect each durable top-level workflow run 
 ## Use this package
 
 A top-level workflow run through `dsh-tool-workflow` appears in the conversation as its own node: expand the run to see its phases, and expand a phase to see its members. Phase groups come only from members that started, and settlement changes status without removing or reordering members.
+
+### Task canvas
+
+Open the Workflow tab to pan and zoom the dependency graph, fold stages, switch to the keyboard-accessible list, or load earlier tasks. New multi-step plans have one evolving Chat preview per turn. Task ids preserve identity through renaming, and removed steps remain visible as removed from the plan. Clicking a task opens its full text, prerequisite states, completion criteria, results, and files in the existing sidebar. File links use Session-authorized document navigation.
+
+Canvas edges come only from declared prerequisites. Stage labels impose no order, and historical workflow runs without prerequisite data remain unconnected. A linked member outcome recorded after the latest plan update takes precedence over the declared task status. New plan revisions supersede earlier outcomes, and historical runs retain their own member states. Other tasks show planned status. Active planned steps whose Turn closes after a crash or fork appear interrupted. The canvas preserves its viewport on status updates. Graph selection, display mode, and stage disclosure survive View remounts within the Session scope.
 
 ### Navigating the node
 
@@ -51,7 +57,7 @@ Ordinary running updates preserve the current choice, the first abnormal edge op
 
 ### Composition
 
-The package registers its Definition, locale dictionary, and `workflow-run` renderer as Cordis effects; removing the client entry retracts all three contributions. The shipped Web bundle includes the plugin after `ui-conversation` and `ui-tool`.
+The package registers run disclosures as Cordis effects. A child plugin activates the canvas, plan Definitions, View, and task inspector when the existing right-sidebar services are available. Each target owns its replay state; per-turn plan ids and complete checkpoints support live updates and paged history. Removing the plugin retracts its registrations. The shipped Web bundle includes the required sidebar services.
 
 </details>
 
@@ -87,8 +93,8 @@ These limits define which runs produce records and what the node exposes; they a
 
 - **Only top-level calls through `dsh-tool-workflow` produce these records** — nested PTC mode calls and direct `WorkflowEngine` consumers do not.
 - **A run lost without terminal events in a normally ended Turn stays running** — for example a background run whose process crashed during a later Turn, or a run whose recording stopped after a failed append; the session log carries no fact that marks it stopped.
-- **Navigation is intentionally live-only** — terminal members remain visible for review but never expose a cold-session opener from this node.
-- **The node shows run, phase, member identity, and status only** — scripts, outputs, errors, logs, usage, static topology, and controls remain outside this surface.
+- **Run-disclosure navigation is live-only** — the canvas inspector can open a settled local child when its parent and descriptor are available.
+- **Execution evidence is limited to recorded workflow members** — unlinked tasks retain their declared plan status. Prerequisite edges describe the plan and do not schedule execution.
 
 <a id="dev-note"></a>
 ### Dev Note

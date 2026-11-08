@@ -49,6 +49,18 @@
     },
     {
       "path": "../../workflow/tool-workflow"
+    },
+    {
+      "path": "../ui-sidebar-right"
+    },
+    {
+      "path": "../../todo/tool-todo"
+    },
+    {
+      "path": "../../util/workspace-path"
+    },
+    {
+      "path": "../../util/values"
     }
   ]
 }

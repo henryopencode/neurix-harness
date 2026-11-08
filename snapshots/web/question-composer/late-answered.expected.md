@@ -4,6 +4,7 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
+    - tab "Workflow"
     - tab "Trajectory"
 - navigation "Turn navigation":
   - button "Jump to turn 1"

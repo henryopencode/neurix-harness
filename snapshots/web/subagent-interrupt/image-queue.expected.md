@@ -8,6 +8,7 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
+    - tab "Workflow"
     - tab "Trajectory"
 - navigation "Turn navigation":
   - button "Jump to turn 1"
@@ -25,8 +26,8 @@
 - text: {{clock}} Keep working until I stop you again. {{clock}}
 - button "Copy"
 - paragraph: partial
-- status: Deep diving
-- text: Deep diving for {{duration}} ···
+- status: Working
+- text: Working for {{duration}} ···
 - button "3 queued messages" [expanded]
 - list:
   - listitem:
@@ -44,6 +45,8 @@
     - button "Edit queued message" [disabled]
     - button "Remove queued message"
     - button "Steer queued message"
+- text: workspace
+- 'button "Switch Git branch: Git branches unavailable"': Git branches unavailable
 - textbox "Cmd/Ctrl+Enter steers all queued messages"
 - button "Add files or run commands"
 - 'button "Access mode, current: Custom"': Custom

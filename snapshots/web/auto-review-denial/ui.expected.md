@@ -6,6 +6,7 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
+    - tab "Workflow"
     - tab "Trajectory"
 - navigation "Turn navigation":
   - button "Jump to turn 1"
@@ -34,6 +35,7 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
+    - tab "Workflow"
     - tab "Trajectory"
 - navigation "Turn navigation":
   - button "Jump to turn 1"
@@ -66,6 +68,7 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat"
+    - tab "Workflow"
     - tab "Trajectory" [selected]
 - toolbar "Trajectory toolbar":
   - button "Use actual duration": Duration

@@ -5,6 +5,7 @@
 - navigation "全局面板":
   - button "插件"
   - button "MCP"
+  - button "知识库"
   - button "自动化任务"
   - button "更多"
 - text: 工作区
