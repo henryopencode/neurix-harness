@@ -178,7 +178,6 @@ function mount(
     ...allowAllAccess,
     onDelete: vi.fn<TaskManagerPageProps['onDelete']>(async () => 'deleted'),
     onRetry: vi.fn(async () => {}),
-    onNewTask: vi.fn(),
     onClearEnded: vi.fn(async () => {}),
     onUpdateTiming: vi.fn<TaskManagerPageProps['onUpdateTiming']>(async ({ expected }) => ({
       ok: true, value: { id: expected.id, updated: false, record: expected },
@@ -214,11 +213,6 @@ function taskNames(): string[] {
   return within(screen.getByRole('list', { name: en['list.label'] })).queryAllByRole('button')
     .filter(button => button.closest('li') !== null)
     .map(button => button.getAttribute('aria-label')!)
-}
-
-/** The empty state's mock action, which starts a new Session like the heading's. */
-function emptyNewTaskButton(dictionary: typeof en | typeof zh = en): HTMLElement {
-  return within(screen.getByRole('status')).getByRole('button', { name: dictionary['empty.action'] })
 }
 
 function detailViewLabels(dictionary: typeof en | typeof zh) {
@@ -621,15 +615,6 @@ it('updates original Session navigation as metadata arrives and archive state ch
 })
 
 describe('Task manager catalog', () => {
-  it('starts a new Session instead of offering a page creation form', () => {
-    const h = mount({ records: [at] })
-    // The heading's compact action and the empty state's named action are the
-    // mock's two creation entries; only the heading's shows while a row exists.
-    fireEvent.click(screen.getByRole('button', { name: en['new.action'] }))
-    expect(h.props.onNewTask).toHaveBeenCalledOnce()
-    expect(screen.queryByRole('button', { name: en['empty.action'] })).toBeNull()
-  })
-
   it('lays the page out on the mock content column, heading, search field, and rows', () => {
     mount()
     const page = screen.getByTestId('task-manager-page')
@@ -637,11 +622,10 @@ describe('Task manager catalog', () => {
     const scroll = page.querySelector<HTMLElement>(`.${css.pageScroll!}`)!
     const content = page.querySelector<HTMLElement>(`.${css.pageContent!}`)!
     expect(scroll.contains(content)).toBe(true)
-    // The mock's heading row: one h1 beside the creation actions, no subtitle.
     const heading = page.querySelector<HTMLElement>(`.${css.pageHeading!}`)!
     expect(heading.querySelector('h1')?.textContent).toBe(en['title'])
     expect(heading.querySelector('p')).toBeNull()
-    expect(heading.querySelector(`.${css.creationActions!}`)?.textContent).toBe(en['new.action'])
+    expect(within(heading).queryByRole('button')).toBeNull()
     // The filter row carries the status group alone: the type chips are gone.
     const filters = page.querySelector<HTMLElement>(`.${css.filters!}`)!
     expect(within(filters).getAllByRole('group')).toHaveLength(1)
@@ -820,8 +804,8 @@ describe('Task manager catalog', () => {
     expect(taskNames()).toEqual(['Quarterly report'])
   })
 
-  it('combines search with the status filter and clears a no-match result from the empty state', () => {
-    const h = mount()
+  it('combines search with the status filter and clears a no-match result through the filters', () => {
+    mount()
     const statuses = screen.getByRole('group', { name: en['statusFilter.label'] })
     const chooseStatus = (name: string) => fireEvent.click(within(statuses).getByRole('button', { name }))
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'release' } })
@@ -830,11 +814,7 @@ describe('Task manager catalog', () => {
     expect(taskNames()).toEqual([])
     expect(screen.getByRole('status').textContent).toContain(en['list.noMatches'])
     expect(screen.queryByText(en['list.empty'])).toBeNull()
-    // The empty state's action keeps the mock's single creation entry: it starts a
-    // new Session instead of resetting the filters the reader chose.
-    fireEvent.click(emptyNewTaskButton())
-    expect(h.props.onNewTask).toHaveBeenCalledOnce()
-    expect(taskNames()).toEqual([])
+    expect(within(screen.getByRole('status')).queryByRole('button')).toBeNull()
     expect(screen.getByRole<HTMLInputElement>('searchbox').value).toBe('release')
     expect(within(statuses).getByRole('button', { name: en['status.inactive'] }).getAttribute('aria-pressed')).toBe('true')
     // The status filter is the one excluding every row the search selects.
@@ -927,7 +907,8 @@ describe('Task manager catalog', () => {
     expect(paths?.[10]?.getAttribute('fill')).toBe('var(--dsw-alias-illustration-shadow)')
     expect(paths?.[17]?.getAttribute('fill')).toBe('var(--dsw-alias-illustration-detail)')
     expect(paths?.[18]?.getAttribute('fill')).toBe('var(--dsw-alias-illustration-inset)')
-    expect(emptyNewTaskButton().textContent).toBe(en['empty.action'])
+    expect(screen.getByRole('status').textContent).toBe(en['list.empty'])
+    expect(within(screen.getByRole('status')).queryByRole('button')).toBeNull()
   })
 
   it('distinguishes an empty catalog, loading, and a failed read', () => {
@@ -941,13 +922,9 @@ describe('Task manager catalog', () => {
     fireEvent.click(screen.getByRole('button', { name: en['list.retry'] }))
     expect(h.props.onRetry).toHaveBeenCalledOnce()
     h.update({ status: 'ready' })
-    expect(screen.getByRole('status').textContent).toContain(en['list.empty'])
-    // The mock keeps one creation entry in the empty state whether or not a
-    // query is active, so the action never disappears behind a filter.
-    expect(emptyNewTaskButton().textContent).toBe(en['empty.action'])
+    expect(screen.getByRole('status').textContent).toBe(en['list.empty'])
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'missing' } })
-    expect(screen.getByRole('status').textContent).toContain(en['list.empty'])
-    expect(emptyNewTaskButton().textContent).toBe(en['empty.action'])
+    expect(screen.getByRole('status').textContent).toBe(en['list.empty'])
   })
 
   it('keeps previously loaded rows available during loading and errors', () => {
@@ -972,11 +949,6 @@ describe('clearing inactive tasks', () => {
     ...ended, id: 'task-ended-two' as ScheduleId, title: 'Ended report', prompt: 'Ended report',
   }
 
-  /** The heading's actions; only the primary New control remains there. */
-  function creationActions(): HTMLElement {
-    return document.querySelector<HTMLElement>(`.${css.creationActions!}`)!
-  }
-
   /** The search row's 36px More trigger. */
   function moreTrigger(dictionary: typeof en | typeof zh = en): HTMLElement {
     return screen.getByRole('button', { name: dictionary['list.more'] })
@@ -998,12 +970,9 @@ describe('clearing inactive tasks', () => {
 
   it('offers the cleanup in the search row only while an ended task is visible', () => {
     const h = mount()
-    expect(creationActions().textContent).toBe(en['new.action'])
     expect(screen.queryByRole('button', { name: en['list.more'] })).toBeNull()
     h.update({ records: [...records, endedTask] })
-    // The cleanup is the search row's More menu, not a second heading action.
     expect(document.querySelector(`.${css.searchTools!}`)?.contains(moreTrigger())).toBe(true)
-    expect(within(creationActions()).getAllByRole('button')).toHaveLength(1)
     // The Active view hides the cleanup even though the catalog holds ended rows.
     fireEvent.click(screen.getByRole('button', { name: en['status.active'] }))
     expect(screen.queryByRole('button', { name: en['list.more'] })).toBeNull()
@@ -4036,14 +4005,6 @@ describe('Mock detail metrics shared with the task list', () => {
     expect(stylesheet).not.toMatch(
       /\[data-platform='darwin'\][^{]*\.pageContent\s*\{/,
     )
-    // The Plugins toolbar's Add-plugin capsule, repeated by the creation action.
-    expect(rule('creationActions')).toMatch(/gap:\s*16px;/)
-    // The New action and the bulk cleanup share this capsule geometry.
-    const headerAction = rule('headerAction')
-    expect(headerAction).toMatch(/height:\s*32px;/)
-    expect(headerAction).toMatch(/font-size:\s*13px;/)
-    expect(headerAction).toMatch(/padding:\s*0 12px;/)
-    expect(headerAction).toMatch(/border-radius:\s*16px;/)
     const headingTitle = /\.pageHeading h1\s*\{([^}]*)\}/.exec(stylesheet)?.[1] ?? ''
     // The first-level title step is the Plugins page's `pageTitle`, not the
     // mock's larger page heading; the equality case below pins that pair.

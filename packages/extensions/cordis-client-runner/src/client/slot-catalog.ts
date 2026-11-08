@@ -956,7 +956,9 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     hookContext: '',
     slotInject: '',
     declaredBy: 'factory \'conversation.content\' (client-ui-conversation), so it exists while that definition is registered',
-    occupants: [],
+    occupants: [
+      'client-ui-git-branch BranchSelector id \'git-branch\'',
+    ],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.hero.options\', () => ctx.slots.register(\n      { name: \'conversation.hero.options\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
     source: 'packages/client/ui-conversation/src/client/contract/slots.ts:288',
@@ -1178,6 +1180,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     occupants: [
       'client-ui-conversation QueueDock id \'queue\'',
       'client-ui-conversation TodoDock id \'todo\'',
+      'client-ui-git-branch ComposerBranchSelector id \'git-branch\'',
       'client-ui-goal GoalDock id \'goal\'',
       'experimental-client-ui-claude-code-mods Band id \'claude-code-mods\'',
     ],
@@ -3551,6 +3554,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       'client-ui-chat QuotaNoticeHost id \'chat.quota-notice\'',
       'client-ui-chat TurnBookmarkNoticeHost id \'chat.turn-bookmarks\'',
       'client-ui-file-drag FileDragFeedback id \'file-drag.feedback\'',
+      'client-ui-git-branch BranchNotice id \'git-branch.notice\'',
       'client-ui-mcp McpNotice id \'mcp-operation-notice\'',
       'client-ui-plugin-manager PluginRefreshToast id \'plugin-manager.refresh-toast\'',
       'client-ui-schedule ScheduleDeleteToast id \'schedule.delete-toast\'',

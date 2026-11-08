@@ -336,6 +336,7 @@
     { "path": "./packages/util/native-command" },
     { "path": "./packages/util/home-paths" },
     { "path": "./packages/client/ui-plugin-manager/tsconfig.host.json" },
+    { "path": "./packages/client/ui-git-branch/tsconfig.host.json" },
     { "path": "./packages/mcp/mcp-manager" },
     { "path": "./packages/util/time" },
     { "path": "./packages/util/timeout" },

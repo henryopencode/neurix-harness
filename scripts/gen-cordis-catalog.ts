@@ -152,6 +152,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   workspaceRegistry: 'workspace.md',
   workspaceController: 'workspace.md',
   workspaceFiles: 'workspace.md',
+  workspaceGit: 'workspace.md',
   workspaceChanges: 'deliverables.md',
   terminalController: 'workspace.md',
   directoryPickerController: 'workspace.md',
@@ -263,6 +264,7 @@ export const EVENT_SCOPE_PAGE: Record<string, string> = {
   'webserver': 'web-server.md',
   'workflow': 'workflow.md',
   'workspace': 'workspace.md',
+  'workspace-git': 'workspace.md',
 }
 
 /**
@@ -311,6 +313,7 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   ProductTelemetryRecord: 'product-telemetry.md',
   ProductTelemetryScalar: 'product-telemetry.md',
   WorkspaceChangesSummary: 'deliverables.md',
+  GitBranchState: 'workspace.md',
   WorkspaceFileDiff: 'deliverables.md',
   Reload: 'boot.md',
   ProfileReconciliation: 'boot.md',

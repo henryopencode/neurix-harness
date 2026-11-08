@@ -31,6 +31,7 @@ const SETTLED_EXPECTED = join(SNAPSHOT_DIR, 'settled.expected.md')
 const USAGE_EXPANDED_EXPECTED = join(SNAPSHOT_DIR, 'usage-expanded.expected.md')
 const COMPLETED_EXPECTED = join(SNAPSHOT_DIR, 'completed.expected.md')
 const FOCUSED_EXPECTED = join(SNAPSHOT_DIR, 'focused.expected.md')
+const ACTIVITY_EXPECTED = fileURLToPath(new URL('./expected/turn-tail-actions/activity.expected.json', import.meta.url))
 const MODE = webSnapshotMode()
 
 // The recording must carry text in the SAME assistant message as the tool
@@ -163,12 +164,45 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
     const runningProcess = page.locator('[data-turn-process]')
     expect(await runningProcess.count()).toBe(0)
     await expect.poll(
-      () => page.getByRole('status').filter({ hasText: 'Deep diving' }).isVisible(),
+      () => page.locator('[data-chat-running]').isVisible(),
       { timeout: 10_000 },
     ).toBe(true)
     await page.locator('[data-streaming="true"]')
       .getByText('partial', { exact: true })
       .waitFor({ timeout: 10_000 })
+    const activity = page.locator('[data-chat-running] [data-shimmer]').first()
+    const highlight = activity.locator('[inert] > :first-child')
+    const appearances = []
+    for (const preference of ['light', 'dark'] as const) {
+      await scaffold!.ctx.settings.update('ui-theme', { preference })
+      await expect.poll(() => page.locator('body').getAttribute('data-ds-dark-theme'))
+        .toBe(preference === 'dark' ? '' : null)
+      const appearance = await activity.evaluate((element) => {
+        const decoration = element.querySelector<HTMLElement>('[inert]')
+        const sweep = decoration?.firstElementChild
+        if (decoration === null || sweep == null) throw new Error('running text has no highlight')
+        return {
+          theme: document.body.hasAttribute('data-ds-dark-theme') ? 'dark' : 'light',
+          baseColor: getComputedStyle(element).color,
+          highlightColor: getComputedStyle(sweep).color,
+          accessibleDecoration: decoration.getAttribute('aria-hidden') === 'true',
+          clippedDecoration: getComputedStyle(decoration).overflowX === 'clip',
+          animationRunning: sweep.getAnimations().some(animation => animation.playState === 'running'),
+        }
+      })
+      const start = await highlight.evaluate(element => getComputedStyle(element).transform)
+      await expect.poll(() => highlight.evaluate(element => getComputedStyle(element).transform), { timeout: 10_000 })
+        .not.toBe(start)
+      appearances.push(appearance)
+    }
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    const reducedMotion = await activity.evaluate(element => ({
+      highlightHidden: getComputedStyle(element.querySelector('[inert]')!).display === 'none',
+      textVisible: element.getBoundingClientRect().height > 0 && getComputedStyle(element).visibility === 'visible',
+    }))
+    await compareOrRefreshGolden(ACTIVITY_EXPECTED, JSON.stringify({ appearances, reducedMotion }, null, 2), MODE)
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await scaffold!.ctx.settings.update('ui-theme', { preference: 'light' })
     // Only the user bubble owns a footer (clock + copy; user bubbles carry no
     // branch action): the narration is not the answer yet.
     const copyButtons = page.getByRole('button', { name: 'Copy' })
@@ -187,6 +221,7 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
     await page.locator('[data-turn-process]').waitFor({ timeout: 10_000 })
     await expect.poll(() => copyButtons.count(), { timeout: 10_000 }).toBe(2)
     await expect.poll(() => page.locator('[data-streaming="true"]').count(), { timeout: 10_000 }).toBe(0)
+    expect(await page.locator('[data-shimmer]').count()).toBe(0)
     // The settled golden records no bubble: this focus follows the Stop click,
     // which leaves the pointer owning the last input.
     await copyButtons.last().focus()

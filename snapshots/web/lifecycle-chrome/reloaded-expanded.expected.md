@@ -6,7 +6,6 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-  - button "More conversation views"
 - navigation "Turn navigation":
   - button "Jump to turn 1"
 - text: Reply with the single word LIGHTHOUSE and stop. {{clock}}

@@ -209,7 +209,7 @@ export function ConversationSessionHeader({
               </Button>
             ))}
           </div>
-          {hasEntryActions && (
+          {hasEntryActions && moreTabs.length > 0 && (
             <ViewsMoreMenu
               label={currentInMore && active !== undefined ? t('session.moreViewsCurrent', { name: active.label }) : t('session.moreViews')}
               current={currentInMore}

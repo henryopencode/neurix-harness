@@ -7,7 +7,8 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-  - button "More conversation views"
+- navigation "Turn navigation":
+  - button "Jump to turn 1"
 - text: Inspect the protected operation, but do not run it unless authorized. {{clock}}
 - button "Copy"
 - status: Completed
@@ -34,7 +35,8 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-  - button "More conversation views"
+- navigation "Turn navigation":
+  - button "Jump to turn 1"
 - text: Inspect the protected operation, but do not run it unless authorized. {{clock}}
 - button "Copy"
 - status: Completed
@@ -65,11 +67,11 @@
   - tablist:
     - tab "Chat"
     - tab "Trajectory" [selected]
-  - button "More conversation views"
 - toolbar "Trajectory toolbar":
   - button "Use actual duration": Duration
   - button "Collapse turns": Turns
   - button "Collapse calls": Calls
+  - button "Context diagnostics"
   - searchbox "Search trajectory"
 - region "Trajectory timeline"
 - table:

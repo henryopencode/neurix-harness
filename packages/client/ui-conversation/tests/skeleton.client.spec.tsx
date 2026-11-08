@@ -763,7 +763,8 @@ describe('ConversationRoot resident composer', () => {
     act(() => { b.store.actions.setView('chat') })
     expect(external()).toEqual(['Chat', 'Timeline', 'Inspector'])
     expect(readWidth).toHaveBeenCalledTimes(reads)
-    expect(b.actionsOwner().entries).toEqual([])
+    expect(b.view.queryByRole('button', { name: zh['session.moreViews'] })).toBeNull()
+    expect(b.view.queryByRole('menu')).toBeNull()
     expect(b.setPinned).not.toHaveBeenCalled()
   })
 
@@ -786,7 +787,8 @@ describe('ConversationRoot resident composer', () => {
     act(() => { fireResize(row) })
     expect(external()).toEqual(viewTabs.map(tab => tab.label))
     expect(b.view.getByRole('tab', { name: 'notes' }).getAttribute('aria-selected')).toBe('true')
-    expect(b.actionsOwner().entries).toEqual([])
+    expect(b.view.queryByRole('button', { name: zh['session.moreViews'] })).toBeNull()
+    expect(b.view.queryByRole('menu')).toBeNull()
     expect(b.setPinned).not.toHaveBeenCalled()
     const observers = resizeObservers.filter(observer => observer.targets.includes(row))
     expect(observers).toHaveLength(1)
@@ -794,14 +796,13 @@ describe('ConversationRoot resident composer', () => {
     expect(observers[0]!.targets).toEqual([])
   })
 
-  it('keeps all five Views outside when the sampled width budget is sufficient', () => {
+  it('keeps all five Views outside and omits More when the sampled width budget is sufficient', () => {
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(1000)
     const viewTabs = ['chat', 'trajectory', 'timeline', 'inspector', 'notes'].map(id => ({ id, label: id }))
     const b = mount(sessionSnapshotOf(), undefined, undefined, { viewTabs, entryActions: true })
     expect(within(b.view.getByRole('tablist')).getAllByRole('tab').map(tab => tab.textContent))
       .toEqual(viewTabs.map(tab => tab.label))
-    fireEvent.click(b.view.getByRole('button', { name: zh['session.moreViews'] }))
-    expect(b.actionsOwner().entries).toEqual([])
+    expect(b.view.queryByRole('button', { name: zh['session.moreViews'] })).toBeNull()
   })
 
   it('omits More while the View actions list has no registrations', () => {

@@ -170,6 +170,10 @@ interface SessionActivity {
 
 [`dsh-workspace-controller`](../../packages/api/workspace-controller) 经 `ctx.workspaceRegistry` 向 GUI 客户端提供工作区 CRUD，[`dsh-session-controller`](../../packages/api/session-controller) 执行上文「先建会话再 attach」的流程。[dsh-agent-instructions](../../packages/context/agent-instructions) 尽管名字如此，却**不是**消费方：它在 agent 自己的 cwd 下发现 AGENTS.md 风格的指令文件，从不触碰 `ctx.workspaceRegistry`——两者共用的这个词指的是用户的工作目录，而非本注册表的实体。
 
+## Git 分支
+
+`GitBranchState` 表示 `unavailable`，或仓库根目录、本地分支和当前检出状态。符号分支在首次提交前可以没有提交号；分离 HEAD 必须具有提交号。基于会话授权的 `workspaceGit` 服务观察该状态，并在会话沙箱策略下切换已有本地分支。[Git 分支插件](../../packages/client/ui-git-branch/README.zh.md)说明共享工作树的影响、冲突保护、刷新间隔和浏览器控件。
+
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
 <a id="cordis-surface"></a>
@@ -461,6 +465,37 @@ Host Remote file reads and workspace directory observations over the composed fi
 
 Source: [`packages/api/workspace-files/src/index.ts`](../../packages/api/workspace-files/src/index.ts)
 
+<a id="ctxworkspacegit--workspacegit"></a>
+
+### `ctx.workspaceGit` — `WorkspaceGit`
+
+Git service scoped to a live Session; it never creates, resets, stashes, or force-checks out branches.
+
+```ts cordis-catalog
+/**
+ * Observe the current checkout and local branches, including external Git changes.
+ * @param session - Authorized live Session selecting the directory and sandbox policy.
+ * @param signal - Remote subscription lifetime.
+ * @returns Complete observations; a failed read closes the stream with a typed failure.
+ */
+@Remote({ mode: 'stream' }) async *follow(session: Session, signal: AbortSignal): AsyncIterable<GitBranchState>
+
+/**
+ * Switch to one existing local branch using Git's normal file-conflict checks.
+ * @param session - Authorized live Session selecting the directory and sandbox policy.
+ * @param branch - Exact local branch name from the selector.
+ * @param expected - Branch name, or detached commit id, shown when the user selected it.
+ * @param signal - Caller lifetime; cancellation can leave a completed checkout and requires inspection.
+ * @returns The verified checkout after Git exits successfully.
+ * @throws A typed failure for active work, stale selection, Git refusal, or failed inspection; no automatic rollback runs.
+ */
+@Remote async checkout(session: Session, branch: string, expected: string, signal: AbortSignal): Promise<GitBranchState>
+```
+
+Types: [Session](session.zh.md)
+
+Source: [`packages/client/ui-git-branch/src/index.ts`](../../packages/client/ui-git-branch/src/index.ts)
+
 <a id="ctxworkspaceregistry--workspaceregistry"></a>
 
 ### `ctx.workspaceRegistry` — `WorkspaceRegistry`
@@ -644,4 +679,25 @@ Stop a session's running work because the caller archived it with `stopActivity`
 ```
 
 Source: [`packages/workspace/workspace/src/index.ts`](../../packages/workspace/workspace/src/index.ts)
+
+<a id="workspace-git-events"></a>
+
+### `workspace-git/*` events
+
+<a id="workspace-gitchanged--parallel"></a>
+
+#### `workspace-git/changed` — parallel
+
+A branch switch has completed in a working tree.
+
+```ts cordis-catalog
+/**
+ * A branch switch has completed in a working tree.
+ * @param root - Absolute repository working-tree root.
+ * @mode parallel
+ */
+'workspace-git/changed'(root: string): void
+```
+
+Source: [`packages/client/ui-git-branch/src/index.ts`](../../packages/client/ui-git-branch/src/index.ts)
 <!-- END GENERATED cordis-surface -->

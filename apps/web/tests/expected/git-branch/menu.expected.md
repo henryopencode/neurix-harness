@@ -1,0 +1,4 @@
+- menu:
+  - searchbox "Search branches": session-header
+  - menuitem "feature/session-header-with-a-long-branch-name"
+  - paragraph: Switching affects all sessions in this working tree

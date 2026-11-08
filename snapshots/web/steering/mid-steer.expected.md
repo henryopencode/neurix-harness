@@ -6,13 +6,14 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-  - button "More conversation views"
+- navigation "Turn navigation":
+  - button "Jump to turn 1"
 - text: Use the ask_user_question tool to ask me exactly one question with id "checkpoint", question "Ready to continue?", header "Checkpoint", and options labeled "Yes" and "No". After I answer, reply with one short sentence acknowledging my answer and stop. {{clock}}
 - button "Copy"
 - text: Running
 - button "Ask question waiting"
-- status: Deep diving
-- text: "Deep diving for {{duration}} ··· Interjection: include the word BANANA in your final reply."
+- status: Working
+- text: "Working for {{duration}} ··· Interjection: include the word BANANA in your final reply."
 - button "Copy"
 - region "Ready to continue?":
   - text: Checkpoint

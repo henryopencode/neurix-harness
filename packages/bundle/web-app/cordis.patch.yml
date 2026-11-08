@@ -82,6 +82,9 @@
     - id: ui-open-in-app
       name: '@deepseek-ai/dsh-client-ui-open-in-app'
 
+    - id: ui-git-branch
+      name: '@deepseek-ai/dsh-client-ui-git-branch'
+
     - id: workspace
       name: '@deepseek-ai/dsh-workspace'
 

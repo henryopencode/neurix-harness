@@ -102,7 +102,7 @@ async function baseContext(
   await ctx.plugin({ apply(provider: Context) {
     provider.provide('remote.schedule', (remote.schedule ?? {}) as never)
   } }).await()
-  ctx.provide('uiWorkspace', { openSession: vi.fn(), startSession: vi.fn() } as never)
+  ctx.provide('uiWorkspace', { openSession: vi.fn() } as never)
   ctx.provide('sidebarRightTabs', { register: sidebar.register } as never)
   ctx.provide('sidebarRight', { openTab: sidebar.openTab, tabsIn: sidebar.tabsIn } as never)
   const id = 'cold-original' as SessionId
@@ -323,7 +323,7 @@ describe('ui-schedule browser half', () => {
     }
   })
 
-  it('binds the shown task to the Session committed tabs and starts a new task from the panel', async () => {
+  it('binds the shown task to the Session committed tabs', async () => {
     const sidebar = sidebarStubs()
     const ctx = await baseContext(undefined, sidebar)
     const owner = ctx.slots.register({
@@ -334,7 +334,6 @@ describe('ui-schedule browser half', () => {
         main: { kind: 'keyed', scope: 'root' },
       },
     } as never, Empty)
-    const startSession = vi.spyOn(ctx.uiWorkspace, 'startSession')
     const fiber = ctx.plugin({ inject: [...inject], apply })
     await fiber.await()
     try {
@@ -353,10 +352,6 @@ describe('ui-schedule browser half', () => {
       ) as ScheduleTaskCatalogInjected & ScheduleTaskBindingInjected
       expect(chip.taskBindings).toBe(body.taskBindings)
       expect(chip.hooks.catalog).toBe(body.hooks.catalog)
-      // The panel starts a new reminder in a Session rather than opening a creation form.
-      const panel = injectedFace(ctx.slots.entries('main')[0]!, undefined as never) as TaskManagerInjected
-      panel.onNewTask()
-      expect(startSession).toHaveBeenCalledOnce()
     } finally {
       await fiber.dispose()
       owner()
