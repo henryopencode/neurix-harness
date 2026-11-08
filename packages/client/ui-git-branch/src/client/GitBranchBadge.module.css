@@ -1,0 +1,32 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 180px;
+  min-height: 28px;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.badge > svg { flex: none; }
+.name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color); outline-offset: 2px; }
+
+@media (hover: hover) {
+  .badge:hover { background: var(--dsw-alias-interactive-bg-hover); }
+}
+
+@container (width <= 600px) {
+  .badge { max-width: 100px; }
+}
+
+@media (pointer: coarse) {
+  .badge { min-height: 44px; }
+}

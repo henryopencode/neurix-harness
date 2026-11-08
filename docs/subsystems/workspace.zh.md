@@ -228,6 +228,24 @@ Host service backing the generated `ctx.remote.directoryPicker` namespace. The s
 
 Source: [`packages/api/workspace-controller/src/directory-picker.ts`](../../packages/api/workspace-controller/src/directory-picker.ts)
 
+<a id="ctxgitbranch--gitbranch"></a>
+
+### `ctx.gitBranch` — `GitBranch`
+
+Live repository metadata; the existing workspace lookup authorizes each Session.
+
+```ts cordis-catalog
+/**
+ * Observe HEAD immediately and publish later branch changes without modifying the repository.
+ * @param workspaceFileScope - authorized Session directory, resolved by the Host.
+ * @param signal - caller lifetime; closes the pending command or refresh delay.
+ * @returns current and changed HEAD values; missing Git is reported as unavailable.
+ */
+@Remote({ mode: 'stream' }) async *follow(workspaceFileScope: WorkspaceFileScope, signal: AbortSignal): AsyncIterable<GitHead>
+```
+
+Source: [`packages/client/ui-git-branch/src/index.ts`](../../packages/client/ui-git-branch/src/index.ts)
+
 <a id="ctxterminalcontroller--terminalcontroller"></a>
 
 ### `ctx.terminalController` — `TerminalController`
