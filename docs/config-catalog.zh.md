@@ -556,6 +556,29 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-shortcuts -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-git-branch -->
+<a id="deepseek-aidsh-client-ui-git-branch"></a>
+
+## `@deepseek-ai/dsh-client-ui-git-branch`
+
+- `inject`: `sessions` · `agents` · `subprocess` · `sandbox` · `sandboxPolicy`
+- `source`: [`packages/client/ui-git-branch/src/index.ts:18`](../packages/client/ui-git-branch/src/index.ts)
+
+```ts config-catalog
+/** Process bounds and refresh cadence for the branch selector. */
+export interface Config {
+  /** Maximum duration of one Git subprocess, including executable resolution. */
+  timeoutMs: number
+  /** Maximum captured bytes per Git output stream; truncation fails the read. */
+  maxOutputBytes: number
+  /** Grace period before a cancelled Git process is killed. */
+  graceMs: number
+  /** Interval between observations of external branch changes. */
+  refreshIntervalMs: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-git-branch -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-plugin-manager -->
 <a id="deepseek-aidsh-client-ui-plugin-manager"></a>
 

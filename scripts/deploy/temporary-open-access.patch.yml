@@ -1,0 +1,6 @@
+# Deployment opt-in: set enabled to false to restore launch-token and cookie authentication.
+- insert:
+    - id: temporary-open-access
+      name: 'file:///etc/neurix-agent/temporary-open-access.mjs'
+      config:
+        enabled: true

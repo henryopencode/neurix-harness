@@ -29,7 +29,7 @@
   overflow-y: auto;
   /* Sides = composer clearance + 16px: on narrow viewports the transcript
      stays exactly 32px narrower than the input card (the shared width rule). */
-  padding: 24px calc(var(--dsh-composer-side-clearance) + 16px);
+  padding: 32px calc(var(--dsh-composer-side-clearance) + 16px);
   /* Inline-size query container: wide markdown tables size their breakout
      against this box's content width (100cqw in AssistantMarkdown's
      md-table-wide rule) — the CSS stand-in for deepsuite chat's JS-measured
@@ -81,14 +81,18 @@
   margin-top: var(--dsh-chat-flow-gap, 4px);
 }
 
-/* Process rows sit 4px apart; an Assistant response is separated from its
-   neighbours by 12px. */
+/* Process rows sit 4px apart; replies keep 24px of reading space on either side. */
 .flowItem[data-chat-group-part="response"] {
-  --dsh-chat-flow-gap: 12px;
+  --dsh-chat-flow-gap: 24px;
 }
 
 :is(.column, :global([data-slot="conversation.chat.flow"])) > [data-chat-group-part="response"]:not([hidden]):not(:empty)
-  + :not([hidden]):not(.flowItem:is(:empty, :has(> [data-slot="conversation.chat.node"]:empty))):not(.running):not(:has(> [data-slot="conversation.chat.node"] > [data-chat-steering-batch])) {
+  + :not([hidden]):not(.flowItem:is(:empty, :has(> [data-slot="conversation.chat.node"]:empty))):not(.running):not([data-chat-flow-kind="turn-tail"]):not(:has(> [data-slot="conversation.chat.node"] > [data-chat-steering-batch])) {
+  --dsh-chat-flow-gap: 24px;
+}
+
+/* Turn actions keep their 16px offset, including the footer's 4px inset. */
+.flowItem[data-chat-flow-kind="turn-tail"] {
   --dsh-chat-flow-gap: 12px;
 }
 
@@ -122,13 +126,13 @@
   }
 }
 
-/* The Turn header has 16px clearance from its input and following content. A
+/* The Turn header has 24px clearance from its input and following content. A
    running Turn's control renders empty until the Turn closes; an echo after it
    is still an opening input of that Turn, so it keeps the input gap. */
 .flowItem[data-chat-flow-kind="turn-process"],
 :is(.column, :global([data-slot="conversation.chat.flow"])) > [data-chat-flow-kind="turn-process"]:not(:empty, :has(> [data-slot="conversation.chat.node"]:empty)) + :not([hidden]):not(.flowItem:is(:empty, :has(> [data-slot="conversation.chat.node"]:empty))):not(.running):not(:has(> [data-slot="conversation.chat.node"] > [data-chat-steering-batch])),
 :is(.column, :global([data-slot="conversation.chat.flow"])) > [data-chat-flow-kind="turn-process"] + :not([hidden]):not(.flowItem:is(:empty, :has(> [data-slot="conversation.chat.node"]:empty))):not(.running):not([data-submission-echo], [data-pending-steering]):not(:has(> [data-slot="conversation.chat.node"] > [data-chat-steering-batch])) {
-  --dsh-chat-flow-gap: 16px;
+  --dsh-chat-flow-gap: 24px;
 }
 
 /* Tail slot: the running status and a completed Turn's actions row both take
@@ -179,17 +183,17 @@
    input. When the first output row appears, the status enters its slot below
    that row from where it stood: it travels the row's gap plus one 24px row,
    which follows the content font size. The gap is 4px for a process row or
-   group header (the default declared on `.running`), 12px for a response, and
-   16px after the running Turn's process control, which renders empty until the
+   group header (the default declared on `.running`), 24px for a response, and
+   24px after the running Turn's process control, which renders empty until the
    Turn closes, so it precedes a new Turn's first output. The default sits on
    the single-class `.running` selector so both variants outrank it. Later
    output keeps the same animation and does not restart it. */
 :is(.column, :global([data-slot="conversation.chat.flow"])) > :nth-last-child(2 of :not([hidden]):not([data-pending-steering]):not(.flowItem:is(:empty, :has(> [data-slot="conversation.chat.node"]:empty))))[data-chat-group-part="response"] ~ .running {
-  --dsh-running-follow: calc(12px + 24px + var(--dsh-content-font-delta, 0px));
+  --dsh-running-follow: calc(24px + 24px + var(--dsh-content-font-delta, 0px));
 }
 
 :is(.column, :global([data-slot="conversation.chat.flow"])) > [data-chat-flow-kind="turn-process"] + :nth-last-child(2 of :not([hidden]):not([data-pending-steering]):not(.flowItem:is(:empty, :has(> [data-slot="conversation.chat.node"]:empty)))) ~ .running {
-  --dsh-running-follow: calc(16px + 24px + var(--dsh-content-font-delta, 0px));
+  --dsh-running-follow: calc(24px + 24px + var(--dsh-content-font-delta, 0px));
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -261,39 +265,9 @@
   align-items: flex-start;
   --dsh-chat-flow-gap: 12px;
   --dsh-running-follow: calc(4px + 24px + var(--dsh-content-font-delta, 0px));
-  --dsw-alias-label-shimmer: var(--dsw-alias-label-deep-diving-shimmer);
-  color: var(--dsw-alias-label-deep-diving);
+  color: var(--dsw-alias-label-tertiary);
   font-size: var(--dsh-content-font-size-secondary, 13px);
   line-height: calc(22px + var(--dsh-content-font-delta, 0px));
-}
-
-/* The last visible row before the status must contain output, not an input.
-   Hidden and empty seats do not separate a user message from the status, and
-   the steering/Inbox echoes after the status are outside the count. */
-:is(.column, :global([data-slot="conversation.chat.flow"])) > :nth-last-child(2 of :not([hidden]):not([data-pending-steering]):not(.flowItem:is(:empty, :has(> [data-slot="conversation.chat.node"]:empty)))):is(
-  .flowItem:not([data-chat-flow-kind="user"]):not([data-chat-flow-kind="steering"]):not([data-chat-flow-kind="turn-trigger"]),
-  [data-chat-group-key]
-) ~ .running > .runningDivider {
-  opacity: 1;
-}
-
-/* Drawn inside the 16px offset above the status row, so showing or hiding it
-   never changes the tail slot's height. */
-.runningDivider {
-  position: absolute;
-  top: -4px;
-  left: 0;
-  right: 0;
-  height: 0.5px;
-  background: color-mix(in srgb, var(--dsw-alias-border-l1) 75%, var(--dsw-alias-border-l2));
-  opacity: 0;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .runningDivider {
-    transition: opacity 160ms ease;
-  }
 }
 
 /* Same offset and height as the completed Turn's tail actions row. */

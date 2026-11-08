@@ -14,6 +14,7 @@ import {
   type TrajectoryUsage,
 } from './TrajectoryTable.tsx'
 import { TrajectoryToolbar } from './TrajectoryToolbar.tsx'
+import { ContextDiagnosticsPanel } from './ContextDiagnosticsPanel.tsx'
 import { TrajectoryTimeline } from './TrajectoryTimeline.tsx'
 import {
   appendTrajectoryPartialLayout, deriveTrajectoryLayout,
@@ -130,7 +131,7 @@ function addUsage(
 }
 
 export function TrajectoryView({
-  useSession, useTrajectory, useDuration, loadOlder, loadImage, setActualDuration,
+  useSession, useProjection, useTrajectory, useDuration, loadOlder, loadImage, setActualDuration,
   viewRequest, completeViewRequest, renderSlot, t, jsonStringWrapping,
 }: ConvViewProps
   & Pick<PropsRenderSlots<'conversation.trajectory.images'>, 'renderSlot'>
@@ -143,6 +144,7 @@ export function TrajectoryView({
   const actualDuration = useDuration(value => value)
   const [actualTime, setActualTime] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [contextOpen, setContextOpen] = useState(false)
   const [searchIndex] = useState(() => new TrajectorySearchIndex())
   const [searchIndexRevision, setSearchIndexRevision] = useState(0)
   const searchIndexTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -528,8 +530,11 @@ export function TrajectoryView({
         onToggleAllAssistants={toggleAllAssistants}
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
+        onOpenContext={() => { setContextOpen(true) }}
         t={t}
       />
+      {contextOpen && <ContextDiagnosticsPanel useSession={useSession} useProjection={useProjection}
+        useTrajectory={useTrajectory} loadOlder={loadOlder} onClose={() => { setContextOpen(false) }} t={t} />}
       <TrajectoryTimeline
         t={t}
         turns={timelineTurns}

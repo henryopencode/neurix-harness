@@ -4,14 +4,13 @@
   align-items: center;
   width: 100%;
   min-width: 0;
-  height: calc(33px + var(--dsh-content-font-delta, 0px));
-  padding: 0 0 8px;
+  height: calc(24px + var(--dsh-content-font-delta, 0px));
+  padding: 0;
   border: none;
-  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
   background: none;
   color: var(--dsw-alias-label-tertiary);
   font: inherit;
-  font-size: var(--dsh-content-font-size, 14px);
+  font-size: var(--dsh-content-font-size-secondary, 13px);
   cursor: pointer;
   text-align: left;
   transition: color 100ms ease;

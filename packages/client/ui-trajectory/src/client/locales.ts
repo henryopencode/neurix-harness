@@ -1,10 +1,15 @@
 /** `trajectory` namespace dictionaries for the complete trajectory surface. */
+import {
+  diagnosticsZh, diagnosticsEn, diagnosticsJa, diagnosticsEs,
+  diagnosticsFr, diagnosticsDe, diagnosticsRu, diagnosticsPt,
+} from './context-diagnostics-locales.ts'
 
 /** Dictionary namespace owned by this plugin. */
 export const NS = 'trajectory'
 
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
+  ...diagnosticsZh,
   'view.trajectory': '轨迹',
   'toolbar.aria': '轨迹工具栏',
   'toolbar.duration': '时长',
@@ -215,6 +220,7 @@ export type TrajectoryTranslate =
 
 /** English dictionary, checked complete against the Chinese source of truth. */
 export const en: Record<TrajectoryKey, string> = {
+  ...diagnosticsEn,
   'view.trajectory': 'Trajectory',
   'toolbar.aria': 'Trajectory toolbar',
   'toolbar.duration': 'Duration',
@@ -411,6 +417,7 @@ export const en: Record<TrajectoryKey, string> = {
 
 /** Japanese copy, checked against the English keys. */
 export const ja = {
+  ...diagnosticsJa,
   'view.trajectory': '軌跡',
   'toolbar.aria': '軌跡ツールバー',
   'toolbar.duration': '所要時間',
@@ -607,6 +614,7 @@ export const ja = {
 
 /** Spanish dictionary, checked against the English keys. */
 export const es = {
+  ...diagnosticsEs,
   'view.trajectory': 'Trayectoria',
   'toolbar.aria': 'Barra de herramientas de trayectoria',
   'toolbar.duration': 'Duración',
@@ -803,6 +811,7 @@ export const es = {
 
 /** French dictionary, checked against the English keys. */
 export const fr = {
+  ...diagnosticsFr,
   'view.trajectory': 'Trajectoire',
   'toolbar.aria': 'Barre d’outils du parcours',
   'toolbar.duration': 'Durée',
@@ -999,6 +1008,7 @@ export const fr = {
 
 /** German dictionary, checked against the English keys. */
 export const de = {
+  ...diagnosticsDe,
   'view.trajectory': 'Ausführungsverlauf',
   'toolbar.aria': 'Symbolleiste „Ausführungsverlauf“.',
   'toolbar.duration': 'Dauer',
@@ -1195,6 +1205,7 @@ export const de = {
 
 /** Russian dictionary, checked against the English keys. */
 export const ru = {
+  ...diagnosticsRu,
   'view.trajectory': 'Траектория',
   'toolbar.aria': 'Панель инструментов траектории',
   'toolbar.duration': 'Продолжительность',
@@ -1391,6 +1402,7 @@ export const ru = {
 
 /** Portuguese dictionary, checked against the English keys. */
 export const pt = {
+  ...diagnosticsPt,
   'view.trajectory': 'Trajetória',
   'toolbar.aria': 'Barra de ferramentas Trajetória',
   'toolbar.duration': 'Duração',

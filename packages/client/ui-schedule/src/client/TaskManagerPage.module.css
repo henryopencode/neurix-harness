@@ -45,7 +45,7 @@
   padding: 0 clamp(24px, 4vw, 48px) 48px;
 }
 
-/* Page title and creation actions. */
+/* Page title. */
 .pageHeading {
   display: flex;
   flex-wrap: wrap;
@@ -76,25 +76,6 @@
   font-size: 20px;
   line-height: 28px;
   font-weight: 500;
-}
-
-/* The Plugins toolbar: the heading's trailing group on its 16px gap. */
-.creationActions {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 16px;
-  white-space: nowrap;
-}
-
-/* The Plugins toolbar's steps: New and the bulk cleanup share one 32px
-   capsule with a 13px label. */
-.headerAction {
-  height: 32px;
-  font-size: 13px;
-  line-height: 20px;
-  padding: 0 12px;
-  border-radius: 16px;
 }
 
 /* The mock's `.list-tools`: the one row of filter tabs, 8px between chips and

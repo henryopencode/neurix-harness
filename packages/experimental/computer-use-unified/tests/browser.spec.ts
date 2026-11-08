@@ -101,6 +101,42 @@ it('expires coordinate input before semantic input and invalidates observations 
   } finally { vi.restoreAllMocks() }
 })
 
+it.each([
+  { action: 'scroll', input: { x: 400, y: 300, direction: 'down', amount: 980 }, delivery: 'mouse.wheel' },
+  { action: 'key', input: { keys: ['PageDown'] }, delivery: 'keyboard.press' },
+  { action: 'click', input: { locator }, delivery: 'locator.click' },
+])('allows $action after a 40-second model response within the default observation lifetime', async ({ action, input, delivery }) => {
+  await runtime.close()
+  runtime = new ComputerRuntime(undefined, Config({ headless: true, showOverlay: false, scrollDurationMs: 0 }))
+  const now = vi.spyOn(Date, 'now').mockReturnValue(1000)
+  try {
+    await execute({ action: 'open_browser', screenshot: true })
+    now.mockReturnValue(41_000)
+    await execute({ action, target: 'tab-1', ...input })
+    expect(browserFixture.calls.filter(call => call.name === delivery)).toHaveLength(1)
+  } finally { now.mockRestore() }
+})
+
+it.each([{}, { observationMaxAgeMs: 5000, coordinateMaxAgeMs: 5000 }])('requires a new observation after the configured lifetime without replaying input: %j', async (limits) => {
+  await runtime.close()
+  const config = Config({ headless: true, showOverlay: false, scrollDurationMs: 0, ...limits })
+  runtime = new ComputerRuntime(undefined, config)
+  const now = vi.spyOn(Date, 'now').mockReturnValue(1000)
+  try {
+    await execute({ action: 'open_browser', screenshot: true })
+    now.mockReturnValue(1000 + config.observationMaxAgeMs + 1)
+    const expired = execute({ action: 'scroll', target: 'tab-1', x: 400, y: 300, direction: 'down', amount: 980 })
+    await expect(expired).rejects.toMatchObject({ code: 'OBSERVATION_REQUIRED', effect: 'none' })
+    await expect(expired).rejects.toHaveProperty('nextAction',
+      expect.stringContaining('{"action":"observe","target":"tab-1","screenshot":true}'))
+    expect(browserFixture.calls.some(call => call.name === 'mouse.wheel')).toBe(false)
+    await execute({ action: 'observe', target: 'tab-1', screenshot: true })
+    await execute({ action: 'scroll', target: 'tab-1', x: 400, y: 300, direction: 'down', amount: 980 })
+    expect(browserFixture.calls.filter(call => call.name === 'mouse.wheel')).toHaveLength(1)
+    expect(browserFixture.browsers).toHaveLength(1)
+  } finally { now.mockRestore() }
+})
+
 it('uses browser-only resources without native discovery or shutdown on unsupported platforms', async () => {
   await runtime.close()
   runtime = new ComputerRuntime(undefined, Config({ headless: true, showOverlay: false, screenshots: false }))

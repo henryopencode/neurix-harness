@@ -105,7 +105,7 @@ token-meter 通过必需的 `ctx.sessionProjections` 服务注册三个客户端
 
 `contextBreakdown` 只保留存活的 `system/message` 节点及其启发式价格、一个 surface 运行总量，以及至多一个已武装的影子价 claim；替换减去紧邻的 claim（其 `shadowedSeqs` 同时列出被移除的系统提示词），或减去被改写的那个系统提示词的保留价格（[决策](../../../.agents/notes/implemented/architecture/2026-10-13-context-breakdown-system-prompt-state.zh.md)）。其状态取决于存活系统提示词的数量，而非消息数；状态版本 6 使位置检查点失效。`contextPressure` 是另一个标量影子价消费方：没有相邻 claim 的替换贡献零增量。用量 fold 保留一个最后样本槽，因为合法日志不会在更晚步骤报告用量后再次报告更早步骤的用量。
 
-`./estimate` 导出无服务状态的文字与内容估算函数，供工具结果保留复用。图片的实际请求成本由模型适配器的 `imageRequestPricing` 提供。
+`./estimate` 导出无服务状态的文字与内容估算函数，供工具结果保留复用；`./client` 也导出 `estimateToolsTokens` 供浏览器消费方使用。图片的实际请求成本由模型适配器的 `imageRequestPricing` 提供。
 
 </details>
 

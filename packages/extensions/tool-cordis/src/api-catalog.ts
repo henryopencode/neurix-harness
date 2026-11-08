@@ -4185,6 +4185,26 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'workspaceGit',
+    summary: 'Git service scoped to a live Session; it never creates, resets, stashes, or force-checks out branches.',
+    description: 'Git service scoped to a live Session; it never creates, resets, stashes, or force-checks out branches.',
+    methods: [
+      {
+        signature: '@Remote({ mode: \'stream\' }) async *follow(session: Session, signal: AbortSignal): AsyncIterable<GitBranchState>',
+        description: 'Observe the current checkout and local branches, including external Git changes.',
+        parameters: [{ name: 'session', description: 'Authorized live Session selecting the directory and sandbox policy.' }, { name: 'signal', description: 'Remote subscription lifetime.' }],
+        returns: 'Complete observations; a failed read closes the stream with a typed failure.',
+      },
+      {
+        signature: '@Remote async checkout(session: Session, branch: string, expected: string, signal: AbortSignal): Promise<GitBranchState>',
+        description: 'Switch to one existing local branch using Git\'s normal file-conflict checks.',
+        parameters: [{ name: 'session', description: 'Authorized live Session selecting the directory and sandbox policy.' }, { name: 'branch', description: 'Exact local branch name from the selector.' }, { name: 'expected', description: 'Branch name, or detached commit id, shown when the user selected it.' }, { name: 'signal', description: 'Caller lifetime; cancellation can leave a completed checkout and requires inspection.' }],
+        returns: 'The verified checkout after Git exits successfully.',
+        throws: ['A typed failure for active work, stale selection, Git refusal, or failed inspection; no automatic rollback runs.'],
+      },
+    ],
+  },
+  {
     key: 'workspaceRegistry',
     summary: 'Durable workspace registry.',
     description: 'Durable workspace registry. Startup waits for `sessionPersistence`, builds one canonical-cwd header index, and completes the one-time history bootstrap before the service becomes active. The persistence dependency is mandatory so an unavailable peer can never be mistaken for an empty history and commit the initialized marker.',
@@ -4921,6 +4941,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     summary: 'A workflow run started — the script\'s meta block validated, the body about to execute.',
     description: 'A workflow run started — the script\'s meta block validated, the body about to execute. Paired with Events[\'workflow/end\'].',
     parameters: [{ name: 'info', description: 'the run\'s identity snapshot (id + meta).' }],
+  },
+  {
+    name: 'workspace-git/changed',
+    mode: 'parallel',
+    signature: '\'workspace-git/changed\'(root: string): void',
+    summary: 'A branch switch has completed in a working tree.',
+    description: 'A branch switch has completed in a working tree.',
+    parameters: [{ name: 'root', description: 'Absolute repository working-tree root.' }],
   },
   {
     name: 'workspace/session-activity',
@@ -5945,6 +5973,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'GenericResultView',
     declaration: 'export interface GenericResultView {\n    card: \'generic\';\n    title?: string;\n    content?: ContentBlock[];\n}',
+  },
+  {
+    name: 'GitBranch',
+    declaration: 'export interface GitBranch {\n    readonly name: string;\n    readonly occupied: boolean;\n}',
+  },
+  {
+    name: 'GitBranchState',
+    declaration: 'export type GitBranchState = {\n    readonly kind: \'unavailable\';\n} | ({\n    readonly kind: \'repository\';\n    readonly root: string;\n    readonly branches: readonly GitBranch[];\n} & ({\n    readonly current: string;\n    readonly commit: string | null;\n} | {\n    readonly current: null;\n    readonly commit: string;\n}));',
   },
   {
     name: 'GoalActivation',
