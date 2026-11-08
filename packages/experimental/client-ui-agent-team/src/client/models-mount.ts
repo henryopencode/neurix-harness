@@ -11,7 +11,7 @@ import type {} from '@deepseek-ai/dsh-commands/remote'
 import type { CommandClaim, InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import { TeamSettingsController, type TeamSettingsValues } from './settings.ts'
 import { TeamSettings } from './TeamSettings.tsx'
-import { TeamDock, TeamLeader, TeamPost, teamPostDefinition } from './TeamConversation.tsx'
+import { TeamLeader, TeamPost, teamPostDefinition } from './TeamConversation.tsx'
 import { modelEn, modelZh, modelJa, modelEs, modelFr, modelDe, modelRu, modelPt, type ModelKey } from './model-locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -83,7 +83,6 @@ export function registerTeamModels(ctx: Context): void {
       },
       stop: id => command(id, 'stop'),
     }), 'team: composer stop')
-    scope.slots.inject('conversation.input.dock', () => scope.slots.register({ name: 'conversation.input.dock', id: 'agent-team', order: 30, locale: 'team-models', inject: (id: SessionId) => ({ command: (line: string) => command(id, line) }) }, TeamDock))
     scope.slots.inject('conversation.chat.node', () => scope.slots.register({ name: 'conversation.chat.node', key: 'team-post', locale: 'team-models' }, TeamPost))
     scope.slots.inject('conversation.chat.assistant.header', () => scope.slots.register({ name: 'conversation.chat.assistant.header', id: 'agent-team', locale: 'team-models' }, TeamLeader))
     const settings = new TeamSettingsController(scope.configForms.get<TeamSettingsValues>('agent-team'))
