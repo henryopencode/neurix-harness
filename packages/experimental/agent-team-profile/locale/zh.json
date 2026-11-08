@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "智能体团队",
-    "description": "由组长按任务分配角色与模型，共享任务并在同一会话协作。",
+    "description": "启用团队协作、团队工具、成员列表和共享任务看板。",
     "detail": "docs/DETAIL.zh.md"
   }
 }
