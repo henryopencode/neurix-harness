@@ -17,6 +17,7 @@ const DEFAULT_MAX_DELAY_MS = 10_000
 const DEFAULT_JITTER_RATIO = 0.1
 const DEFAULT_RETRYABLE_CODES = Object.freeze([
   EMPTY_RESPONSE_CODE,
+  'MALFORMED_RESPONSE',
   'RATE_LIMIT',
   'SERVER',
   'TIMEOUT',
@@ -142,7 +143,8 @@ function resolveBackoff(config: BackoffConfig | undefined, path: string): Resolv
 
 /**
  * Validate, default, and detach one provider-owned retry policy.
- * @param config - optional provider configuration; omission selects normal defaults.
+ * @param config - optional provider configuration; omission selects bounded retries
+ *   for transient failures and malformed responses.
  * @param path - diagnostic path naming the provider config that owns the value.
  * @returns an immutable policy safe to capture in provider registration state.
  */
