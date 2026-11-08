@@ -2470,7 +2470,7 @@ subagent_oar 工具在为外部提供方配置的别名之间选择。本目录�
 
 ### `spawn_teammate`
 
-为明确职责创建一名具名、持久的 teammate，并按任务需要从已配置的候选模型中选择模型。只有 Team Lead 可以调用此工具。
+创建一名具名、持久的 teammate。只有 Team Lead 可以调用此工具。
 
 ```json
 {
@@ -2487,10 +2487,6 @@ subagent_oar 工具在为外部提供方配置的别名之间选择。本目录�
     "prompt": {
       "type": "string",
       "description": "Complete initial task for the teammate."
-    },
-    "model": {
-      "type": "string",
-      "description": "Configured candidate model alias chosen for this responsibility. Required when the Team has model candidates; omit only when none are configured."
     },
     "context": {
       "type": "string",

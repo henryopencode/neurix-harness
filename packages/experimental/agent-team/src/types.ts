@@ -6,9 +6,8 @@ import type { Branded } from '@deepseek-ai/dsh-brand'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm/types'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SessionSeq } from '@deepseek-ai/dsh-session/types'
-import type { Volatile } from '@deepseek-ai/cordis'
 
-/** One available model; responsibilities belong to teammates rather than model entries. */
+/** Candidate model retained in historical Team selection events. */
 export interface TeamModel {
   /** Unique alias selected by the Lead when creating a responsibility. */
   readonly name: string
@@ -22,7 +21,7 @@ export interface TeamModel {
   readonly strengths: string
 }
 
-/** Model choices captured for one Team, independent of its role roster. */
+/** Model choices retained in historical Team selection events. */
 export interface TeamModelSelection {
   /** Candidate alias initially assigned to the Lead. */
   readonly leader: string
@@ -172,7 +171,7 @@ export interface TeamProjection {
 
 declare module '@deepseek-ai/dsh-session-projection/types' {
   interface SessionProjectionMap {
-    /** Configured model candidates and selected leader for one Team. */
+    /** Historical candidate models and leader retained in stored projection views. */
     teamModels: TeamModelSelection | null
     /** Durable roster and non-deleted task board of the Team rooted at the projected Session. */
     agentTeam: TeamProjection
@@ -205,12 +204,6 @@ declare module '@deepseek-ai/dsh-llm' {
 
 /** Team-service deployment limits. */
 export interface Config {
-  /** Candidate model routes and strengths; empty retains inherited model selection. */
-  readonly models?: Volatile<TeamModel[]>
-  /** Candidate alias used by the Lead; empty preserves the Lead's current selection. */
-  readonly leaderModel?: Volatile<string>
-  /** Maximum simultaneously active teammates per Team. */
-  readonly maxParallel?: Volatile<number>
   /** Maximum immutable teammate names retained by one Team. */
   readonly maxMembers?: number
   /** Maximum non-deleted tasks retained by one Team. */
@@ -228,8 +221,6 @@ export interface SpawnTeammateRequest {
   readonly prompt: ContentBlock[]
   readonly context: 'fresh' | 'fork'
   readonly provider: string
-  /** Configured model alias chosen for this responsibility; required when model candidates are configured. */
-  readonly model?: string
   /** Explicit child model route and request controls supported by the execution provider. */
   readonly agentOptions?: AgentOptions
   /** Immutable coordination namespace retained with the member. */

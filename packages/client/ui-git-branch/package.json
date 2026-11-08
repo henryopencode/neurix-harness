@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-git-branch",
   "description": "Live, read-only Git branch context in the conversation header",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publishConfig": {
     "access": "public"
   },
