@@ -286,7 +286,7 @@ describe.skipIf(geminiApiKey === undefined || geminiBaseURL === undefined || gem
         name: 'read', description: 'Read one text file.',
         parameters: { type: 'object', properties: { file_path: { type: 'string' } }, required: ['file_path'] },
       }]
-      const first = await assemble(ctx, { provider: profile.provider, model: profile.model, messages: prompt, tools, maxTokens: 2048 })
+      const first = await assemble(ctx, { provider: profile.provider, model: profile.model, messages: prompt, tools })
       expectFinish(first, 'tool-calls')
       const calls = first.message.content.filter(block => block.type === 'tool-call')
       expect(calls).toHaveLength(files.length)
