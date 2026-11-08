@@ -22,14 +22,8 @@ kind: "package-reference"
 
 -----
 
-Host 可通过 `SpawnTeammateRequest.agentOptions` 选择成员模型。外层 `provider` 选择执行后端；`agentOptions.provider` 和 `agentOptions.model` 选择 LLM 路由。
-
-名单中的 `model` 来自每个活跃 Agent 当前选定的模型。成员模型不可获取时省略该字段，不以组长路由或启动默认值代替未知的选择。
-
 <a id="use-this-package"></a>
 ## 使用本包
-
-`models`、`leaderModel` 和 `maxParallel` 分别配置候选模型、初始组长模型与活跃队友上限。`spawnTeammate` 接收模型别名，队友名称和职责独立于模型。配置候选模型后，缺少或未知别名会在创建成员记录前拒绝；没有候选模型时继续支持已有的继承模型调用。`teamModels` 投影恢复模型选择和用户停止状态，`team/post` 将公开回复关联到职责与实际模型。用户定向消息复用现有团队成员和共享工作区。
 
 当一个 agent 需要共享工作目录中的具名助手、直接 peer 消息以及持久 roster 与任务状态时，加入本包。与 `@deepseek-ai/dsh-experimental-tool-agent-team` 一起挂载可提供模型工具。
 
@@ -151,7 +145,7 @@ roster 与任务变更将 `team/member` 和 `team/task` 追加到精确的 live 
 
 历史 mailbox 事件与 `team-message` source 仍可读取，投影仍报告 queued-minus-delivered 记录。Team 不会投递或确认这些记录：目标尚未记录的历史消息保持未投递。
 
-Mailbox 投影与 checkpoint 准入保留本地声明的校验器之外获准内容中全部已解码 JSON 字段，包括自有 `__proto__` 键。本地字段检查覆盖 `text`、`reasoning`、`image` 和 `tool-call`；获准的未知标签保持不透明。Team 投影缓存版本 5 从 Session 日志重建较早缓存版本的 checkpoint；Session 格式版本保持不变。
+Mailbox 投影与 checkpoint 准入保留本地声明的校验器之外获准内容中全部已解码 JSON 字段，包括自有 `__proto__` 键。本地字段检查覆盖 `text`、`reasoning`、`image` 和 `tool-call`；获准的未知标签保持不透明。Team 投影缓存版本 4 从 Session 日志重建较早缓存版本的 checkpoint；Session 格式版本保持不变。
 
 ### Dispose
 

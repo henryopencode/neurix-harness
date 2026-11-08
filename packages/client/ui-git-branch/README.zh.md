@@ -7,7 +7,7 @@ kind: "package-reference"
 
 [English](README.md) | 中文
 
-## 摘要
+## 概述
 
 在会话页头的项目打开控件前查看当前会话目录的 Git 分支。标签会跟随分支变化，支持链接工作树，使用短提交号标识分离 HEAD；目录不属于仓库或 Git 不可用时不显示。插件只读取仓库元数据，不修改文件、索引或检出状态。
 
@@ -43,13 +43,14 @@ Host 拥有 `gitBranch.follow` Remote 流。现有工作区文件 Session 查询
 
 无；本插件不组装或发送模型请求。
 
-<a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与延后工作
+
+<a id="known-limitations-and-deferred-work"></a>
 
 - 外部 Git 命令切换分支后，标签在下一次观察时更新，而非同步更新。
 - 标签只标识当前分支，不提供切换分支或未提交改动计数。
 
 <a id="dev-note"></a>
-## 开发备注
+### 开发备注
 
 无。

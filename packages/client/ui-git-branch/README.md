@@ -43,13 +43,14 @@ None, as branch metadata is presentation-only and is not added to model requests
 
 None; this plugin does not assemble or send model requests.
 
-<a id="known-limitations-and-deferred-work"></a>
 ## Known Limitations and Deferred Work
+
+<a id="known-limitations-and-deferred-work"></a>
 
 - Branch changes appear on the next observation, rather than synchronously with an external Git command.
 - The badge identifies the current branch; it does not switch branches or display uncommitted change counts.
 
 <a id="dev-note"></a>
-## Dev Note
+### Dev Note
 
 None.
