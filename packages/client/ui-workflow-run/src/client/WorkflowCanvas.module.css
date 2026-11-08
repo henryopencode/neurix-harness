@@ -1,0 +1,56 @@
+.canvas {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 320px;
+  color: var(--dsw-alias-label-primary);
+  --xy-background-color: var(--dsw-alias-bg-module-platform);
+  --xy-edge-stroke: var(--dsw-alias-border-l4);
+  --xy-edge-stroke-width: 1.5;
+  --xy-handle-background-color: var(--dsw-alias-border-l4);
+  --xy-handle-border-color: var(--dsw-alias-bg-module-platform);
+}
+
+.flow { position: relative; flex: 1; min-width: 0; min-height: 280px; }
+.zoom { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 8px; }
+
+.node {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: var(--dsw-radius-lg);
+  background: var(--dsw-alias-bg-module-platform);
+  color: var(--dsw-alias-label-primary);
+  text-align: start;
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  line-height: calc(20px + var(--dsh-content-font-delta-secondary, 0px));
+}
+
+.node:focus-visible,
+:global(.react-flow__node.selected) .node {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color);
+  outline-offset: 2px;
+}
+
+.node[data-status='running'] { border-color: var(--dsw-alias-state-business-primary); }
+.node[data-status='failed'] { border-color: var(--dsw-alias-state-error-primary); }
+.node[data-status='removed'] { border-style: dashed; }
+.nodeMeta { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
+.phase { overflow: hidden; flex: 1; text-overflow: ellipsis; white-space: nowrap; color: var(--dsw-alias-label-secondary); }
+.status { display: inline-flex; flex: none; align-items: center; gap: 6px; }
+.nodeTitle { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-weight: 500; }
+.nodeSummary { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--dsw-alias-label-secondary); }
+
+@media (hover: hover) {
+  .node:hover { background: var(--dsw-alias-button-floating-hover); }
+}
+
+@media (pointer: coarse) {
+  .zoom { gap: 8px; }
+}

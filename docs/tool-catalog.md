@@ -2694,7 +2694,7 @@ All nine tools are scoped to implicit Team Leads and durable teammates. The ship
 
 ### `todo_write`
 
-Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete step before you start. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark each todo `completed` as soon as it is done.
+Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete, verifiable step before you start. For complex work, give tasks stable ids, group them by phase, describe their inputs and expected outputs, and declare dependsOn only for actual prerequisites. Include planned steps before they start; preserve ids and all relevant fields when updating the complete list. Attach a published child sessionId when delegating, blockedReason when waiting, and result plus artifact file paths when work produces evidence or deliverables. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark each todo `completed` as soon as it is done.
 
 ```json
 {
@@ -2713,12 +2713,54 @@ Record and update a task list to plan multi-step work and show progress; skip it
           },
           "status": {
             "type": "string",
-            "description": "pending (not started) | in_progress (now) | completed (done).",
+            "description": "pending (not started or waiting) | in_progress (now) | completed (done).",
             "enum": [
               "pending",
               "in_progress",
               "completed"
             ]
+          },
+          "id": {
+            "type": "string",
+            "description": "Stable task id; keep it when updating or renaming the task."
+          },
+          "phase": {
+            "type": "string",
+            "description": "Stage grouping, such as research, implementation, or verification."
+          },
+          "description": {
+            "type": "string",
+            "description": "Concrete work and input materials."
+          },
+          "expectedOutput": {
+            "type": "string",
+            "description": "Expected deliverable or observable acceptance criterion."
+          },
+          "dependsOn": {
+            "type": "array",
+            "description": "Prerequisite task ids in this complete list; requires this task to have an id. Must be acyclic.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "blockedReason": {
+            "type": "string",
+            "description": "Why the task is waiting, including a question or missing input."
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Published child session id executing this task, when delegated."
+          },
+          "result": {
+            "type": "string",
+            "description": "Result summary or concrete verification evidence."
+          },
+          "artifacts": {
+            "type": "array",
+            "description": "Output file paths, absolute or relative to the session working directory.",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [

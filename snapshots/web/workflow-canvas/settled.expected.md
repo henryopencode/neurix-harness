@@ -1,0 +1,17 @@
+- region "Workflow":
+  - combobox "Select task plan": Task 1
+  - text: 3 / 3 completed
+  - tablist "Workflow display":
+    - tab "Canvas"
+    - tab "List" [selected]
+  - group "Task phases":
+    - button "Prepare · 2" [expanded]
+    - button "Implement · 1" [expanded]
+  - tabpanel "List":
+    - list:
+      - listitem:
+        - button "Inspect read the code, Completed": read the code Identify the implementation and regression-test locations. Completed
+      - listitem:
+        - button "Inspect watch the background build, Completed": watch the background build A build result with any failures identified. Completed
+      - listitem:
+        - button "Inspect write the fix, Completed": write the fix An implementation with a focused regression test. Completed

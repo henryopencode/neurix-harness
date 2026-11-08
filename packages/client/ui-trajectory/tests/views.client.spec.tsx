@@ -277,6 +277,7 @@ async function bench(snapshot = historySnapshot(NODES)) {
   const uiConversation = new UiConversation(ctx, runtime.sessions)
   const { events, views } = uiConversation
   const targetSources: ConversationTargetSources = {
+    workflow: createSnapshotStore(undefined),
     chat: createSnapshotStore<ChatSnapshot | undefined>(undefined),
     trajectory: trajectoryStore,
     'tool-todo-history': createSnapshotStore<ConversationViewSnapshotMap['tool-todo-history'] | undefined>(undefined),

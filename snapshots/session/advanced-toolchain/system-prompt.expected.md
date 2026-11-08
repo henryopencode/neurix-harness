@@ -252,14 +252,32 @@ interface ToolArgsMap {
     /** The task for the subagent. It already sees this conversation's completed turns, so build on them freely and state only what is new. */
     prompt: string;
   } & Record<string, JsonValue>;
-  /** Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete step before you start. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark each todo `completed` as soon as it is done. */
+  /** Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete, verifiable step before you start. For complex work, give tasks stable ids, group them by phase, describe their inputs and expected outputs, and declare dependsOn only for actual prerequisites. Include planned steps before they start; preserve ids and all relevant fields when updating the complete list. Attach a published child sessionId when delegating, blockedReason when waiting, and result plus artifact file paths when work produces evidence or deliverables. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark each todo `completed` as soon as it is done. */
   todo_write: {
     /** The COMPLETE task list, replacing any previous list. */
     todos: ({
       /** What the task is — a short imperative line. */
       content: string;
-      /** pending (not started) | in_progress (now) | completed (done). */
+      /** pending (not started or waiting) | in_progress (now) | completed (done). */
       status: "pending" | "in_progress" | "completed";
+      /** Stable task id; keep it when updating or renaming the task. */
+      id?: string;
+      /** Stage grouping, such as research, implementation, or verification. */
+      phase?: string;
+      /** Concrete work and input materials. */
+      description?: string;
+      /** Expected deliverable or observable acceptance criterion. */
+      expectedOutput?: string;
+      /** Prerequisite task ids in this complete list; requires this task to have an id. Must be acyclic. */
+      dependsOn?: string[];
+      /** Why the task is waiting, including a question or missing input. */
+      blockedReason?: string;
+      /** Published child session id executing this task, when delegated. */
+      sessionId?: string;
+      /** Result summary or concrete verification evidence. */
+      result?: string;
+      /** Output file paths, absolute or relative to the session working directory. */
+      artifacts?: string[];
     })[];
   } & Record<string, JsonValue>;
   /** Update the current goal. */
@@ -533,8 +551,28 @@ interface ToolOutputMap {
   };
   todo_write: {
     todos: ({
+      /** What the task is — a short imperative line. */
       content: string;
+      /** pending (not started or waiting) | in_progress (now) | completed (done). */
       status: "pending" | "in_progress" | "completed";
+      /** Stable task id; keep it when updating or renaming the task. */
+      id?: string;
+      /** Stage grouping, such as research, implementation, or verification. */
+      phase?: string;
+      /** Concrete work and input materials. */
+      description?: string;
+      /** Expected deliverable or observable acceptance criterion. */
+      expectedOutput?: string;
+      /** Prerequisite task ids in this complete list; requires this task to have an id. Must be acyclic. */
+      dependsOn?: string[];
+      /** Why the task is waiting, including a question or missing input. */
+      blockedReason?: string;
+      /** Published child session id executing this task, when delegated. */
+      sessionId?: string;
+      /** Result summary or concrete verification evidence. */
+      result?: string;
+      /** Output file paths, absolute or relative to the session working directory. */
+      artifacts?: string[];
     })[];
     counts: {
       pending: number;

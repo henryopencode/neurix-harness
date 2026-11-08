@@ -5,7 +5,10 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
+    - tab "Workflow"
     - tab "Trajectory"
+- navigation "Turn navigation":
+  - button "Jump to turn 1"
 - text: Use read_image to inspect red.png. Then reply exactly MINIMAL_IMAGE_OK and stop. {{clock}}
 - button "Copy"
 - status: Completed
