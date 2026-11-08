@@ -48,6 +48,7 @@ const NO_MODEL_EXPERIENCE_SECTION: Readonly<Record<string, string>> = {
  * blocks. A package moves on or off this list with its context behavior.
  */
 const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
+  'packages/client/ui-git-branch': { kind: 'none', reason: 'Git branch metadata stays in the conversation header and never enters model context.' },
   'packages/experimental/model-group': { kind: 'indirect', reason: 'The optional layer delegates logged guidance, assignments, and public replies to model-group-runtime.' },
   'packages/client/ui-knowledge-base': { kind: 'indirect', reason: 'Document management changes later knowledge tool results; the Host knowledge package owns every model-visible declaration and passage.' },
   'packages/experimental/mobile-access': { kind: 'none', reason: 'Phone connection and transport add no model-visible context.' },

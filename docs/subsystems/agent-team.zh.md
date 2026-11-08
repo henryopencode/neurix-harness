@@ -132,7 +132,7 @@ interface TeamProjection {
 
 ## 模型分配
 
-[智能体团队组合包](../../packages/experimental/agent-team-profile/README.zh.md) 配置候选模型与初始组长模型。`TeamModel` 标识候选路由及其擅长任务，`TeamModelSelection` 记录候选集合与组长选择。组长通过 `spawn_teammate` 创建本次任务的职责名称，使用 `model` 选择别名，独立于 `name` 和 `description`。团队服务在创建成员前校验别名、停止状态、模型可用性与并行容量。`TeamPost` 保留角色、实际模型路由、来源 Session 与输出序号。
+通过团队工具创建的队友继承负责人的模型。可信协调器可以向 `spawnTeammate` 传入 `agentOptions`；[模型群运行时](../../packages/experimental/model-group-runtime/README.zh.md) 用它选择明确的模型路由。`TeamModel`、`TeamModelSelection` 和 `TeamPost` 保留已有 Session 事件中的候选模型选择与署名回复。
 
 ### 历史模型群记录
 
@@ -183,32 +183,6 @@ listMembers(agent: Agent): TeamMemberView[]
  * @returns the active roster row.
  */
 async spawnTeammate(caller: Agent, request: SpawnTeammateRequest): Promise<SpawnTeammateResult>
-
-/**
- * Read the candidate models captured by this member's Lead.
- * @param caller - Exact live Team member.
- * @returns Its Lead's configured candidate models.
- */
-modelSelection(caller: Agent): TeamModelSelection | null
-
-/**
- * Stop the Team or one responsibility, retaining the roster and shared tasks.
- * @param caller - Exact live Lead.
- * @param target - Teammate name; omission stops the whole Team.
- * @returns After selected executions and pending creation have settled.
- */
-async stop(caller: Agent, target?: string): Promise<void>
-
-/**
- * Deliver direct human input to responsibilities or configured model aliases.
- * @param caller - Live Lead conversation.
- * @param targets - Member names or candidate model aliases.
- * @param content - Complete accepted human input.
- * @param provider - Continuable execution provider for a newly addressed model.
- * @param signal - Caller-owned admission cancellation.
- * @returns After every selected target has accepted its input; partial failures reject visibly.
- */
-async tell(caller: Agent, targets: readonly string[], content: import('@deepseek-ai/dsh-llm').ContentBlock[], provider: string, signal: AbortSignal): Promise<void>
 
 /**
  * Steer one peer message into the target inbox or reject the attempt.
@@ -274,7 +248,7 @@ interrupt(caller: Agent, targetName: string): { previousStatus: 'running' | 'ina
 tryMembership(agent: Agent): TeamMembership | undefined
 ```
 
-Types: [Agent](core.zh.md) · [ContentBlock](llm-streaming.zh.md)
+Types: [Agent](core.zh.md)
 
 Source: [`packages/experimental/agent-team/src/index.ts`](../../packages/experimental/agent-team/src/index.ts)
 
