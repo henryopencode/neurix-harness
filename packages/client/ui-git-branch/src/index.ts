@@ -47,6 +47,7 @@ export default class GitBranch extends TypertRemoteService {
    */
   @Remote({ mode: 'stream' })
   async *follow(workspaceFileScope: WorkspaceFileScope, signal: AbortSignal): AsyncIterable<GitHead> {
+    const isAborted = (): boolean => signal.aborted
     let executable: string
     try {
       executable = await this.ctx.subprocess.resolveExecutable('git', undefined, signal)
@@ -56,7 +57,7 @@ export default class GitBranch extends TypertRemoteService {
       return
     }
     let previous: string | undefined
-    while (!signal.aborted) {
+    while (!isAborted()) {
       const head = await readHead(this.ctx.subprocess, executable, workspaceFileScope.workspaceRoot, this.config.timeoutMs, signal)
       const key = JSON.stringify(head)
       if (key !== previous) {
@@ -66,7 +67,7 @@ export default class GitBranch extends TypertRemoteService {
       try {
         await setTimeout(this.config.refreshMs, undefined, { signal })
       } catch (error) {
-        if (signal.aborted) return
+        if (isAborted()) return
         throw error
       }
     }
