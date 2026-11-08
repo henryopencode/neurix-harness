@@ -1,6 +1,6 @@
 /** Provider-owned preparation steps and persisted recognition preferences. */
 import { useEffect, useState } from 'react'
-import { Button, DisclosureRow, IconChevronDownOutlineRegular, StateDot, type StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, DisclosureRow, IconChevronDownOutlineRegular, Select, StateDot, type StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SpeechPreparationState, SpeechProviderId, SpeechProviderView, SpeechSelectionPatch } from '@deepseek-ai/dsh-experimental-speech-to-text/types'
 import type { VoiceInputInjected } from './VoiceInput.tsx'
@@ -108,14 +108,13 @@ export function PreparationCard({ provider, connected, prepare, cancelPreparatio
     {!expanded && <DownloadProgress state={state} t={t} />}
     {state.phase === 'failed' && <PreparationFailure state={state} t={t} />}
     {canPrepare && sources.length > 0 && <div className={css.sourceChoice}>
-      <label>{t('sourceChoice')}<select aria-label={t('sourceChoice')} value={selectedSource} disabled={!connected || submitting || sources.length === 1}
-        onChange={(event) => { setSource(event.target.value) }}>
-        {sources.length > 1 && <option value="">{t('sourceAuto')}</option>}
-        {sources.map(origin => <option key={origin} value={origin}>
-          {origin === 'https://huggingface.co' ? t('sourceHuggingFace')
-            : origin === 'https://hf-mirror.com' ? t('sourceMirror') : origin}
-        </option>)}
-      </select></label>
+      <label>{t('sourceChoice')}<Select aria-label={t('sourceChoice')} value={selectedSource}
+        disabled={!connected || submitting || sources.length === 1} onValueChange={setSource}
+        options={[
+          ...sources.length > 1 ? [{ value: '', label: t('sourceAuto') }] : [],
+          ...sources.map(origin => ({ value: origin, label: origin === 'https://huggingface.co' ? t('sourceHuggingFace')
+            : origin === 'https://hf-mirror.com' ? t('sourceMirror') : origin })),
+        ]} /></label>
       <small className={css.metric}>{t(selectedSource === '' ? 'sourceAutoHelp' : 'sourceManualHelp')}</small>
     </div>}
     <div className={css.preparationActions}>
@@ -145,15 +144,14 @@ export function VoicePreparation({ useSpeechReadiness, ...props }: Pick<InjectFa
   return <div>
     {catalog && <div className={css.preferences}>
       <MicrophonePicker {...props} />
-      <label>{props.t('provider')}<select value={catalog.selection.providerId} disabled={!readiness.connected || saving}
-        onChange={(event) => { void configure({ providerId: event.target.value as SpeechProviderId }) }}>
-        {catalog.providers.map(provider => <option key={provider.id} value={provider.id}>{provider.name}</option>)}
-      </select></label>
-      <label>{props.t('language')}<select value={catalog.selection.language} disabled={!readiness.connected || saving}
-        onChange={(event) => { void configure({ language: event.target.value }) }}>
-        {selected?.languages.map(language =>
-          <option key={language} value={language}>{languageNames[language] ?? language}</option>)}
-      </select></label>
+      <label>{props.t('provider')}<Select aria-label={props.t('provider')} value={catalog.selection.providerId}
+        disabled={!readiness.connected || saving}
+        options={catalog.providers.map(provider => ({ value: provider.id, label: provider.name }))}
+        onValueChange={(value) => { void configure({ providerId: value as SpeechProviderId }) }} /></label>
+      <label>{props.t('language')}<Select aria-label={props.t('language')} value={catalog.selection.language}
+        disabled={!readiness.connected || saving}
+        options={selected?.languages.map(language => ({ value: language, label: languageNames[language] ?? language })) ?? []}
+        onValueChange={(value) => { void configure({ language: value }) }} /></label>
       <p>{props.t(selected?.location === 'cloud' ? 'cloud' : 'local')}</p>
       {error && <p role="alert">{props.t('failed', { message: error })}</p>}
     </div>}

@@ -24,6 +24,7 @@ kind: "package-group"
 
 | 包 | 职责 | ctx key |
 |---|---|---|
+| [`knowledge-base/`](knowledge-base/README.zh.md) | 工作区资料索引、原文检索和管理 API | `ctx.knowledgeBase` |
 | [`scope/`](scope/README.zh.md) | 隔离单个 agent 贡献的作用域注册与事件路由 | 库，不使用 ctx key |
 | [`session/`](session/README.zh.md) | 每个 agent 的历史均派生自该仅追加会话事件日志 | `ctx.sessions` |
 | [`system-prompt/`](system-prompt/README.zh.md) | 由有序段、工具 schema 与变量进行的系统提示词组装 | `ctx.systemPrompt` |
@@ -40,6 +41,7 @@ kind: "package-group"
 <a id="related-documentation"></a>
 ## 相关文档
 
+- [文档知识库](../../docs/subsystems/knowledge-base.zh.md)——工作区资料索引与检索。
 - [Core 子系统](../../docs/subsystems/core.zh.md)——逐包循环图与 `Agent` 句柄约定。
 - [会话子系统](../../docs/subsystems/session.zh.md)——会话事件词汇与派生历史。
 - [系统提示词子系统](../../docs/subsystems/system-prompt.zh.md)——提示词段、动态上下文与工具 schema 类型。

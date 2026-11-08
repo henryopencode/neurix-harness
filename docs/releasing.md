@@ -18,7 +18,7 @@ Develop on `develop` and merge a stable change into `master` through a pull requ
 <a id="development-and-release"></a>
 ## Development and release
 
-`develop` is the default development branch. The **Neurix development checks** workflow validates pushes to it and pull requests to either branch. It runs the build, lint, and unit tests. The repository's upstream-specific automated workflows are disabled in this fork; their files remain available for reference.
+`master` is the repository's default branch; ongoing development stays on `develop`. The **Neurix development checks** workflow validates pushes to `develop` and pull requests to either branch. It runs the build, lint, and unit tests for changed source, its static consumers, and affected plugin owners; it does not run the full unit suite. The repository's upstream-specific automated workflows are disabled in this fork; their files remain available for reference.
 
 Merge the ready changes into `master`. **Neurix stable desktop release** responds to master pushes, including ordinary merges, squash merges, and direct pushes. Development-branch pushes and closing a pull request without merging do not publish installers. All four platform jobs must succeed before a Release appears. Uploads remain a draft until all assets and checksums are present; publication uses GitHub's semantic version ordering so an older build finishing late cannot replace the newest version. Each installer includes the application and its matching runtime. GitHub Releases also contains `SHA256SUMS.txt` for the installers and the Linux Web server archive.
 
@@ -35,6 +35,12 @@ For a build rehearsal, run the release workflow manually with **validation_only*
 
 ```sh
 pnpm exec tsx scripts/release/desktop-stable.ts --plan
+```
+
+To rebuild an existing reservation after workflow or test-fixture repairs, set **existing_tag** to its `v<version>` tag and leave **version** empty. The paired tags, manifest version, reservation metadata, and master ancestry must agree. Installers use the original tagged commit; updated reservation tests are copied only after packaging. Release notes identify both the packaged source and qualification workflow commit. A qualification-only repair merges after its PR checks pass, with `[skip ci]` in the merge subject to avoid reserving another version; then run the manual retry from `master`:
+
+```sh
+gh workflow run neurix-desktop-release.yml --ref master -f existing_tag=v1.1.0 -f validation_only=false
 ```
 
 <a id="installed-update-checks"></a>

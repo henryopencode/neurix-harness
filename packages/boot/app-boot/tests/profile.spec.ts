@@ -376,22 +376,23 @@ describe('loadProfile', () => {
     ])
   })
 
-  it('removes a retired bundle from an application-owned profile and keeps the rest of the manifest', () => {
-    const anchor = stageInstallation({
-      '@deepseek-ai/dsh-base': { patch: '[]\n' },
-      'custom-bundle': { patch: '[]\n' },
+  it.each(['@deepseek-ai/dsh-experimental-schedule-bundle', '@deepseek-ai/dsh-experimental-knowledge-base'])(
+    'removes retired bundle %s and keeps the rest of the manifest', (retired) => {
+      const anchor = stageInstallation({
+        '@deepseek-ai/dsh-base': { patch: '[]\n' },
+        'custom-bundle': { patch: '[]\n' },
+      })
+      const dir = join(tmp(), 'app-profile')
+      initProfile(dir, ['@deepseek-ai/dsh-base', retired, 'custom-bundle'])
+      writeProfileManifest(dir, { ...readProfileManifest('t', dir), dependencies: { 'custom-bundle': '^1.0.0' } })
+      const profile = loadProfileDirectory('t', dir, anchor)
+      expect(profile.skippedBundles).toEqual([])
+      expect(profile.layers.map(layer => layer.packageName)).toEqual(['@deepseek-ai/dsh-base', 'custom-bundle'])
+      expect(readProfileManifest('t', dir)).toMatchObject({
+        dependencies: { 'custom-bundle': '^1.0.0' },
+        dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', 'custom-bundle'] } },
+      })
     })
-    const dir = join(tmp(), 'app-profile')
-    initProfile(dir, ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-experimental-schedule-bundle', 'custom-bundle'])
-    writeProfileManifest(dir, { ...readProfileManifest('t', dir), dependencies: { 'custom-bundle': '^1.0.0' } })
-    const profile = loadProfileDirectory('t', dir, anchor)
-    expect(profile.skippedBundles).toEqual([])
-    expect(profile.layers.map(layer => layer.packageName)).toEqual(['@deepseek-ai/dsh-base', 'custom-bundle'])
-    expect(readProfileManifest('t', dir)).toMatchObject({
-      dependencies: { 'custom-bundle': '^1.0.0' },
-      dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', 'custom-bundle'] } },
-    })
-  })
 
   it.each(['missing package', 'invalid manifest', 'not a bundle', 'missing patch', 'invalid patch'])(
     'skips a bundle with %s, retains selections, and retries it on reread', async (failure) => {

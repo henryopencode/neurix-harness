@@ -1,7 +1,7 @@
-import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
+import { chmod, cp, lstat, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import type { Stats } from 'node:fs'
 import { Arch, Packager, type BeforePackContext, type Configuration } from 'app-builder-lib'
 import { WinPackager } from 'app-builder-lib/out/winPackager.js'
@@ -11,6 +11,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { prepareWindowsAsarUnpack, verifyWindowsAsarUnpack } from '../scripts/windows-asar-unpack.mjs'
 import { createElectronBuilderConfig } from '../scripts/electron-builder-config.mjs'
 import { verifyRuntimeArchive } from '../scripts/verify-runtime-archive.ts'
+import { desktopRuntimeFileExclusion } from '../scripts/runtime-file-policy.ts'
 import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
 import { inventoryDesktopRuntime, type DesktopRuntimeDescriptor } from '../src/runtime-tree.ts'
 
@@ -275,6 +276,24 @@ it('verifies archived bytes against the preparation descriptor', async () => {
   await expect(verifyRuntimeArchive(archive, expected)).resolves.toBeUndefined()
   await writeFile(join(input.resources, 'app.asar.unpacked/dsh/node_modules/foo/native.node'), 'tampered')
   await expect(verifyRuntimeArchive(archive, expected)).rejects.toThrow('ASAR integrity')
+})
+
+it('omits directory markers before sealing a runtime that the ASAR writer can reproduce', async () => {
+  const input = await fixture(false)
+  const marker = join(input.source, 'node_modules', 'tr46', 'lib', '.gitkeep')
+  await mkdir(dirname(marker), { recursive: true })
+  await writeFile(marker, '')
+  const prepared = join(input.root, 'prepared')
+  const modules = join(input.source, 'node_modules')
+  await cp(input.source, prepared, { recursive: true, filter: path =>
+    desktopRuntimeFileExclusion(relative(modules, path), process, 'win32-x64') === undefined,
+  })
+  input.source = prepared
+  input.config.files = [{ from: prepared, to: 'dsh', filter: ['**/*'] }]
+  const expected = await seal(input)
+  expect(expected.files.some(file => file.path.endsWith('/.gitkeep'))).toBe(false)
+  await packageFixture(input)
+  await expect(verifyRuntimeArchive(join(input.resources, 'app.asar'), expected)).resolves.toBeUndefined()
 })
 
 it.each(['sharedPackages', 'release', 'files'] as const)('rejects changed archived descriptor %s', async (field) => {

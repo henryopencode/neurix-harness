@@ -1,0 +1,17 @@
+- id: llm-deepseek
+  disabled: true
+- id: session-persistence-jsonl
+  config:
+    root: ./.sessions
+    compression: none
+- id: agent-team
+  config:
+    leaderModel: lead-model
+    maxParallel: 2
+    models:
+      - { name: lead-model, label: Lead model, provider: team-test, model: deepseek-v4-flash, strengths: Planning }
+      - { name: review, label: Review model, provider: team-test, model: review-model, strengths: Architecture review }
+      - { name: research, label: Research model, provider: team-test, model: research-model, strengths: Evidence research }
+- insert:
+    - id: team-models-fixture
+      name: ./models.mjs

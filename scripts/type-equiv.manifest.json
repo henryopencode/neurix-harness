@@ -2254,7 +2254,7 @@
     {
       "doc": "docs/subsystems/core.md",
       "symbol": "AgentOptions",
-      "source": "packages/core/agent/src/runtime-types.ts"
+      "source": "packages/core/agent/src/types.ts"
     },
     {
       "doc": "docs/subsystems/feedback.md",

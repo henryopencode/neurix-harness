@@ -5,11 +5,17 @@
     - button "模型"
     - button "内置插件"
     - button "Agent 预设"
+    - button "关于"
   - button "打开配置文件"
   - button "关闭"
   - heading "模型" [level=2]
   - paragraph: 填入各提供商的 API 密钥即可使用其模型。
   - list:
+    - listitem:
+      - text: acme-gateway 自定义
+      - button "编辑 acme-gateway": 编辑
+      - button "删除 acme-gateway": 删除
+      - alert: "llm-pi-ai: provider \"acme-gateway\" model \"custom-model\" needs an api; the installed catalog does not describe it, so set the route's api to the wire protocol its endpoint speaks"
     - listitem:
       - text: openrouter
       - button "编辑 openrouter": 编辑
@@ -19,9 +25,4 @@
       - text: zai
       - button "编辑 zai": 编辑
       - button "删除 zai": 删除
-    - listitem:
-      - text: acme-gateway 自定义
-      - button "编辑 acme-gateway": 编辑
-      - button "删除 acme-gateway": 删除
-      - alert: "llm-pi-ai: provider \"acme-gateway\" model \"custom-model\" needs an api; the installed catalog does not describe it, so set the route's api to the wire protocol its endpoint speaks"
   - button "添加模型提供商"

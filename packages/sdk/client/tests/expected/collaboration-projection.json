@@ -1,0 +1,85 @@
+{
+  "finalResponse": "Collaboration complete.",
+  "events": [
+    {
+      "type": "model-group/configured",
+      "data": {
+        "mode": "multi",
+        "leader": "a",
+        "members": [
+          {
+            "name": "a",
+            "label": "DeepSeek",
+            "provider": "deepseek-official",
+            "model": "deepseek-v4-flash",
+            "strengths": "Task analysis"
+          }
+        ],
+        "stopped": false,
+        "direct": [],
+        "stoppedMembers": []
+      },
+      "seq": 3,
+      "time": 0
+    },
+    {
+      "type": "team/models",
+      "data": {
+        "leader": "lead-model",
+        "models": [
+          {
+            "name": "lead-model",
+            "label": "Lead model",
+            "provider": "deepseek-official",
+            "model": "deepseek-v4-flash",
+            "strengths": "Planning"
+          },
+          {
+            "name": "review",
+            "label": "Review model",
+            "provider": "deepseek-official",
+            "model": "review-model",
+            "strengths": "Architecture review"
+          },
+          {
+            "name": "research",
+            "label": "Research model",
+            "provider": "deepseek-official",
+            "model": "research-model",
+            "strengths": "Evidence research"
+          }
+        ]
+      },
+      "seq": 4,
+      "time": 0
+    },
+    {
+      "type": "team/post",
+      "data": {
+        "member": "reviewer",
+        "description": "Architecture review",
+        "model": "review-model",
+        "label": "Review model",
+        "text": "Review complete.",
+        "sourceSession": "sdk-reviewer",
+        "sourceSeq": 14
+      },
+      "seq": 5,
+      "time": 0
+    },
+    {
+      "type": "team/post",
+      "data": {
+        "member": "researcher",
+        "description": "Evidence research",
+        "model": "research-model",
+        "label": "Research model",
+        "text": "Research complete.",
+        "sourceSession": "sdk-researcher",
+        "sourceSeq": 14
+      },
+      "seq": 6,
+      "time": 0
+    }
+  ]
+}

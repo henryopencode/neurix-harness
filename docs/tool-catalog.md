@@ -2464,7 +2464,7 @@ Source: [`packages/experimental/tool-agent-team/src/index.ts`](../packages/exper
 
 ### `spawn_teammate`
 
-Create one named, durable teammate. Only the Team Lead may call this tool.
+Create one named, durable teammate for a specific responsibility. Choose its model from the configured model candidates by task fit. Only the Team Lead may call this tool.
 
 ```json
 {
@@ -2481,6 +2481,10 @@ Create one named, durable teammate. Only the Team Lead may call this tool.
     "prompt": {
       "type": "string",
       "description": "Complete initial task for the teammate."
+    },
+    "model": {
+      "type": "string",
+      "description": "Configured candidate model alias chosen for this responsibility. Required when the Team has model candidates; omit only when none are configured."
     },
     "context": {
       "type": "string",

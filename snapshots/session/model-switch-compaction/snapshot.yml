@@ -7,6 +7,6 @@ platform: posix
 header:
   class: model-switch-compaction
   pin: true
-  toolSchemasSource: compaction-recovery
+  toolSchemasSource: compaction-output-reserve
   changes: 1
   promptChanges: 1

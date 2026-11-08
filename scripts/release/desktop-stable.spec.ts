@@ -1,13 +1,69 @@
 /** Stable numbering and admission rules for the fork's release workflow. */
 import { createHash } from 'node:crypto'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { createRequire } from 'node:module'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import yaml from 'js-yaml'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { nextStableDesktopVersion } from './desktop-stable.ts'
 import { GithubReleaseDownloads } from '../../apps/desktop/src/github-release-downloads.ts'
+
+it('reserves and reuses immutable tags when the selected version already matches every manifest', ({ task }) => {
+  const root = mkdtempSync(join(tmpdir(), 'neurix-version-reservation-'))
+  onTestFinished(() => { rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }) })
+  const repository = join(root, 'checkout')
+  const remote = join(root, 'origin.git')
+  const packageDirectory = join(repository, 'packages', 'test', 'fixture')
+  const pnpmDirectory = join(root, 'pnpm')
+  mkdirSync(packageDirectory, { recursive: true })
+  mkdirSync(pnpmDirectory)
+  const stub = join(pnpmDirectory, 'pnpm.mjs')
+  const invoked = join(root, 'pnpm-invoked')
+  writeFileSync(stub, `import { writeFileSync } from 'node:fs'; writeFileSync(${JSON.stringify(invoked)}, 'used');\n`)
+  writeFileSync(join(repository, 'package.json'), `${JSON.stringify({ name: '@deepseek-ai/dsh-root', private: true, version: '1.1.0' }, null, 2)}\n`)
+  writeFileSync(join(packageDirectory, 'package.json'), `${JSON.stringify({ name: '@deepseek-ai/dsh-fixture', version: '1.1.0' }, null, 2)}\n`)
+  writeFileSync(join(repository, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\nimporters: {}\n')
+  const git = (...args: string[]) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', timeout: task.timeout }).trim()
+  git('init', '--bare', remote)
+  git('init', '--initial-branch=master')
+  git('config', 'user.name', 'Release fixture')
+  git('config', 'user.email', 'release@example.invalid')
+  git('config', 'commit.gpgsign', 'false')
+  git('config', 'tag.gpgsign', 'false')
+  git('config', 'core.autocrlf', 'false')
+  git('add', '.')
+  git('commit', '-m', 'Prepare version 1.1.0')
+  git('tag', 'v1.0.11')
+  git('remote', 'add', 'origin', remote)
+  git('push', 'origin', 'master', '--tags')
+  const source = git('rev-parse', 'HEAD')
+  const module = new URL('./desktop-stable.ts', import.meta.url).href
+  const script = `import { reserveStableDesktopRelease } from ${JSON.stringify(module)}; const first = reserveStableDesktopRelease(${JSON.stringify(source)}); const retry = reserveStableDesktopRelease(${JSON.stringify(source)}); if (first.commit !== retry.commit) throw new Error('Retry changed the reservation');`
+  // Windows preserves inherited key casing but compares environment names without case.
+  const environment = { ...process.env }
+  for (const key of Object.keys(environment)) if (key.toLowerCase() === 'npm_execpath') Reflect.deleteProperty(environment, key)
+  environment.npm_execpath = stub
+  environment.GITHUB_ACTIONS = 'true'
+  const child = spawnSync(process.execPath, ['--import', pathToFileURL(createRequire(import.meta.url).resolve('tsx/esm')).href, '--input-type=module', '-e', script], {
+    cwd: repository, encoding: 'utf8', timeout: task.timeout,
+    env: environment,
+  })
+  expect(child.signal, child.stderr).toBeNull()
+  expect(child.error).toBeUndefined()
+  expect(child.status, child.stderr).toBe(0)
+  expect(readFileSync(invoked, 'utf8')).toBe('used')
+  const reservation = git('rev-parse', 'v1.1.0')
+  expect(reservation).not.toBe(source)
+  expect(git('rev-parse', 'v1.1.0^{tree}')).toBe(git('rev-parse', `${source}^{tree}`))
+  expect(git('rev-parse', 'dsh-v1.1.0')).toBe(reservation)
+  expect(git('log', '-1', '--format=%B', reservation)).toContain(`Neurix-Release-Source: ${source}`)
+  const published = git('ls-remote', 'origin', 'refs/heads/master', 'refs/tags/v1.1.0', 'refs/tags/dsh-v1.1.0').split('\n')
+  expect(published).toHaveLength(3)
+  expect(published.every(line => line.startsWith(`${reservation}\t`))).toBe(true)
+}, Number(process.env.DSH_COVERAGE_TEST_TIMEOUT_MS ?? '30000'))
 
 describe('stable Desktop versions', () => {
   it('starts at 1.0.0 without inheriting upstream prerelease numbers', () => {

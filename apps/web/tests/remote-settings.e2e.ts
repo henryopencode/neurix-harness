@@ -11,7 +11,7 @@ import {
   launchWebScaffold, watchConsole, webSnapshotMode, WELCOME_NOTICE_COPY,
   type WebScaffold,
 } from './scaffold.ts'
-import { openSettings, ZH_BROWSER_LOCALE } from './support.ts'
+import { selectField, openSettings, ZH_BROWSER_LOCALE } from './support.ts'
 
 const MODE = webSnapshotMode()
 
@@ -86,7 +86,7 @@ describe.skipIf(MODE === 'record')('web e2e: trusted remote host preferences', (
 
     await page.emulateMedia({ colorScheme: 'light' })
     await dialog.getByRole('button', { name: '添加模型提供商', exact: true }).click()
-    await dialog.getByLabel('提供商', { exact: true }).selectOption('minimax-cn')
+    await selectField(dialog.getByLabel('提供商', { exact: true }), 'minimax-cn')
     await dialog.getByRole('button', { name: '保存', exact: true }).click()
     await dialog.getByText('已保存 minimax-cn。', { exact: true }).waitFor({ timeout: 15_000 })
     await expect.poll(() => readFile(settingsPath, 'utf8'), { timeout: 10_000 })

@@ -3,7 +3,7 @@
 import type { TranslationProvider } from '@deepseek-ai/dsh-experimental-translator/types'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { afterEach, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { bindSnapshotSelector, makeTranslate, stubConfigForm } from '@deepseek-ai/dsh-client-test-runtime'
 import { TranslationPreferencesForm } from '../src/client/preferences-form.ts'
 import { TranslationSettings, type TranslationSettingsProps } from '../src/client/TranslationSettings.tsx'
@@ -25,7 +25,7 @@ it('stages provider and language together, rejects malformed codes, and resets t
   expect(view.getByLabelText(en.provider)).toHaveProperty('value', 'bing')
   expect(view.getByLabelText(en.targetLanguage)).toHaveProperty('value', 'auto')
   expect(view.getByText(en.privacy)).toBeTruthy()
-  fireEvent.change(view.getByLabelText(en.provider), { target: { value: 'google' } })
+  chooseOption(view.getByLabelText(en.provider), 'google')
   fireEvent.change(view.getByLabelText(en.targetLanguage), { target: { value: 'invalid code!' } })
   expect(view.getByRole('button', { name: en.save })).toHaveProperty('disabled', true)
   expect(scope.mutate).not.toHaveBeenCalled()
@@ -106,12 +106,16 @@ it('offers both version-free paid routes only when eligible and keeps selection 
   try {
     expect(refreshProviders).toHaveBeenCalledOnce()
     expect(view.getByLabelText(en.provider)).toHaveProperty('value', 'bing')
+    fireEvent.click(view.getByLabelText(en.provider))
     expect(view.getByRole('option', { name: en.deepseekAccount })).toBeTruthy()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent.click(view.getByLabelText(en.provider))
     expect(view.getByRole('option', { name: en.deepseekOfficial })).toBeTruthy()
+    fireEvent.keyDown(document, { key: 'Escape' })
     expect(en.deepseekAccount).not.toMatch(/v?4\.1/)
     expect(view.getByText(en.anonymousNotice)).toBeTruthy()
     expect(view.queryByText(en.paidNotice)).toBeNull()
-    fireEvent.change(view.getByLabelText(en.provider), { target: { value: 'deepseek-account' } })
+    chooseOption(view.getByLabelText(en.provider), 'deepseek-account')
     expect(view.getByText(en.paidNotice)).toBeTruthy()
     expect(en.paidNotice).toContain('Each uncached fragment sends a separate paid')
     expect(en.paidNotice).toContain('Reopening reasoning reuses saved results')
@@ -121,7 +125,8 @@ it('offers both version-free paid routes only when eligible and keeps selection 
     expect(scope.mutate).not.toHaveBeenCalled()
     fireEvent.click(view.getByRole('button', { name: en.save }))
     await vi.waitFor(() => { expect(scope.mutate).toHaveBeenCalledWith([{ op: 'set', path: ['provider'], value: 'deepseek-account' }], 4) })
-    fireEvent.change(view.getByLabelText(en.provider), { target: { value: 'deepseek-official' } })
+    await vi.waitFor(() => { expect(view.getByLabelText(en.provider)).toHaveProperty('disabled', false) })
+    chooseOption(view.getByLabelText(en.provider), 'deepseek-official')
     expect(hooks.translationForm.getSnapshot().invalid).toBe(false)
     expect(view.getByText(en.paidNotice)).toBeTruthy()
   } finally { view.unmount(); form.dispose() }
@@ -139,15 +144,19 @@ it('keeps an unavailable paid choice disabled and offers repair or an explicit r
   const view = render(<TranslationSettings {...props} />)
   try {
     expect(view.getByLabelText(en.provider)).toHaveProperty('value', 'deepseek-official')
+    fireEvent.click(view.getByLabelText(en.provider))
     const selected = view.getByRole('option', { name: `${en.deepseekOfficial} — unavailable` })
     expect(selected).toHaveProperty('disabled', true)
     expect(view.queryByRole('option', { name: en.deepseekAccount })).toBeNull()
     expect(view.getByText(en.providerUnavailable)).toBeTruthy()
+    fireEvent.keyDown(document, { key: 'Escape' })
     expect(view.getByText(en.paidNotice)).toBeTruthy()
     expect(scope.mutate).not.toHaveBeenCalled()
     act(() => { availability.set(['bing', 'google', 'deepseek-official']) })
     expect(view.getByLabelText(en.provider)).toHaveProperty('value', 'deepseek-official')
+    fireEvent.click(view.getByLabelText(en.provider))
     expect(view.getByRole('option', { name: en.deepseekOfficial })).toHaveProperty('disabled', false)
+    fireEvent.keyDown(document, { key: 'Escape' })
     expect(view.queryByText(en.providerUnavailable)).toBeNull()
     expect(scope.mutate).not.toHaveBeenCalled()
     fireEvent.click(view.getByRole('button', { name: en.reset }))
@@ -155,3 +164,10 @@ it('keeps an unavailable paid choice disabled and offers repair or an explicit r
     expect(view.getByText(en.anonymousNotice)).toBeTruthy()
   } finally { view.unmount(); form.dispose() }
 })
+
+function chooseOption(control: HTMLElement, value: string): void {
+  if (control.getAttribute('aria-expanded') !== 'true') fireEvent.click(control)
+  const option = screen.getAllByRole<HTMLButtonElement>('option').find(item => item.value === value)
+  if (option === undefined) throw new Error(`Missing option: ${value}`)
+  fireEvent.click(option)
+}

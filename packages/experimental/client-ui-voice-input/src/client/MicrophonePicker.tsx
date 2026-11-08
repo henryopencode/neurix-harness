@@ -1,5 +1,6 @@
 /** Device selection owns microphone previews while its page is active. */
 import { useEffect, useRef, useState } from 'react'
+import { Select } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { VoiceInputInjected } from './VoiceInput.tsx'
 import { RecordingError, type Recording } from './audio.ts'
@@ -124,15 +125,14 @@ export function MicrophonePicker({ useMicrophoneDevice, selectMicrophone, create
   return <div className={css.deviceRow} data-voice-input-device>
     <label htmlFor="voice-input-device">{t('inputDevice')}</label>
     <span className={css.deviceField}>
-      <select id="voice-input-device" value={selected.id} className={preview ? css.deviceSelectMeter : undefined}
-        onChange={(event) => {
-          const device = choices.find(item => item.id === event.target.value) as DeviceChoice
+      <Select id="voice-input-device" value={selected.id} className={preview ? css.deviceSelectMeter : undefined}
+        onValueChange={(value) => {
+          const device = choices.find(item => item.id === value) as DeviceChoice
           selectMicrophone({ id: device.id, label: device.id === '' ? '' : device.label })
-        }}>
-        {choices.map((device, index) => <option key={device.id} value={device.id} disabled={device.unavailable}>
-          {deviceName(device, index)}{device.unavailable ? ` — ${t('deviceUnavailable')}` : ''}
-        </option>)}
-      </select>
+        }} options={choices.map((device, index) => ({ value: device.id,
+          label: `${deviceName(device, index)}${device.unavailable ? ` — ${t('deviceUnavailable')}` : ''}`,
+          disabled: device.unavailable ?? false,
+        }))} />
       {preview && !missing && <span className={css.deviceMeter}><InputLevel recording={preview} label={t('inputLevel')} /></span>}
     </span>
     {error && <span className={css.deviceError} role="alert">{failureText(error.failure, t)}</span>}

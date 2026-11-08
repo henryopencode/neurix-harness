@@ -265,6 +265,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'Agent service (`ctx.agents`): tracks live agents and carries the initiating Agent through one process-local asynchronous driver chain. Agent *creation* is provided by whichever plugin implements the AgentFactory (`@deepseek-ai/dsh-agent-loop`), registered via setFactory.\n\nInitiator methods provide same-process causal attribution only. Ambient presence is neither liveness proof nor authorization; subjects and owners remain explicit, as does identity at worker, process, persistence, and wire boundaries. Returned Promise boundaries drain during teardown, except a nested lineage that starts an owning-fiber unload is excluded from its own drain.',
     methods: [
       {
+        signature: 'guardModelSelection(guard: ModelSelectionGuard): () => Promise<void>',
+        description: 'Register a model-choice restriction until its owning plugin unloads.',
+        parameters: [{ name: 'guard', description: 'Returns a denial reason or permits the choice by returning undefined.' }],
+        returns: 'Disposer removing this exact restriction.',
+      },
+      {
+        signature: 'assertModelSelection(agent: Agent, selection: Readonly<ModelSelection>): void',
+        description: 'Enforce registered restrictions at a model provider\'s selection operation.',
+        parameters: [{ name: 'agent', description: 'Agent whose model is being selected, including during setup.' }, { name: 'selection', description: 'Complete proposed model choice.' }],
+        throws: ['When an active plugin rejects the choice; no selection is recorded.'],
+      },
+      {
         signature: 'turnBoundaryOf(session: Session): TurnBoundaryProjection',
         description: 'Read the turn and step positions recorded in a Session.',
         parameters: [{ name: 'session', description: 'Session whose committed events are read.' }],
@@ -383,6 +395,24 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Create one named, continuable direct child of the Team Lead.',
         parameters: [{ name: 'caller', description: 'exact live Lead Agent.' }, { name: 'request', description: 'immutable name, description, prompt, context mode, provider, and cancellation.' }],
         returns: 'the active roster row.',
+      },
+      {
+        signature: 'modelSelection(caller: Agent): TeamModelSelection | null',
+        description: 'Read the candidate models captured by this member\'s Lead.',
+        parameters: [{ name: 'caller', description: 'Exact live Team member.' }],
+        returns: 'Its Lead\'s configured candidate models.',
+      },
+      {
+        signature: 'async stop(caller: Agent, target?: string): Promise<void>',
+        description: 'Stop the Team or one responsibility, retaining the roster and shared tasks.',
+        parameters: [{ name: 'caller', description: 'Exact live Lead.' }, { name: 'target', description: 'Teammate name; omission stops the whole Team.' }],
+        returns: 'After selected executions and pending creation have settled.',
+      },
+      {
+        signature: 'async tell(caller: Agent, targets: readonly string[], content: import(\'@deepseek-ai/dsh-llm\').ContentBlock[], provider: string, signal: AbortSignal): Promise<void>',
+        description: 'Deliver direct human input to responsibilities or configured model aliases.',
+        parameters: [{ name: 'caller', description: 'Live Lead conversation.' }, { name: 'targets', description: 'Member names or candidate model aliases.' }, { name: 'content', description: 'Complete accepted human input.' }, { name: 'provider', description: 'Continuable execution provider for a newly addressed model.' }, { name: 'signal', description: 'Caller-owned admission cancellation.' }],
+        returns: 'After every selected target has accepted its input; partial failures reject visibly.',
       },
       {
         signature: 'async sendMessage(caller: Agent, request: SendTeamMessageRequest): Promise<SendTeamMessageResult>',
@@ -1610,6 +1640,86 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'knowledgeBase',
+    summary: 'A workspace-scoped document index with replaceable source snapshots and native tools.',
+    description: 'A workspace-scoped document index with replaceable source snapshots and native tools.',
+    methods: [
+      {
+        signature: 'async importDocument(space: KnowledgeSpace, path: string, cwd: string, signal: AbortSignal): Promise<KnowledgeDocument>',
+        description: 'Read a size-bounded file through the configured filesystem and import its snapshot.',
+        parameters: [{ name: 'space', description: 'Authorized original workspace; trusted callers derive it from Session ownership.' }, { name: 'path', description: 'Source file to import.' }, { name: 'cwd', description: 'Execution-world directory for relative paths.' }, { name: 'signal', description: 'Cancellation for file reads and indexing preparation.' }],
+        returns: 'Document ID, content revision, and passage count after atomic publication.',
+      },
+      {
+        signature: 'search(space: KnowledgeSpace, query: string, limit: number, signal: AbortSignal): Promise<KnowledgeSearch>',
+        description: 'Search reference passages within one authorized original workspace.',
+        parameters: [{ name: 'space', description: 'Caller-owned workspace identity.' }, { name: 'query', description: 'Natural-language query.' }, { name: 'limit', description: 'Maximum requested passages.' }, { name: 'signal', description: 'Cancellation for embedding and result delivery.' }],
+        returns: 'Bounded passages with source locations and revisions.',
+      },
+      {
+        signature: 'read(space: KnowledgeSpace, id: KnowledgeDocumentId, chunk: number, version: string, signal: AbortSignal): Promise<KnowledgePassage>',
+        description: 'Read a passage from an exact imported revision; source files are not reread.',
+        parameters: [{ name: 'space', description: 'Caller-owned workspace identity.' }, { name: 'id', description: 'Imported document ID.' }, { name: 'chunk', description: 'Zero-based passage number.' }, { name: 'version', description: 'Exact imported content revision.' }, { name: 'signal', description: 'Cancellation for result delivery.' }],
+        returns: 'Indexed source text with its original page or line range.',
+      },
+      {
+        signature: 'list(space: KnowledgeSpace, offset: number, limit: number, signal: AbortSignal): Promise<KnowledgeDocumentList>',
+        description: 'List imported document metadata in the authorized workspace.',
+        parameters: [{ name: 'space', description: 'Caller-owned workspace identity.' }, { name: 'offset', description: 'Header offset from a previous page, or zero.' }, { name: 'limit', description: 'Requested document count.' }, { name: 'signal', description: 'Cancellation for result delivery.' }],
+        returns: 'Bounded metadata and the next offset when more documents exist.',
+      },
+      {
+        signature: 'remove(space: KnowledgeSpace, id: KnowledgeDocumentId, signal: AbortSignal): Promise<KnowledgeRemoval>',
+        description: 'Remove indexed passages while retaining original files and memory records.',
+        parameters: [{ name: 'space', description: 'Caller-owned workspace identity.' }, { name: 'id', description: 'Document confirmed by the user.' }, { name: 'signal', description: 'Cancellation observed before the delete transaction.' }],
+        returns: 'Removed document identity; repeated removal is safe.',
+      },
+      {
+        signature: 'importUploaded( space: KnowledgeSpace, name: string, base64: string, replace: boolean, signal: AbortSignal, ): Promise<KnowledgeDocument>',
+        description: 'Import a browser-selected source without writing into the user\'s workspace.',
+        parameters: [{ name: 'space', description: 'Authorized original workspace identity.' }, { name: 'name', description: 'Plain filename of the selected document.' }, { name: 'base64', description: 'Canonical base64 source bytes, bounded before decoding.' }, { name: 'replace', description: 'Explicit confirmation that an existing uploaded filename may be updated.' }, { name: 'signal', description: 'Cancellation before atomic publication.' }],
+        returns: 'The imported snapshot; uploading the same filename replaces its uploaded revision.',
+      },
+      {
+        signature: 'dashboard(space: KnowledgeSpace, query: string, offset: number, signal: AbortSignal): Promise<KnowledgeDashboard>',
+        description: 'Read document metadata, source matches, and literal keyword associations.',
+        parameters: [{ name: 'space', description: 'Authorized original workspace identity.' }, { name: 'query', description: 'Optional source-text query.' }, { name: 'offset', description: 'Header offset when query is empty.' }, { name: 'signal', description: 'Cancellation for source retrieval and optional embeddings.' }],
+        returns: 'A bounded management snapshot with source-derived graph nodes and links.',
+      },
+    ],
+  },
+  {
+    key: 'knowledgeController',
+    summary: 'One Remote namespace for knowledge management, without changing the Agent tools.',
+    description: 'One Remote namespace for knowledge management, without changing the Agent tools.',
+    methods: [
+      {
+        signature: '@Remote({ resources: { workspace: (workspaceId: WorkspaceId) => workspaceId } }) dashboard(workspaceId: WorkspaceId, query: string, offset: number, signal: AbortSignal): Promise<KnowledgeDashboard>',
+        description: 'Read one authorized workspace\'s document page and source-derived graph.',
+        parameters: [{ name: 'workspaceId', description: 'Existing workspace whose documents the caller may read.' }, { name: 'query', description: 'Optional full-text query.' }, { name: 'offset', description: 'Non-negative header offset when the query is empty.' }, { name: 'signal', description: 'Caller cancellation.' }],
+        returns: 'Document counts, bounded metadata, source matches, and keyword associations.',
+      },
+      {
+        signature: '@Remote({ resources: { workspace: (workspaceId: WorkspaceId) => workspaceId } }) upload(workspaceId: WorkspaceId, filename: string, base64: string, replace: boolean, signal: AbortSignal): Promise<KnowledgeDocument>',
+        description: 'Import a browser-selected document into one authorized workspace\'s index.',
+        parameters: [{ name: 'workspaceId', description: 'Existing workspace whose knowledge the caller may update.' }, { name: 'filename', description: 'Plain source filename.' }, { name: 'base64', description: 'Complete canonical base64 content.' }, { name: 'replace', description: 'Explicit user confirmation for replacing an existing uploaded filename.' }, { name: 'signal', description: 'Caller cancellation.' }],
+        returns: 'The published document identity and revision.',
+      },
+      {
+        signature: '@Remote({ resources: { workspace: (workspaceId: WorkspaceId) => workspaceId } }) read( workspaceId: WorkspaceId, documentId: KnowledgeDocumentId, chunk: number, version: string, signal: AbortSignal, ): Promise<KnowledgePassage>',
+        description: 'Read an exact imported passage for one authorized workspace.',
+        parameters: [{ name: 'workspaceId', description: 'Existing workspace whose document the caller may read.' }, { name: 'documentId', description: 'Imported document identity.' }, { name: 'chunk', description: 'Non-negative zero-based passage number.' }, { name: 'version', description: 'Exact imported revision from the document metadata.' }, { name: 'signal', description: 'Caller cancellation.' }],
+        returns: 'Source text and its original page or line location.',
+      },
+      {
+        signature: '@Remote({ resources: { workspace: (workspaceId: WorkspaceId) => workspaceId } }) deleteDocument(workspaceId: WorkspaceId, documentId: KnowledgeDocumentId, signal: AbortSignal): Promise<KnowledgeRemoval>',
+        description: 'Remove an authorized workspace\'s indexed document while retaining its original file.',
+        parameters: [{ name: 'workspaceId', description: 'Existing workspace whose knowledge the caller may update.' }, { name: 'documentId', description: 'Document confirmed by the user.' }, { name: 'signal', description: 'Caller cancellation before the delete transaction.' }],
+        returns: 'The removed document identity; repeated removal is safe.',
+      },
+    ],
+  },
+  {
     key: 'llm',
     summary: 'The abstract `llm` service: an adapter registry plus a streaming model-call API, interceptable via the `llm/stream` waterfall.',
     description: 'The abstract `llm` service: an adapter registry plus a streaming model-call API, interceptable via the `llm/stream` waterfall.',
@@ -1773,6 +1883,35 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Delete one item after checking its version; absence succeeds without an event.',
         parameters: [{ name: 'request', description: 'Session, message, and observed item version.' }],
         returns: 'the stable absent postcondition or an explicit failure.',
+      },
+    ],
+  },
+  {
+    key: 'modelGroups',
+    summary: 'Model groups with independent model routes, shared tasks, and direct human addressing.',
+    description: 'Model groups with independent model routes, shared tasks, and direct human addressing.',
+    methods: [
+      {
+        signature: 'snapshot(agent: Agent): ModelGroupSnapshot | null',
+        description: 'Read one conversation\'s durable model-group selection.',
+        parameters: [{ name: 'agent', description: 'Exact live root.' }],
+        returns: 'Its group selection, if configured.',
+      },
+      {
+        signature: 'async setMode(agent: Agent, mode: ModelGroupMode): Promise<void>',
+        description: 'Change only this conversation after stopping existing executions.',
+        parameters: [{ name: 'agent', description: 'Live root.' }, { name: 'mode', description: 'Desired mode.' }],
+      },
+      {
+        signature: 'async stop(agent: Agent, member?: string): Promise<void>',
+        description: 'Stop current work and close new assignment admission.',
+        parameters: [{ name: 'agent', description: 'Live root.' }, { name: 'member', description: 'Optional single model name.' }],
+      },
+      {
+        signature: 'assign( agent: Agent, name: string, prompt: ContentBlock[], direct: boolean, signal: AbortSignal, taskId?: TeamTaskId, ): Promise<ModelGroupDispatchReceipt>',
+        description: 'Dispatch one admitted model task.',
+        parameters: [{ name: 'agent', description: 'Live leader.' }, { name: 'name', description: 'Configured model name.' }, { name: 'prompt', description: 'Logged task input.' }, { name: 'direct', description: 'Human-directed delivery.' }, { name: 'signal', description: 'Admission cancellation.' }, { name: 'taskId', description: 'Existing ready task; omission creates a new task.' }],
+        returns: 'Accepted model, target Session, and shared task identities.',
       },
     ],
   },
@@ -6291,6 +6430,50 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type JsonValue = null | boolean | number | string | JsonValue[] | {\n    [key: string]: JsonValue;\n};',
   },
   {
+    name: 'KnowledgeDashboard',
+    declaration: 'export interface KnowledgeDashboard {\n    readonly availability: \'ready\' | \'unsupported-platform\';\n    readonly totalDocuments: number;\n    readonly totalPassages: number;\n    readonly documents: KnowledgeDocument[];\n    readonly passages: KnowledgePassage[];\n    readonly nodes: KnowledgeGraphNode[];\n    readonly edges: KnowledgeGraphEdge[];\n    readonly nextOffset: number | null;\n    readonly truncated: boolean;\n    readonly pageSize: number;\n    readonly maxFileBytes: number;\n}',
+  },
+  {
+    name: 'KnowledgeDocument',
+    declaration: 'export interface KnowledgeDocument {\n    readonly documentId: KnowledgeDocumentId;\n    readonly source: string;\n    readonly title: string;\n    readonly version: string;\n    readonly chunks: number;\n}',
+  },
+  {
+    name: 'KnowledgeDocumentId',
+    declaration: 'export type KnowledgeDocumentId = Branded<\'KnowledgeDocumentId\'>;',
+  },
+  {
+    name: 'KnowledgeDocumentList',
+    declaration: 'export interface KnowledgeDocumentList {\n    readonly documents: KnowledgeDocument[];\n    readonly nextOffset: number | null;\n}',
+  },
+  {
+    name: 'KnowledgeGraphEdge',
+    declaration: 'export interface KnowledgeGraphEdge {\n    readonly source: KnowledgeGraphNodeId;\n    readonly target: KnowledgeGraphNodeId;\n    readonly occurrences: number;\n}',
+  },
+  {
+    name: 'KnowledgeGraphNode',
+    declaration: 'export interface KnowledgeGraphNode {\n    readonly id: KnowledgeGraphNodeId;\n    readonly kind: \'document\' | \'keyword\';\n    readonly label: string;\n    readonly documentId: KnowledgeDocumentId | null;\n}',
+  },
+  {
+    name: 'KnowledgeGraphNodeId',
+    declaration: 'export type KnowledgeGraphNodeId = Branded<\'KnowledgeGraphNodeId\'>;',
+  },
+  {
+    name: 'KnowledgePassage',
+    declaration: 'export interface KnowledgePassage extends KnowledgeDocument {\n    readonly chunk: number;\n    readonly text: string;\n    readonly page: number | null;\n    readonly startLine: number | null;\n    readonly endLine: number | null;\n}',
+  },
+  {
+    name: 'KnowledgeRemoval',
+    declaration: 'export interface KnowledgeRemoval {\n    readonly documentId: KnowledgeDocumentId;\n    readonly removed: true;\n}',
+  },
+  {
+    name: 'KnowledgeSearch',
+    declaration: 'export interface KnowledgeSearch {\n    readonly mode: \'keyword\' | \'hybrid\';\n    readonly passages: KnowledgePassage[];\n}',
+  },
+  {
+    name: 'KnowledgeSpace',
+    declaration: 'export type KnowledgeSpace = Branded<\'KnowledgeSpace\'>;',
+  },
+  {
     name: 'KvFacet',
     declaration: 'export interface KvFacet {\n    open(descriptor: KvUnitDescriptor): Promise<KvUnit>;\n}',
   },
@@ -6647,6 +6830,22 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ModelCatalogModel {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n}',
   },
   {
+    name: 'ModelGroupDispatchReceipt',
+    declaration: 'export interface ModelGroupDispatchReceipt {\n    readonly member: string;\n    readonly sessionId: SessionId;\n    readonly taskId?: Branded<\'TeamTaskId\'>;\n    readonly accepted: true;\n}',
+  },
+  {
+    name: 'ModelGroupMember',
+    declaration: 'export interface ModelGroupMember {\n    readonly name: string;\n    readonly label: string;\n    readonly provider: string;\n    readonly model: string;\n    readonly strengths: string;\n}',
+  },
+  {
+    name: 'ModelGroupMode',
+    declaration: 'export type ModelGroupMode = \'single\' | \'multi\';',
+  },
+  {
+    name: 'ModelGroupSnapshot',
+    declaration: 'export interface ModelGroupSnapshot {\n    readonly mode: ModelGroupMode;\n    readonly leader: string;\n    readonly members: readonly ModelGroupMember[];\n    readonly stopped: boolean;\n    readonly direct: readonly string[];\n    readonly stoppedMembers: readonly string[];\n}',
+  },
+  {
     name: 'ModelMessageSource',
     declaration: 'export interface ModelMessageSource extends AssistantProviderMetadata {\n    kind: \'model\';\n}',
   },
@@ -6669,6 +6868,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ModelReasoningEffort',
     declaration: 'export interface ModelReasoningEffort {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n}',
+  },
+  {
+    name: 'ModelSelectionGuard',
+    declaration: 'export type ModelSelectionGuard = (agent: Agent, selection: Readonly<ModelSelection>) => string | undefined;',
   },
   {
     name: 'ModEvents',
@@ -8196,7 +8399,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SpawnTeammateRequest',
-    declaration: 'export interface SpawnTeammateRequest {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: ContentBlock[];\n    readonly context: \'fresh\' | \'fork\';\n    readonly provider: string;\n    readonly signal: AbortSignal;\n}',
+    declaration: 'export interface SpawnTeammateRequest {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: ContentBlock[];\n    readonly context: \'fresh\' | \'fork\';\n    readonly provider: string;\n    readonly model?: string;\n    readonly agentOptions?: AgentOptions;\n    readonly coordinationOwner?: string;\n    readonly signal: AbortSignal;\n}',
   },
   {
     name: 'SpawnTeammateResult',
@@ -8528,7 +8731,15 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamMemberView',
-    declaration: 'export interface TeamMemberView {\n    readonly id: SessionId;\n    readonly name: string;\n    readonly role: \'lead\' | \'teammate\';\n    readonly status: \'running\' | \'inactive\' | \'provisioning\' | \'failed\';\n    readonly description?: string;\n    readonly provider?: string;\n    readonly context?: \'fresh\' | \'fork\';\n    readonly model?: string;\n    readonly diagnostics: string[];\n}',
+    declaration: 'export interface TeamMemberView {\n    readonly id: SessionId;\n    readonly name: string;\n    readonly role: \'lead\' | \'teammate\';\n    readonly status: \'running\' | \'inactive\' | \'provisioning\' | \'failed\';\n    readonly description?: string;\n    readonly provider?: string;\n    readonly context?: \'fresh\' | \'fork\';\n    readonly coordinationOwner?: string;\n    readonly model?: string;\n    readonly diagnostics: string[];\n}',
+  },
+  {
+    name: 'TeamModel',
+    declaration: 'export interface TeamModel {\n    readonly name: string;\n    readonly label: string;\n    readonly provider: string;\n    readonly model: string;\n    readonly strengths: string;\n}',
+  },
+  {
+    name: 'TeamModelSelection',
+    declaration: 'export interface TeamModelSelection {\n    readonly leader: string;\n    readonly models: readonly TeamModel[];\n}',
   },
   {
     name: 'TeamTaskAction',

@@ -14,7 +14,7 @@ import {
   acknowledgeReloadConnectionLoss, assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
   launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { openSettings, ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
+import { selectField, openSettings, ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./expected/onboarding-usable-provider', import.meta.url))
 const DISMISSED_EXPECTED = join(SNAPSHOT_DIR, 'dismissed.expected.md')
@@ -63,7 +63,7 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
     await add.click()
     const pick = settings.getByLabel('提供商', { exact: true })
     await pick.waitFor({ timeout: 10_000 })
-    await pick.selectOption('minimax-cn')
+    await selectField(pick, 'minimax-cn')
     await settings.getByRole('textbox', { name: 'API 密钥', exact: true }).waitFor({ timeout: 10_000 })
     expect(await page.getByRole('dialog', { name: CREDENTIAL_STEP }).count()).toBe(0)
     await settings.getByRole('button', { name: '编辑 DeepSeek (deepseek-official)' }).waitFor({ timeout: 10_000 })

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-experimental-computer-control",
   "description": "Optional foreground macOS application control with editable defaults",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "publishConfig": {
     "access": "public"
   },

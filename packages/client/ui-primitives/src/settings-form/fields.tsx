@@ -8,6 +8,7 @@
 
 import { useState, type ChangeEvent, type ReactNode } from 'react'
 import { IconInfoOutlineRegular } from '../icons/index.tsx'
+import { Select } from '../Select.tsx'
 import { Tag } from '../Tag.tsx'
 import css from './fields.module.css'
 
@@ -108,9 +109,9 @@ export function SettingsValueField(props: Omit<SettingsFieldProps, 'hint'> & {
       {props.choices === undefined
         ? <input {...control} type="text" placeholder={props.placeholder ?? ''}
           {...props.numeric === true ? { inputMode: 'numeric' as const } : {}} />
-        : <select {...control}>
-          {props.choices.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
-        </select>}
+        : <Select id={props.id} className={css.input} value={props.text} disabled={props.disabled}
+          aria-invalid={props.invalid || undefined} aria-describedby={description || undefined}
+          options={props.choices} onValueChange={props.onEdit} />}
       {hasMessage
         ? <p id={messageId} className={props.invalid ? css.invalid : css.hint}>{props.invalid ? props.invalidLabel : props.hint}</p>
         : null}

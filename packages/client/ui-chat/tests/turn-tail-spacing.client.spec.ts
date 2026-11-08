@@ -24,18 +24,18 @@ describe('Turn tail slot spacing', () => {
     const view = read('ChatView.module.css')
     const marked = String.raw`:has\(> \[data-slot="conversation\.chat\.node"\] > \[data-chat-steering-batch`
     expect(view).toMatch(new RegExp(String.raw`\.flowItem${marked}="start"\]\)\s*\{\s*--dsh-chat-flow-gap:\s*calc\(44px \+ var\(--dsh-content-font-delta, 0px\)\);`))
-    expect(view).toMatch(new RegExp(String.raw`:not\(\.running\):not\(${marked}\]\)\)\s*\{\s*--dsh-chat-flow-gap:\s*12px;`))
-    expect(view).toMatch(new RegExp(String.raw`:not\(\.running\):not\(\[data-submission-echo\], \[data-pending-steering\]\):not\(${marked}\]\)\)\s*\{\s*--dsh-chat-flow-gap:\s*16px;`))
+    expect(view).toMatch(new RegExp(String.raw`:not\(\.running\):not\(\[data-chat-flow-kind="turn-tail"\]\):not\(${marked}\]\)\)\s*\{\s*--dsh-chat-flow-gap:\s*24px;`))
+    expect(view).toMatch(new RegExp(String.raw`:not\(\.running\):not\(\[data-submission-echo\], \[data-pending-steering\]\):not\(${marked}\]\)\)\s*\{\s*--dsh-chat-flow-gap:\s*24px;`))
   })
 
   it('keeps echoes after a running Turn\'s empty control at the input gap', () => {
     const view = read('ChatView.module.css')
-    const header = view.slice(view.indexOf('/* The Turn header has 16px clearance'))
+    const header = view.slice(view.indexOf('/* The Turn header has 24px clearance'))
     const rule = header.slice(0, header.indexOf('}') + 1)
     const empty = String.raw`:empty, :has(> [data-slot="conversation.chat.node"]:empty)`
-    // A visible control keeps its 16px clearance for every following row, echoes included.
+    // A visible control keeps its 24px clearance for every following row, echoes included.
     expect(rule).toContain(String.raw`[data-chat-flow-kind="turn-process"]:not(${empty}) + :not([hidden])`)
-    // After any control, including an empty running one, the 16px clearance skips local echoes,
+    // After any control, including an empty running one, the 24px clearance skips local echoes,
     // which stay at the input gap until their durable rows replace them.
     expect(rule).toContain(String.raw`[data-chat-flow-kind="turn-process"] + :not([hidden]):not(.flowItem:is(${empty}))`
       + ':not(.running):not([data-submission-echo], [data-pending-steering])')
@@ -52,10 +52,10 @@ describe('Running status move below the first output', () => {
     // status rule, the lowest-specificity selector, so each variant below outranks it.
     expect(view).toMatch(new RegExp(String.raw`\n\.running \{[^}]*${travel(4)}`))
     expect(view.match(/--dsh-running-follow: calc\(/g)).toHaveLength(3)
-    // A response keeps its 12px clearance.
-    expect(view).toMatch(new RegExp(String.raw`\)\)\)\)\[data-chat-group-part="response"\] ~ \.running \{\s*${travel(12)}`))
-    // A new Turn's first output follows the empty running process control at its 16px clearance.
-    expect(view).toMatch(new RegExp(String.raw`> \[data-chat-flow-kind="turn-process"\] \+ :nth-last-child\(2 of [^{]*\) ~ \.running \{\s*${travel(16)}`))
+    // A response keeps its 24px clearance.
+    expect(view).toMatch(new RegExp(String.raw`\)\)\)\)\[data-chat-group-part="response"\] ~ \.running \{\s*${travel(24)}`))
+    // A new Turn's first output follows the empty running process control at its 24px clearance.
+    expect(view).toMatch(new RegExp(String.raw`> \[data-chat-flow-kind="turn-process"\] \+ :nth-last-child\(2 of [^{]*\) ~ \.running \{\s*${travel(24)}`))
   })
 
   it('slides the status from where it stood, like the steering entrance, outside reduced motion', () => {

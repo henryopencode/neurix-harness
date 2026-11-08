@@ -67,6 +67,7 @@ The kernel packages boot and serve the page; the UI feature packages present it.
 | [`ui-secret-mask/`](ui-secret-mask/README.md) | Masks recognized credentials in sent user text | — |
 | [`ui-subagent/`](ui-subagent/README.md) | Provides subagent navigation, child transcript states, and inline references | — |
 | [`ui-jobs/`](ui-jobs/README.md) | Lists this session's background jobs with on-demand streaming record panels | — |
+| [`ui-knowledge-base/`](ui-knowledge-base/README.md) | Built-in document management and source association graph | — |
 | [`ui-schedule/`](ui-schedule/README.md) | Lists the current Session's active reminders in a read-only header catalog | — |
 | [`ui-model-selection/`](ui-model-selection/README.md) | Provides model selection in conversation surfaces | — |
 | [`ui-deepseek-model-label-1017/`](ui-deepseek-model-label-1017/README.md) | Adds the temporary 1017 badge to official DeepSeek Flash model labels | — |

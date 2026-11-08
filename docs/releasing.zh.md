@@ -18,7 +18,7 @@
 <a id="development-and-release"></a>
 ## 开发与发布
 
-`develop` 是默认开发分支。**Neurix development checks** 工作流检查向该分支的推送，以及向这两个分支的拉取请求，运行构建、lint 和单元测试。本仓库已停用依赖上游专用设施的自动工作流，其文件保留供参考。
+`master` 是仓库的默认分支，日常开发保留在 `develop`。**Neurix development checks** 工作流检查向 `develop` 的推送，以及向这两个分支的拉取请求，运行构建、lint，以及改动源码、其静态依赖方和受影响插件所属的单元测试，不运行全量单元测试。本仓库已停用依赖上游专用设施的自动工作流，其文件保留供参考。
 
 改动准备好后合并到 `master`。**Neurix stable desktop release** 监听 master 推送，包括普通合并、压缩合并和直接推送。开发分支推送以及未合并就关闭拉取请求均不发布安装包。四个平台任务必须全部成功后才会出现 Release。安装包和校验文件全部上传前保持草稿状态；正式发布使用 GitHub 的语义版本排序，较旧构建即使较晚完成也不会替换最新版本。每个安装包都包含应用及匹配的运行时。GitHub Releases 还提供安装包和 Linux Web 服务器归档的 `SHA256SUMS.txt`。
 
@@ -35,6 +35,12 @@
 
 ```sh
 pnpm exec tsx scripts/release/desktop-stable.ts --plan
+```
+
+工作流或测试夹具修复后，重新构建已有预留版本时，将 **existing_tag** 设为对应的 `v<version>` 标签，并将 **version** 留空。成对标签、清单版本、预留元数据与 master 历史必须一致。安装包仍使用原标签提交；更新的预留测试仅在打包后复制。Release 说明同时记录打包源码与验证工作流提交。仅修复发布验证的 PR 通过检查后，在合并提交标题中加入 `[skip ci]`，避免预留另一个版本，再从 `master` 手动重试：
+
+```sh
+gh workflow run neurix-desktop-release.yml --ref master -f existing_tag=v1.1.0 -f validation_only=false
 ```
 
 <a id="installed-update-checks"></a>

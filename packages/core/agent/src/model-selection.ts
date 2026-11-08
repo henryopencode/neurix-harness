@@ -6,7 +6,7 @@ import type { Model, AgentOptions, PreStepDecision } from './runtime-types.ts'
 import type { ModelSelection } from './types.ts'
 import { boundContextSummary, createUserMessage, type ContextFormed } from '@deepseek-ai/dsh-llm'
 import { ReasoningEffortId } from '@deepseek-ai/dsh-llm/brand'
-import type { Session, EpochHeader } from '@deepseek-ai/dsh-session'
+import type { Session, SessionId, EpochHeader } from '@deepseek-ai/dsh-session'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import { z } from 'zod'
 
@@ -20,6 +20,16 @@ export interface ModelSelectionProjectionState {
   readonly lastUsed: ModelSelection | null
   /** Later recorded selection not yet used by a matching model request. */
   readonly pending: ModelSelection | null
+}
+
+/** Expected rejection by a plugin that owns the Agent's model choice. */
+export class ModelSelectionDeniedError extends Error {
+  /** Stable denial category for Host callers. */
+  readonly code = 'MODEL_SELECTION_DENIED'
+  /** @param agentId - Agent whose choice was rejected. @param selection - Proposed choice. @param reason - Actionable policy reason. */
+  constructor(readonly agentId: SessionId, readonly selection: Readonly<ModelSelection>, reason: string) {
+    super(reason); this.name = 'ModelSelectionDeniedError'
+  }
 }
 
 /**
@@ -94,12 +104,14 @@ export const modelSelectionProjectionDefinition: Required<ProjectionDefinition<'
  * @param readState - driver-owned reader for this Session's selection projection.
  * @param session - Session receiving durable model selections.
  * @param options - live route fallback until a selection or request is recorded.
+ * @param beforeSelect - Optional provider-owned guard called before recording a changed selection.
  */
 export class AgentModel implements Model {
   constructor(
     private readonly readState: () => ModelSelectionProjectionState,
     private readonly session: Session,
     private readonly options: AgentOptions,
+    private readonly beforeSelect?: (selection: Readonly<ModelSelection>) => void,
   ) {}
 
   current(): Readonly<ModelSelection> | undefined {
@@ -111,6 +123,7 @@ export class AgentModel implements Model {
 
   select(selection: Readonly<ModelSelection>): void {
     if (sameModelSelection(this.recordedSelection(), selection)) return
+    this.beforeSelect?.(selection)
     this.session.append('model/selection', toSelection(selection.provider, selection.model, selection.reasoningEffort))
   }
 

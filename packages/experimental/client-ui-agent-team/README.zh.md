@@ -25,7 +25,9 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-通过 [`@deepseek-ai/dsh-experimental-agent-team-profile`](../agent-team-profile/README.zh.md) 启用本包。这个组合包同时提供团队服务、工具与 Web 界面。Web Client loader 挂载 `/client` export；root Host export 不执行行为，本包也没有用户配置字段。
+团队组合包设置可编辑统一模型目录中的候选模型、组长模型、擅长任务与并行上限。会话栏显示实际职责名称与模型路由，并提供单成员停止图标。输入框的停止按钮会停止团队，仅队友运行时也可使用。@ 来源可联系队友和候选模型，带职责署名的回复显示在主会话中。历史模型群回复记录仍可阅读。模型发现和凭证复用已有的模型目录与设置服务。
+
+通过 [`@deepseek-ai/dsh-experimental-agent-team-profile`](../agent-team-profile/README.zh.md) 启用本包。这个组合包同时提供团队服务、工具与 Web 界面。Web Client loader 挂载 `/client` export；root Host export 不执行行为，配置表单编辑团队服务入口。
 
 ### 检查并导航 roster
 
@@ -47,7 +49,7 @@ Roster 行展示持久名称与阶段。provisioning 和 running 成员使用共
 <details>
 <summary>实现细节——点击展开</summary>
 
-Client export 通过 Cordis effect 注册 locale dictionary 与一个 conversation-header slot；它不挂载任何 Remote namespace。Dispose plugin fiber 会移除这两项 registration。
+Client export 通过 Cordis effect 注册 locale dictionary 与一个 conversation-header slot；它不挂载任何 Remote namespace。面板与模型控制项支持所有随产品提供的界面语言。Dispose plugin fiber 会移除这两项 registration。
 
 面板渲染在会话容器外，并保持在视口范围内。成员卡片在静止、选中和悬停状态下均使用共享 elevation 描边绘制轮廓。悬停触发按钮 150ms 后打开面板；指针离开触发按钮和面板后，经过 120ms 宽限关闭。点击触发按钮会固定面板并将焦点移入其中。点击外部或按 Escape 可关闭面板；仅当焦点原本位于面板内时，Escape 才将焦点返回触发按钮。页头较窄时触发按钮折叠为图标，只响应点击打开。组件从 `useSessions`、`useSessionStatus` 与 `useSession` 座位派生每一行：Lead 身份来自当前 Session 的 subagent address，Team 视图来自 `projectionsBySession[lead].values.agentTeam`，成员活动来自 Session 状态并以列表摘要为后备，model 来自 `projectionsBySession[member].values.modelSelection.next`。每个 roster 行只选择自己的运行状态。唯一的注入回调通过当前与目标 Session 的 id 打开 roster Session。切换会话会关闭面板并清除导航失败。
 
@@ -55,7 +57,7 @@ Client export 通过 Cordis effect 注册 locale dictionary 与一个 conversati
 |---|---|
 | [`src/client/mount.ts`](src/client/mount.ts) | locale、导航与 slot registration |
 | [`src/client/TeamAction.tsx`](src/client/TeamAction.tsx) | 由投影派生的 roster 与任务板及面板交互状态 |
-| [`src/client/locales.ts`](src/client/locales.ts) | 中英文 panel 文案 |
+| [`src/client/locales.ts`](src/client/locales.ts) | 本地化面板文案 |
 | [`src/index.ts`](src/index.ts) | 不执行行为的 Host entry |
 
 </details>

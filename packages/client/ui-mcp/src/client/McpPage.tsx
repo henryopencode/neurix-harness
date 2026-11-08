@@ -1,6 +1,6 @@
 /** Independent MCP server list, tool details, and connection editor. @module */
 import { useState } from 'react'
-import { Button, IconChevronRightOutlineRegular, IconLinkOutlineRegular, Modal, Switch, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconChevronRightOutlineRegular, IconLinkOutlineRegular, Modal, Select, Switch, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { McpManagerSnapshot, McpServerDraft, McpServerId, McpServerView } from '../types.ts'
 import css from './McpPage.module.css'
@@ -61,9 +61,11 @@ function Editor({ server, revision, save, close, t }: {
       <p className={css.secondary}>{t('globalHint')}</p>
       <label>{t('name')}<input required pattern="([A-Za-z0-9_]|-){1,32}" value={draft.serverName} disabled={busy}
         onChange={(event) => { change({ serverName: event.target.value }) }} /></label>
-      <label>{t('transport')}<select value={draft.transport} disabled={busy} onChange={(event) => {
-        change({ transport: event.target.value === 'stdio' ? 'stdio' : 'streamable-http' }); setCredentials('')
-      }}><option value="stdio">{t('stdio')}</option><option value="streamable-http">{t('http')}</option></select></label>
+      <label>{t('transport')}<Select value={draft.transport} disabled={busy} aria-label={t('transport')}
+        options={[{ value: 'stdio', label: t('stdio') }, { value: 'streamable-http', label: t('http') }]}
+        onValueChange={(value) => {
+          change({ transport: value === 'stdio' ? 'stdio' : 'streamable-http' }); setCredentials('')
+        }} /></label>
       {draft.transport === 'stdio' ? <>
         <label>{t('command')}<input required value={draft.command} disabled={busy} onChange={(event) => { change({ command: event.target.value }) }} /></label>
         <label>{t('args')}<textarea rows={3} value={args} disabled={busy} onChange={(event) => { setArgs(event.target.value) }} /></label>

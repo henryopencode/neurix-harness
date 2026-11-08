@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for knowledge-base.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/user/guide/knowledge-base.md
+/add-document-knowledge:
+  en: 0060f6bfc0535ce2
+  zh: 911c7f95dfde0c46
+/add-document-knowledge/enable-knowledge-management:
+  en: 100348581d8972ca
+  zh: bb91739eab278d37
+/add-document-knowledge/enable-knowledge-management/source-checkout-example:
+  en: 4c7b098eebad49c4
+  zh: a739313530d494ab
+/add-document-knowledge/import-and-ask:
+  en: ad320809d89023ab
+  zh: 683df4e0f7367ec8
+/add-document-knowledge/manage-documents-and-explore-associations:
+  en: 809ce9eb99c70a7b
+  zh: 83a0837f6bb50589
+/add-document-knowledge/optional-semantic-retrieval:
+  en: e343a0ecf48efaaa
+  zh: c6a88292cf17b04e

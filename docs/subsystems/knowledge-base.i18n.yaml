@@ -1,0 +1,13 @@
+# Bilingual-pair consistency record for knowledge-base.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/subsystems/knowledge-base.md
+/document-knowledge:
+  en: 7db499b1d683305a
+  zh: 86947d411ded42f3
+/document-knowledge/identities-and-results:
+  en: c40e14220831832c
+  zh: f00ad56a575dab02
+/document-knowledge/cordis-api:
+  en: fada7691badd06af
+  zh: fada7691badd06af

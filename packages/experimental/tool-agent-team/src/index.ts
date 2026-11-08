@@ -1,6 +1,7 @@
 /** Scoped model-facing tools for the opt-in Agent Teams runtime. */
 
 import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-commands'
 import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { TeamTaskId } from '@deepseek-ai/dsh-experimental-agent-team'
@@ -66,7 +67,7 @@ const MEMBER_VIEW_SCHEMA = {
 
 /** Expose the member name as its model-facing target. */
 function modelMember(member: TeamMemberView): InferValue<typeof MEMBER_VIEW_SCHEMA> {
-  const { id: _id, name, ...details } = member
+  const { id: _id, name, coordinationOwner: _coordinationOwner, ...details } = member
   return { target: name, ...details }
 }
 
@@ -186,16 +187,18 @@ function install(agent: Agent, ctx: Context, config: Required<Config>): () => vo
           : `You are teammate "${name}".\nYour Team Lead is named "lead".\nTo message your Team Lead, use send_message({ target: "lead", message: "..." }).`}
 Use list_agents({}) to find your teammates and their names.
 To message another teammate, use send_message({ target: "<teammate name>", message: "..." }).`
+          + `\n${modelGuidance(ctx, agent, role)}`
       },
     }))
 
     register(scoped.tools.register(defineTool({
       name: 'spawn_teammate',
-      description: 'Create one named, durable teammate. Only the Team Lead may call this tool.',
+      description: 'Create one named, durable teammate for a specific responsibility. Choose its model from the configured model candidates by task fit. Only the Team Lead may call this tool.',
       parameters: {
         name: { type: 'string', required: true, description: 'Unique lower-kebab-case teammate name.' },
         description: { type: 'string', required: true, description: 'Short description of the delegated responsibility.' },
         prompt: { type: 'string', required: true, description: 'Complete initial task for the teammate.' },
+        model: { type: 'string', description: 'Configured candidate model alias chosen for this responsibility. Required when the Team has model candidates; omit only when none are configured.' },
         context: {
           type: 'string',
           enum: ['fresh', 'fork'],
@@ -213,6 +216,7 @@ To message another teammate, use send_message({ target: "<teammate name>", messa
           context,
           provider: context === 'fork' ? config.forkProvider : config.freshProvider,
           signal: exec.signal,
+          ...args.model === undefined || args.model === '' ? {} : { model: args.model },
         })
         return { member: modelMember(result.member) }
       },
@@ -415,6 +419,23 @@ export function apply(ctx: Context, config: Config = {}): void {
     forkProvider: config.forkProvider ?? 'fork',
   }
   const installed = new Map<Agent, () => void>()
+  ctx.inject(['commands'], (child) => {
+    child.effect(() => child.commands.register({
+      name: 'team', description: 'Message Team members or stop collaboration.',
+      input: { hint: 'tell <member,model> <message> | stop [member]', attachments: true }, recordInput: false,
+      handler: async ({ agent, rawInput, attachments, signal }) => {
+        const line = rawInput.trim()
+        if (line === 'stop' || line.startsWith('stop ')) {
+          await ctx.agentTeams.stop(agent, line.slice(5).trim() || undefined)
+          return { kind: 'success' }
+        }
+        const match = /^tell\s+(\S+)\s+([\s\S]+)$/.exec(line)
+        if (match?.[1] === undefined || match[2] === undefined) return { kind: 'error', text: 'Use tell <member> <message> or stop [member].' }
+        await ctx.agentTeams.tell(agent, [...new Set(match[1].split(','))], [{ type: 'text', text: match[2] }, ...attachments], resolved.freshProvider, signal)
+        return { kind: 'success' }
+      },
+    }), 'team: human commands')
+  })
   const maybeInstall = (agent: Agent): void => {
     if (installed.has(agent) || ctx.agentTeams.tryMembership(agent) === undefined) return
     installed.set(agent, install(agent, ctx, resolved))
@@ -429,4 +450,12 @@ export function apply(ctx: Context, config: Config = {}): void {
     for (const dispose of installed.values()) dispose()
     installed.clear()
   }, 'tool-team.scopedTools()')
+}
+
+function modelGuidance(ctx: Context, agent: Agent, role: 'lead' | 'teammate'): string {
+  const selection = ctx.agentTeams.modelSelection(agent)
+  const roster = selection?.models ?? []
+  return role === 'lead'
+    ? `${roster.length === 0 ? '' : `Available model candidates and strengths: ${JSON.stringify(roster)}. The selected Lead model is ${selection?.leader || 'the current model'}.\n`}Create responsibilities for the current task. Explain the task split briefly, then use spawn_teammate with a responsibility name, clear description, and the best-fit model alias. Independent responsibilities may run in parallel; reuse inactive teammates with send_message when their model and responsibility still fit. Keep the Lead's own work local. Teammate replies are already public with role and model names; synthesize them without repeating every full reply.`
+    : 'Complete your assigned responsibility directly. Your replies are published with your role and model, and your settled result reaches the Lead. Do not create more teammates or send a duplicate result message. Use peer messages only for needed coordination.'
 }

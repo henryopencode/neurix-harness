@@ -150,6 +150,16 @@ describe('ModelSelect label slot', () => {
 })
 
 describe('ModelSelect reasoning effort', () => {
+  it('preserves effort controls while a feature owns the model route', async () => {
+    const directory = createSnapshotStore<ModelDirectoryState>(state({ selectionLocked: true }))
+    const select = vi.fn(async () => ({ ok: true as const, value: undefined }))
+    render(<ModelSelect renderSlot={renderLabel} locked={false} available directory={directory} load={vi.fn()} select={select} t={t} />)
+    fireEvent.click(screen.getByRole('button', { name: /选择模型，当前/u }))
+    const off = await screen.findByRole('menuitemradio', { name: /Off/u })
+    fireEvent.click(off)
+    expect(select).toHaveBeenCalledWith({ provider: 'deepseek-official', model: 'deepseek-v4-flash', reasoningEffort: 'off' })
+  })
+
   it('renders effort names without descriptions and submits the effort as part of the session selection', async () => {
     const directory = createSnapshotStore<ModelDirectoryState>(state())
     const select = vi.fn(async (selection: ModelSelection) => {

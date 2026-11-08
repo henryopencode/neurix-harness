@@ -8,12 +8,15 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Scoped } from '@deepseek-ai/dsh-scope'
 import type {
-  LlmAttemptId, LlmCallConfig, LlmFailure, MessageId, ReasoningEffortId, ResolvedRetryPolicy, StreamChunk,
+  LlmAttemptId, LlmCallConfig, LlmFailure, MessageId, ResolvedRetryPolicy, StreamChunk,
 } from '@deepseek-ai/dsh-llm'
 import type { AgentCancelCause, Session, SessionSeq, UserMessage } from '@deepseek-ai/dsh-session'
 export type { AgentCancelCause } from '@deepseek-ai/dsh-session'
 import type { Agent, InboxTarget, ModelSelection } from './types.ts'
-export type { Agent } from './types.ts'
+export type { Agent, AgentOptions } from './types.ts'
+
+/** A synchronous, monotonic model-choice restriction owned by a plugin. */
+export type ModelSelectionGuard = (agent: Agent, selection: Readonly<ModelSelection>) => string | undefined
 import type {} from '@deepseek-ai/dsh-system-prompt'
 declare module '@deepseek-ai/dsh-system-prompt' {
   interface AssembleContext {
@@ -22,22 +25,6 @@ declare module '@deepseek-ai/dsh-system-prompt' {
     /** Captured step selection, retained across retries; omitted effort uses adapter defaults. Absent outside agent steps. */
     modelSelection?: Readonly<ModelSelection>
   }
-}
-
-/**
- * Merge-extensible agent options. Route fields may be live accessors until the
- * Session records a selection or request; step preparation captures their value.
- * Persona belongs to system-prompt sections.
- */
-export interface AgentOptions {
-  /** Provider route (must have a registered adapter at call time). */
-  provider?: string
-  /** Model id interpreted by the selected provider adapter. */
-  model?: string
-  /** Adapter-owned reasoning effort for the selected provider/model route. */
-  reasoningEffort?: ReasoningEffortId | undefined
-  /** Maximum output tokens for each conversation-model request. */
-  maxTokens?: number
 }
 
 /** Options for {@link Agent.cancel}. */

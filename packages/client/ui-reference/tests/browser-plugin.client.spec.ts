@@ -321,7 +321,7 @@ describe('candidates', () => {
         name: 'Research',
         description: '~/project · 1h',
         icon: 'session',
-        section: 'Sessions',
+        section: 'Reference chats',
       }),
     ])
   })
@@ -479,8 +479,8 @@ describe('candidates', () => {
     })
     const candidates = await source.candidates(session, request('worker'))
     expect(candidates.map(candidate => ({ name: candidate.name, section: candidate.section }))).toEqual([
-      { name: 'researcher', section: 'Subagents' },
-      { name: 'Ordinary title', section: 'Sessions' },
+      { name: 'researcher', section: 'Reference subagents' },
+      { name: 'Ordinary title', section: 'Reference chats' },
     ])
     const [candidate] = candidates
     expect(source.onPick({

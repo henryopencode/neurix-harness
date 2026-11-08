@@ -16,6 +16,8 @@ interface TeamMemberSnapshot {
   readonly description: string
   readonly provider: string
   readonly context: 'fresh' | 'fork'
+  /** Immutable coordination namespace that created this member; omission leaves it unassigned to a coordinator. */
+  readonly coordinationOwner?: string
   readonly phase: TeamMemberPhase
   readonly error?: string
 }
@@ -87,6 +89,8 @@ interface TeamMemberProjection {
   readonly role: 'lead' | 'teammate'
   /** Durable lifecycle; the Lead row is always `active`. Turn activity comes from Session status. */
   readonly phase: TeamMemberPhase
+  /** Coordination namespace that created this member. */
+  readonly coordinationOwner?: string
   readonly error?: string
 }
 ```
@@ -124,6 +128,25 @@ interface TeamProjection {
 
 `agentTeam` Session 投影把一个 Root Session 回放成roster、任务板与历史 queued-minus-delivered mailbox。它按 `TeamId` 选取记录，因此普通 fork 继承的 event 保留 ancestor id，绝不会进入新 Root 的状态。Session event 的 `seq` 与 `time` 继续负责顺序和时间记录，Team snapshot 不再重复保存它们。roster 与 task 读取以 view 形式到达调用方，而 pending 邮件不对调用方公开。包 [README](../../packages/experimental/agent-team/README.zh.md)负责 operation、authorization、recovery 和限制行为。
 
+<a id="model-groups"></a>
+
+## 模型分配
+
+[智能体团队组合包](../../packages/experimental/agent-team-profile/README.zh.md) 配置候选模型与初始组长模型。`TeamModel` 标识候选路由及其擅长任务，`TeamModelSelection` 记录候选集合与组长选择。组长通过 `spawn_teammate` 创建本次任务的职责名称，使用 `model` 选择别名，独立于 `name` 和 `description`。团队服务在创建成员前校验别名、停止状态、模型可用性与并行容量。`TeamPost` 保留角色、实际模型路由、来源 Session 与输出序号。
+
+### 历史模型群记录
+
+历史模型群记录继续通过原事件判别项读取，不会为团队流程增加协作模式。
+
+| 类型 | 含义 |
+|---|---|
+| `ModelGroupMode` | 单个会话的 `single` 或 `multi` 模式。 |
+| `ModelGroupMember` | 唯一的 @ 别名、显示名称、精确的 provider/model 路由及用户描述的擅长任务。 |
+| `ModelGroupSnapshot` | 已记录的模式、leader、成员、停止状态，以及最近一次执行处理用户定向消息的成员。 |
+| `ModelGroupDispatchReceipt` | 已接收的成员名、目标 Session id 和可选的公共任务 id；结算通知使用该 Session id。 |
+| `ModelGroupDelivery` | 公开定向消息的序号、执行接收回执，以及失败或未确认的收件人；接收不代表完成。 |
+| `ModelGroupPost` | 成员公开文本或失败，携带来源 Session 以及可选的 assistant 消息序号。 |
+
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
 <a id="cordis-surface"></a>
@@ -160,6 +183,32 @@ listMembers(agent: Agent): TeamMemberView[]
  * @returns the active roster row.
  */
 async spawnTeammate(caller: Agent, request: SpawnTeammateRequest): Promise<SpawnTeammateResult>
+
+/**
+ * Read the candidate models captured by this member's Lead.
+ * @param caller - Exact live Team member.
+ * @returns Its Lead's configured candidate models.
+ */
+modelSelection(caller: Agent): TeamModelSelection | null
+
+/**
+ * Stop the Team or one responsibility, retaining the roster and shared tasks.
+ * @param caller - Exact live Lead.
+ * @param target - Teammate name; omission stops the whole Team.
+ * @returns After selected executions and pending creation have settled.
+ */
+async stop(caller: Agent, target?: string): Promise<void>
+
+/**
+ * Deliver direct human input to responsibilities or configured model aliases.
+ * @param caller - Live Lead conversation.
+ * @param targets - Member names or candidate model aliases.
+ * @param content - Complete accepted human input.
+ * @param provider - Continuable execution provider for a newly addressed model.
+ * @param signal - Caller-owned admission cancellation.
+ * @returns After every selected target has accepted its input; partial failures reject visibly.
+ */
+async tell(caller: Agent, targets: readonly string[], content: import('@deepseek-ai/dsh-llm').ContentBlock[], provider: string, signal: AbortSignal): Promise<void>
 
 /**
  * Steer one peer message into the target inbox or reject the attempt.
@@ -225,7 +274,52 @@ interrupt(caller: Agent, targetName: string): { previousStatus: 'running' | 'ina
 tryMembership(agent: Agent): TeamMembership | undefined
 ```
 
-Types: [Agent](core.zh.md)
+Types: [Agent](core.zh.md) · [ContentBlock](llm-streaming.zh.md)
 
 Source: [`packages/experimental/agent-team/src/index.ts`](../../packages/experimental/agent-team/src/index.ts)
+
+<a id="ctxmodelgroups--modelgroups"></a>
+
+### `ctx.modelGroups` — `ModelGroups`
+
+Model groups with independent model routes, shared tasks, and direct human addressing.
+
+```ts cordis-catalog
+/**
+ * Read one conversation's durable model-group selection.
+ * @param agent - Exact live root.
+ * @returns Its group selection, if configured.
+ */
+snapshot(agent: Agent): ModelGroupSnapshot | null
+
+/**
+ * Change only this conversation after stopping existing executions.
+ * @param agent - Live root.
+ * @param mode - Desired mode.
+ */
+async setMode(agent: Agent, mode: ModelGroupMode): Promise<void>
+
+/**
+ * Stop current work and close new assignment admission.
+ * @param agent - Live root.
+ * @param member - Optional single model name.
+ */
+async stop(agent: Agent, member?: string): Promise<void>
+
+/**
+ * Dispatch one admitted model task.
+ * @param agent - Live leader.
+ * @param name - Configured model name.
+ * @param prompt - Logged task input.
+ * @param direct - Human-directed delivery.
+ * @param signal - Admission cancellation.
+ * @param taskId - Existing ready task; omission creates a new task.
+ * @returns Accepted model, target Session, and shared task identities.
+ */
+assign( agent: Agent, name: string, prompt: ContentBlock[], direct: boolean, signal: AbortSignal, taskId?: TeamTaskId, ): Promise<ModelGroupDispatchReceipt>
+```
+
+Types: [Agent](core.zh.md) · [ContentBlock](llm-streaming.zh.md)
+
+Source: [`packages/experimental/model-group-runtime/src/index.ts`](../../packages/experimental/model-group-runtime/src/index.ts)
 <!-- END GENERATED cordis-surface -->

@@ -1,0 +1,3 @@
+- id: knowledge-base
+  config:
+    path: !!js dshHomePath('storages', 'knowledge-base')
