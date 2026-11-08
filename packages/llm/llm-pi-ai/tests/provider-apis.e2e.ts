@@ -17,8 +17,8 @@ import type { PiAiReplayResponse } from '../src/replay.ts'
 import { assemble, type AssembledResult } from './assemble.ts'
 
 interface ProviderCase {
-  provider: 'openai' | 'anthropic'
-  api: 'openai-responses' | 'anthropic-messages'
+  provider: 'openai' | 'anthropic' | 'gemini-native'
+  api: 'openai-responses' | 'anthropic-messages' | 'google-generative-ai'
   model: string
   apiKey?: string
   baseURL?: string
@@ -31,6 +31,9 @@ const azureOpenAIKey = process.env.AZURE_OPENAI_API_KEY
 // protocol, so falling back to DEEPSEEK_API_KEY turns the keyless skip into a 404.
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY
 const anthropicBaseURL = process.env.DSH_PI_AI_ANTHROPIC_BASE_URL
+const geminiApiKey = process.env.DSH_PI_AI_GEMINI_API_KEY
+const geminiBaseURL = process.env.DSH_PI_AI_GEMINI_BASE_URL
+const geminiModel = process.env.DSH_PI_AI_GEMINI_MODEL
 
 const providerCases: ProviderCase[] = [
   {
@@ -261,3 +264,49 @@ for (const profile of providerCases) {
     },
   )
 }
+
+describe.skipIf(geminiApiKey === undefined || geminiBaseURL === undefined || geminiModel === undefined)(
+  'llm-pi-ai Gemini native gateway e2e',
+  () => {
+    it('preserves repeated read calls and replays their results through the native protocol', async () => {
+      if (geminiBaseURL === undefined || geminiModel === undefined) throw new Error('Gemini e2e route is not configured')
+      const ctx = new Context()
+      contexts.push(ctx)
+      await ctx.plugin(LlmRuntime)
+      await ctx.plugin(LlmPiAi, { providers: {
+        'gemini-native': {
+          api: 'google-generative-ai', apiKeyEnv: 'DSH_PI_AI_GEMINI_API_KEY',
+          baseURL: geminiBaseURL, models: [{ id: geminiModel }],
+        },
+      } })
+      const profile: ProviderCase = { provider: 'gemini-native', api: 'google-generative-ai', model: geminiModel }
+      const files = ['page.tsx', 'home.module.css', 'layout.tsx', 'tokens.css']
+      const prompt = ask(`Call read separately for all four files: ${files.join(', ')}. Call them all now. After their results arrive, reply Done.`)
+      const tools: ToolSchema[] = [{
+        name: 'read', description: 'Read one text file.',
+        parameters: { type: 'object', properties: { file_path: { type: 'string' } }, required: ['file_path'] },
+      }]
+      const first = await assemble(ctx, { provider: profile.provider, model: profile.model, messages: prompt, tools, maxTokens: 2048 })
+      expectFinish(first, 'tool-calls')
+      const calls = first.message.content.filter(block => block.type === 'tool-call')
+      expect(calls).toHaveLength(files.length)
+      expect(calls.every(call => call.name === 'read')).toBe(true)
+      expect(new Set(calls.map(call => call.id)).size).toBe(files.length)
+      const inputs = calls.map((call) => {
+        const input: unknown = JSON.parse(call.arguments)
+        return input
+      })
+      expect(inputs).toEqual(expect.arrayContaining(files.map(file_path => ({ file_path }))))
+      expectNativeReplay(first, profile)
+      const second = await assemble(ctx, {
+        provider: profile.provider, model: profile.model, tools, maxTokens: 2048,
+        messages: [...prompt, first.message, ...calls.map(call => createToolResultMessage({
+          callId: ToolCallId(call.id), content: [{ type: 'text', text: 'File read successfully.' }], isError: false,
+        }))],
+      })
+      expectFinish(second, 'stop')
+      expect(textOf(second).toLowerCase()).toContain('done')
+      expectNativeReplay(second, profile)
+    })
+  },
+)
