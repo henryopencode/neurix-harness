@@ -1,4 +1,7 @@
 /** Browser plugin for durable workflow-run Conversation Nodes. */
+export type {} from './canvas-contract.ts'
+export type {} from './canvas-plugin.ts'
+export type {} from './workflow-definition.ts'
 
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type { SessionTarget } from '@deepseek-ai/dsh-api-session-controller/client'
@@ -11,6 +14,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import { WorkflowRunPanel, type WorkflowRunInjected } from './WorkflowRunPanel.tsx'
 import { en, ja, es, fr, de, ru, pt, NS, type WorkflowRunKey, zh } from './locales.ts'
 import { workflowRunDefinition } from './workflow-definition.ts'
+import { workflowCanvasEntry } from './canvas-plugin.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -24,6 +28,7 @@ export const inject = ['uiConversation', 'uiWorkspace', 'slots', 'sessions', 'lo
 
 /** Register the workflow Definition, dictionary, and keyed Chat renderer. */
 export function apply(ctx: ClientContext): void {
+  ctx.plugin(workflowCanvasEntry)
   ctx.uiConversation.events.register(workflowRunDefinition)
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'ui-workflow-run: dictionaries')
   ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({

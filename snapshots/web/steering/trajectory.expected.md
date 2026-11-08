@@ -5,6 +5,7 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat"
+    - tab "Workflow"
     - tab "Trajectory" [selected]
 - toolbar "Trajectory toolbar":
   - button "Use actual duration": Duration

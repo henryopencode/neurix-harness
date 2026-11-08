@@ -1,0 +1,11 @@
+- article "Task details":
+  - heading "write the fix" [level=2]
+  - text: Waiting for prerequisites Planned status Implement
+  - heading "Work and inputs" [level=3]
+  - paragraph: Use both preparation results to choose the implementation.
+  - heading "Completion criteria" [level=3]
+  - paragraph: An implementation with a focused regression test.
+  - heading "Prerequisites" [level=3]
+  - list:
+    - listitem: read the code · Running
+    - listitem: watch the background build · Running
