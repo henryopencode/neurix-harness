@@ -18,7 +18,7 @@ Develop on `develop` and merge a stable change into `master` through a pull requ
 <a id="development-and-release"></a>
 ## Development and release
 
-`develop` is the default development branch. The **Neurix development checks** workflow validates pushes to it and pull requests to either branch. It runs the build, lint, and unit tests. The repository's upstream-specific automated workflows are disabled in this fork; their files remain available for reference.
+`develop` is the default development branch. The **Neurix development checks** workflow validates pushes to it and pull requests to either branch. It runs the build, lint, and unit tests for changed source, its static consumers, and affected plugin owners; it does not run the full unit suite. The repository's upstream-specific automated workflows are disabled in this fork; their files remain available for reference.
 
 Merge the ready changes into `master`. **Neurix stable desktop release** responds to master pushes, including ordinary merges, squash merges, and direct pushes. Development-branch pushes and closing a pull request without merging do not publish installers. All four platform jobs must succeed before a Release appears. Uploads remain a draft until all assets and checksums are present; publication uses GitHub's semantic version ordering so an older build finishing late cannot replace the newest version. Each installer includes the application and its matching runtime. GitHub Releases also contains `SHA256SUMS.txt` for the installers and the Linux Web server archive.
 
