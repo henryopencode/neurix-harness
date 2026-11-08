@@ -5,6 +5,7 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
+    - tab "Workflow"
     - tab "Trajectory"
 - text: poem.txt TXT 16B
 - button "reference-1.png, click to view original":

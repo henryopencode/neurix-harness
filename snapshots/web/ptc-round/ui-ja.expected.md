@@ -5,8 +5,10 @@
   - button "右サイドバーを開く"
   - tablist:
     - tab "チャット" [selected]
+    - tab "ワークフロー"
     - tab "軌跡"
-  - button "その他の会話ビュー"
+- navigation "ターン移動":
+  - button "ターン 1 へ移動"
 - text: "Using ONE run_code program: run bash `echo CODE_ROUND_OK`, then read the file missing.txt catching its error in the program. Return an object with both outcomes. Then reply DONE and stop. {{clock}}"
 - button "コピー"
 - status: 完了

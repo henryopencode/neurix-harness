@@ -6,7 +6,10 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
+    - tab "Workflow"
     - tab "Trajectory"
+- navigation "Turn navigation":
+  - button "Jump to turn 1"
 - text: Clean up the stale build log. {{clock}}
 - button "Copy"
 - status: Completed
@@ -31,7 +34,10 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
+    - tab "Workflow"
     - tab "Trajectory"
+- navigation "Turn navigation":
+  - button "Jump to turn 1"
 - text: Clean up the stale build log. {{clock}}
 - button "Copy"
 - status: Completed

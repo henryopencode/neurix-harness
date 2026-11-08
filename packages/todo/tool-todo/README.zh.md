@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-tool-todo` 为 agent（智能体）提供一份可用于规划的结构化任务列表：把多步工作拆成具体任务、标记正在进行的任务、完成后逐项勾掉。列表跨轮次、跨重新打开的会话持续存在，agent 与 UI 始终看到最新计划。一个配置开关决定是否允许多个任务同时处于进行中，适用于并行开展工作的 agent。凡是希望 agent 维护可见任务列表的场景都可以使用它；每次更新整体替换列表，只有拥有该列表的 agent 会话才能修改。
+`dsh-tool-todo` 让 agent（智能体）规划多步工作、显示当前进度并记录结果。复杂计划可包含稳定任务身份、阶段、前置依赖、完成标准、子 Session 与产物文件。当前清单在新轮次开始时清空；已记录的计划仍保留在 Session 历史中。每次更新整体替换列表，只有所属 agent Session 可以写入。一个必填配置开关决定是否允许多个任务同时进行。
 
 ## 目录
 
@@ -49,7 +49,7 @@ kind: "package-reference"
 
 ### 每次调用做什么
 
-agent 每次更新都发送完整列表；新列表替换旧列表，因此没有部分更新或逐项编辑。每个条目是一句简短的任务描述，外加 `pending`、`in_progress` 或 `completed` 状态。成功的更新会返回新的计数——`Updated todo list: <pending> pending, <inProgress> in progress, <completed> completed.`——UI 随即展示新计划。任务描述为空或重复、条目带有描述与状态之外的字段、或（禁用并行时）多个任务被标记为进行中，这些情况下更新都会明确失败。
+agent 每次更新都发送完整列表。每个条目必须包含 `content` 和 `pending`、`in_progress` 或 `completed` 状态；可选的[规划字段](../../../docs/subsystems/todo.zh.md)描述依赖、预期结果和产物。修改列表时，agent 保留任务 id 与相关元数据。成功时返回 `Updated todo list: <pending> pending, <inProgress> in progress, <completed> completed.`。校验会拒绝空白文本、重复内容或 id、未知属性、缺失前置任务、重复依赖、依赖环，以及禁用并行时的多个活跃任务。被拒绝的更新不会追加计划。
 
 ### 单一所有者
 
@@ -90,7 +90,7 @@ agent 每次更新都发送完整列表；新列表替换旧列表，因此没�
 
 ### 会话投影
 
-当组合挂载 `ctx.sessionProjections`（[`@deepseek-ai/dsh-session-projection`](../../session/session-projection/README.zh.md)）时，本包在注入的子插件中注册 `todos` 单元：投影即有效计划——最新的整份 `todo/write` 列表，首次写入前为 `null`，下一轮次开始时清空，而 `turn/end` 保留刚完成的清单。该键在此处合并进 `SessionProjectionMap`；载体通过历史尾页与 `session/projection` 推送帧提供该值。未挂载注册表的组合不受影响；单元注册见 [src/index.ts](src/index.ts)。
+必需的 [`sessionProjections`](../../session/session-projection/README.zh.md) 注册表提供最新完整列表，首次写入前及下次 `turn/start` 后为 `null`。正常 `turn/end` 保留清单。私有投影状态还记录所属轮次，使新写入关联同一份持续更新的计划；不含该字段的历史写入仍可读取。检查点恢复会保留完整规划元数据。注册与回放见 [src/index.ts](src/index.ts)。
 
 ### 调用机制
 
@@ -121,7 +121,7 @@ agent 每次更新都发送完整列表；新列表替换旧列表，因此没�
 
 #### 模型看到什么
 
-模型会看到生成的 [`todo_write` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-todo)：一个对象，含一个必填的 `todos` 数组，元素为 `{ content, status }`，其中 `status` 为 `pending`、`in_progress` 或 `completed`。`todos` 描述说明每次调用都会替换整个列表；工具描述中的活跃状态条款跟随 `allowParallelInProgress`。
+模型会看到生成的 [`todo_write` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-todo)，其中包含可选规划元数据。描述要求在开始工作前列出具体、可验证的步骤，修订时保留稳定 id，声明明确前置依赖，并记录结果和产物。活跃状态条款跟随 `allowParallelInProgress`。
 
 #### Token 影响
 
@@ -153,7 +153,7 @@ token 用量随模型每次提交的完整列表增长，这些调用参数会�
 这些限制说明工具何时不合适。它们是当前包约束，不是任务积压。
 
 - **仅单一所有者作用域**——列表属于唯一调用 agent 会话；subagent、共享与 swarm 作用域是有意设置的限制，非 agent 调用方会被拒绝。
-- **条目形状刻意保持最小**——`content` 加三态 `status`；整表替换不需要稳定 id、优先级或 active-form 字段。
+- **依赖描述计划**——校验会检查引用与依赖环；本工具不调度工作、不停止子级，也不在执行时强制前置任务完成。
 - **整表替换是唯一操作**——没有部分更新、没有回读工具、没有逐项编辑；模型每次调用都必须重新发送完整列表。
 
 <a id="dev-note"></a>

@@ -5,6 +5,7 @@
 - navigation "Global panels":
   - button "Plugins"
   - button "MCP"
+  - button "Knowledge base"
   - button "Automation tasks"
   - button "More"
 - text: Workspaces

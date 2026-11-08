@@ -1,0 +1,22 @@
+{
+  "formatVersion": 2,
+  "roots": [
+    {"key":"event:todo/write","kind":"event","event":"todo/write","surface":false,"digest":"2c187606e08fc85ad13f116151386ed787863cca3e66258a3c41e79a868d130e"}
+  ],
+  "types": [],
+  "nodes": {
+    "0657d3ca5ac4e7bf": {"kind":"primitive","type":"number"},
+    "1e78a06b1bde0899": {"kind":"object","properties":[{"name":"todos","type":"c188be656ce86308","optional":false},{"name":"turn","type":"0657d3ca5ac4e7bf","optional":true}],"indices":[]},
+    "1ebc6f9ff3aa9e3a": {"kind":"literal","value":"completed"},
+    "234142ee4f996f38": {"kind":"literal","value":"pending"},
+    "2c187606e08fc85a": {"kind":"object","properties":[{"name":"data","type":"1e78a06b1bde0899","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"af0750d32d97d47b","optional":false}],"indices":[]},
+    "3f99ee7eb0ba9467": {"kind":"object","properties":[{"name":"artifacts","type":"93c33d9687613293","optional":true},{"name":"blockedReason","type":"4cd48f3e5108bd6e","optional":true},{"name":"content","type":"4cd48f3e5108bd6e","optional":false},{"name":"dependsOn","type":"93c33d9687613293","optional":true},{"name":"description","type":"4cd48f3e5108bd6e","optional":true},{"name":"expectedOutput","type":"4cd48f3e5108bd6e","optional":true},{"name":"id","type":"4cd48f3e5108bd6e","optional":true},{"name":"phase","type":"4cd48f3e5108bd6e","optional":true},{"name":"result","type":"4cd48f3e5108bd6e","optional":true},{"name":"sessionId","type":"4cd48f3e5108bd6e","optional":true},{"name":"status","type":"fd0d91a1f9dd2efb","optional":false}],"indices":[]},
+    "4cd48f3e5108bd6e": {"kind":"primitive","type":"string"},
+    "93c33d9687613293": {"kind":"array","element":"4cd48f3e5108bd6e"},
+    "94c56aeb1564ad73": {"kind":"literal","value":"in_progress"},
+    "af0750d32d97d47b": {"kind":"literal","value":"todo/write"},
+    "c188be656ce86308": {"kind":"array","element":"3f99ee7eb0ba9467"},
+    "dacf3d5f3e4ff619": {"kind":"literal","value":true},
+    "fd0d91a1f9dd2efb": {"kind":"union","types":["1ebc6f9ff3aa9e3a","234142ee4f996f38","94c56aeb1564ad73"]}
+  }
+}
