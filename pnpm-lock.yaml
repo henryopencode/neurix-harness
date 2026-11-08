@@ -4979,7 +4979,7 @@ importers:
   packages/client/ui-git-branch:
     dependencies:
       '@deepseek-ai/schemastery':
-        specifier: workspace:~
+        specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
       '@deepseek-ai/dsh-typert-protocol':
         specifier: workspace:*
