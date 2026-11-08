@@ -132,7 +132,7 @@ The `agentTeam` Session projection replays one root Session into the roster, tas
 
 ## Model assignment
 
-The [Agent Teams bundle](../../packages/experimental/agent-team-profile/README.md) configures candidate models and an initial Lead model. `TeamModel` identifies a candidate route and its strengths; `TeamModelSelection` records the pool and Lead choice. The Lead creates task-specific responsibility names through `spawn_teammate`, selecting a `model` alias separately from `name` and `description`. The Team service validates aliases, stop state, model availability, and parallel capacity before roster creation. `TeamPost` retains the role, actual model route, source Session, and output sequence.
+Teammates created through the Team tools inherit the Lead's model. Trusted coordinators can pass `agentOptions` to `spawnTeammate`; the [model-group runtime](../../packages/experimental/model-group-runtime/README.md) uses it to select explicit routes. `TeamModel`, `TeamModelSelection`, and `TeamPost` retain candidate-model choices and attributed replies in existing Session events.
 
 ### Historical model-group records
 
@@ -183,32 +183,6 @@ listMembers(agent: Agent): TeamMemberView[]
  * @returns the active roster row.
  */
 async spawnTeammate(caller: Agent, request: SpawnTeammateRequest): Promise<SpawnTeammateResult>
-
-/**
- * Read the candidate models captured by this member's Lead.
- * @param caller - Exact live Team member.
- * @returns Its Lead's configured candidate models.
- */
-modelSelection(caller: Agent): TeamModelSelection | null
-
-/**
- * Stop the Team or one responsibility, retaining the roster and shared tasks.
- * @param caller - Exact live Lead.
- * @param target - Teammate name; omission stops the whole Team.
- * @returns After selected executions and pending creation have settled.
- */
-async stop(caller: Agent, target?: string): Promise<void>
-
-/**
- * Deliver direct human input to responsibilities or configured model aliases.
- * @param caller - Live Lead conversation.
- * @param targets - Member names or candidate model aliases.
- * @param content - Complete accepted human input.
- * @param provider - Continuable execution provider for a newly addressed model.
- * @param signal - Caller-owned admission cancellation.
- * @returns After every selected target has accepted its input; partial failures reject visibly.
- */
-async tell(caller: Agent, targets: readonly string[], content: import('@deepseek-ai/dsh-llm').ContentBlock[], provider: string, signal: AbortSignal): Promise<void>
 
 /**
  * Steer one peer message into the target inbox or reject the attempt.
@@ -274,7 +248,7 @@ interrupt(caller: Agent, targetName: string): { previousStatus: 'running' | 'ina
 tryMembership(agent: Agent): TeamMembership | undefined
 ```
 
-Types: [Agent](core.md) · [ContentBlock](llm-streaming.md)
+Types: [Agent](core.md)
 
 Source: [`packages/experimental/agent-team/src/index.ts`](../../packages/experimental/agent-team/src/index.ts)
 

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-knowledge-base",
   "description": "Manage workspace documents and explore their source-derived knowledge graph.",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",

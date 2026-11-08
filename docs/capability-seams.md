@@ -114,6 +114,8 @@ flowchart LR
   svc_settingsController["ctx.settingsController<br/>Host settings-surface Remote controller"]
   pkg_api_workspace_files["api-workspace-files"]
   svc_workspaceFiles["ctx.workspaceFiles<br/>Host workspace file Remote service"]
+  pkg_client_ui_git_branch["client-ui-git-branch"]
+  svc_gitBranch["ctx.gitBranch<br/>Session Git HEAD observations"]
   pkg_workspace_changes["workspace-changes"]
   svc_workspaceChanges["ctx.workspaceChanges<br/>Host per-turn changed-file summaries"]
   pkg_api_terminal_controller["api-terminal-controller"]
@@ -343,6 +345,7 @@ flowchart LR
   pkg_client_file_upload --> svc_fileUploads
   pkg_client_modules --> svc_clientModules
   pkg_client_product_analytics --> svc_productAnalytics
+  pkg_client_ui_git_branch --> svc_gitBranch
   pkg_client_ui_plugin_manager --> svc_pluginRegistryProbe
   pkg_command_feedback --> svc_sessionFeedback
   pkg_commands --> svc_commands
@@ -523,6 +526,7 @@ flowchart LR
   svc_fileReferences --> pkg_api_session_controller
   svc_fileUploads --> pkg_api_session_controller
   svc_fs --> pkg_tool_fs
+  svc_gitBranch --> pkg_client_ui_git_branch
   svc_headlessStartup --> pkg_headless
   svc_hmr --> pkg_app_boot
   svc_jobs --> pkg_api_job_controller
@@ -687,6 +691,7 @@ flowchart LR
 | `ctx.credentialsController` | `core` | [`api-settings-controller`](../packages/api/settings-controller) | - | - | - | Projects the credential-reference seam onto the generated Remote namespace: batch fan-out, view projection, and refusal mapping live here, not on the seam Definition. |
 | `ctx.settingsController` | `core` | [`api-settings-controller`](../packages/api/settings-controller) | - | - | - | Projects the user-settings seam onto the generated Remote namespace: the read is always redacted and every refusal is classified here, not on the seam Definition. |
 | `ctx.workspaceFiles` | `core` | [`api-workspace-files`](../packages/api/workspace-files) | - | - | - | Serves stat, paged text, byte windows, directory listings, and the change feed for files inside a Session's workspace root, confined by lstat, containment, and a stat re-check. |
+| `ctx.gitBranch` | `core` | [`client-ui-git-branch`](../packages/client/ui-git-branch) | - | [`client-ui-git-branch`](../packages/client/ui-git-branch) | - | Streams branch metadata through authorized workspace reads without modifying repositories. |
 | `ctx.workspaceChanges` | `core` | [`workspace-changes`](../packages/deliverables/workspace-changes) | - | - | - | Serves the summary each workspace/changes event announced and each listed file's turn-start and turn-end comparison, by Session and event sequence, until that Session is disposed; the log carries only the turn. |
 | `ctx.terminalController` | `core` | [`api-terminal-controller`](../packages/api/terminal-controller) | - | - | - | Owns user terminal processes, default shell resolution and bounded screen recovery through the subprocess provider and typed Remote transport. |
 | `ctx.workspaceController` | `core` | [`api-workspace-controller`](../packages/api/workspace-controller) | - | - | - | Owns Workspace commands and reconnect-safe Workspace state delivery through the generated Remote namespace. |
