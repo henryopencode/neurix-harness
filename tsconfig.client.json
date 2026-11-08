@@ -153,6 +153,7 @@
     { "path": "./packages/client/ui-user-questions" },
     { "path": "./packages/client/ui-trajectory" },
     { "path": "./packages/session-query/session-log-export/tsconfig.client.json" },
+    { "path": "./packages/client/ui-git-branch/tsconfig.client.json" },
     { "path": "./packages/client/ui-open-in-app" },
     { "path": "./packages/client/ui-theme/tsconfig.client.json" },
     { "path": "./packages/client/ui-settings/tsconfig.client.json" },

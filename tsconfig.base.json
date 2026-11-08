@@ -375,6 +375,7 @@
       "@deepseek-ai/dsh-schedule/client": ["./packages/schedule/schedule/src/client.ts"],
       "@deepseek-ai/dsh-client-ui-directory-picker-browse": ["./packages/client/ui-directory-picker-browse/src"],
       "@deepseek-ai/dsh-client-ui-directory-picker-native": ["./packages/client/ui-directory-picker-native/src"],
+      "@deepseek-ai/dsh-client-ui-git-branch": ["./packages/client/ui-git-branch/src"],
       "@deepseek-ai/dsh-client-ui-open-in-app": ["./packages/client/ui-open-in-app/src"],
       "@deepseek-ai/dsh-client-ui-secret-mask": ["./packages/client/ui-secret-mask/src"],
       // sdk/ folders are role-named without their npm-side sdk/jsonrpc prefixes,

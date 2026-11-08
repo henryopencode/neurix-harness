@@ -82,6 +82,9 @@
         iconTimeoutMs: 10000
         launchWatchMs: 1000
 
+    - id: ui-git-branch
+      name: '@deepseek-ai/dsh-client-ui-git-branch'
+
     - id: ui-open-in-app
       name: '@deepseek-ai/dsh-client-ui-open-in-app'
 

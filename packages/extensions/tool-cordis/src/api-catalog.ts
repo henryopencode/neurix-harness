@@ -1385,6 +1385,19 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'gitBranch',
+    summary: 'Live repository metadata; the existing workspace lookup authorizes each Session.',
+    description: 'Live repository metadata; the existing workspace lookup authorizes each Session.',
+    methods: [
+      {
+        signature: '@Remote({ mode: \'stream\' }) async *follow(workspaceFileScope: WorkspaceFileScope, signal: AbortSignal): AsyncIterable<GitHead>',
+        description: 'Observe HEAD immediately and publish later branch changes without modifying the repository.',
+        parameters: [{ name: 'workspaceFileScope', description: 'authorized Session directory, resolved by the Host.' }, { name: 'signal', description: 'caller lifetime; closes the pending command or refresh delay.' }],
+        returns: 'current and changed HEAD values; missing Git is reported as unavailable.',
+      },
+    ],
+  },
+  {
     key: 'goals',
     summary: 'Goal service (`ctx.goals`) backed exclusively by the owning session log.',
     description: 'Goal service (`ctx.goals`) backed exclusively by the owning session log.',
@@ -6084,6 +6097,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'GenericResultView',
     declaration: 'export interface GenericResultView {\n    card: \'generic\';\n    title?: string;\n    content?: ContentBlock[];\n}',
+  },
+  {
+    name: 'GitHead',
+    declaration: 'export type GitHead = {\n    readonly kind: \'branch\';\n    readonly name: string;\n} | {\n    readonly kind: \'detached\';\n    readonly commit: string;\n} | {\n    readonly kind: \'not-repository\';\n} | {\n    readonly kind: \'unavailable\';\n};',
   },
   {
     name: 'GoalActivation',

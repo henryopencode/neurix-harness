@@ -23,6 +23,7 @@
   // this client-registered project must not also hold them (one program
   // cannot see both sides of the cordis Context merges).
   "exclude": [
+    "tests/git-branch.e2e.ts",
     "tests/knowledge-base.e2e.ts",
     "tests/mcp-management.e2e.ts",
     "tests/creation-recommendations.e2e.ts",

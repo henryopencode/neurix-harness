@@ -8,6 +8,7 @@
     "rewriteRelativeImportExtensions": false
   },
   "include": [
+    "apps/web/tests/git-branch.e2e.ts",
     "apps/web/tests/knowledge-base.e2e.ts",
     "apps/web/tests/mcp-management.e2e.ts",
     "apps/web/tests/creation-recommendations.e2e.ts",
@@ -319,6 +320,7 @@
     { "path": "./packages/api/account-controller" },
     { "path": "./packages/credentials/deepseek-account-platform" },
     { "path": "./packages/credentials/deepseek-account" },
+    { "path": "./packages/client/ui-git-branch/tsconfig.host.json" },
     { "path": "./packages/client/ui-deliverables/tsconfig.host.json" },
     { "path": "./vendor/cosmokit" },
     { "path": "./vendor/schemastery" },

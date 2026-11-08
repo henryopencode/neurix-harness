@@ -554,6 +554,25 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-shortcuts -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-git-branch -->
+<a id="deepseek-aidsh-client-ui-git-branch"></a>
+
+## `@deepseek-ai/dsh-client-ui-git-branch`
+
+- `inject`: `typert` · `subprocess` · `workspaceFiles`
+- `source`: [`packages/client/ui-git-branch/src/index.ts:14`](../packages/client/ui-git-branch/src/index.ts)
+
+```ts config-catalog
+/** Deployment bounds for live branch observations. */
+export interface Config {
+  /** Maximum duration of one Git observation, in milliseconds. */
+  readonly timeoutMs: number
+  /** Delay between observations while the header is subscribed, in milliseconds. */
+  readonly refreshMs: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-git-branch -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-plugin-manager -->
 <a id="deepseek-aidsh-client-ui-plugin-manager"></a>
 
