@@ -72,6 +72,8 @@ kind: "package-reference"
               high: high
 ```
 
+对于提供 Gemini 原生 API 的网关，将 `api` 设为 `google-generative-ai`，`baseURL` 带上原生版本路径（例如 `https://gateway.example/v1beta`，而非 OpenAI 的 `/v1`），并在 `models` 中声明模型 id。该路由保留原生函数调用，不经过 OpenAI 或 Anthropic 转换。自定义 Gemini 原生路由不支持联网发现模型，需要显式配置模型列表。
+
 | 字段 | 默认值 | 含义 |
 |---|---|---|
 | `apiKeyEnv` | 无 | 按请求解析的凭据引用；省略时交由 pi-ai 环境发现 |
@@ -223,7 +225,7 @@ git add packages/llm/llm-pi-ai/src/provider-data.generated.ts
 
 #### 模型看到什么
 
-pi-ai 事件变成 harness 的推理、文本、工具调用、用量与 finish 分片。适配器把解析后的工具参数以原始 JSON 字符串传给 harness。如果 pi-ai 报告已完成调用的参数无效，本次尝试会在分派工具前以 `MALFORMED_RESPONSE` 失败，且不发布成功的回放状态。默认的普通重试策略不重试此错误码；显式重试策略仍然控制恢复。
+pi-ai 事件变成 harness 的推理、文本、工具调用、用量与 finish 分片。适配器把解析后的工具参数以原始 JSON 字符串传给 harness。如果 pi-ai 报告已完成调用的参数无效，本次尝试会在分派工具前以 `MALFORMED_RESPONSE` 失败，且不发布成功的回放状态。挂载 `dsh-llm-retry` 时，默认的普通重试策略会在有限预算内重试此错误码；显式重试策略仍然控制恢复。
 
 #### Token 影响
 
