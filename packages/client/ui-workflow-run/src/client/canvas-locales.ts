@@ -3,6 +3,8 @@ export const CANVAS_NS = 'workflowCanvas'
 
 /** Chinese keys define the canvas namespace. */
 export const zh = {
+  'task.request': '处理本轮消息', 'view.latest': '跟随最新任务',
+  'view.plan': '任务计划 · {count}', 'view.execution': '执行明细 · {count}',
   'view.title': '工作流',
   'view.empty': '还没有任务计划',
   'view.emptyHint': '复杂任务生成计划后，会在这里显示步骤和执行进度',
@@ -37,7 +39,7 @@ export const zh = {
   'task.planned': '计划状态',
   'status.pending': '待开始',
   'status.waiting': '等待前置任务',
-  'status.blocked': '受阻',
+  'status.blocked': '等待执行',
   'status.running': '进行中',
   'status.completed': '已完成',
   'status.failed': '失败',
@@ -51,6 +53,8 @@ export type CanvasKey = keyof typeof zh
 
 /** English canvas copy. */
 export const en: Record<CanvasKey, string> = {
+  'task.request': 'Handle this message', 'view.latest': 'Follow latest task',
+  'view.plan': 'Task plan · {count}', 'view.execution': 'Execution details · {count}',
   'view.title': 'Workflow', 'view.empty': 'No task plan yet',
   'view.emptyHint': 'Steps and execution progress appear here when a complex task has a plan',
   'view.history': 'Select task plan', 'view.older': 'Load earlier tasks',
@@ -63,13 +67,15 @@ export const en: Record<CanvasKey, string> = {
   'task.dependencies': 'Prerequisites', 'task.blocked': 'Waiting for', 'task.result': 'Results and verification',
   'task.artifacts': 'Deliverables', 'task.session': 'Open execution session', 'task.removed': 'Removed from plan',
   'task.recorded': 'Execution recorded', 'task.planned': 'Planned status',
-  'status.pending': 'Not started', 'status.waiting': 'Waiting for prerequisites', 'status.blocked': 'Blocked',
+  'status.pending': 'Not started', 'status.waiting': 'Waiting for prerequisites', 'status.blocked': 'Waiting to run',
   'status.running': 'Running', 'status.completed': 'Completed', 'status.failed': 'Failed',
   'status.cancelled': 'Cancelled', 'status.interrupted': 'Interrupted', 'status.removed': 'Removed from plan',
 }
 
 /** Japanese canvas copy. */
 export const ja: Record<CanvasKey, string> = {
+  'task.request': 'このメッセージを処理', 'view.latest': '最新のタスクへ',
+  'view.plan': 'タスク計画 · {count}', 'view.execution': '実行の詳細 · {count}',
   'view.title': 'ワークフロー', 'view.empty': 'タスク計画はまだありません',
   'view.emptyHint': '複雑なタスクの計画ができると、手順と進捗がここに表示されます',
   'view.history': 'タスク計画を選択', 'view.older': '以前のタスクを読み込む',
@@ -82,13 +88,15 @@ export const ja: Record<CanvasKey, string> = {
   'task.dependencies': '前提タスク', 'task.blocked': '待機理由', 'task.result': '結果と検証',
   'task.artifacts': '成果物', 'task.session': '実行セッションを開く', 'task.removed': '計画から削除済み',
   'task.recorded': '実行記録あり', 'task.planned': '計画の状態',
-  'status.pending': '未着手', 'status.waiting': '前提タスクを待機', 'status.blocked': 'ブロック中',
+  'status.pending': '未着手', 'status.waiting': '前提タスクを待機', 'status.blocked': '実行待ち',
   'status.running': '実行中', 'status.completed': '完了', 'status.failed': '失敗',
   'status.cancelled': 'キャンセル済み', 'status.interrupted': '中断', 'status.removed': '計画から削除済み',
 }
 
 /** Spanish canvas copy. */
 export const es: Record<CanvasKey, string> = {
+  'task.request': 'Procesar este mensaje', 'view.latest': 'Seguir la última tarea',
+  'view.plan': 'Plan de tareas · {count}', 'view.execution': 'Detalles de ejecución · {count}',
   'view.title': 'Flujo de trabajo', 'view.empty': 'Aún no hay un plan',
   'view.emptyHint': 'Los pasos y el progreso aparecen aquí cuando una tarea compleja tiene un plan',
   'view.history': 'Seleccionar plan', 'view.older': 'Cargar tareas anteriores',
@@ -101,13 +109,15 @@ export const es: Record<CanvasKey, string> = {
   'task.dependencies': 'Requisitos previos', 'task.blocked': 'Motivo de espera', 'task.result': 'Resultados y verificación',
   'task.artifacts': 'Entregables', 'task.session': 'Abrir sesión de ejecución', 'task.removed': 'Retirada del plan',
   'task.recorded': 'Ejecución registrada', 'task.planned': 'Estado planificado',
-  'status.pending': 'Sin iniciar', 'status.waiting': 'Esperando requisitos', 'status.blocked': 'Bloqueada',
+  'status.pending': 'Sin iniciar', 'status.waiting': 'Esperando requisitos', 'status.blocked': 'Esperando ejecución',
   'status.running': 'En curso', 'status.completed': 'Completada', 'status.failed': 'Fallida',
   'status.cancelled': 'Cancelada', 'status.interrupted': 'Interrumpida', 'status.removed': 'Retirada del plan',
 }
 
 /** French canvas copy. */
 export const fr: Record<CanvasKey, string> = {
+  'task.request': 'Traiter ce message', 'view.latest': 'Suivre la dernière tâche',
+  'view.plan': 'Plan des tâches · {count}', 'view.execution': 'Détails d’exécution · {count}',
   'view.title': 'Flux de travail', 'view.empty': 'Aucun plan pour le moment',
   'view.emptyHint': 'Les étapes et la progression apparaissent ici quand une tâche complexe dispose d’un plan',
   'view.history': 'Choisir un plan', 'view.older': 'Charger les tâches précédentes',
@@ -120,13 +130,15 @@ export const fr: Record<CanvasKey, string> = {
   'task.dependencies': 'Prérequis', 'task.blocked': 'Motif d’attente', 'task.result': 'Résultats et vérification',
   'task.artifacts': 'Livrables', 'task.session': 'Ouvrir la session d’exécution', 'task.removed': 'Retirée du plan',
   'task.recorded': 'Exécution enregistrée', 'task.planned': 'État prévu',
-  'status.pending': 'Non démarrée', 'status.waiting': 'En attente des prérequis', 'status.blocked': 'Bloquée',
+  'status.pending': 'Non démarrée', 'status.waiting': 'En attente des prérequis', 'status.blocked': 'En attente d’exécution',
   'status.running': 'En cours', 'status.completed': 'Terminée', 'status.failed': 'Échec',
   'status.cancelled': 'Annulée', 'status.interrupted': 'Interrompue', 'status.removed': 'Retirée du plan',
 }
 
 /** German canvas copy. */
 export const de: Record<CanvasKey, string> = {
+  'task.request': 'Diese Nachricht bearbeiten', 'view.latest': 'Neuester Aufgabe folgen',
+  'view.plan': 'Aufgabenplan · {count}', 'view.execution': 'Ausführungsdetails · {count}',
   'view.title': 'Arbeitsablauf', 'view.empty': 'Noch kein Aufgabenplan',
   'view.emptyHint': 'Schritte und Fortschritt erscheinen hier, sobald eine komplexe Aufgabe einen Plan hat',
   'view.history': 'Aufgabenplan wählen', 'view.older': 'Frühere Aufgaben laden',
@@ -139,13 +151,15 @@ export const de: Record<CanvasKey, string> = {
   'task.dependencies': 'Voraussetzungen', 'task.blocked': 'Wartegrund', 'task.result': 'Ergebnisse und Prüfung',
   'task.artifacts': 'Ergebnisse', 'task.session': 'Ausführungssitzung öffnen', 'task.removed': 'Aus Plan entfernt',
   'task.recorded': 'Ausführung aufgezeichnet', 'task.planned': 'Geplanter Status',
-  'status.pending': 'Nicht begonnen', 'status.waiting': 'Wartet auf Voraussetzungen', 'status.blocked': 'Blockiert',
+  'status.pending': 'Nicht begonnen', 'status.waiting': 'Wartet auf Voraussetzungen', 'status.blocked': 'Wartet auf Ausführung',
   'status.running': 'Läuft', 'status.completed': 'Abgeschlossen', 'status.failed': 'Fehlgeschlagen',
   'status.cancelled': 'Abgebrochen', 'status.interrupted': 'Unterbrochen', 'status.removed': 'Aus Plan entfernt',
 }
 
 /** Russian canvas copy. */
 export const ru: Record<CanvasKey, string> = {
+  'task.request': 'Обработать это сообщение', 'view.latest': 'К последней задаче',
+  'view.plan': 'План задач · {count}', 'view.execution': 'Подробности выполнения · {count}',
   'view.title': 'Рабочий процесс', 'view.empty': 'Плана задач пока нет',
   'view.emptyHint': 'Этапы и ход выполнения появятся здесь, когда у сложной задачи будет план',
   'view.history': 'Выбрать план', 'view.older': 'Загрузить предыдущие задачи',
@@ -158,13 +172,15 @@ export const ru: Record<CanvasKey, string> = {
   'task.dependencies': 'Предшествующие задачи', 'task.blocked': 'Причина ожидания', 'task.result': 'Результаты и проверка',
   'task.artifacts': 'Материалы', 'task.session': 'Открыть сеанс выполнения', 'task.removed': 'Удалена из плана',
   'task.recorded': 'Выполнение записано', 'task.planned': 'Состояние по плану',
-  'status.pending': 'Не начата', 'status.waiting': 'Ожидание предыдущих задач', 'status.blocked': 'Заблокирована',
+  'status.pending': 'Не начата', 'status.waiting': 'Ожидание предыдущих задач', 'status.blocked': 'Ожидает выполнения',
   'status.running': 'Выполняется', 'status.completed': 'Завершена', 'status.failed': 'Ошибка',
   'status.cancelled': 'Отменена', 'status.interrupted': 'Прервана', 'status.removed': 'Удалена из плана',
 }
 
 /** Portuguese canvas copy. */
 export const pt: Record<CanvasKey, string> = {
+  'task.request': 'Processar esta mensagem', 'view.latest': 'Seguir a tarefa mais recente',
+  'view.plan': 'Plano de tarefas · {count}', 'view.execution': 'Detalhes da execução · {count}',
   'view.title': 'Fluxo de trabalho', 'view.empty': 'Ainda não há plano de tarefas',
   'view.emptyHint': 'Os passos e o progresso aparecem aqui quando uma tarefa complexa tem um plano',
   'view.history': 'Selecionar plano', 'view.older': 'Carregar tarefas anteriores',
@@ -177,7 +193,7 @@ export const pt: Record<CanvasKey, string> = {
   'task.dependencies': 'Pré-requisitos', 'task.blocked': 'Motivo da espera', 'task.result': 'Resultados e verificação',
   'task.artifacts': 'Entregáveis', 'task.session': 'Abrir sessão de execução', 'task.removed': 'Removida do plano',
   'task.recorded': 'Execução registrada', 'task.planned': 'Estado planejado',
-  'status.pending': 'Não iniciada', 'status.waiting': 'Aguardando pré-requisitos', 'status.blocked': 'Bloqueada',
+  'status.pending': 'Não iniciada', 'status.waiting': 'Aguardando pré-requisitos', 'status.blocked': 'Aguardando execução',
   'status.running': 'Em andamento', 'status.completed': 'Concluída', 'status.failed': 'Falhou',
   'status.cancelled': 'Cancelada', 'status.interrupted': 'Interrompida', 'status.removed': 'Removida do plano',
 }

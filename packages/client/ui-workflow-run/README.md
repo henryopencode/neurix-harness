@@ -29,6 +29,10 @@ A top-level workflow run through `dsh-tool-workflow` appears in the conversation
 
 ### Task canvas
 
+The conversation tabs are Chat, Trajectory, and Workflow. The canvas follows the newest turn and selects its more detailed plan or execution. A turn without a plan shows its recorded activity and tool outcomes; a later plan replaces that automatic view. History selection stays pinned until Follow latest task is selected. Plans and execution details from the same turn have direct navigation.
+
+Plans may have multiple independent starts, forks, joins, and separate outputs. No task-count cap reduces the graph to summary stages. A folded phase that crosses another phase is split by dependency layer to avoid introducing a cycle. Waiting work is labelled Waiting to run, with its reason retained in the inspector.
+
 Open the Workflow tab to pan and zoom the dependency graph, fold stages, switch to the keyboard-accessible list, or load earlier tasks. New multi-step plans have one evolving Chat preview per turn. Task ids preserve identity through renaming, and removed steps remain visible as removed from the plan. Clicking a task opens its full text, prerequisite states, completion criteria, results, and files in the existing sidebar. File links use Session-authorized document navigation.
 
 Canvas edges come only from declared prerequisites. Stage labels impose no order, and historical workflow runs without prerequisite data remain unconnected. A linked member outcome recorded after the latest plan update takes precedence over the declared task status. New plan revisions supersede earlier outcomes, and historical runs retain their own member states. Other tasks show planned status. Active planned steps whose Turn closes after a crash or fork appear interrupted. The canvas preserves its viewport on status updates. Graph selection, display mode, and stage disclosure survive View remounts within the Session scope.

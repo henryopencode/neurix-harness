@@ -48,8 +48,7 @@ describe.skipIf(MODE === 'record')('web e2e: task workflow canvas', () => {
 
   afterAll(async () => {
     continuePlan.resolve(undefined)
-    await browser?.close()
-    await scaffold?.close()
+    try { await browser?.close() } finally { await scaffold?.close() }
   })
 
   it('shows planned parallel work, opens task details, and restores the updated graph after reload', async () => {
@@ -97,6 +96,102 @@ describe.skipIf(MODE === 'record')('web e2e: task workflow canvas', () => {
     await restored.getByRole('tab', { name: 'List', exact: true }).click()
     await restored.getByRole('button', { name: 'Inspect write the fix, Completed', exact: true }).waitFor()
     await compareOrRefreshGolden(join(SNAPSHOTS, 'settled.expected.md'), await captureStableAria(page, 'section[aria-label="Workflow"]', scaffold.workspaceCwd), MODE)
+    expect(consoleWatch.pageErrors).toEqual([])
+    expect(consoleWatch.warnings).toEqual([])
+  })
+})
+
+describe.skipIf(MODE === 'record')('web e2e: branching workflow and follow-up messages', () => {
+  let scaffold: WebScaffold
+  let browser: Browser
+  let page: Page
+  const directory = join(REPO_ROOT, 'snapshots/web/workflow-branches')
+  let consoleWatch: ReturnType<typeof watchConsole>
+  const continueBranches = Promise.withResolvers<undefined>()
+  let prompts: readonly string[]
+
+  beforeAll(async () => {
+    const fixture = join(directory, 'session.v4.jsonl')
+    prompts = fixtureUserPrompts(await readFile(fixture, 'utf8'))
+    scaffold = await launchWebScaffold({ replayFixture: fixture, compareReplaySession: false })
+    scaffold.ctx.on('llm/stream', async function* (options, next) {
+      const session = options.sessionId === undefined ? undefined : scaffold.ctx.sessions.get(options.sessionId)
+      if (session !== undefined && scaffold.ctx.sessionProjections.snapshot(session).values.todos?.some(task => task.status === 'in_progress')) {
+        await continueBranches.promise
+      }
+      yield* next()
+    }, { prepend: true })
+    browser = await chromium.launch()
+    page = await newEnglishPage(browser)
+    consoleWatch = watchConsole(page)
+    await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
+    await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
+    await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    const [session] = scaffold.ctx.sessions.list()
+    expect(session).toBeDefined()
+    scaffold.ctx.permissionPresets.set(session!, 'danger-full-access')
+  })
+
+  afterAll(async () => {
+    continueBranches.resolve(undefined)
+    try { await browser?.close() } finally { await scaffold?.close() }
+  })
+
+  it('renders multiple starts, forks, joins and outputs, then follows a new turn without a todo write', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-workflow-branches'))
+    onTestFinished(() => { continueBranches.resolve(undefined) })
+    const input = page.locator('[data-composer-input]').first()
+    const settled = scaffold.whenTurnSettled()
+    await input.fill(prompts[0]!)
+    await input.press('Enter')
+    await page.getByRole('tab', { name: 'Workflow', exact: true }).click()
+    const workflow = page.getByRole('region', { name: 'Workflow', exact: true })
+    await expect.poll(() => workflow.locator('.react-flow__node').count()).toBe(16)
+    await expect.poll(() => workflow.locator('.react-flow__edge').count()).toBe(18)
+    const tabs = await page.getByRole('tablist').first().getByRole('tab').allTextContents()
+    expect(tabs).toEqual(['Chat', 'Trajectory', 'Workflow'])
+    await workflow.getByRole('button', { name: 'Inspect Explore branch 3, Waiting to run', exact: true }).waitFor()
+    await expect.poll(() => workflow.locator('.react-flow').evaluate((canvas) => {
+      const bounds = canvas.getBoundingClientRect()
+      return [...canvas.querySelectorAll('.react-flow__node')].every((node) => {
+        const box = node.getBoundingClientRect()
+        return box.left >= bounds.left && box.top >= bounds.top && box.right <= bounds.right && box.bottom <= bounds.bottom
+      })
+    })).toBe(true)
+    await page.screenshot({ path: join(REPO_ROOT, '.artifacts/workflow-branches-preview.png'), fullPage: true })
+    const research = workflow.getByRole('button', { name: 'Research · 6', exact: true })
+    await research.click()
+    await expect.poll(() => workflow.locator('.react-flow__node').count()).toBe(11)
+    await research.click()
+    const outputs = workflow.getByRole('button', { name: 'Outputs · 4', exact: true })
+    await outputs.click()
+    await expect.poll(() => workflow.locator('.react-flow__node').count()).toBe(14)
+    await outputs.click()
+    await workflow.getByRole('button', { name: 'Inspect Summarize user interface, Waiting for prerequisites', exact: true }).click()
+    const inspector = page.getByRole('article', { name: 'Task details', exact: true })
+    expect(await inspector.getByRole('listitem').count()).toBe(3)
+    await page.getByRole('button', { name: 'Collapse right sidebar', exact: true }).click()
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.evaluate(() => { document.body.setAttribute('data-ds-dark-theme', '') })
+    await workflow.getByRole('tab', { name: 'List', exact: true }).click()
+    expect(await workflow.getByRole('listitem').count()).toBe(16)
+    expect(await workflow.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+    await compareOrRefreshGolden(join(directory, 'branches.expected.md'),
+      await captureStableAria(page, 'section[aria-label="Workflow"]', scaffold.workspaceCwd), MODE)
+    continueBranches.resolve(undefined)
+    await settled
+    await workflow.getByRole('button', { name: 'Inspect Deliver report, Completed', exact: true }).waitFor()
+    const following = scaffold.whenTurnSettled()
+    await input.fill(prompts[1]!)
+    await input.press('Enter')
+    await following
+    await workflow.getByRole('button', { name: 'Inspect Handle this message, Completed', exact: true }).waitFor()
+    expect(await workflow.getByRole('listitem').count()).toBe(1)
+    await page.reload({ waitUntil: 'load' })
+    await page.getByRole('region', { name: 'Workflow', exact: true })
+      .getByRole('button', { name: 'Inspect Handle this message, Completed', exact: true }).waitFor()
+    await compareOrRefreshGolden(join(directory, 'followup.expected.md'),
+      await captureStableAria(page, 'section[aria-label="Workflow"]', scaffold.workspaceCwd), MODE)
     expect(consoleWatch.pageErrors).toEqual([])
     expect(consoleWatch.warnings).toEqual([])
   })

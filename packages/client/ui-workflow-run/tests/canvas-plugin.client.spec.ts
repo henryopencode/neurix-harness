@@ -47,9 +47,10 @@ describe('canvas registration lifecycle', () => {
     onTestFinished(() => { reference.release() })
     const fiber = ctx.plugin(workflowCanvasEntry)
     await fiber.await()
-    expect(conversation.events.entries()).toHaveLength(3)
+    expect(conversation.events.entries()).toHaveLength(4)
     expect(conversation.views.entries().map(view => view.target)).toContain('workflow')
     const entry = ctx.slots.entries('conversation.view')[0]!
+    expect(entry.options.order).toBe(15)
     expect(typeof entry.options.label === 'function' ? entry.options.label() : entry.options.label).toBeTruthy()
     const face = entry.inject?.(id as never, {} as never) as WorkflowViewInjected & Record<string, unknown>
     expect(face.hooks.workflow.getSnapshot()).toEqual({ graphs: [], executions: {} })

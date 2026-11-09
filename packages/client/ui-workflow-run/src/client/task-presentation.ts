@@ -1,6 +1,6 @@
 /** Shared task labels and state markers for the canvas, list, and inspector. */
 import type { StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { WorkflowTaskStatus } from './canvas-contract.ts'
+import type { WorkflowTask, WorkflowTaskStatus } from './canvas-contract.ts'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-locale/client'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 
@@ -8,10 +8,11 @@ import { assertNever } from '@deepseek-ai/dsh-util-values'
  * Give historical empty member labels an accessible task name.
  * @param content - recorded task label.
  * @param t - canvas dictionary.
+ * @param titleKey - localized label of automatic activity nodes.
  * @returns the original label or the localized unnamed-task label.
  */
-export function taskTitle(content: string, t: TranslateNS<'workflowCanvas'>): string {
-  return content === '' ? t('task.untitled') : content
+export function taskTitle(content: string, t: TranslateNS<'workflowCanvas'>, titleKey?: WorkflowTask['titleKey']): string {
+  return titleKey === undefined ? content === '' ? t('task.untitled') : content : t(titleKey)
 }
 
 /**

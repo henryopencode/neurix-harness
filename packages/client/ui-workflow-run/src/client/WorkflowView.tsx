@@ -26,23 +26,27 @@ export type WorkflowViewProps = PropsRuntime<'conversation.view'> & PropsStore<C
 export type WorkflowPlanPreviewProps = PropsRuntime<'conversation.chat.node', 'workflow-plan'>
   & PropsLocale<'workflowCanvas'> & InjectFace<Pick<WorkflowViewInjected, 'openTask' | 'hooks'>>
 
+const SOURCE_PRIORITY = { plan: 2, run: 1, turn: 0 }
+
 /**
- * Choose the selected graph, or the latest plan before falling back to a standalone run.
+ * Follow the latest turn and prefer its more detailed plan or execution unless history is selected.
  * @param graphs - loaded task plans and workflow runs.
  * @param selected - the user's explicit selection.
- * @returns the selected or newest applicable graph.
+ * @returns explicit history, or the most detailed current-turn graph.
  */
 export function selectedWorkflowGraph(graphs: readonly WorkflowGraph[], selected: string | null): WorkflowGraph | undefined {
   const explicit = selected === null ? undefined : graphs.find(graph => graph.id === selected)
   if (explicit !== undefined) return explicit
-  let plan: WorkflowGraph | undefined
-  let run: WorkflowGraph | undefined
+  const latestTurn = graphs.reduce((turn, graph) => Math.max(turn, graph.turn ?? 0), 0)
+  let latest: WorkflowGraph | undefined
   for (const graph of graphs) {
-    if (graph.source === 'plan') {
-      if (plan === undefined || graph.seq > plan.seq) plan = graph
-    } else if (run === undefined || graph.seq > run.seq) run = graph
+    if ((graph.turn ?? 0) !== latestTurn) continue
+    if (latest === undefined || graph.tasks.length > latest.tasks.length
+      || (graph.tasks.length === latest.tasks.length
+        && (SOURCE_PRIORITY[graph.source] > SOURCE_PRIORITY[latest.source]
+          || (graph.source === latest.source && graph.seq > latest.seq)))) latest = graph
   }
-  return plan ?? run
+  return latest
 }
 
 function graphTitle(graph: WorkflowGraph, t: TranslateNS<'workflowCanvas'>): string {
@@ -90,9 +94,9 @@ function WorkflowSurface({ tasks, collapsed, mode, onMode, onTogglePhase, onSele
       {mode === 'list' && <ol className={css.taskList}>
         {tasks.map(task => <li key={task.id}>
           <button type="button" className={css.taskRow} onClick={() => { select(task.id) }}
-            aria-label={t('task.open', { name: taskTitle(task.content, t), status: t(`status.${task.status}`) })}>
+            aria-label={t('task.open', { name: taskTitle(task.content, t, task.titleKey), status: t(`status.${task.status}`) })}>
             <StateDot state={taskDot(task.status)} />
-            <span className={css.taskText}><span>{taskTitle(task.content, t)}</span>
+            <span className={css.taskText}><span>{taskTitle(task.content, t, task.titleKey)}</span>
               {task.expectedOutput !== undefined && <span className={css.secondary}>{task.expectedOutput}</span>}
               {task.blockedReason !== undefined && <span>{task.blockedReason}</span>}
             </span>
@@ -116,6 +120,8 @@ export function WorkflowView({ useWorkflow, useStore, actions, useSession, openT
   const loadingOlder = useSession(value => value.loadingOlder)
   const [loadFailed, setLoadFailed] = useState(false)
   const graph = selectedWorkflowGraph(snapshot.graphs, state.graphId)
+  const counterpart = graph?.turn === undefined ? undefined : snapshot.graphs.findLast(item => item.turn === graph.turn
+    && item.id !== graph.id && item.source === (graph.source === 'run' ? 'plan' : 'run'))
   const tasks = graph === undefined ? [] : resolveWorkflowTasks(graph, snapshot.executions)
   const load = async (): Promise<void> => {
     setLoadFailed(false)
@@ -129,6 +135,12 @@ export function WorkflowView({ useWorkflow, useStore, actions, useSession, openT
       <div className={css.header}>
         <Select aria-label={t('view.history')} value={graph.id} onValueChange={actions.selectGraph}
           options={[...snapshot.graphs].sort((a, b) => b.seq - a.seq).map(item => ({ value: item.id, label: graphTitle(item, t) }))} />
+        {counterpart !== undefined && <Button variant="ghost" size="sm" onClick={() => { actions.selectGraph(counterpart.id) }}>
+          {t(counterpart.source === 'plan' ? 'view.plan' : 'view.execution', { count: counterpart.tasks.length })}
+        </Button>}
+        {state.graphId !== null && <Button variant="ghost" size="sm" onClick={() => { actions.selectGraph(null) }}>
+          {t('view.latest')}
+        </Button>}
       </div>
       <WorkflowSurface key={graph.id} tasks={tasks} collapsed={state.collapsed[graph.id] ?? []}
         mode={state.mode} onMode={actions.setMode} onTogglePhase={(phase) => { actions.togglePhase(graph.id, phase) }}

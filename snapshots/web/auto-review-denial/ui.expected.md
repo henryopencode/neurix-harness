@@ -6,8 +6,8 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
-    - tab "Workflow"
     - tab "Trajectory"
+    - tab "Workflow"
 - navigation "Turn navigation":
   - button "Jump to turn 1"
 - text: Inspect the protected operation, but do not run it unless authorized. {{clock}}
@@ -35,8 +35,8 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
-    - tab "Workflow"
     - tab "Trajectory"
+    - tab "Workflow"
 - navigation "Turn navigation":
   - button "Jump to turn 1"
 - text: Inspect the protected operation, but do not run it unless authorized. {{clock}}
@@ -68,8 +68,8 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat"
-    - tab "Workflow"
     - tab "Trajectory" [selected]
+    - tab "Workflow"
 - toolbar "Trajectory toolbar":
   - button "Use actual duration": Duration
   - button "Collapse turns": Turns

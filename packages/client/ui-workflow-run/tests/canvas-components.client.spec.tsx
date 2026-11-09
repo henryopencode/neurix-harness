@@ -9,10 +9,13 @@ import type { WorkflowGraph, WorkflowSnapshot } from '../src/client/canvas-contr
 import { createWorkflowCanvasStore } from '../src/client/canvas-store.ts'
 import { WorkflowPlanPreview, WorkflowView, selectedWorkflowGraph, type WorkflowPlanPreviewProps, type WorkflowViewProps } from '../src/client/WorkflowView.tsx'
 import { WorkflowTaskDetails, WorkflowTaskTitle, type WorkflowTaskDetailsProps } from '../src/client/WorkflowTaskDetails.tsx'
-import { en } from '../src/client/canvas-locales.ts'
+import { en, zh } from '../src/client/canvas-locales.ts'
 import { taskDot } from '../src/client/task-presentation.ts'
 
-const flow = vi.hoisted(() => ({ zoomIn: vi.fn(), zoomOut: vi.fn(), fitView: vi.fn() }))
+const flow = vi.hoisted(() => ({
+  zoomIn: vi.fn(), zoomOut: vi.fn(), fitView: vi.fn(), viewportInitialized: true,
+  getInternalNode: vi.fn((_id: string): { measured: { width?: number } } | undefined => ({ measured: { width: 240 } })),
+}))
 
 // Browser acceptance owns React Flow's measurement and pan/zoom implementation.
 // This double exposes our node renderers and commands without emulating browser geometry.
@@ -20,13 +23,15 @@ vi.mock('@xyflow/react', async () => {
   const { createElement, useEffect } = await import('react')
   return {
     Position: { Left: 'left', Right: 'right' }, MarkerType: { ArrowClosed: 'arrowclosed' }, Handle: () => null,
-    ReactFlow: ({ nodes, nodeTypes, onInit }: {
+    ReactFlow: ({ nodes, nodeTypes, onInit, onNodesChange, onMoveStart }: {
       nodes: { id: string; type: string; position: { x: number; y: number }; data: Record<string, unknown> }[]
       nodeTypes: Record<string, (props: { data: Record<string, unknown> }) => React.ReactNode>
       onInit: (instance: typeof flow) => void
+      onNodesChange: () => void
+      onMoveStart: (event: MouseEvent | null) => void
     }) => {
-      useEffect(() => { onInit(flow) }, [onInit])
-      return <div data-testid="flow">
+      useEffect(() => { onNodesChange(); onInit(flow); onMoveStart(null) }, [onInit, onNodesChange, onMoveStart])
+      return <div data-testid="flow" onMouseDown={(event) => { onMoveStart(event.nativeEvent) }}>
         {nodes.map(node => <div key={node.id} data-node-id={node.id} data-position={JSON.stringify(node.position)}>
           {createElement(nodeTypes[node.type]!, { data: node.data })}
         </div>)}
@@ -35,7 +40,11 @@ vi.mock('@xyflow/react', async () => {
   }
 })
 
-afterEach(() => { cleanup(); vi.clearAllMocks() })
+afterEach(() => {
+  cleanup(); vi.clearAllMocks()
+  flow.viewportInitialized = true
+  flow.getInternalNode.mockImplementation(() => ({ measured: { width: 240 } }))
+})
 
 const SID = 'canvas-parent' as SessionId
 const CHILD = 'canvas-child' as SessionId
@@ -62,6 +71,72 @@ function setup(initial: WorkflowSnapshot = { graphs: [graph], executions: {} }) 
 }
 
 describe('workflow canvas presentation', () => {
+  it('fits newly measured branches without resetting progress updates or manual navigation', () => {
+    const fixture = setup()
+    flow.viewportInitialized = false
+    const view = render(<WorkflowView {...fixture.props} />)
+    expect(flow.fitView).not.toHaveBeenCalled()
+    flow.viewportInitialized = true
+    flow.getInternalNode.mockReturnValue(undefined)
+    view.rerender(<WorkflowView {...fixture.props} />)
+    expect(flow.fitView).not.toHaveBeenCalled()
+    flow.getInternalNode.mockReturnValue({ measured: { width: 240 } })
+    view.rerender(<WorkflowView {...fixture.props} />)
+    expect(flow.fitView).toHaveBeenCalledTimes(1)
+    const revise = (count: number): void => {
+      fixture.snapshots.set({ graphs: [{ ...graph, tasks: [...graph.tasks,
+        ...Array.from({ length: count }, (_, index) => ({
+          id: `more:${index}`, content: `More ${index}`, status: 'pending' as const, dependsOn: [],
+        })),
+      ] }], executions: {} })
+    }
+    act(() => { revise(0) })
+    expect(flow.fitView).toHaveBeenCalledTimes(1)
+    act(() => { revise(1) })
+    expect(flow.fitView).toHaveBeenCalledTimes(2)
+    fireEvent.mouseDown(screen.getByTestId('flow'))
+    act(() => { revise(2) })
+    expect(flow.fitView).toHaveBeenCalledTimes(2)
+    fireEvent.click(screen.getByRole('button', { name: 'Fit canvas' }))
+    expect(flow.fitView).toHaveBeenCalledTimes(3)
+    act(() => { revise(2) })
+    expect(flow.fitView).toHaveBeenCalledTimes(3)
+  })
+
+  it('follows new turns, opens detailed execution, and returns from history to the current task', () => {
+    const run: WorkflowGraph = { ...graph, id: 'run:details', source: 'run', name: 'Branch audit', seq: 5,
+      tasks: Array.from({ length: 16 }, (_, index) => ({
+        id: `branch:${index}`, content: `Branch ${index}`, status: 'running', dependsOn: [],
+      })),
+    }
+    const fixture = setup({ graphs: [graph, run], executions: {} })
+    render(<WorkflowView {...fixture.props} />)
+    expect(screen.getAllByRole('button', { name: /^Inspect Branch \d+, Running$/ })).toHaveLength(16)
+    fireEvent.click(screen.getByRole('button', { name: 'Task plan · 3' }))
+    expect(fixture.store.getSnapshot().graphId).toBe(graph.id)
+    expect(screen.getByRole('button', { name: 'Execution details · 16' })).toBeTruthy()
+    const fresh: WorkflowGraph = { id: 'turn:2', turn: 2, seq: 6, source: 'turn', tasks: [
+      { id: 'request', content: '', titleKey: 'task.request', status: 'running', dependsOn: [] },
+    ] }
+    act(() => { fixture.snapshots.set({ graphs: [graph, run, fresh], executions: {} }) })
+    expect(screen.getByRole('button', { name: 'Inspect Build, Running' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Follow latest task' }))
+    expect(screen.getByRole('button', { name: 'Inspect Handle this message, Running' })).toBeTruthy()
+    expect(fixture.store.getSnapshot().graphId).toBeNull()
+    act(() => { fixture.snapshots.set({ graphs: [graph, run, { ...fresh, tasks: fresh.tasks.map(task => ({
+      ...task, status: 'completed',
+    })) }], executions: {} }) })
+    expect(screen.getByRole('button', { name: 'Inspect Handle this message, Completed' })).toBeTruthy()
+  })
+
+  it('labels waiting work clearly in Chinese while keeping its reason available', () => {
+    const fixture = setup()
+    render(<WorkflowView {...fixture.props} t={makeTranslate(zh)} />)
+    expect(screen.getByRole('button', { name: '查看 Review，等待执行' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('tab', { name: '列表' }))
+    expect(screen.getByText('Choose a layout.')).toBeTruthy()
+  })
+
   it('keeps task positions during progress updates and routes node and viewport actions', () => {
     const fixture = setup()
     const view = render(<WorkflowView {...fixture.props} />)
@@ -89,7 +164,7 @@ describe('workflow canvas presentation', () => {
     expect(view.container.querySelectorAll('[data-node-id]')).toHaveLength(3)
     fireEvent.click(screen.getByRole('tab', { name: 'List' }))
     expect(screen.getByText('Choose a layout.')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Inspect Review, Blocked' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Inspect Review, Waiting to run' }))
     expect(fixture.openTask).toHaveBeenLastCalledWith(graph.id, 'review')
     view.unmount()
     view = render(<WorkflowView {...fixture.props} />)
@@ -166,7 +241,7 @@ describe('workflow canvas presentation', () => {
       { id: 'removed', content: 'Removed work', status: 'removed', removed: true, dependsOn: [] },
     ] }], executions: {} })
     render(<WorkflowView {...fixture.props} />)
-    expect(screen.getByRole('button', { name: 'Inspect Dependent work, Blocked' }).textContent).toContain('Expected deliverable')
+    expect(screen.getByRole('button', { name: 'Inspect Dependent work, Waiting to run' }).textContent).toContain('Expected deliverable')
     expect(screen.getByRole('button', { name: 'Inspect Removed work, Removed from plan' }).textContent).toContain('Removed from plan')
     fireEvent.click(screen.getByRole('button', { name: 'Stage · 2' }))
     expect(screen.getByRole('button', { name: 'Expand Stage · 2, Failed' })).toBeTruthy()

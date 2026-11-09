@@ -5,8 +5,8 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
-    - tab "Workflow"
     - tab "Trajectory"
+    - tab "Workflow"
 - navigation "Turn navigation":
   - button "Jump to turn 1"
 - text: Use the ask_user_question tool to ask me exactly one question with id "checkpoint", question "Ready to continue?", header "Checkpoint", and options labeled "Yes" and "No". After I answer, reply with one short sentence acknowledging my answer and stop. {{clock}}

@@ -4,5 +4,5 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
-    - tab "Workflow"
     - tab "Trajectory"
+    - tab "Workflow"
