@@ -36,6 +36,7 @@ async function harness(): Promise<{ ctx: Context; agents: ApiSessionAgentControl
   await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(AgentRegistry)
   installSessionReadTestServices(ctx)
+  ctx.provide('workspaceRegistry', { isDeletingSession: () => false } as never)
   await ctx.sessionProjections.register(agentPresetProjectionDefinition)
   ctx.provide('agentDefaultModel', {
     currentSelection: () => ({ provider: 'fixture', model: 'fixture-model' }),
@@ -261,5 +262,45 @@ describe('ApiSession creation', () => {
     writeFileSync(file, 'not a directory')
     await expect(agents.createSession({ cwd: join(file, 'child'), reusable: () => true }))
       .rejects.toThrow('failed to ensure project directory')
+  })
+})
+
+describe('permanent deletion admission', () => {
+  it('drains subagent ownership before releasing the parent handle and awaits disposal', async () => {
+    const { ctx, agents } = await harness()
+    const parent = unpublishedAgent(ctx, header('delete-owned-parent'))
+    const gate = Promise.withResolvers<undefined>()
+    const entered = Promise.withResolvers<undefined>()
+    const order: string[] = []
+    const drainDescendants = vi.fn(async () => { order.push('children') })
+    ctx.provide('subagents', { drainDescendants } as never)
+    const dispose = vi.fn(() => {
+      order.push('parent')
+      entered.resolve(undefined)
+      return gate.promise
+    })
+    await agents.own({ agent: parent, dispose })
+    let finished = false
+    const deletion = ctx.serial('workspace/session-before-delete', [parent.id]).then(() => { finished = true })
+    try {
+      await entered.promise
+      expect(order).toEqual(['children', 'parent'])
+      expect(drainDescendants).toHaveBeenCalledWith([parent])
+      expect(finished).toBe(false)
+    } finally {
+      gate.resolve(undefined)
+      await deletion
+    }
+    expect(finished).toBe(true)
+  })
+
+  it('releases a late acquisition overtaken by deletion and refuses new activation', async () => {
+    const { ctx, agents } = await harness()
+    const parent = unpublishedAgent(ctx, header('delete-late-acquisition'))
+    const dispose = vi.fn(async () => {})
+    vi.spyOn(ctx.workspaceRegistry, 'isDeletingSession').mockReturnValue(true)
+    await expect(agents.own({ agent: parent, dispose })).rejects.toMatchObject({ code: 'session/agent-busy' })
+    expect(dispose).toHaveBeenCalledOnce()
+    await expect(agents.resolveAgent(parent.id)).resolves.toMatchObject({ error: { code: 'session/agent-busy' } })
   })
 })

@@ -307,6 +307,8 @@ export type SessionRowActionProps<Injected extends object = object> =
 
 /** One transient Workspace notice rendered by the overlay toast entry. */
 export type RowToast =
+  | { kind: 'sessionDeleted' }
+  | { kind: 'sessionDeleteFailed'; reason: 'active' | 'notArchived' | 'partial' | 'unknown' }
   | { kind: 'archived'; sessionId: SessionId }
   | { kind: 'stoppedAndArchived'; sessionId: SessionId }
   | { kind: 'sessionIdCopied' }
@@ -400,6 +402,32 @@ export interface SessionArchiveConfirmInjected {
    */
   stopAndArchiveSession: (sessionId: SessionId) => Promise<void>
 }
+
+/** Archived Session selected for irreversible deletion. */
+export interface SessionDeleteTarget {
+  sessionId: SessionId
+  displayTitle: string
+}
+
+/** Menu action that opens the permanent deletion confirmation. */
+export interface DeleteSessionInjected {
+  hooks: { archived: HostObservable<ReadonlySet<SessionId>> }
+  /** Ask for confirmation before deleting this archived Session. */
+  requestSessionDelete: (sessionId: SessionId, displayTitle: string) => void
+}
+
+/** Permanent deletion dialog's pending request and Host operation. */
+export interface SessionDeleteDialogInjected {
+  hooks: { deleteRequest: HostObservable<SessionDeleteTarget | null> }
+  /** Cancel or consume the pending confirmation. */
+  settleSessionDelete: () => void
+  /** Delete the archived Session and report its success or failure through the global Toast. */
+  deleteSession: (sessionId: SessionId) => Promise<void>
+}
+
+/** Props of the permanent deletion confirmation in the global overlay. */
+export type SessionDeleteDialogProps = PropsRuntime<'shell.overlay'> & PropsLocale<'workspace'>
+  & Omit<SessionDeleteDialogInjected, 'hooks'> & PropsHooks<SessionDeleteDialogInjected['hooks']>
 
 /** Fork action share. */
 export interface ForkSessionInjected {

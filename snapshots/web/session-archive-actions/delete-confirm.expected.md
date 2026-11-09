@@ -1,0 +1,6 @@
+- dialog "Permanently delete this session?":
+  - heading "Permanently delete this session?" [level=2]
+  - button "Close"
+  - paragraph: Permanently delete the history of “Unarchive target session-unarchive-web-e2e” and its subagent sessions. This cannot be undone. Project files and independent branches are kept.
+  - button "Cancel"
+  - button "Permanently delete"

@@ -82,6 +82,28 @@ export class WorkspaceArchivedSessionPinError extends Error {
   }
 }
 
+/** Permanent deletion requires the Session to remain archived. */
+export class WorkspaceSessionNotArchivedError extends Error {
+  /** @param sessionId - Session that must be archived before deletion. */
+  constructor(readonly sessionId: SessionId) {
+    super(`cannot delete session '${sessionId}': archive it first`)
+    this.name = 'WorkspaceSessionNotArchivedError'
+  }
+}
+
+/** Deletion failed; its archive marker remains available for a retry. */
+export class WorkspaceSessionDeleteError extends Error {
+  /**
+   * @param sessionId - archived root requested for deletion.
+   * @param partial - whether permanent storage removal may have started.
+   * @param cause - lifecycle, storage, or derived-record cleanup failure.
+   */
+  constructor(readonly sessionId: SessionId, readonly partial: boolean, cause: unknown) {
+    super(`session '${sessionId}' deletion did not finish`, { cause })
+    this.name = 'WorkspaceSessionDeleteError'
+  }
+}
+
 /** A workspace reorder named a source or anchor absent from the durable registry order. */
 export class WorkspaceOrderInvalidError extends Error {
   /**
@@ -116,6 +138,13 @@ declare module '@deepseek-ai/cordis' {
   }
 
   interface Events {
+    /**
+     * Release owned Session lifecycles and await their writers before deletion.
+     * The registry blocks restoration until the deletion operation settles.
+     * @param sessionIds - archived roots whose descendant lifecycles must also drain.
+     * @mode serial
+     */
+    'workspace/session-before-delete'(sessionIds: readonly SessionId[]): Promise<void> | void
     /**
      * Ask the composed providers what still runs for a session before it is
      * archived. A listener prepends its own {@link SessionActivity} entries to
@@ -179,6 +208,7 @@ export class WorkspaceRegistry extends Service {
   private readonly missingSessionPaths = new Set<SessionId>()
   private readonly invalidSessionPaths = new Map<SessionId, string>()
   private operationTail: Promise<void> = Promise.resolve()
+  private readonly deletingSessions = new Set<SessionId>()
 
   private readonly host: WorkspaceEntityHost = {
     table: () => this.requireTable(),
@@ -406,6 +436,89 @@ export class WorkspaceRegistry extends Service {
         ...state,
         archivedSessionIds: state.archivedSessionIds.filter(id => id !== sessionId),
       })
+    })
+  }
+
+  /**
+   * Whether lifecycle acquisition must refuse an id while permanent deletion runs.
+   * @param sessionId - Session whose lifecycle would be acquired.
+   * @returns whether deletion owns this id until its cleanup settles.
+   */
+  isDeletingSession(sessionId: SessionId): boolean {
+    return this.deletingSessions.has(sessionId)
+  }
+
+  /**
+   * Permanently delete an archived Session and its subagent descendants, deepest
+   * first. Independent forks and project files remain. Lifecycle owners release
+   * their writers before storage deletion; an unowned writer refuses deletion.
+   * Archive metadata remains on failure so the operation can be retried, including
+   * after some descendants or the root have already been deleted.
+   * @param sessionId - archived root Session.
+   * @returns every deleted Session id, descendants before their root.
+   * @throws {WorkspaceSessionNotArchivedError} for a Session that is not archived.
+   */
+  deleteSession(sessionId: SessionId): Promise<readonly SessionId[]> {
+    return this.enqueueOperation(async () => {
+      if (!this.requireState().archivedSessionIds.includes(sessionId)) {
+        if (!(await this.sessionKnown(sessionId))) {
+          await this.ctx.sessionPersistence.delete(sessionId)
+          return [sessionId]
+        }
+        throw new WorkspaceSessionNotArchivedError(sessionId)
+      }
+      const ids: SessionId[] = []
+      const visited = new Set<SessionId>()
+      this.deletingSessions.add(sessionId)
+      let partial = false
+      try {
+        await this.ctx.serial('workspace/session-before-delete', [sessionId])
+        // Descendant creation may persist a header while lifecycle drain is in flight.
+        const headers = new Map((await this.listStoredHeaders()).map(header => [header.id, header]))
+        for (const session of this.ctx.get('sessions')?.list() ?? []) headers.set(session.id, session.header)
+        const visit = (id: SessionId): void => {
+          if (visited.has(id)) return
+          visited.add(id)
+          for (const header of headers.values()) {
+            if (header.origin === 'subagent' && header.parentSession === id) visit(header.id)
+          }
+          ids.push(id)
+        }
+        visit(sessionId)
+        for (const id of ids) this.deletingSessions.add(id)
+        for (const id of ids) {
+          if (this.ctx.get('sessions')?.get(id) !== undefined) {
+            throw new Error(`session '${id}' still has a live lifecycle; its owner must release it before deletion`)
+          }
+        }
+        // Jobs and schedules have their own owners; a quiet Agent alone is insufficient.
+        for (const id of ids) {
+          const activity = await this.ctx.waterfall('workspace/session-activity', { sessionId: id }, () => Promise.resolve([]))
+          if (activity.length > 0) throw new WorkspaceActiveSessionError(id, activity)
+        }
+        partial = true
+        for (const id of ids) await this.ctx.sessionPersistence.delete(id)
+        for (const entity of this.entities.values()) await entity.removeSessions(visited)
+        for (const id of ids) {
+          this.headers.delete(id)
+          this.sessionPaths.delete(id)
+          this.missingSessionPaths.delete(id)
+          this.invalidSessionPaths.delete(id)
+        }
+        const state = this.requireState()
+        await this.setState({
+          ...state,
+          archivedSessionIds: state.archivedSessionIds.filter(id => !visited.has(id)),
+          pinnedSessionIds: state.pinnedSessionIds.filter(id => !visited.has(id)),
+        })
+        return ids
+      } catch (error: unknown) {
+        if (error instanceof WorkspaceActiveSessionError) throw error
+        throw new WorkspaceSessionDeleteError(sessionId, partial, error)
+      } finally {
+        this.deletingSessions.delete(sessionId)
+        for (const id of ids) this.deletingSessions.delete(id)
+      }
     })
   }
 

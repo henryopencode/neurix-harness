@@ -56,7 +56,12 @@ async function harness(options: HarnessOptions = {}) {
     listed.map(header => ({ header, revision: SessionPersistenceRevision(`rev-${header.id}`) })))
   const open = vi.fn(() => { throw new Error('event bodies must not be opened') })
   const stat = vi.fn(() => { throw new Error('per-session stat must not be needed') })
-  ctx.provide('sessionPersistence', { list, open, stat } as never)
+  const removeStored = vi.fn(async (id: SessionId) => {
+    const existed = listed.some(header => header.id === id)
+    listed = listed.filter(header => header.id !== id)
+    return existed
+  })
+  ctx.provide('sessionPersistence', { list, open, stat, delete: removeStored } as never)
 
   if (options.sessionStore === true) {
     await ctx.plugin(SessionStore)
@@ -83,6 +88,7 @@ async function harness(options: HarnessOptions = {}) {
     list,
     open,
     stat,
+    removeStored,
     setSessions: (headers: SessionHeader[]) => { listed = headers },
   }
 }
@@ -1545,3 +1551,80 @@ declare module '@deepseek-ai/dsh-workspace/types' {
     'probe-items': true
   }
 }
+
+describe('permanent archived Session deletion', () => {
+  it('refuses an attached lifecycle whose owner has not released it', async () => {
+    const root = header('unreleased-delete-root')
+    const h = await harness({ sessions: [root], liveSessions: [root] })
+    onTestFinished(() => h.ctx.fiber.dispose())
+    await h.registry.archiveSession(root.id)
+    await expect(h.registry.deleteSession(root.id)).rejects.toMatchObject({ name: 'WorkspaceSessionDeleteError', partial: false })
+    expect(h.removeStored).not.toHaveBeenCalled()
+    expect(h.registry.archivedSessionIds).toEqual([root.id])
+  })
+  it('deletes subagent descendants before their root and retains independent forks and files', async () => {
+    const cwd = await makeDir('delete-lineage')
+    const root = header('delete-root', cwd)
+    const child = { ...header('delete-child', cwd), origin: 'subagent' as const, parentSession: root.id }
+    const grandchild = { ...header('delete-grandchild', cwd), origin: 'subagent' as const, parentSession: child.id }
+    const fork = { ...header('delete-fork', cwd), isSeeded: true, parentSession: root.id }
+    const h = await harness({ sessions: [root, child, grandchild, fork] })
+    onTestFinished(() => h.ctx.fiber.dispose())
+    await h.registry.archiveSession(root.id)
+    const released: SessionId[][] = []
+    h.ctx.on('workspace/session-before-delete', (ids) => {
+      expect(ids.every(id => h.registry.isDeletingSession(id))).toBe(true)
+      released.push([...ids])
+    })
+    expect(await h.registry.deleteSession(root.id)).toEqual([grandchild.id, child.id, root.id])
+    expect(h.removeStored.mock.calls.map(([id]) => id)).toEqual([grandchild.id, child.id, root.id])
+    expect(released).toEqual([[root.id]])
+    expect(h.registry.archivedSessionIds).toEqual([])
+    expect(h.registry.list().flatMap(workspace => workspace.sessionIds)).toEqual([fork.id])
+    expect((await h.list()).map(item => item.header.id)).toEqual([fork.id])
+    expect(h.registry.isDeletingSession(root.id)).toBe(false)
+    // A lost response can be retried after the archive marker has already gone.
+    expect(await h.registry.deleteSession(root.id)).toEqual([root.id])
+  })
+
+  it('refuses a restored Session before lifecycle or storage changes', async () => {
+    const root = header('restored-root')
+    const h = await harness({ sessions: [root] })
+    onTestFinished(() => h.ctx.fiber.dispose())
+    await h.registry.archiveSession(root.id)
+    await h.registry.unarchiveSession(root.id)
+    const release = vi.fn()
+    h.ctx.on('workspace/session-before-delete', release)
+    await expect(h.registry.deleteSession(root.id)).rejects.toMatchObject({ name: 'WorkspaceSessionNotArchivedError' })
+    expect(release).not.toHaveBeenCalled()
+    expect(h.removeStored).not.toHaveBeenCalled()
+  })
+
+  it('keeps the archive marker after a storage failure and permits a retry', async () => {
+    const root = header('retry-delete-root')
+    const h = await harness({ sessions: [root] })
+    onTestFinished(() => h.ctx.fiber.dispose())
+    await h.registry.archiveSession(root.id)
+    h.removeStored.mockRejectedValueOnce(new Error('storage unavailable'))
+    await expect(h.registry.deleteSession(root.id)).rejects.toMatchObject({ name: 'WorkspaceSessionDeleteError', partial: true })
+    expect(h.registry.archivedSessionIds).toEqual([root.id])
+    expect((await h.list()).map(item => item.header.id)).toEqual([root.id])
+    expect(h.registry.isDeletingSession(root.id)).toBe(false)
+    await h.registry.deleteSession(root.id)
+    expect(h.registry.archivedSessionIds).toEqual([])
+  })
+})
+
+describe('Session deletion lifecycle settlement', () => {
+  it('includes a descendant that finishes persisting while its owner drains', async () => {
+    const root = header('draining-delete-root')
+    const child = { ...header('draining-delete-child'), origin: 'subagent' as const, parentSession: root.id }
+    const h = await harness({ sessions: [root] })
+    onTestFinished(() => h.ctx.fiber.dispose())
+    await h.registry.archiveSession(root.id)
+    h.ctx.on('workspace/session-before-delete', () => { h.setSessions([root, child]) })
+    expect(await h.registry.deleteSession(root.id)).toEqual([child.id, root.id])
+    expect((await h.list()).map(item => item.header.id)).toEqual([])
+    expect(h.removeStored.mock.calls.map(([id]) => id)).toEqual([child.id, root.id])
+  })
+})
