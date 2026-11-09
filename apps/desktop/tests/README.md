@@ -41,6 +41,8 @@ apps/desktop/.desktop-build/targets/mac-arm64/electron/Electron.app/Contents/Mac
 
 The fixture uses production overlays, preload, IPC handlers, and renderer assets. Four cases cover light/dark palettes, a 390px window, reduced motion, opaque coverage before preview loss, keyboard focus, failure presentation, and view/input cleanup. Screenshots and `result.json` are written under `.desktop-build/qualification/update-installation-*`. It starts no Host, download, or installer; signed installed-update qualification remains separate.
 
+The `fixtures/github-release-download.mjs` Electron fixture downloads the latest public release through the production updater and system proxy. It verifies complete installer bytes, SHA-256, denied installation confirmation, and an explicitly permitted handoff intercepted before any installer executes. Its private profile, downloaded installer, request statuses, and `result.json` stay under `.desktop-build/qualification/github-release-download-*`; `DSH_EXPECT_RELEASE_VERSION` can pin the expected discovered version. It does not replace an installed application or qualify actual relaunch.
+
 <a id="verification-overlay"></a>
 
 ## Native overlay visibility

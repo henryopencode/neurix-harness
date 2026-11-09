@@ -41,6 +41,8 @@ apps/desktop/.desktop-build/targets/mac-arm64/electron/Electron.app/Contents/Mac
 
 夹具使用生产浮层、preload、IPC 处理器和渲染资源。四个用例覆盖浅色／暗色主题、390px 窗口、减少动态效果、预览失效前的不透明覆盖、键盘焦点、失败提示及视图／输入清理。截图和 `result.json` 写入 `.desktop-build/qualification/update-installation-*`。它不启动 Host、不下载更新、不运行安装器；已安装签名版本的更新验收仍单独进行。
 
+Electron 夹具 `fixtures/github-release-download.mjs` 通过生产更新器及系统代理下载最新公开版本。它验证完整安装包、SHA-256、拒绝安装确认，以及明确许可后、在执行安装器前被截获的交接。私有 profile、下载的安装包、请求状态和 `result.json` 保存在 `.desktop-build/qualification/github-release-download-*`；`DSH_EXPECT_RELEASE_VERSION` 可限定预期发现的版本。它不会替换已安装应用，也不验证实际重新启动。
+
 <a id="verification-overlay"></a>
 
 ## 原生浮层可见性
