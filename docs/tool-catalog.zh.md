@@ -2470,7 +2470,7 @@ subagent_oar 工具在为外部提供方配置的别名之间选择。本目录�
 
 ### `spawn_teammate`
 
-为明确职责创建一名具名、持久的 teammate，并按任务需要从已配置的候选模型中选择模型。只有 Team Lead 可以调用此工具。
+创建一名具名、持久的 teammate。只有 Team Lead 可以调用此工具。
 
 ```json
 {
@@ -2487,10 +2487,6 @@ subagent_oar 工具在为外部提供方配置的别名之间选择。本目录�
     "prompt": {
       "type": "string",
       "description": "Complete initial task for the teammate."
-    },
-    "model": {
-      "type": "string",
-      "description": "Configured candidate model alias chosen for this responsibility. Required when the Team has model candidates; omit only when none are configured."
     },
     "context": {
       "type": "string",
@@ -2705,7 +2701,7 @@ subagent_oar 工具在为外部提供方配置的别名之间选择。本目录�
 
 ### `todo_write`
 
-记录并更新任务列表，用于规划多步骤工作并展示进度；简单的单步骤任务无需使用。开始前为每个具体步骤添加一项 todo。只要工作尚未完成，就将正在处理的 todo 标记为 `in_progress`，仅在工作并行运行时同时标记多项。某项 todo 完成后立即标记为 `completed`。
+记录并更新任务列表，用于规划多步骤工作并展示进度；简单的单步骤任务无需使用。开始前为每个具体、可验证的步骤添加一项 todo。复杂工作应使用稳定任务 id、按阶段分组，描述输入和预期输出，并且只为真实前置条件声明 dependsOn。在步骤开始前就列出计划；整体更新列表时保留 id 和所有相关字段。委派时关联已发布的子 sessionId，等待时填写 blockedReason，产生证据或产物时记录 result 与文件路径。只要工作尚未完成，就将正在处理的 todo 标记为 `in_progress`，仅在工作并行运行时同时标记多项。每项 todo 完成后立即标记为 `completed`。
 
 ```json
 {
@@ -2724,12 +2720,54 @@ subagent_oar 工具在为外部提供方配置的别名之间选择。本目录�
           },
           "status": {
             "type": "string",
-            "description": "pending (not started) | in_progress (now) | completed (done).",
+            "description": "pending (not started or waiting) | in_progress (now) | completed (done).",
             "enum": [
               "pending",
               "in_progress",
               "completed"
             ]
+          },
+          "id": {
+            "type": "string",
+            "description": "Stable task id; keep it when updating or renaming the task."
+          },
+          "phase": {
+            "type": "string",
+            "description": "Stage grouping, such as research, implementation, or verification."
+          },
+          "description": {
+            "type": "string",
+            "description": "Concrete work and input materials."
+          },
+          "expectedOutput": {
+            "type": "string",
+            "description": "Expected deliverable or observable acceptance criterion."
+          },
+          "dependsOn": {
+            "type": "array",
+            "description": "Prerequisite task ids in this complete list; requires this task to have an id. Must be acyclic.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "blockedReason": {
+            "type": "string",
+            "description": "Why the task is waiting, including a question or missing input."
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Published child session id executing this task, when delegated."
+          },
+          "result": {
+            "type": "string",
+            "description": "Result summary or concrete verification evidence."
+          },
+          "artifacts": {
+            "type": "array",
+            "description": "Output file paths, absolute or relative to the session working directory.",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [

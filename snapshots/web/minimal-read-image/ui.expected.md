@@ -6,6 +6,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Workflow"
+- navigation "Turn navigation":
+  - button "Jump to turn 1"
 - text: Use read_image to inspect red.png. Then reply exactly MINIMAL_IMAGE_OK and stop. {{clock}}
 - button "Copy"
 - status: Completed

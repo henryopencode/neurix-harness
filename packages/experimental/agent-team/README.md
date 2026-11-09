@@ -25,8 +25,6 @@ English | [中文](README.zh.md)
 <a id="use-this-package"></a>
 ## Use this package
 
-`models`, `leaderModel`, and `maxParallel` configure the candidate pool, initial Lead model, and active teammate limit. `spawnTeammate` accepts a model alias independently of the teammate name and responsibility. With candidates configured, an omitted or unknown alias rejects before creating a roster entry. Without candidates, existing inherited-model calls remain supported. The `teamModels` projection recovers choices and human stop state; `team/post` attributes public replies to a responsibility and actual model. Human addressing uses the existing Team roster and shared workspace.
-
 Add this package when one agent needs named helpers in a shared working directory, direct peer messages, and durable roster and task state. Mount it with `@deepseek-ai/dsh-experimental-tool-agent-team` to expose the model tools.
 
 ### When to choose it
@@ -56,10 +54,6 @@ With the tools installed, the model does the rest on request — for example, "c
 | `disposalTimeoutMs` | `5,000` | Time allowed for shutdown cleanup |
 
 The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-experimental-agent-team) is the exhaustive source for every accepted field and its JSDoc.
-
-Hosts can select a teammate’s model through `SpawnTeammateRequest.agentOptions`. The outer `provider` selects the execution backend; `agentOptions.provider` and `agentOptions.model` select the LLM route.
-
-Roster `model` values come from each live Agent's current selection. An unavailable member's model is omitted; neither its leader's route nor its startup default substitutes for an unknown selection.
 
 ### Teammates
 
@@ -151,7 +145,7 @@ Roster and task mutations append `team/member` and `team/task` to the exact live
 
 Historical mailbox events and `team-message` sources remain readable, and the projection still reports queued-minus-delivered records. Team never delivers or acknowledges them: a historical message that its target had not recorded stays undelivered.
 
-Mailbox projection and checkpoint admission preserve every decoded JSON field of accepted content outside the locally declared validators, including an own `__proto__` key. Local field checks cover `text`, `reasoning`, `image`, and `tool-call`; accepted unknown tags remain opaque. Team projection cache version 5 rebuilds checkpoints from earlier cache versions from the Session log; the Session format version is unchanged.
+Mailbox projection and checkpoint admission preserve every decoded JSON field of accepted content outside the locally declared validators, including an own `__proto__` key. Local field checks cover `text`, `reasoning`, `image`, and `tool-call`; accepted unknown tags remain opaque. Team projection cache version 4 rebuilds checkpoints from earlier cache versions from the Session log; the Session format version is unchanged.
 
 ### Disposal
 

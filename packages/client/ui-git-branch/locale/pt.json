@@ -1,5 +1,6 @@
 {
   "meta": {
-    "title": "Git branches"
+    "title": "Branch do Git",
+    "description": "Branch atual do repositório no cabeçalho da conversa"
   }
 }

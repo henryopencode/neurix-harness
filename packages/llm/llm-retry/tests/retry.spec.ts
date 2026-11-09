@@ -288,10 +288,10 @@ describe('provider-routed retry policy', () => {
     })
   })
 
-  it('leaves partial failed chunks on their step without committing a message or tool side effect', async () => {
+  it.each(['TRANSPORT', 'MALFORMED_RESPONSE'])('discards failed %s output without executing its tools', async (code) => {
     vi.useFakeTimers()
     const adapter = new ScriptedAdapter([
-      partialToolFailure(new LlmError('stream interrupted', 'TRANSPORT')),
+      partialToolFailure(new LlmError('invalid provider response', code)),
       textResponse('recovered'),
     ])
     ;({ ctx: context } = await harness(adapter))
@@ -337,13 +337,13 @@ describe('provider-routed retry policy', () => {
     })
   })
 
-  it('applies bounded exponential jitter and stops after the configured budget', async () => {
+  it.each(['SERVER', 'MALFORMED_RESPONSE'])('bounds exponential jitter and stops after the %s retry budget', async (code) => {
     vi.useFakeTimers()
     const samples = [0, 1]
     const adapter = new ScriptedAdapter([
-      new LlmError('busy one', 'SERVER'),
-      new LlmError('busy two', 'SERVER'),
-      new LlmError('busy three', 'SERVER'),
+      new LlmError('busy one', code),
+      new LlmError('busy two', code),
+      new LlmError('busy three', code),
     ])
     ;({ ctx: context } = await harness(adapter, { mock: normalConfig({
       backoff: { jitterRatio: 0.1 },
@@ -368,7 +368,7 @@ describe('provider-routed retry policy', () => {
     expect(agent.session.snapshotEvents().filter(event => event.type === 'llm/retry')).toHaveLength(2)
     expect(agent.session.snapshotEvents().at(-1)).toMatchObject({
       type: 'turn/end',
-      data: { reason: { kind: 'error', error: { message: 'busy three', code: 'SERVER' } } },
+      data: { reason: { kind: 'error', error: { message: 'busy three', code } } },
     })
   })
 
@@ -981,13 +981,16 @@ describe('provider-routed retry policy', () => {
     expect(adapter.requests).toHaveLength(1)
   })
 
-  it('lets turn cancellation win during backoff without opening another step', async () => {
+  it.each([
+    { code: 'AUTH', policy: alwaysConfig() },
+    { code: 'MALFORMED_RESPONSE', policy: normalConfig() },
+  ])('cancels $code backoff without opening another step', async ({ code, policy }) => {
     vi.useFakeTimers()
     const adapter = new ScriptedAdapter([
-      new LlmError('permanent', 'AUTH'),
+      new LlmError('request failed', code),
       textResponse('must not run'),
     ])
-    ;({ ctx: context } = await harness(adapter, { mock: alwaysConfig() }))
+    ;({ ctx: context } = await harness(adapter, { mock: policy }))
     const agent = await context.agentLoop.create(SessionId('retry-cancel'), { provider: 'mock', model: 'mock' })
     const scheduled = waitForRetry(context, agent, 1)
     agent.followup(createUserMessage({ content: [{ type: 'text', text: 'go' }], source: { kind: 'user' } }))

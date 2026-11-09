@@ -61,9 +61,13 @@ async function fixture(commit = true, options: Partial<Config> = {}, directoryNa
 function scripted(
   f: Awaited<ReturnType<typeof fixture>>,
   outputs: { exitCode?: number; stdout?: string; stderr?: string; lossy?: boolean }[],
+  executable = '/fixture/git',
 ) {
   const terminated = vi.fn()
   const settled = vi.fn(async () => {})
+  const resolver = vi.spyOn(f.ctx.subprocess, 'resolveExecutable').mockImplementation(async name =>
+    name === 'git' ? executable : '/usr/bin/xcode-select')
+  onTestFinished(() => { resolver.mockRestore() })
   const spy = vi.spyOn(f.ctx.subprocess, 'spawn').mockImplementation(() => {
     const output = outputs.shift()
     if (output === undefined) throw new Error('unexpected Git command')
@@ -83,6 +87,22 @@ function scripted(
 const mainRefs = 'feature\0 \0abc123\0\nmain\0*\0abc123\0/repo\n'
 
 describe('Session Git branches', () => {
+  it('reports missing Apple developer tools without invoking the Git installation launcher', async () => {
+    const f = await fixture()
+    const commands = scripted(f, [{ exitCode: 1 }], '/usr/bin/git')
+    await expect(f.inspect()).rejects.toMatchObject({ code: 'git-branch/read-failed' })
+    expect(commands.spy).toHaveBeenCalledOnce()
+    expect(commands.spy.mock.calls[0]?.[0].argv).toEqual(['/usr/bin/xcode-select', '-p'])
+    expect(commands.terminated).toHaveBeenCalledOnce()
+    expect(commands.settled).toHaveBeenCalledOnce()
+  })
+
+  it('reads branches through Apple Git once selected developer tools are available', async () => {
+    const f = await fixture()
+    scripted(f, [{}, { stdout: f.root }, {}, { stdout: mainRefs }], '/usr/bin/git')
+    expect(await f.inspect()).toMatchObject({ kind: 'repository', current: 'main' })
+  })
+
   it.each([
     { timeoutMs: 2_147_483_648 }, { graceMs: 2_147_483_648 }, { refreshIntervalMs: 2_147_483_648 }, { maxOutputBytes: 0 },
   ])('rejects unsupported process limits %j at load', (config) => {

@@ -1,5 +1,6 @@
 {
   "meta": {
-    "title": "Git branches"
+    "title": "Rama de Git",
+    "description": "Rama actual del repositorio en la cabecera de la conversación"
   }
 }

@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-11-08-task-plans-and-workflow-canvas.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-08-task-plans-and-workflow-canvas.md
+/agent-note-task-plans-and-workflow-execution-evidence:
+  en: abd47badccf49cf2
+  zh: 4b8e6d3a3adc53e3
+/agent-note-task-plans-and-workflow-execution-evidence/problem:
+  en: 8028a8e249811c85
+  zh: 44e44e9ae8730cca
+/agent-note-task-plans-and-workflow-execution-evidence/decision:
+  en: 74024d84ff61e024
+  zh: e37a90607c934eba
+/agent-note-task-plans-and-workflow-execution-evidence/alternatives-considered:
+  en: 1acb2ea521b3fcfb
+  zh: 86114caca95ff6a3
+/agent-note-task-plans-and-workflow-execution-evidence/consequences:
+  en: 57562c957283aa2c
+  zh: 91f814e819f71a89

@@ -1,6 +1,6 @@
 import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import { createUserMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
@@ -31,6 +31,7 @@ function agentWithSession(id = 'parent-1'): Agent & { session: Session } {
 
 async function setup(allowParallelInProgress: boolean): Promise<Context> {
   const ctx = new Context()
+  onTestFinished(() => ctx.fiber.dispose())
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(NativeToolExecutor)
@@ -56,7 +57,7 @@ function text(result: { content: { type: string; text?: string }[] }): string {
 }
 
 describe('dsh-tool-todo', () => {
-  it('registers a `todo_write` tool whose schema is an array of {content,status}', async () => {
+  it('requires content and status while accepting structured planning fields', async () => {
     const ctx = await setup(true)
     const schema = ctx.tools.schemas().find(s => s.name === 'todo_write')
     expect(schema).toBeDefined()
@@ -65,8 +66,53 @@ describe('dsh-tool-todo', () => {
     const todos = props.todos as { type: string; items?: { properties?: Record<string, { type: string; enum?: string[] }> } }
     expect(todos.type).toBe('array')
     const itemProps = todos.items?.properties ?? {}
-    expect(Object.keys(itemProps).sort()).toEqual(['content', 'status'])
+    expect(Object.keys(itemProps).sort()).toEqual([
+      'artifacts', 'blockedReason', 'content', 'dependsOn', 'description', 'expectedOutput',
+      'id', 'phase', 'result', 'sessionId', 'status',
+    ])
     expect(itemProps.status?.enum).toEqual(['pending', 'in_progress', 'completed'])
+  })
+
+  it('records the owning turn and preserves task metadata in results and projection checkpoints', async () => {
+    const ctx = await setup(true)
+    const agent = agentWithSession('planned')
+    agent.session.append('turn/start', { turn: 3 })
+    const todos = [
+      { id: 'research', content: 'Research', status: 'completed', phase: 'Preparation', result: 'Sources checked' },
+      { id: 'build', content: 'Build', status: 'in_progress', dependsOn: ['research'], description: 'Use the research',
+        expectedOutput: 'A working page', sessionId: ' child ', artifacts: [' output/index.html '] },
+    ]
+    const result = await callTodo(ctx, { todos }, { agent })
+    expect(result.isError).toBe(false)
+    expect(agent.session.snapshotEvents().findLast(event => event.type === 'todo/write')?.data).toEqual({ todos, turn: 3 })
+    expect(ctx.sessionProjections.snapshot(agent.session).values.todos).toEqual(todos)
+    const checkpoint = ctx.sessionProjections.checkpoint(agent.session)
+    const restored = ctx.sessionProjections.restore(
+      checkpoint, [], SessionLogOffset(agent.session.seq), agent.session.header, SessionLogOffset(0),
+    )
+    expect(restored.snapshot.values.todos).toEqual(todos)
+    const legacy = { ...checkpoint, todos: { ...checkpoint.todos!, ver: 2, val: todos } }
+    const recovered = ctx.sessionProjections.restore(
+      legacy, agent.session.snapshotEvents(), SessionLogOffset(0), agent.session.header, SessionLogOffset(0),
+    )
+    expect(recovered.snapshot.values.todos).toEqual(todos)
+  })
+
+  it.each([
+    { name: 'duplicate ids', todos: [{ id: 'a', content: 'First', status: 'pending' }, { id: 'a', content: 'Second', status: 'pending' }], message: 'duplicate id' },
+    { name: 'missing task id', todos: [{ id: 'a', content: 'First', status: 'pending' }, { content: 'Second', status: 'pending', dependsOn: ['a'] }], message: 'require an id' },
+    { name: 'unknown prerequisite', todos: [{ id: 'a', content: 'First', status: 'pending', dependsOn: ['missing'] }], message: 'unknown dependency' },
+    { name: 'self dependency', todos: [{ id: 'a', content: 'First', status: 'pending', dependsOn: ['a'] }], message: 'dependency cycle' },
+    { name: 'dependency cycle', todos: [{ id: 'a', content: 'First', status: 'pending', dependsOn: ['b'] }, { id: 'b', content: 'Second', status: 'pending', dependsOn: ['a'] }], message: 'dependency cycle' },
+    { name: 'duplicate prerequisites', todos: [{ id: 'a', content: 'First', status: 'pending' }, { id: 'b', content: 'Second', status: 'pending', dependsOn: ['a', 'a'] }], message: 'duplicate dependency' },
+    { name: 'blank planning text', todos: [{ id: 'a', content: 'First', status: 'pending', expectedOutput: ' ' }], message: 'expectedOutput' },
+  ])('rejects $name without committing a plan', async ({ todos, message }) => {
+    const ctx = await setup(true)
+    const agent = agentWithSession('invalid-plan')
+    const result = await callTodo(ctx, { todos }, { agent })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain(message)
+    expect(agent.session.snapshotEvents().some(event => event.type === 'todo/write')).toBe(false)
   })
 
   it('appends a todo/write event carrying the whole list to the calling session', async () => {

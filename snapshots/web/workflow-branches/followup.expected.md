@@ -1,0 +1,13 @@
+- region "Workflow":
+  - combobox "Select task plan": Task 2
+  - text: 1 / 1 completed
+  - tablist "Workflow display":
+    - tab "Canvas" [selected]
+    - tab "List"
+  - tabpanel "Canvas":
+    - application "Task workflow canvas":
+      - button "Inspect Handle this message, Completed": Completed Handle this message
+    - button "Zoom out"
+    - button "Zoom in"
+    - button "Fit canvas"
+    - button "Locate running tasks" [disabled]

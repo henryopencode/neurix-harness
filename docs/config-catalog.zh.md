@@ -888,19 +888,12 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-experimental-agent-team`
 
-- `inject`: `agents` · `sessions` · `sessionPersistence` · `sessionProjections` · `subagents` · `llm`
-- `refs`: `Volatile` (`@deepseek-ai/cordis`)
-- `source`: [`packages/experimental/agent-team/src/types.ts:207`](../packages/experimental/agent-team/src/types.ts)
+- `inject`: `agents` · `sessions` · `sessionPersistence` · `sessionProjections` · `subagents`
+- `source`: [`packages/experimental/agent-team/src/types.ts:206`](../packages/experimental/agent-team/src/types.ts)
 
 ```ts config-catalog
 /** Team-service deployment limits. */
 export interface Config {
-  /** Candidate model routes and strengths; empty retains inherited model selection. */
-  readonly models?: Volatile<TeamModel[]>
-  /** Candidate alias used by the Lead; empty preserves the Lead's current selection. */
-  readonly leaderModel?: Volatile<string>
-  /** Maximum simultaneously active teammates per Team. */
-  readonly maxParallel?: Volatile<number>
   /** Maximum immutable teammate names retained by one Team. */
   readonly maxMembers?: number
   /** Maximum non-deleted tasks retained by one Team. */
@@ -909,20 +902,6 @@ export interface Config {
   readonly maxMessageBytes?: number
   /** Maximum milliseconds for shared operation settlement and for each Team child drain. */
   readonly disposalTimeoutMs?: number
-}
-
-/** One available model; responsibilities belong to teammates rather than model entries. */
-export interface TeamModel {
-  /** Unique alias selected by the Lead when creating a responsibility. */
-  readonly name: string
-  /** Display name in Team settings and attributed replies. */
-  readonly label: string
-  /** Registered LLM provider route. */
-  readonly provider: string
-  /** Exact provider-owned model identifier. */
-  readonly model: string
-  /** User-authored task guidance for model selection. */
-  readonly strengths: string
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-agent-team -->
@@ -1599,7 +1578,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-experimental-tool-agent-team`
 
 - `inject`: `agents` · `agentTeams` · `tools` · `systemPrompt`
-- `source`: [`packages/experimental/tool-agent-team/src/index.ts:18`](../packages/experimental/tool-agent-team/src/index.ts)
+- `source`: [`packages/experimental/tool-agent-team/src/index.ts:17`](../packages/experimental/tool-agent-team/src/index.ts)
 
 ```ts config-catalog
 /** Tool routing configuration. */
@@ -4645,7 +4624,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-tool-todo`
 
 - `inject`: `tools` · `sessionProjections`
-- `source`: [`packages/todo/tool-todo/src/index.ts:29`](../packages/todo/tool-todo/src/index.ts)
+- `source`: [`packages/todo/tool-todo/src/index.ts:30`](../packages/todo/tool-todo/src/index.ts)
 
 ```ts config-catalog
 /** Model-facing todo tool configuration. */

@@ -9,6 +9,8 @@ import { gt, valid } from 'semver'
 import type { DesktopUpdateState } from './ipc.ts'
 import { DesktopUpdatePreparationError } from './update-error.ts'
 import { transferGithubRelease, type GithubReleaseRequest } from './github-release-transfer.ts'
+import { GithubReleaseNetworkError, readGithubReleaseText } from './github-release-network.ts'
+import { GithubReleaseAssets } from './github-release-assets.ts'
 
 function object(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error('GitHub release metadata must be an object')
@@ -42,7 +44,7 @@ export interface GithubReleaseDownloadOptions {
   readonly idleTimeoutMs: number
 }
 
-type Candidate = { version: string; filename: string; size: number; base: string }
+type Candidate = { version: string; filename: string; size: number; base: string; sha256?: string; apiUrl?: string }
 
 /** Owns checked metadata, a cancellable transfer, and the verified local installer. */
 export class GithubReleaseDownloads {
@@ -158,14 +160,12 @@ export class GithubReleaseDownloads {
 
   private async readLatest(): Promise<DesktopUpdateState> {
     try {
-      const response = await this.options.request(`https://github.com/${this.repository}/releases/latest/download/desktop-update.json`, {
-        signal: AbortSignal.any([this.lifetime.signal, AbortSignal.timeout(this.options.metadataTimeoutMs)]),
-      })
-      if (response.status === 404) { this.candidate = undefined; return this.setState({ phase: 'idle' }) }
-      if (!response.ok) throw new Error(`GitHub release check returned HTTP ${response.status}`)
-      const text = await response.text()
+      const text = await readGithubReleaseText({ request: this.options.request,
+        url: `https://github.com/${this.repository}/releases/latest/download/desktop-update.json`,
+        signal: this.lifetime.signal, timeoutMs: this.options.metadataTimeoutMs, maxBytes: 1_048_576,
+        label: 'GitHub release check', allowNotFound: true })
+      if (text === undefined) { this.candidate = undefined; return this.setState({ phase: 'idle' }) }
       this.lifetime.signal.throwIfAborted()
-      if (Buffer.byteLength(text) > 1_048_576) throw new Error('GitHub release metadata exceeds the size limit')
       const release = object(JSON.parse(text))
       const version = typeof release.tag_name === 'string' ? release.tag_name.replace(/^v/u, '') : ''
       if (release.tag_name !== `v${version}` || valid(version) !== version || version.includes('-') || version.includes('+')
@@ -183,7 +183,15 @@ export class GithubReleaseDownloads {
         || typeof asset.size !== 'number' || !Number.isSafeInteger(asset.size) || asset.size <= 0 || asset.size > 4_294_967_296) {
         throw new Error(`Release has no complete installer and checksums for ${target}-${arch}`)
       }
-      this.candidate = { version, filename, size: asset.size, base: `https://github.com/${this.repository}/releases/download/v${version}/` }
+      if (asset.sha256 !== undefined && (typeof asset.sha256 !== 'string' || !/^[a-fA-F0-9]{64}$/u.test(asset.sha256))) {
+        throw new Error('Release installer SHA-256 is invalid')
+      }
+      if (asset.id !== undefined && (typeof asset.id !== 'number' || !Number.isSafeInteger(asset.id) || asset.id <= 0)) {
+        throw new Error('Release installer asset id is invalid')
+      }
+      this.candidate = { version, filename, size: asset.size, base: `https://github.com/${this.repository}/releases/download/v${version}/`,
+        ...(typeof asset.sha256 === 'string' ? { sha256: asset.sha256.toLowerCase() } : {}),
+        ...(typeof asset.id === 'number' ? { apiUrl: `https://api.github.com/repos/${this.repository}/releases/assets/${asset.id}` } : {}) }
       return this.setState({ phase: 'available', version })
     } catch (error) {
       return { phase: 'error', failedOperation: 'check', message: String(error) }
@@ -199,27 +207,34 @@ export class GithubReleaseDownloads {
       const candidate = this.candidate
       if (candidate?.version !== version) throw new Error('The checked GitHub release changed; check for updates again')
       this.setState({ phase: 'downloading', version, percent: 0, canCancel: true })
-      const checksums = await this.options.request(candidate.base + 'SHA256SUMS.txt', {
-        signal: AbortSignal.any([signal, AbortSignal.timeout(this.options.metadataTimeoutMs)]),
-      })
-      if (!checksums.ok) throw new Error(`Checksum download returned HTTP ${checksums.status}`)
-      const checksumText = await checksums.text()
-      if (Buffer.byteLength(checksumText) > 131_072) throw new Error('Checksum list exceeds its size limit')
-      const matches = checksumText.split('\n').flatMap((line) => {
-        const match = /^([a-fA-F0-9]{64}) [ *](.+)$/u.exec(line)
-        return match?.[2] === candidate.filename && match[1] !== undefined ? [match[1].toLowerCase()] : []
-      })
-      const expected = matches[0]
-      if (matches.length !== 1 || expected === undefined) throw new Error('Installer SHA-256 checksum is missing or ambiguous')
+      const assets = new GithubReleaseAssets(this.repository, version, this.options.request, signal, this.options.metadataTimeoutMs)
+      let expected = candidate.sha256
+      if (expected === undefined) {
+        const read = (url: string, headers?: Record<string, string>) => readGithubReleaseText({ request: this.options.request,
+          url, signal, timeoutMs: this.options.metadataTimeoutMs, maxBytes: 131_072, label: 'Checksum download',
+          ...(headers === undefined ? {} : { headers }) })
+        let checksumText: string | undefined
+        try { checksumText = await read(candidate.base + 'SHA256SUMS.txt') }
+        catch (error) {
+          signal.throwIfAborted()
+          if (!(error instanceof GithubReleaseNetworkError)) throw error
+          checksumText = await read(await assets.url('SHA256SUMS.txt'), { Accept: 'application/octet-stream' })
+        }
+        const matches = (checksumText ?? '').split('\n').flatMap((line) => {
+          const match = /^([a-fA-F0-9]{64}) [ *](.+)$/u.exec(line)
+          return match?.[2] === candidate.filename && match[1] !== undefined ? [match[1].toLowerCase()] : []
+        })
+        expected = matches[0]
+        if (matches.length !== 1 || expected === undefined) throw new Error('Installer SHA-256 checksum is missing or ambiguous')
+      }
       await mkdir(this.options.directory, { recursive: true, mode: 0o700 })
       temporary = await mkdtemp(join(this.options.directory, '.download-'))
       const partial = join(temporary, candidate.filename)
       const file = await open(partial, 'wx', 0o600)
       let previousPercent = 0
       try {
-        await transferGithubRelease({
-          url: candidate.base + candidate.filename, size: candidate.size, file,
-          request: this.options.request, signal, idleTimeoutMs: this.options.idleTimeoutMs,
+        const transfer = (url: string, request: GithubReleaseRequest) => transferGithubRelease({
+          url, size: candidate.size, file, request, signal, idleTimeoutMs: this.options.idleTimeoutMs,
           progress: (received) => {
             const percent = Math.min(99, Math.floor(received / candidate.size * 100))
             if (percent !== previousPercent) {
@@ -228,6 +243,19 @@ export class GithubReleaseDownloads {
             }
           },
         })
+        try { await transfer(candidate.base + candidate.filename, this.options.request) }
+        catch (error) {
+          signal.throwIfAborted()
+          if (!(error instanceof GithubReleaseNetworkError)) throw error
+          const url = candidate.apiUrl ?? await assets.url(candidate.filename, candidate.size)
+          await file.truncate(0)
+          previousPercent = 0
+          this.setState({ phase: 'downloading', version, percent: 0, canCancel: true })
+          // One complete API response avoids spending an API request on each installer range.
+          await transfer(url, (address, init) => this.options.request(address, {
+            signal: init.signal, headers: { Accept: 'application/octet-stream' },
+          }))
+        }
         await file.sync()
       } finally { await file.close() }
       signal.throwIfAborted()

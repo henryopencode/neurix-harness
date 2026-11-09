@@ -78,7 +78,7 @@ The [format references](persistence-changes/historical-formats/README.md) cover 
 | `event:team/models` | event | `3c856d90656eea4b2a37a1314ef2269fa86f130091f469e99512d13f2bf6ebe7` | [`{ type: "team/models" }`](#persistence-type-sha256-3c856d90656eea4b2a37a1314ef2269fa86f130091f469e99512d13f2bf6ebe7) |
 | `event:team/post` | event | `3c15bfec435853b32326afc8bacdcabf531edb07bdf857f946c54dd2b7d296c2` | [`{ type: "team/post" }`](#persistence-type-sha256-3c15bfec435853b32326afc8bacdcabf531edb07bdf857f946c54dd2b7d296c2) |
 | `event:team/task` | event | `d595ec73b32b016a6055333c67a5d646032b22e672da1d4a09c5b1ae398a093a` | [`{ type: "team/task" }`](#persistence-type-sha256-d595ec73b32b016a6055333c67a5d646032b22e672da1d4a09c5b1ae398a093a) |
-| `event:todo/write` | event | `b978cff734e62143eb56c9125423ec275405eda969802d42aaf73ecb987d3b26` | [`{ type: "todo/write" }`](#persistence-type-sha256-b978cff734e62143eb56c9125423ec275405eda969802d42aaf73ecb987d3b26) |
+| `event:todo/write` | event | `2c187606e08fc85ad13f116151386ed787863cca3e66258a3c41e79a868d130e` | [`{ type: "todo/write" }`](#persistence-type-sha256-2c187606e08fc85ad13f116151386ed787863cca3e66258a3c41e79a868d130e) |
 | `event:tool-workflow/agent-end` | event | `babf9ee4d1af62bf6c3a8103737f7a5e4e78ce179be835ce05a38803e15884b7` | [`{ type: "tool-workflow/agent-end" }`](#persistence-type-sha256-babf9ee4d1af62bf6c3a8103737f7a5e4e78ce179be835ce05a38803e15884b7) |
 | `event:tool-workflow/agent-start` | event | `5f26a6c20b37632f8f57729d171c671def4683d994ac6257a8dffcd855101627` | [`{ type: "tool-workflow/agent-start" }`](#persistence-type-sha256-5f26a6c20b37632f8f57729d171c671def4683d994ac6257a8dffcd855101627) |
 | `event:tool-workflow/run-end` | event | `42e0916e0dda5f6d1e7bb05d8514717147c036a79c9f36085683469516c1fd3f` | [`{ type: "tool-workflow/run-end" }`](#persistence-type-sha256-42e0916e0dda5f6d1e7bb05d8514717147c036a79c9f36085683469516c1fd3f) |
@@ -1098,7 +1098,7 @@ Source: [`packages/core/session/src/types.ts:338`](../packages/core/session/src/
 'team/control': { readonly stopped: boolean; readonly stoppedMembers: readonly string[] }
 ```
 
-Source: [`packages/experimental/agent-team/src/types.ts:298`](../packages/experimental/agent-team/src/types.ts)
+Source: [`packages/experimental/agent-team/src/types.ts:289`](../packages/experimental/agent-team/src/types.ts)
 
 <a id="teammember--log-only"></a>
 
@@ -1111,7 +1111,7 @@ Source: [`packages/experimental/agent-team/src/types.ts:298`](../packages/experi
 
 Types: [TeamId](subsystems/agent-team.md) · [TeamMemberSnapshot](subsystems/agent-team.md)
 
-Source: [`packages/experimental/agent-team/src/types.ts:302`](../packages/experimental/agent-team/src/types.ts)
+Source: [`packages/experimental/agent-team/src/types.ts:293`](../packages/experimental/agent-team/src/types.ts)
 
 <a id="teammessagedelivered--log-only"></a>
 
@@ -1129,7 +1129,7 @@ Source: [`packages/experimental/agent-team/src/types.ts:302`](../packages/experi
 
 Types: [TeamId](subsystems/agent-team.md) · [TeamMessageId](subsystems/agent-team.md)
 
-Source: [`packages/experimental/agent-team/src/types.ts:308`](../packages/experimental/agent-team/src/types.ts)
+Source: [`packages/experimental/agent-team/src/types.ts:299`](../packages/experimental/agent-team/src/types.ts)
 
 <a id="teammessagequeued--log-only"></a>
 
@@ -1142,7 +1142,7 @@ Source: [`packages/experimental/agent-team/src/types.ts:308`](../packages/experi
 
 Types: [TeamId](subsystems/agent-team.md) · [TeamMessageSnapshot](subsystems/agent-team.md)
 
-Source: [`packages/experimental/agent-team/src/types.ts:306`](../packages/experimental/agent-team/src/types.ts)
+Source: [`packages/experimental/agent-team/src/types.ts:297`](../packages/experimental/agent-team/src/types.ts)
 
 <a id="teammodels--log-only"></a>
 
@@ -1153,7 +1153,7 @@ Source: [`packages/experimental/agent-team/src/types.ts:306`](../packages/experi
 'team/models': TeamModelSelection
 ```
 
-Source: [`packages/experimental/agent-team/src/types.ts:296`](../packages/experimental/agent-team/src/types.ts)
+Source: [`packages/experimental/agent-team/src/types.ts:287`](../packages/experimental/agent-team/src/types.ts)
 
 <a id="teampost--log-only"></a>
 
@@ -1164,7 +1164,7 @@ Source: [`packages/experimental/agent-team/src/types.ts:296`](../packages/experi
 'team/post': TeamPost
 ```
 
-Source: [`packages/experimental/agent-team/src/types.ts:300`](../packages/experimental/agent-team/src/types.ts)
+Source: [`packages/experimental/agent-team/src/types.ts:291`](../packages/experimental/agent-team/src/types.ts)
 
 <a id="teamtask--log-only"></a>
 
@@ -1177,7 +1177,7 @@ Source: [`packages/experimental/agent-team/src/types.ts:300`](../packages/experi
 
 Types: [TeamId](subsystems/agent-team.md) · [TeamTaskSnapshot](subsystems/agent-team.md)
 
-Source: [`packages/experimental/agent-team/src/types.ts:304`](../packages/experimental/agent-team/src/types.ts)
+Source: [`packages/experimental/agent-team/src/types.ts:295`](../packages/experimental/agent-team/src/types.ts)
 
 ### `todo/*`
 
@@ -1187,12 +1187,16 @@ Source: [`packages/experimental/agent-team/src/types.ts:304`](../packages/experi
 
 ```ts persistence-catalog
 /** Whole-list snapshot; latest write wins on replay. Log-only UI state; never derived history. */
-'todo/write': { todos: TodoItem[] }
+'todo/write': {
+  todos: TodoItem[]
+  /** Owning turn, when the writer has observed its start; absent in historical records. */
+  turn?: number
+}
 ```
 
 Types: [TodoItem](subsystems/todo.md)
 
-Source: [`packages/todo/tool-todo/src/types.ts:33`](../packages/todo/tool-todo/src/types.ts)
+Source: [`packages/todo/tool-todo/src/types.ts:54`](../packages/todo/tool-todo/src/types.ts)
 
 ### `tool/*`
 
@@ -5274,7 +5278,7 @@ Sources: [`packages/llm/llm/src/message.ts:35`](../packages/llm/llm/src/message.
 
 SHA-256: `dfce5db4aa42b7ebe0bb79eca92553587287e18c06b9eba85cbfb9d332e26acd`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:90`](../packages/experimental/agent-team/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:89`](../packages/experimental/agent-team/src/types.ts)
 
 One of:
 
@@ -5292,7 +5296,7 @@ One of:
 
 SHA-256: `11043bc5c55175ddb977a00b79623c198f4483fe5a587cc6405e522b21a2f4c7`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:93`](../packages/experimental/agent-team/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:92`](../packages/experimental/agent-team/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -5315,7 +5319,7 @@ Sources: [`packages/experimental/agent-team/src/types.ts:93`](../packages/experi
 
 SHA-256: `2eafefdc6f79a4922d68a787a09eaf4dd2b2369c3777fba4c05e800b5678ac8e`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:183`](../packages/experimental/agent-team/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:182`](../packages/experimental/agent-team/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -5335,7 +5339,7 @@ Sources: [`packages/experimental/agent-team/src/types.ts:183`](../packages/exper
 
 SHA-256: `2152caf1a71e588e4df2358a806dea24936c1c47131134f01a12939d12cdc0c0`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:192`](../packages/experimental/agent-team/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:191`](../packages/experimental/agent-team/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -5359,7 +5363,7 @@ Sources: [`packages/experimental/agent-team/src/types.ts:192`](../packages/exper
 
 SHA-256: `14d88fc0238fd2a4d0ecff03262e5b5b18aee619b09088fdb96b4bd1a9745be1`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:12`](../packages/experimental/agent-team/src/types.ts) · [`packages/experimental/model-group-runtime/src/types.ts:33`](../packages/experimental/model-group-runtime/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:11`](../packages/experimental/agent-team/src/types.ts) · [`packages/experimental/model-group-runtime/src/types.ts:33`](../packages/experimental/model-group-runtime/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -5379,7 +5383,7 @@ Sources: [`packages/experimental/agent-team/src/types.ts:12`](../packages/experi
 
 SHA-256: `497b689f4099c829a050292d17fb2f046018cda0e6e367d6b3a84f28a48af219`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:26`](../packages/experimental/agent-team/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:25`](../packages/experimental/agent-team/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -5404,7 +5408,7 @@ Array of [`TeamModel`](#persistence-type-sha256-14d88fc0238fd2a4d0ecff03262e5b5b
 
 SHA-256: `903edd5bda5d1ffe8a02e37eed22cd6d9df452cf36af54e0f51b5c9ce4409b85`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:34`](../packages/experimental/agent-team/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:33`](../packages/experimental/agent-team/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -5427,7 +5431,7 @@ Sources: [`packages/experimental/agent-team/src/types.ts:34`](../packages/experi
 
 SHA-256: `51edec100659da3a9bd9c3f6ba1180f5e64ec9a1585e5057080df45c180bd357`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:125`](../packages/experimental/agent-team/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:124`](../packages/experimental/agent-team/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -5450,7 +5454,7 @@ Sources: [`packages/experimental/agent-team/src/types.ts:125`](../packages/exper
 
 SHA-256: `b2d2a01e51341a3bfec809198952c8c830a7899f4cb6ecd3c1dc0b5d9a2af943`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:122`](../packages/experimental/agent-team/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:121`](../packages/experimental/agent-team/src/types.ts)
 
 One of:
 
@@ -5476,7 +5480,7 @@ Sources: [`packages/llm/llm/src/types.ts:62`](../packages/llm/llm/src/types.ts) 
 | `text` | required | `string` |
 | `type` | required | `"text"` |
 
-<a id="persistence-type-sha256-a99f76fd149051c363f960bfeeb5b9509587ecaf7591a42797e4bfe810d8987a"></a>
+<a id="persistence-type-sha256-3f99ee7eb0ba946754de44ccf1351817f210c8a5eb85004a9a63bfc8bf80506d"></a>
 
 <a id="persistence-type-packagestodotool-todosrctypeststodoitem"></a>
 
@@ -5484,22 +5488,31 @@ Sources: [`packages/llm/llm/src/types.ts:62`](../packages/llm/llm/src/types.ts) 
 
 ### `TodoItem`
 
-SHA-256: `a99f76fd149051c363f960bfeeb5b9509587ecaf7591a42797e4bfe810d8987a`
+SHA-256: `3f99ee7eb0ba946754de44ccf1351817f210c8a5eb85004a9a63bfc8bf80506d`
 
-Sources: [`packages/todo/tool-todo/src/types.ts:23`](../packages/todo/tool-todo/src/types.ts)
+Sources: [`packages/todo/tool-todo/src/types.ts:26`](../packages/todo/tool-todo/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
+| `artifacts` | optional | [`string[]`](#persistence-type-sha256-93c33d9687613293f8c95d46c4d922fe9ceae83b84c384beff5c3315abe005f2) |
+| `blockedReason` | optional | `string` |
 | `content` | required | `string` |
+| `dependsOn` | optional | [`string[]`](#persistence-type-sha256-93c33d9687613293f8c95d46c4d922fe9ceae83b84c384beff5c3315abe005f2) |
+| `description` | optional | `string` |
+| `expectedOutput` | optional | `string` |
+| `id` | optional | `string` |
+| `phase` | optional | `string` |
+| `result` | optional | `string` |
+| `sessionId` | optional | `string` |
 | `status` | required | [`union (3 variants)`](#persistence-type-sha256-fd0d91a1f9dd2efb8959bdf5e07f8f0a98b1cdfa38ce8d4732ebde0b44c3abd4) |
 
-<a id="persistence-type-sha256-4b7ddaf3710b88ff9b8df66304f5f97bf03688fd19730eedc2e9535203c820ea"></a>
+<a id="persistence-type-sha256-c188be656ce86308571264d5884852f1e21cadfd32d2e604718bdeea07cf4d0b"></a>
 
 ### `TodoItem[]`
 
-SHA-256: `4b7ddaf3710b88ff9b8df66304f5f97bf03688fd19730eedc2e9535203c820ea`
+SHA-256: `c188be656ce86308571264d5884852f1e21cadfd32d2e604718bdeea07cf4d0b`
 
-Array of [`TodoItem`](#persistence-type-sha256-a99f76fd149051c363f960bfeeb5b9509587ecaf7591a42797e4bfe810d8987a).
+Array of [`TodoItem`](#persistence-type-sha256-3f99ee7eb0ba946754de44ccf1351817f210c8a5eb85004a9a63bfc8bf80506d).
 
 <a id="persistence-type-sha256-fec5442b9ee4122e10514d81d5a43648003fe8bfb7ee2ba50c0cdbdd383ed394"></a>
 
@@ -5959,6 +5972,8 @@ Array of `number`.
 
 <a id="persistence-type-packagessessionsession-titlesrctypestssessiontitleproviderid"></a>
 
+<a id="persistence-type-packagestodotool-todosrctypeststodoid"></a>
+
 <a id="persistence-type-packagesutilbrandsrcindextsbranded"></a>
 
 <a id="persistence-type-packagesworkflowworkflowsrctypestsworkflowrunid"></a>
@@ -5983,6 +5998,8 @@ Array of `number`.
 
 <a id="persistence-type-teamtaskid"></a>
 
+<a id="persistence-type-todoid"></a>
+
 <a id="persistence-type-toolcallid"></a>
 
 <a id="persistence-type-webhookdeliveryid"></a>
@@ -5997,7 +6014,7 @@ Array of `number`.
 
 SHA-256: `4cd48f3e5108bd6ebedf7301c3638839b8b2b9db8dbd493974177fbdeb91a01b`
 
-Sources: [`packages/api/session-controller/src/types.ts:380`](../packages/api/session-controller/src/types.ts) · [`packages/attachment/attachment/src/brand.ts:6`](../packages/attachment/attachment/src/brand.ts) · [`packages/compaction/compaction/src/brand.ts:4`](../packages/compaction/compaction/src/brand.ts) · [`packages/core/session/src/types.ts:21`](../packages/core/session/src/types.ts) · [`packages/experimental/agent-team/src/types.ts:54`](../packages/experimental/agent-team/src/types.ts) · [`packages/experimental/agent-team/src/types.ts:66`](../packages/experimental/agent-team/src/types.ts) · [`packages/experimental/agent-team/src/types.ts:78`](../packages/experimental/agent-team/src/types.ts) · [`packages/experimental/webhook/src/brand.ts:12`](../packages/experimental/webhook/src/brand.ts) · [`packages/experimental/webhook/src/brand.ts:6`](../packages/experimental/webhook/src/brand.ts) · [`packages/experimental/webhook/src/brand.ts:9`](../packages/experimental/webhook/src/brand.ts) · [`packages/feedback/message-feedback/src/types.ts:14`](../packages/feedback/message-feedback/src/types.ts) · [`packages/goal/goal/src/types.ts:17`](../packages/goal/goal/src/types.ts) · [`packages/interaction/commands/src/brand.ts:31`](../packages/interaction/commands/src/brand.ts) · [`packages/interaction/user-approval/src/types.ts:17`](../packages/interaction/user-approval/src/types.ts) · [`packages/jobs/jobs/src/brand.ts:19`](../packages/jobs/jobs/src/brand.ts) · [`packages/llm/llm-retry/src/brand.ts:4`](../packages/llm/llm-retry/src/brand.ts) · [`packages/llm/llm/src/brand.ts:16`](../packages/llm/llm/src/brand.ts) · [`packages/llm/llm/src/brand.ts:31`](../packages/llm/llm/src/brand.ts) · [`packages/llm/llm/src/brand.ts:43`](../packages/llm/llm/src/brand.ts) · [`packages/llm/llm/src/brand.ts:67`](../packages/llm/llm/src/brand.ts) · [`packages/schedule/schedule/src/types.ts:14`](../packages/schedule/schedule/src/types.ts) · [`packages/session/session-title/src/index.ts:42`](../packages/session/session-title/src/index.ts) · [`packages/session/session-title/src/types.ts:17`](../packages/session/session-title/src/types.ts) · [`packages/util/brand/src/index.ts:18`](../packages/util/brand/src/index.ts) · [`packages/workflow/workflow/src/types.ts:13`](../packages/workflow/workflow/src/types.ts)
+Sources: [`packages/api/session-controller/src/types.ts:380`](../packages/api/session-controller/src/types.ts) · [`packages/attachment/attachment/src/brand.ts:6`](../packages/attachment/attachment/src/brand.ts) · [`packages/compaction/compaction/src/brand.ts:4`](../packages/compaction/compaction/src/brand.ts) · [`packages/core/session/src/types.ts:21`](../packages/core/session/src/types.ts) · [`packages/experimental/agent-team/src/types.ts:53`](../packages/experimental/agent-team/src/types.ts) · [`packages/experimental/agent-team/src/types.ts:65`](../packages/experimental/agent-team/src/types.ts) · [`packages/experimental/agent-team/src/types.ts:77`](../packages/experimental/agent-team/src/types.ts) · [`packages/experimental/webhook/src/brand.ts:12`](../packages/experimental/webhook/src/brand.ts) · [`packages/experimental/webhook/src/brand.ts:6`](../packages/experimental/webhook/src/brand.ts) · [`packages/experimental/webhook/src/brand.ts:9`](../packages/experimental/webhook/src/brand.ts) · [`packages/feedback/message-feedback/src/types.ts:14`](../packages/feedback/message-feedback/src/types.ts) · [`packages/goal/goal/src/types.ts:17`](../packages/goal/goal/src/types.ts) · [`packages/interaction/commands/src/brand.ts:31`](../packages/interaction/commands/src/brand.ts) · [`packages/interaction/user-approval/src/types.ts:17`](../packages/interaction/user-approval/src/types.ts) · [`packages/jobs/jobs/src/brand.ts:19`](../packages/jobs/jobs/src/brand.ts) · [`packages/llm/llm-retry/src/brand.ts:4`](../packages/llm/llm-retry/src/brand.ts) · [`packages/llm/llm/src/brand.ts:16`](../packages/llm/llm/src/brand.ts) · [`packages/llm/llm/src/brand.ts:31`](../packages/llm/llm/src/brand.ts) · [`packages/llm/llm/src/brand.ts:43`](../packages/llm/llm/src/brand.ts) · [`packages/llm/llm/src/brand.ts:67`](../packages/llm/llm/src/brand.ts) · [`packages/schedule/schedule/src/types.ts:14`](../packages/schedule/schedule/src/types.ts) · [`packages/session/session-title/src/index.ts:42`](../packages/session/session-title/src/index.ts) · [`packages/session/session-title/src/types.ts:17`](../packages/session/session-title/src/types.ts) · [`packages/todo/tool-todo/src/types.ts:16`](../packages/todo/tool-todo/src/types.ts) · [`packages/util/brand/src/index.ts:18`](../packages/util/brand/src/index.ts) · [`packages/workflow/workflow/src/types.ts:13`](../packages/workflow/workflow/src/types.ts)
 
 `string`
 
@@ -8245,7 +8262,7 @@ Sources: [`packages/experimental/model-group-runtime/src/types.ts:85`](../packag
 
 SHA-256: `91e368d4444f4a792b13ef0bafb8b2d4c3a4971616c4a64af5b80cd79668676f`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:302`](../packages/experimental/agent-team/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:293`](../packages/experimental/agent-team/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -8273,7 +8290,7 @@ Sources: [`packages/core/session/src/types.ts:338`](../packages/core/session/src
 
 SHA-256: `ea08ec1df0c33108fd03345b9af199cf04dea450aa045d3c683f216311403403`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:306`](../packages/experimental/agent-team/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:297`](../packages/experimental/agent-team/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -8287,7 +8304,7 @@ Sources: [`packages/experimental/agent-team/src/types.ts:306`](../packages/exper
 
 SHA-256: `0bcfaf5566d271028429ac7b562cb59053c9d78b8ae14708c35fac835108d1b1`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:308`](../packages/experimental/agent-team/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:299`](../packages/experimental/agent-team/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -8433,7 +8450,7 @@ Sources: [`packages/experimental/model-group-runtime/src/types.ts:79`](../packag
 
 SHA-256: `1399238be639cf93af334cdcb75f2024883be02a60ca2f5d5ff58f311468cc07`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:298`](../packages/experimental/agent-team/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:289`](../packages/experimental/agent-team/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -8458,7 +8475,7 @@ Sources: [`packages/compaction/compaction-image-offload/src/projection.ts:25`](.
 
 SHA-256: `a40d12070f6f4a124f32fb3cc86e7857554702e32f0eda3080a25c4b9ac9b18c`
 
-Sources: [`packages/experimental/agent-team/src/types.ts:304`](../packages/experimental/agent-team/src/types.ts)
+Sources: [`packages/experimental/agent-team/src/types.ts:295`](../packages/experimental/agent-team/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -8466,17 +8483,18 @@ Sources: [`packages/experimental/agent-team/src/types.ts:304`](../packages/exper
 | `teamId` | required | `string` |
 | `version` | required | `2` |
 
-<a id="persistence-type-sha256-79ddc907312f97cf9553d4841e8b3fc937097bd8d97900a790efad3c05255e99"></a>
+<a id="persistence-type-sha256-1e78a06b1bde0899e5a14e10274a2158a6d6ce3ba73c424ff413d7074c5ab2aa"></a>
 
-### `{ todos }`
+### `{ todos, turn? }`
 
-SHA-256: `79ddc907312f97cf9553d4841e8b3fc937097bd8d97900a790efad3c05255e99`
+SHA-256: `1e78a06b1bde0899e5a14e10274a2158a6d6ce3ba73c424ff413d7074c5ab2aa`
 
-Sources: [`packages/todo/tool-todo/src/types.ts:33`](../packages/todo/tool-todo/src/types.ts)
+Sources: [`packages/todo/tool-todo/src/types.ts:54`](../packages/todo/tool-todo/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
-| `todos` | required | [`TodoItem[]`](#persistence-type-sha256-4b7ddaf3710b88ff9b8df66304f5f97bf03688fd19730eedc2e9535203c820ea) |
+| `todos` | required | [`TodoItem[]`](#persistence-type-sha256-c188be656ce86308571264d5884852f1e21cadfd32d2e604718bdeea07cf4d0b) |
+| `turn` | optional | `number` |
 
 <a id="persistence-type-sha256-f90eb4ab2d3897bc20c521a038e3119d581f791ec974b1a0004f63a8ab9e232d"></a>
 
@@ -9519,17 +9537,17 @@ Sources: [`packages/llm/llm/src/types.ts:472`](../packages/llm/llm/src/types.ts)
 | `text` | required | `string` |
 | `type` | required | `"text-delta"` |
 
-<a id="persistence-type-sha256-b978cff734e62143eb56c9125423ec275405eda969802d42aaf73ecb987d3b26"></a>
+<a id="persistence-type-sha256-2c187606e08fc85ad13f116151386ed787863cca3e66258a3c41e79a868d130e"></a>
 
 <a id="persistence-type-eventtodowrite"></a>
 
 ### `{ type: "todo/write" }`
 
-SHA-256: `b978cff734e62143eb56c9125423ec275405eda969802d42aaf73ecb987d3b26`
+SHA-256: `2c187606e08fc85ad13f116151386ed787863cca3e66258a3c41e79a868d130e`
 
 | Property | Presence | Type |
 |---|---|---|
-| `data` | required | [`{ todos }`](#persistence-type-sha256-79ddc907312f97cf9553d4841e8b3fc937097bd8d97900a790efad3c05255e99) |
+| `data` | required | [`{ todos, turn? }`](#persistence-type-sha256-1e78a06b1bde0899e5a14e10274a2158a6d6ce3ba73c424ff413d7074c5ab2aa) |
 | `ignorable` | optional | `true` |
 | `seq` | required | `number` |
 | `time` | required | `number` |

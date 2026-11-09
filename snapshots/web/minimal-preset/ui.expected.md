@@ -6,6 +6,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Workflow"
+- navigation "Turn navigation":
+  - button "Jump to turn 1"
 - text: "Use the bash tool to run exactly: printf 'MINIMAL_BASH_CARD_OK\\n'. Then reply exactly MINIMAL_PRESET_REQUEST_OK and stop. {{clock}}"
 - button "Copy"
 - status: Completed

@@ -1,5 +1,6 @@
 {
   "meta": {
-    "title": "Git branches"
+    "title": "Ветка Git",
+    "description": "Текущая ветка репозитория в заголовке беседы"
   }
 }

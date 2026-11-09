@@ -9,14 +9,17 @@
   en: d606bcab47f1b3f3
   zh: 31fd19010234cbd4
 /deepseek-ai-dsh-client-ui-workflow-run/summary:
-  en: bbb41a09daa0ed51
-  zh: db65a976a21b1972
+  en: 07142845992aec03
+  zh: 3438707cb957ee7d
 /deepseek-ai-dsh-client-ui-workflow-run/table-of-contents:
   en: d152484eb41ac6b4
   zh: 09388d293f9be9cb
 /deepseek-ai-dsh-client-ui-workflow-run/use-this-package:
   en: 9712b1ed5f00f24f
   zh: c8f72b2ef448d9af
+/deepseek-ai-dsh-client-ui-workflow-run/use-this-package/task-canvas:
+  en: 9a0555157f423206
+  zh: b0cc6e3562444204
 /deepseek-ai-dsh-client-ui-workflow-run/use-this-package/navigating-the-node:
   en: 9f223e9f1e5f84d6
   zh: f9416f079efc7c83
@@ -30,8 +33,8 @@
   en: adf86d983c51865e
   zh: 014a4644d55be111
 /deepseek-ai-dsh-client-ui-workflow-run/understand-the-implementation/composition:
-  en: 364d3c38e5f02149
-  zh: ca5dbee6ac27e141
+  en: 91ae37f55ea6826d
+  zh: 94ae7231b6484c1d
 /deepseek-ai-dsh-client-ui-workflow-run/further-exploration:
   en: e95928b8d16b4043
   zh: 15f74b81c7c7b6df
@@ -42,8 +45,8 @@
   en: ca75c51c89c2c9b0
   zh: de54f3467ef3b9be
 /deepseek-ai-dsh-client-ui-workflow-run/known-limitations-and-deferred-work:
-  en: d89a3727cfdc9db9
-  zh: 42ad9b22bb0c356e
+  en: ef846ce3488650c5
+  zh: 876acfa5ab96fd8c
 /deepseek-ai-dsh-client-ui-workflow-run/known-limitations-and-deferred-work/dev-note:
   en: e67f633dc6fe7773
   zh: 3bb0c20c93f16f98

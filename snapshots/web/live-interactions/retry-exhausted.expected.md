@@ -6,6 +6,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Workflow"
+- navigation "Turn navigation":
+  - button "Jump to turn 1"
 - text: Reply with a one-sentence description of event sourcing, then stop. {{clock}}
 - button "Copy"
 - status: Failed

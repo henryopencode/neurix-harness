@@ -397,24 +397,6 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the active roster row.',
       },
       {
-        signature: 'modelSelection(caller: Agent): TeamModelSelection | null',
-        description: 'Read the candidate models captured by this member\'s Lead.',
-        parameters: [{ name: 'caller', description: 'Exact live Team member.' }],
-        returns: 'Its Lead\'s configured candidate models.',
-      },
-      {
-        signature: 'async stop(caller: Agent, target?: string): Promise<void>',
-        description: 'Stop the Team or one responsibility, retaining the roster and shared tasks.',
-        parameters: [{ name: 'caller', description: 'Exact live Lead.' }, { name: 'target', description: 'Teammate name; omission stops the whole Team.' }],
-        returns: 'After selected executions and pending creation have settled.',
-      },
-      {
-        signature: 'async tell(caller: Agent, targets: readonly string[], content: import(\'@deepseek-ai/dsh-llm\').ContentBlock[], provider: string, signal: AbortSignal): Promise<void>',
-        description: 'Deliver direct human input to responsibilities or configured model aliases.',
-        parameters: [{ name: 'caller', description: 'Live Lead conversation.' }, { name: 'targets', description: 'Member names or candidate model aliases.' }, { name: 'content', description: 'Complete accepted human input.' }, { name: 'provider', description: 'Continuable execution provider for a newly addressed model.' }, { name: 'signal', description: 'Caller-owned admission cancellation.' }],
-        returns: 'After every selected target has accepted its input; partial failures reject visibly.',
-      },
-      {
         signature: 'async sendMessage(caller: Agent, request: SendTeamMessageRequest): Promise<SendTeamMessageResult>',
         description: 'Steer one peer message into the target inbox or reject the attempt.',
         parameters: [{ name: 'caller', description: 'exact live sending Team member.' }, { name: 'request', description: 'target name, content, and cancellation before acceptance.' }],
@@ -8399,7 +8381,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SpawnTeammateRequest',
-    declaration: 'export interface SpawnTeammateRequest {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: ContentBlock[];\n    readonly context: \'fresh\' | \'fork\';\n    readonly provider: string;\n    readonly model?: string;\n    readonly agentOptions?: AgentOptions;\n    readonly coordinationOwner?: string;\n    readonly signal: AbortSignal;\n}',
+    declaration: 'export interface SpawnTeammateRequest {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: ContentBlock[];\n    readonly context: \'fresh\' | \'fork\';\n    readonly provider: string;\n    readonly agentOptions?: AgentOptions;\n    readonly coordinationOwner?: string;\n    readonly signal: AbortSignal;\n}',
   },
   {
     name: 'SpawnTeammateResult',
@@ -8732,14 +8714,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamMemberView',
     declaration: 'export interface TeamMemberView {\n    readonly id: SessionId;\n    readonly name: string;\n    readonly role: \'lead\' | \'teammate\';\n    readonly status: \'running\' | \'inactive\' | \'provisioning\' | \'failed\';\n    readonly description?: string;\n    readonly provider?: string;\n    readonly context?: \'fresh\' | \'fork\';\n    readonly coordinationOwner?: string;\n    readonly model?: string;\n    readonly diagnostics: string[];\n}',
-  },
-  {
-    name: 'TeamModel',
-    declaration: 'export interface TeamModel {\n    readonly name: string;\n    readonly label: string;\n    readonly provider: string;\n    readonly model: string;\n    readonly strengths: string;\n}',
-  },
-  {
-    name: 'TeamModelSelection',
-    declaration: 'export interface TeamModelSelection {\n    readonly leader: string;\n    readonly models: readonly TeamModel[];\n}',
   },
   {
     name: 'TeamTaskAction',

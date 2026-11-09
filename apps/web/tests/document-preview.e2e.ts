@@ -621,7 +621,7 @@ else process.exit(1);
     await input.press('Enter')
     const sessionId = await settled
     await page.getByText('LIGHTHOUSE', { exact: true }).waitFor({ timeout: 15_000 })
-    expect(await page.getByRole('tablist').count()).toBe(0)
+    expect(await page.getByRole('tablist').getByRole('tab').allTextContents()).toEqual(['Chat', 'Workflow'])
     const cwd = scaffold.ctx.agents.get(sessionId)?.session.header.cwd
     if (cwd === undefined) throw new Error('settled Session has no workspace cwd')
     if (outsideRoot === undefined) throw new Error('outside fixture directory is unavailable')

@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-tool-todo` gives the agent a structured task list to plan with: break multi-step work into concrete tasks, mark the task you are working on, and check tasks off as they finish. The list survives across turns and reopened sessions, so the agent and the UI always see the latest plan. One configuration flag decides whether several tasks may be in progress at once, for agents that run work in parallel. Use it wherever an agent should keep a visible task list; each update replaces the whole list, and only the owning agent session can change it.
+`dsh-tool-todo` lets an agent plan multi-step work, show current progress, and record results. Complex plans can include stable task identities, stages, prerequisites, completion criteria, child Sessions, and deliverable files. The current checklist resets when a new turn begins; recorded plans remain available in Session history. Each update replaces the complete list, and only the owning agent Session can write it. One required configuration flag controls whether several tasks may be in progress together.
 
 ## Table of Contents
 
@@ -49,7 +49,7 @@ The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-a
 
 ### What each call does
 
-The agent sends the ENTIRE list on every update; the new list replaces the previous one, so there are no partial updates or per-item edits. Each item is a short task description plus a status of `pending`, `in_progress`, or `completed`. A successful update returns the new counts — `Updated todo list: <pending> pending, <inProgress> in progress, <completed> completed.` — and the UI shows the new plan. Updates fail visibly when a task description is empty or duplicated, when an item carries fields beyond the description and status, or — when parallel work is disabled — when more than one task is marked in progress.
+The agent sends the complete list on every update. Each item requires `content` and a status of `pending`, `in_progress`, or `completed`; optional [planning fields](../../../docs/subsystems/todo.md) describe dependencies, expected results, and deliverables. The agent preserves task ids and relevant metadata when revising the list. Success returns `Updated todo list: <pending> pending, <inProgress> in progress, <completed> completed.` Validation rejects blank text, duplicate content or ids, unknown properties, missing prerequisites, duplicate dependencies, dependency cycles, and multiple active tasks when parallel work is disabled. Rejected updates append no plan.
 
 ### Single owner
 
@@ -90,7 +90,7 @@ The plugin is a function/namespace plugin: it exports `name` / `inject` / `apply
 
 ### Session projection
 
-When the composition mounts `ctx.sessionProjections` ([`@deepseek-ai/dsh-session-projection`](../../session/session-projection/README.md)), this package registers the `todos` unit on an injected child: the projection is the standing plan — the latest whole `todo/write` list, `null` before the first write, cleared when the next turn starts while `turn/end` keeps the finished checklist visible. The key merges into `SessionProjectionMap` here; carriers serve the value on the history tail page and the `session/projection` push frame. Compositions without the registry are unaffected; see [src/index.ts](src/index.ts) for the unit registration.
+The required [`sessionProjections`](../../session/session-projection/README.md) registry serves the latest complete list, `null` before its first write and after the next `turn/start`. A normal `turn/end` retains the checklist. Private projection state also records the owning turn so new writes correlate with one evolving plan; historical writes without that field remain readable. Checkpoint recovery retains the complete planning metadata. See [src/index.ts](src/index.ts) for registration and replay.
 
 ### Call mechanics
 
@@ -121,7 +121,7 @@ Read these pages when the package-level contract is not enough. They move from t
 
 #### What the model sees
 
-The model sees the generated [`todo_write` schema](../../../docs/tool-catalog.md#deepseek-aidsh-tool-todo): an object with one required `todos` array of `{ content, status }` items, where `status` is `pending`, `in_progress`, or `completed`. The `todos` description states that each call replaces the whole list; the tool description's active-status clause follows `allowParallelInProgress`.
+The model sees the generated [`todo_write` schema](../../../docs/tool-catalog.md#deepseek-aidsh-tool-todo), including optional planning metadata. Its description asks for concrete, verifiable steps before work starts, stable ids across revisions, explicit prerequisites, and recorded results and deliverables. The active-status clause follows `allowParallelInProgress`.
 
 #### Token effect
 
@@ -153,7 +153,7 @@ Append-only; newly visible content follows the reusable request prefix and does 
 These limits define when the tool is a poor fit. They are current package constraints, not a task backlog.
 
 - **Single-owner scope only** — the list belongs to the one calling agent session; subagent, shared, and swarm scopes are a deliberate cut, and a non-agent caller is rejected.
-- **The item shape is deliberately minimal** — `content` plus three-state `status`; whole-list replacement needs no stable id, priority, or active-form fields.
+- **Dependencies describe the plan** — validation checks references and cycles; this tool does not schedule work, stop children, or enforce prerequisite completion during execution.
 - **Whole-list replacement is the only operation** — no partial updates, no read-back tool, and no per-item edits; the model must resend the entire list each call.
 
 <a id="dev-note"></a>
