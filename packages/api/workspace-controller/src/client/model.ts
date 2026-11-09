@@ -11,6 +11,7 @@ import type {
   WorkspaceCreateRequest,
   WorkspaceCreateValue,
   WorkspaceDeleteValue,
+  WorkspaceDeleteSessionValue,
   WorkspaceInsertSessionBeforeRequest,
   WorkspaceOrderValue,
   WorkspacePinSessionRequest,
@@ -220,6 +221,18 @@ export class ClientWorkspaceModel implements WorkspaceFollowSink {
     if (result.ok && requestSeq === this.archiveRequestSeq) {
       this.installArchived(result.value.archivedSessionIds)
     }
+    return result
+  }
+
+  /**
+   * Permanently delete an archived Session; pushed archive sets outrank its reply.
+   * @param sessionId - archived root Session identity.
+   * @returns generated Remote result with every deleted identity.
+   */
+  async deleteSession(sessionId: WorkspaceUnarchiveSessionRequest['sessionId']): Promise<RemoteResult<WorkspaceDeleteSessionValue>> {
+    const requestSeq = ++this.archiveRequestSeq
+    const result = await this.remote.deleteSession({ sessionId })
+    if (result.ok && requestSeq === this.archiveRequestSeq) this.installArchived(result.value.archivedSessionIds)
     return result
   }
 

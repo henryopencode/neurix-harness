@@ -420,6 +420,42 @@ abstract stat(id: SessionId, options?: SessionPersistenceStatOptions): Promise<S
  * @returns one snapshot per stored session.
  */
 abstract list(options?: SessionPersistenceListOptions): Promise<readonly SessionPersistenceSnapshot[]>
+
+/**
+ * Permanently remove every stored generation of one Session. An active writer
+ * refuses deletion before any artifact is removed. Missing ids are a no-op;
+ * derived-record cleanup still runs. Callers own lifecycle shutdown and lineage.
+ * Filesystem or cleanup failures can leave deletion partially complete; retry
+ * with the same id to finish. Project files and shared attachments are untouched.
+ * @param id - stored Session to delete.
+ * @returns whether a stored artifact existed.
+ * @throws {SessionAlreadyOwnedError} while a write handle owns the Session.
+ */
+abstract delete(id: SessionId): Promise<boolean>
+```
+
+Types: [SessionId](core.zh.md)
+
+Source: [`packages/session/session-persistence/src/index.ts`](../../packages/session/session-persistence/src/index.ts)
+
+<a id="session-persistence-events"></a>
+
+### `session-persistence/*` events
+
+<a id="session-persistencedeleted--serial"></a>
+
+#### `session-persistence/deleted` — serial
+
+Remove derived records after a Session's durable artifacts are deleted. Retried deletion of an absent Session dispatches again so cleanup can finish.
+
+```ts cordis-catalog
+/**
+ * Remove derived records after a Session's durable artifacts are deleted.
+ * Retried deletion of an absent Session dispatches again so cleanup can finish.
+ * @param id - deleted Session identity.
+ * @mode serial
+ */
+'session-persistence/deleted'(id: SessionId): Promise<void> | void
 ```
 
 Types: [SessionId](core.zh.md)

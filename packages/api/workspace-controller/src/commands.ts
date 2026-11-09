@@ -9,6 +9,8 @@ import {
   WorkspaceMoveInvalidError,
   WorkspaceOrderInvalidError,
   WorkspaceUnknownSessionError,
+  WorkspaceSessionNotArchivedError,
+  WorkspaceSessionDeleteError,
 } from '@deepseek-ai/dsh-workspace'
 import { RemoteError, remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import { workspaceView } from './feed.ts'
@@ -19,6 +21,8 @@ import type {
   WorkspaceCreateValue,
   WorkspaceDeleteRequest,
   WorkspaceDeleteValue,
+  WorkspaceDeleteSessionRequest,
+  WorkspaceDeleteSessionValue,
   WorkspaceInsertBeforeRequest,
   WorkspaceInsertSessionBeforeRequest,
   WorkspaceOrderValue,
@@ -192,6 +196,31 @@ export class WorkspaceCommands {
   async unarchiveSession(request: WorkspaceUnarchiveSessionRequest): Promise<WorkspaceArchiveValue> {
     await this.ctx.workspaceRegistry.unarchiveSession(request.sessionId)
     return { archivedSessionIds: [...this.ctx.workspaceRegistry.archivedSessionIds] }
+  }
+
+  /**
+   * Permanently delete an archived Session and its subagent descendants.
+   * @param request - archived root Session identity.
+   * @returns deleted identities and the complete resulting archive set.
+   */
+  async deleteSession(request: WorkspaceDeleteSessionRequest): Promise<WorkspaceDeleteSessionValue> {
+    try {
+      const deletedSessionIds = await this.ctx.workspaceRegistry.deleteSession(request.sessionId)
+      return { deletedSessionIds, archivedSessionIds: [...this.ctx.workspaceRegistry.archivedSessionIds] }
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceSessionNotArchivedError) {
+        throw new RemoteError('workspace/session-not-archived', error.message, { sessionId: request.sessionId }, { cause: error })
+      }
+      if (error instanceof WorkspaceActiveSessionError) {
+        throw new RemoteError('workspace/session-active', error.message,
+          { sessionId: request.sessionId, activity: error.activity }, { cause: error })
+      }
+      if (error instanceof WorkspaceSessionDeleteError) {
+        throw new RemoteError('workspace/session-delete-failed', error.message,
+          { sessionId: request.sessionId, partial: error.partial }, { cause: error })
+      }
+      throw error
+    }
   }
 
   /**

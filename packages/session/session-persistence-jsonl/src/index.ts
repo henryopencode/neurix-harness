@@ -14,8 +14,8 @@ import {
   sessionFormatCatalog,
 } from '@deepseek-ai/dsh-session-format-catalog'
 import { readdirSync, type Dirent } from 'node:fs'
-import { open, mkdir, readdir, realpath, link, rm, stat, truncate } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
+import { open, mkdir, readdir, realpath, link, rm, stat, truncate, unlink } from 'node:fs/promises'
+import { basename, dirname, join, resolve } from 'node:path'
 import { performance } from 'node:perf_hooks'
 import { scheduler } from 'node:timers/promises'
 import { createHash, randomBytes } from 'node:crypto'
@@ -33,7 +33,7 @@ import {
   type SessionPersistenceRevision as PersistenceRevision,
 } from '@deepseek-ai/dsh-session-persistence'
 import { JsonlBackendTracker, JsonlSessionHandle, type StorageHandleState } from './storage.ts'
-import { SessionWriteLease } from './lease.ts'
+import { LEASE_FILENAME, SessionWriteLease } from './lease.ts'
 import { SESSION_FORMAT_VERSION, SessionId as makeSessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
 import type { SessionEvent, SessionId, SessionHeader, SessionLogOffset as SessionLogOffsetType } from '@deepseek-ai/dsh-session'
 import {
@@ -471,6 +471,40 @@ class JsonlSessionPersistence extends SessionPersistence {
    */
   flush(): Promise<void> {
     return this.tracker.flushAll()
+  }
+
+  async delete(id: SessionId): Promise<boolean> {
+    this.tracker.claimWrite(id)
+    let lease: SessionWriteLease | undefined
+    try {
+      const selected = await this.findLog(id)
+      if (selected !== undefined) {
+        const dir = dirname(selected.sourcePath)
+        lease = await this.acquireLease(id, undefined, dir)
+        // Keep the POSIX lock inode: unlinking it would let a second writer
+        // lock a replacement while this deletion still owns the old inode.
+        this.coldLogMemo.delete(id)
+        const entries = await readdir(dir, { withFileTypes: true })
+        const sourceName = basename(selected.sourcePath)
+        // A failed sidecar cleanup leaves the selected log discoverable for retry.
+        entries.sort((left, right) => Number(left.name === sourceName) - Number(right.name === sourceName))
+        for (const entry of entries) {
+          if (entry.name === LEASE_FILENAME) continue
+          const path = join(dir, entry.name)
+          if (entry.isSymbolicLink()) await unlink(path)
+          else await rm(path, { recursive: entry.isDirectory(), force: true })
+        }
+      }
+      await this.ctx.serial('session-persistence/deleted', id)
+      return selected !== undefined
+    } finally {
+      try {
+        await lease?.release()
+      } finally {
+        this.tracker.releaseClaim(id)
+        this.coldLogMemo.delete(id)
+      }
+    }
   }
 
   /**

@@ -1,13 +1,14 @@
-// Archive and restore through sidebar row menus and the archived filter,
+// Archive, restore, and permanently delete through sidebar row menus and the archived filter,
 // then reload from the Host baseline. This flow makes no model calls.
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import type { Browser, Locator, Page } from 'playwright'
 import { chromium } from 'playwright'
-import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, onTestFailed, onTestFinished, vi } from 'vitest'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import {
   acknowledgeReloadConnectionLoss, launchWebScaffold, seedSession, watchConsole, type WebScaffold,
+  compareOrRefreshGolden, webSnapshotMode,
 } from './scaffold.ts'
 import { newEnglishPage, saveFailureShot } from './support.ts'
 
@@ -15,8 +16,9 @@ import { newEnglishPage, saveFailureShot } from './support.ts'
 // spec needs any one cold Session row, not new recorded content.
 const SEED = fileURLToPath(new URL('../../../snapshots/web/seeded-history/session.v3.jsonl', import.meta.url))
 const SEED_ID = 'session-unarchive-web-e2e'
+const DELETE_GOLDEN = fileURLToPath(new URL('../../../snapshots/web/session-archive-actions/delete-confirm.expected.md', import.meta.url))
 
-describe('web e2e: archived sessions are restored from the sidebar filter', () => {
+describe('web e2e: archived Session restoration and permanent deletion', () => {
   let scaffold: WebScaffold
   let browser: Browser
   let page: Page
@@ -73,7 +75,7 @@ describe('web e2e: archived sessions are restored from the sidebar filter', () =
     await scaffold?.close()
   })
 
-  it('archives the seed, restores it through the sidebar filter, and keeps it restored across reload', async () => {
+  it('restores archived history, confirms permanent deletion, and keeps it absent across reload and search', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-session-unarchive'))
     // Select the only visible Session, then give it a user-owned title: the
     // locator binds to the seed's own copy on both sides of the round trip.
@@ -126,6 +128,54 @@ describe('web e2e: archived sessions are restored from the sidebar filter', () =
     acknowledgeReloadConnectionLoss(tripwire, warningStart)
     await ungroupedSection()
     await expect.poll(() => sessionRow.count(), { timeout: 15_000 }).toBe(1)
+
+    await clickHoverAction(sessionRow, `Session actions for ${title}`)
+    expect(await page.getByRole('menuitem', { name: 'Permanently delete session…' }).count()).toBe(0)
+    await page.getByRole('menuitem', { name: 'Archive session', exact: true }).click()
+    await expect.poll(() => sessionRow.count(), { timeout: 10_000 }).toBe(0)
+    await page.getByRole('button', { name: 'View options' }).click()
+    await page.getByRole('menuitem', { name: 'Archived only', exact: true }).click()
+    await ungroupedSection()
+    await expect.poll(() => sessionRow.count(), { timeout: 10_000 }).toBe(1)
+    const archived = (await scaffold.ctx.sessionPersistence.stat(SessionId(SEED_ID)))!.header
+    const searchQuery = 'single'
+    expect((await scaffold.ctx.sessionQuery.searchSessions({ query: searchQuery })).items.map(item => item.header.id))
+      .toContain(SessionId(SEED_ID))
+
+    await clickHoverAction(sessionRow, `Session actions for ${title}`)
+    await page.getByRole('menuitem', { name: 'Permanently delete session…', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: 'Permanently delete this session?' })
+    await expect.poll(() => dialog.isVisible()).toBe(true)
+    await compareOrRefreshGolden(DELETE_GOLDEN, await dialog.ariaSnapshot(), webSnapshotMode())
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+    expect(await scaffold.ctx.sessionPersistence.stat(SessionId(SEED_ID))).toBeDefined()
+    expect(await sessionRow.count()).toBe(1)
+
+    await clickHoverAction(sessionRow, `Session actions for ${title}`)
+    await page.getByRole('menuitem', { name: 'Permanently delete session…', exact: true }).click()
+    const remove = vi.spyOn(scaffold.ctx.sessionPersistence, 'delete').mockRejectedValueOnce(new Error('storage unavailable'))
+    onTestFinished(() => { remove.mockRestore() })
+    await dialog.getByRole('button', { name: 'Permanently delete', exact: true }).click()
+    await expect.poll(() => page.getByText('Deletion is incomplete. Some records may already be deleted. Retry to finish cleanup.', { exact: true }).isVisible(), { timeout: 15_000 }).toBe(true)
+    expect(await dialog.isVisible()).toBe(true)
+    expect(await sessionRow.count()).toBe(1)
+    expect(await scaffold.ctx.sessionPersistence.stat(SessionId(SEED_ID))).toBeDefined()
+    remove.mockRestore()
+    await dialog.getByRole('button', { name: 'Permanently delete', exact: true }).click()
+    await expect.poll(() => dialog.count(), { timeout: 15_000 }).toBe(0)
+    await expect.poll(() => sessionRow.count(), { timeout: 10_000 }).toBe(0)
+    expect(await scaffold.ctx.sessionPersistence.stat(SessionId(SEED_ID))).toBeUndefined()
+    expect(scaffold.ctx.sessions.get(SessionId(SEED_ID))).toBeUndefined()
+    expect(scaffold.ctx.workspaceRegistry.archivedSessionIds).toEqual([])
+    expect(scaffold.ctx.sessionProjectionCache.cachedSnapshot(archived)).toBeUndefined()
+    expect((await scaffold.ctx.sessionQuery.searchSessions({ query: searchQuery })).items).toEqual([])
+    await expect(scaffold.ctx.sessionQuery.observeSession(SessionId(SEED_ID))).rejects.toMatchObject({ code: 'SESSION_QUERY_SESSION_NOT_FOUND' })
+    const deleteReloadWarningStart = tripwire.warnings.length
+    await page.reload({ waitUntil: 'load' })
+    await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
+    acknowledgeReloadConnectionLoss(tripwire, deleteReloadWarningStart)
+    expect(await sessionRow.count()).toBe(0)
+
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
   }, 120_000)

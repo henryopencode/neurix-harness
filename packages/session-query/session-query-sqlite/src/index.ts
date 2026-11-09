@@ -244,6 +244,16 @@ export class SqliteSessionQueryEngine extends SessionQueryEngine {
     // register `ctx.sessionQuery`; keep that same validated value afterward.
     super(ctx, config = resolveConfig(config))
     this.config = config as ResolvedConfig
+    ctx.on('session-persistence/deleted', id => this._serialized(undefined, () => {
+      if (this._db !== undefined) {
+        this._deleteSession('persisted', id)
+        this._deleteSession('live', id)
+        this._globalGeneration = Math.max(this._globalGeneration, this._mainGeneration(), this._localGeneration) + 1
+        this._localGeneration = this._globalGeneration
+        this._db.prepare('UPDATE search_state SET global_generation = ? WHERE singleton = 1').run(this._globalGeneration)
+      }
+      return Promise.resolve()
+    }))
     this._optionalPersistenceFiber = ctx.inject(['sessionPersistence'], (childCtx: Context) => {
       const service = childCtx.sessionPersistence
       const binding = { identity: Symbol(), service }

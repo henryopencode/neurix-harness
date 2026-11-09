@@ -213,7 +213,11 @@ export class SessionController extends TypertRemoteService {
       ctx.emit('api-session/added', this.listState.summaryFor(session))
     })
     ctx.on('session/disposed', (session) => {
+      if (ctx.workspaceRegistry.isDeletingSession(session.id)) return
       ctx.emit('api-session/removed', session.id)
+    })
+    ctx.on('session-persistence/deleted', (sessionId) => {
+      ctx.emit('api-session/removed', sessionId)
     })
     const publishAgentAvailability = ({ agent }: { agent: Agent }): undefined => {
       if (ctx.sessions.get(agent.id) === agent.session) {

@@ -294,6 +294,9 @@ async function installControllers(
   }
   installSessionReadTestServices(ctx)
   if (ctx.get('remoteAccess') === undefined) new RemoteAccessService(ctx)
+  if (ctx.get('workspaceRegistry') === undefined) {
+    ctx.provide('workspaceRegistry', { isDeletingSession: () => false, archivedSessionIds: [], list: () => [] } as never)
+  }
   const cwd = vi.spyOn(process, 'cwd').mockReturnValue(defaults.cwd)
   class TestController extends SessionController {
     initialize(): Promise<void> {

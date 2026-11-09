@@ -31,6 +31,16 @@ export class WorkspaceArchiveError extends Error {
   }
 }
 
+/** Permanent deletion failed or its result could not be confirmed by the transport. */
+export class WorkspaceDeleteSessionError extends Error {
+  override readonly name = 'WorkspaceDeleteSessionError'
+
+  /** @param rpcError - Host business or folded carrier failure, including partial deletion details. */
+  constructor(readonly rpcError: RemoteFailure) {
+    super(`workspace session deletion failed: ${rpcError.code}: ${rpcError.message}`)
+  }
+}
+
 /** Bare observable source for the Workspace Controller snapshot. */
 export interface WorkspaceSource {
   /** Read the identity-stable current snapshot. */
@@ -90,6 +100,12 @@ export interface IWorkspaces {
    * @param sessionId - Session to unarchive.
    */
   unarchiveSession(sessionId: SessionId): Promise<void>
+  /**
+   * Permanently delete an archived Session and its subagent descendants.
+   * @param sessionId - archived root Session identity.
+   * @returns ids permanently removed by the Host.
+   */
+  deleteSession(sessionId: SessionId): Promise<readonly SessionId[]>
   /**
    * Pin a Session ahead of unpinned Sessions on Workspace grouping surfaces.
    * @param sessionId - Session to pin.
@@ -163,6 +179,12 @@ export class WorkspaceController extends Service implements IWorkspaces {
   async unarchiveSession(sessionId: SessionId): Promise<void> {
     const result = await this.model.unarchiveSession(sessionId)
     if (!result.ok) throw commandError('session unarchive', result.error)
+  }
+
+  async deleteSession(sessionId: SessionId): Promise<readonly SessionId[]> {
+    const result = await this.model.deleteSession(sessionId)
+    if (!result.ok) throw new WorkspaceDeleteSessionError(result.error)
+    return result.value.deletedSessionIds
   }
 
   async pinSession(sessionId: SessionId): Promise<void> {

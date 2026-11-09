@@ -20,7 +20,7 @@ async function harness(): Promise<Harness> {
   await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(AgentRegistry)
   const archived: SessionId[] = []
-  ctx.provide('workspaceRegistry', { get archivedSessionIds() { return archived } } as never)
+  ctx.provide('workspaceRegistry', { isDeletingSession: () => false, get archivedSessionIds() { return archived } } as never)
   await ctx.plugin(ArchivedSessionGate)
   return { ctx, archived }
 }
@@ -113,7 +113,7 @@ describe('Archived-session gate: lifetime', () => {
     await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(AgentRegistry)
     const archived: SessionId[] = []
-    ctx.provide('workspaceRegistry', { get archivedSessionIds() { return archived } } as never)
+    ctx.provide('workspaceRegistry', { isDeletingSession: () => false, get archivedSessionIds() { return archived } } as never)
     const agent = await liveAgent(ctx, ctx.sessions.create(SessionId('watched')))
     archived.push(agent.id)
     const fiber = await ctx.plugin(ArchivedSessionGate)

@@ -35,7 +35,7 @@ async function composed(workspaces: readonly Workspace[] = []): Promise<Context>
   await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(AgentRegistry)
   installSessionReadTestServices(ctx)
-  ctx.provide('workspaceRegistry', { list: () => workspaces, archivedSessionIds: [] } as never)
+  ctx.provide('workspaceRegistry', { isDeletingSession: () => false, list: () => workspaces, archivedSessionIds: [] } as never)
   ctx.agents.setFactory({
     createAgent: async (ownerCtx: Context, options: CreateAgentOptions): Promise<AgentHandle> => {
       const session = ctx.sessions.create(options.sessionId, {
@@ -256,7 +256,7 @@ describe('sessions.fork', () => {
         textResponse('reply'), textResponse('checkpoint'), textResponse('continued'),
       ])
       ctx.llm.registerAdapter(['mock'], adapter)
-      ctx.provide('workspaceRegistry', { list: () => [], archivedSessionIds: [] } as never)
+      ctx.provide('workspaceRegistry', { isDeletingSession: () => false, list: () => [], archivedSessionIds: [] } as never)
       const source = await harness.create(sid('manual-compaction-source'), { provider: 'mock', model: 'mock' })
       const originalPrompt = 'older conversation history '.repeat(60)
       source.followup(message(originalPrompt))
@@ -295,7 +295,7 @@ describe('sessions.fork', () => {
         const harness = await mountAgentLoopTestHarness(ctx)
         const adapter = new MockAdapter(Array.from({ length: 4 }, () => textResponse('reply')))
         ctx.llm.registerAdapter(['mock'], adapter)
-        ctx.provide('workspaceRegistry', { list: () => [], archivedSessionIds: [] } as never)
+        ctx.provide('workspaceRegistry', { isDeletingSession: () => false, list: () => [], archivedSessionIds: [] } as never)
         const source = await harness.create(sid('source'), { provider: 'mock', model: 'mock' })
         source.followup(message('A'))
         await source.whenIdle()
@@ -640,7 +640,7 @@ describe('sessions.fork', () => {
     onTestFinished(() => ctx.fiber.dispose())
     await mountAgentLoopTestDependencies(ctx)
     const harness = await mountAgentLoopTestHarness(ctx)
-    ctx.provide('workspaceRegistry', { list: () => [], archivedSessionIds: [] } as never)
+    ctx.provide('workspaceRegistry', { isDeletingSession: () => false, list: () => [], archivedSessionIds: [] } as never)
     const { session: source } = await harness.create(sid('session-routed'))
     source.append('turn/start', { turn: 1 })
     source.append('request/header', {

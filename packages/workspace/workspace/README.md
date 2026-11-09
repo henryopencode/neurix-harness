@@ -74,6 +74,8 @@ A session joins the project of the directory it runs in: create a session in a p
 
 ### Hiding and restoring sessions, and removing projects
 
+`deleteSession(id)` permanently deletes an archived Session and its subagent descendants, then removes their workspace accounts, pins, and archive markers. Lifecycle owners release their writers first; active work or a foreign writer can refuse deletion. Independent forks and project files remain. A failure retains the root archive marker for retry, even when some records have already been removed.
+
 Hide a session from the grouping when it should stop appearing there: it disappears from the visible list, while its session, history, and place in the project stay intact. A session with running work — its own turn, a running subagent, a background job, or an active reminder — is not hidden underneath that work: the registry refuses with the list of what runs, and a caller that asks to stop the work first has it stopped the way the user's own stop actions do, then hidden. Restore a hidden session when it should appear again: it returns to its recorded position under its project, or to the ungrouped sessions when it belongs to none, and continues the conversation from a regularly ended log. Remove a project when it is no longer needed: it leaves the list, and its folder, files, and session histories are never touched — those sessions become ungrouped. Adding the same directory again afterwards starts a fresh project without the old sessions.
 
 Workspace registration does not establish ownership of its directory. A future destructive filesystem action must be separately named, explicitly confirmed, and enforce ownership and safety checks.
@@ -165,7 +167,7 @@ Independent of live requests: the package never touches a request prefix, so it 
 
 These limits define when the project list is a poor fit or needs special operational care. They are current package constraints, not a task backlog.
 
-- **Removal never deletes data** — removing a project leaves its folder, files, and session histories in place; those sessions become ungrouped, and session deletion or folder removal are separate, absent capabilities.
+- **Removal never deletes data** — removing a project leaves its folder, files, and session histories in place; those sessions become ungrouped, and permanent archived Session deletion is a separate operation, while folder removal is not provided.
 - **Missing paths retain recorded ownership, not verified symlink history** — a removed symlink and an incorrect but missing absolute cwd cannot be distinguished from existing records; both preserve an already-accounted id. No unaccounted session is assigned by this exception, and an account already removed from storage is not reconstructed.
 - **External changes are seen late** — if another process deletes or damages a directory, the project reflects it only at the next refresh or restart.
 - **Archive and unarchive enforce different session checks** — a restore only drops an id from the archive set, so an entry whose session is gone still unarchives and leaves no unknown referent; a restore of an id that is not archived resolves without writing, while `archiveSession` rejects a session that is neither live nor persisted.

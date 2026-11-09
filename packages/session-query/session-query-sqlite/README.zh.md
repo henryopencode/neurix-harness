@@ -25,6 +25,8 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
+永久删除会话在完成前移除其持久与实时搜索文档，并使已有分页游标失效。后续搜索按剩余会话集合重新对账。
+
 当组合需要对会话历史进行排序后的全文搜索时——例如 Web 内容搜索或 `/resume` 既往工作检索——挂载本包。常用路径是显式的：挂载插件、给它一个专用数据库路径，然后从代码调用 `ctx.sessionQuery.searchSessions` 或 `searchEvents`。
 
 ### 何时选择

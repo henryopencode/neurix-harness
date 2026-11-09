@@ -61,7 +61,7 @@ async function baseContext(): Promise<Context> {
 describe('Session creation failures', () => {
   it('creates in the default cwd without a named identity when no explicit target is supplied', async () => {
     const ctx = await baseContext()
-    ctx.provide('workspaceRegistry', { get: () => undefined, list: () => [], archivedSessionIds: [] } as never)
+    ctx.provide('workspaceRegistry', { isDeletingSession: () => false, get: () => undefined, list: () => [], archivedSessionIds: [] } as never)
     const createSession = vi.fn(publishedSession(ctx, SessionId('session-minted')))
     const controller = new SessionCommandController(ctx, controllerAgents(ctx, { createSession }), '/default-workspace')
 
@@ -77,7 +77,7 @@ describe('Session creation failures', () => {
 
   it('maps missing Workspaces and attachment failures', async () => {
     const missing = await baseContext()
-    missing.provide('workspaceRegistry', { get: () => undefined, list: () => [] } as never)
+    missing.provide('workspaceRegistry', { isDeletingSession: () => false, get: () => undefined, list: () => [] } as never)
     const missingController = new SessionCommandController(
       missing,
       controllerAgents(missing),
@@ -94,7 +94,7 @@ describe('Session creation failures', () => {
       path: '/workspace',
       attachSession: () => Promise.reject(new Error('read-only workspace')),
     } as unknown as Workspace
-    failed.provide('workspaceRegistry', {
+    failed.provide('workspaceRegistry', { isDeletingSession: () => false,
       get: () => workspace,
       list: () => [workspace],
     } as never)
@@ -133,7 +133,7 @@ describe('Session creation failures', () => {
     },
   ])('maps $code creation failures', async ({ error, code }) => {
     const ctx = await baseContext()
-    ctx.provide('workspaceRegistry', { get: () => undefined, list: () => [] } as never)
+    ctx.provide('workspaceRegistry', { isDeletingSession: () => false, get: () => undefined, list: () => [] } as never)
     const controller = new SessionCommandController(
       ctx,
       controllerAgents(ctx, { createSession: () => Promise.reject(error) }),
@@ -186,7 +186,7 @@ function resolvedHandle(ctx: Context, sessionId: SessionId): AgentHandle {
 describe('Session fork failures', () => {
   it('maps missing cold sources with and without persistence', async () => {
     const withoutPersistence = await baseContext()
-    withoutPersistence.provide('workspaceRegistry', { list: () => [] } as never)
+    withoutPersistence.provide('workspaceRegistry', { isDeletingSession: () => false, list: () => [] } as never)
     const unavailableController = new SessionCommandController(
       withoutPersistence, controllerAgents(withoutPersistence), '/default',
     )
@@ -196,7 +196,7 @@ describe('Session fork failures', () => {
     await withoutPersistence.fiber.dispose()
 
     const missing = await baseContext()
-    missing.provide('workspaceRegistry', { list: () => [] } as never)
+    missing.provide('workspaceRegistry', { isDeletingSession: () => false, list: () => [] } as never)
     missing.provide('sessionPersistence', testSessionPersistence(missing, {
       list: () => Promise.resolve([]),
       inspect: vi.fn(),
@@ -210,7 +210,7 @@ describe('Session fork failures', () => {
 
   it('maps an observation failure to an internal fork error', async () => {
     const ctx = await baseContext()
-    ctx.provide('workspaceRegistry', { list: () => [] } as never)
+    ctx.provide('workspaceRegistry', { isDeletingSession: () => false, list: () => [] } as never)
     vi.spyOn(ctx.sessionQuery, 'observeSession').mockRejectedValue(new Error('storage offline'))
     const controller = new SessionCommandController(ctx, controllerAgents(ctx), '/default')
 
@@ -220,7 +220,7 @@ describe('Session fork failures', () => {
 
   it('rejects a Session with no completed turn', async () => {
     const ctx = await baseContext()
-    ctx.provide('workspaceRegistry', { list: () => [] } as never)
+    ctx.provide('workspaceRegistry', { isDeletingSession: () => false, list: () => [] } as never)
     const source = ctx.sessions.create(SessionId('empty-source'))
     const controller = new SessionCommandController(ctx, controllerAgents(ctx), '/default')
 
@@ -234,7 +234,7 @@ describe('Session fork failures', () => {
 
   it('maps lineage lookup and Agent creation failures', async () => {
     const lineage = await baseContext()
-    lineage.provide('workspaceRegistry', { list: () => [] } as never)
+    lineage.provide('workspaceRegistry', { isDeletingSession: () => false, list: () => [] } as never)
     vi.spyOn(lineage.sessionQuery, 'traceSession')
       .mockRejectedValue(new Error('lineage unavailable'))
     const child = completedSession(lineage, 'subagent-source', '/workspace', {
@@ -246,7 +246,7 @@ describe('Session fork failures', () => {
     await lineage.fiber.dispose()
 
     const creation = await baseContext()
-    creation.provide('workspaceRegistry', { list: () => [] } as never)
+    creation.provide('workspaceRegistry', { isDeletingSession: () => false, list: () => [] } as never)
     const source = completedSession(creation, 'creation-source', '/workspace')
     vi.spyOn(creation.agents, 'create').mockRejectedValue(new Error('factory failed'))
     const creationController = new SessionCommandController(creation, controllerAgents(creation), '/default')
@@ -262,7 +262,7 @@ describe('Session fork failures', () => {
       sessionIds: [source.id],
       attachSession: () => Promise.reject(new Error('workspace write failed')),
     } as unknown as Workspace
-    ctx.provide('workspaceRegistry', { list: () => [workspace] } as never)
+    ctx.provide('workspaceRegistry', { isDeletingSession: () => false, list: () => [workspace] } as never)
     const create = vi.spyOn(ctx.agents, 'create').mockImplementation(
       (options: CreateAgentOptions) => Promise.resolve(resolvedHandle(ctx, options.sessionId)),
     )
@@ -278,7 +278,7 @@ describe('Session fork failures', () => {
 
   it('carries the composed Agent preset into the child metadata', async () => {
     const ctx = await baseContext()
-    ctx.provide('workspaceRegistry', { list: () => [] } as never)
+    ctx.provide('workspaceRegistry', { isDeletingSession: () => false, list: () => [] } as never)
     const source = completedSession(ctx, 'preset-source', '/workspace')
     const create = vi.spyOn(ctx.agents, 'create').mockImplementation(
       (options: CreateAgentOptions) => Promise.resolve(resolvedHandle(ctx, options.sessionId)),

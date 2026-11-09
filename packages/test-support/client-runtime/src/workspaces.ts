@@ -114,6 +114,17 @@ export class TestWorkspaces implements IWorkspaces {
   }
 
   /**
+   * Delete an archived Session (recorded; the default echoes its identity).
+   * @param sessionId - archived root to delete.
+   * @returns the stubbed or echoed deleted identities.
+   */
+  async deleteSession(sessionId: SessionId): Promise<readonly SessionId[]> {
+    this.calls.push({ method: 'deleteSession', args: [sessionId] })
+    const stub = this.stubs.get('deleteSession')
+    return stub === undefined ? [sessionId] : await (stub(sessionId) as Promise<readonly SessionId[]>)
+  }
+
+  /**
    * Move a Workspace in display order (recorded; default no-op).
    * @param workspaceId - Workspace to move.
    * @param beforeWorkspaceId - Anchor; omitted appends.

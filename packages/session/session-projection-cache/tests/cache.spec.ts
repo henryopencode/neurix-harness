@@ -842,3 +842,20 @@ describe('SessionProjectionCache summary reads', () => {
     expect(cache.cachedSnapshot(headerOf(SessionId('summary-absent')), summaryKeys)).toBeUndefined()
   })
 })
+
+describe('permanent deletion cache cleanup', () => {
+  it('removes the durable record and suppresses late live and cold checkpoint writes', async () => {
+    const { ctx, root, cache } = await harness()
+    const session = ctx.sessions.create(SessionId('permanently-deleted-cache'))
+    mark(session, ['private history'])
+    await cache.write(session)
+    expect(cache.cachedSnapshot(session.header)).toBeDefined()
+    await ctx.serial('session-persistence/deleted', session.id)
+    expect(cache.cachedSnapshot(session.header)).toBeUndefined()
+    await expect(readFile(recordPath(root, session.id))).rejects.toMatchObject({ code: 'ENOENT' })
+    await cache.write(session)
+    cache.coldSnapshot(session.header, session.inheritedEventCount, session.snapshotEvents())
+    expect(cache.cachedSnapshot(session.header)).toBeUndefined()
+    await expect(readFile(recordPath(root, session.id))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+})
