@@ -12,6 +12,8 @@ export interface WorkflowTask {
   /** Graph-local display key derived from a todo id, legacy label, or member sequence. */
   readonly id: string
   readonly content: string
+  /** Locale-owned label for the automatically recorded turn activity. */
+  readonly titleKey?: 'task.request'
   readonly status: WorkflowTaskStatus
   readonly phase?: string
   readonly description?: string
@@ -33,7 +35,7 @@ export interface WorkflowGraph {
   readonly seq: number
   readonly turn?: number
   readonly name?: string
-  readonly source: 'plan' | 'run'
+  readonly source: 'plan' | 'run' | 'turn'
   readonly tasks: readonly WorkflowTask[]
 }
 

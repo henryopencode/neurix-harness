@@ -4,8 +4,8 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
-    - tab "Workflow"
     - tab "Trajectory"
+    - tab "Workflow"
 - navigation "Turn navigation":
   - button "Jump to turn 1"
 - text: "Assemble the link gallery: write the report and styles, inspect the sources, and summarize. {{clock}}"

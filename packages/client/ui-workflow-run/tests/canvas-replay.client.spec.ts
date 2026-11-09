@@ -9,14 +9,15 @@ import { createPlanDefinition } from '../src/client/plan-definition.ts'
 import { EMPTY_WORKFLOW, resolveWorkflowTasks, workflowCanvasView } from '../src/client/canvas-snapshot.ts'
 import { workflowCanvasRunDefinition } from '../src/client/workflow-definition.ts'
 import { layoutWorkflow } from '../src/client/canvas-layout.ts'
+import { turnActivityDefinition } from '../src/client/turn-activity.ts'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 
 function at(seq: number, type: string, data: unknown): SessionLiveEventEntry {
   return { type: 'event', event: { seq, time: seq * 100, type, data } as SessionEvent }
 }
 
-function assembler(entries: readonly SessionLiveEventEntry[], hasMore = false): ConversationNodeAssembler {
-  const definitions = [createPlanDefinition('workflow'), workflowCanvasRunDefinition]
+function assembler(entries: readonly SessionLiveEventEntry[], hasMore = false, withActivity = false): ConversationNodeAssembler {
+  const definitions = [createPlanDefinition('workflow'), workflowCanvasRunDefinition, ...withActivity ? [turnActivityDefinition] : []]
   const value = new ConversationNodeAssembler({
     entries: (): readonly ConversationNodeDefinition[] => definitions,
     fallbackEntry: () => undefined,
@@ -49,6 +50,46 @@ const events = [
 ]
 
 describe('workflow canvas replay', () => {
+  it('updates every new turn and its tools while preserving detailed plans and identical paged recovery', () => {
+    const entries = [
+      ...events,
+      at(9, 'turn/end', { turn: 1, reason: { kind: 'completed' } }),
+      at(10, 'turn/start', { turn: 2 }),
+      at(11, 'step/start', { turn: 2, step: 1 }),
+      at(12, 'tool/call', { turn: 2, step: 1, callId: 'inspect', name: 'read_file', arguments: '{}' }),
+      at(13, 'tool/result', { turn: 2, step: 1, message: { source: { kind: 'tool', callId: 'inspect' }, isError: false } }),
+      at(14, 'turn/end', { turn: 2, reason: { kind: 'completed' } }),
+    ]
+    const live = assembler(entries.slice(0, 9), false, true)
+    expect(snapshot(live).graphs.find(graph => graph.turn === 1)?.source).toBe('plan')
+    live.append(entries[9]!)
+    expect(snapshot(live).graphs.at(-1)).toMatchObject({ turn: 2, source: 'turn', tasks: [{ status: 'running' }] })
+    for (const entry of entries.slice(10)) live.append(entry)
+    const full = snapshot(assembler(entries, false, true))
+    expect(snapshot(live)).toEqual(full)
+    const paged = assembler(entries.slice(10), true, true)
+    paged.prepend(entries.slice(0, 10), false)
+    expect(snapshot(paged)).toEqual(full)
+    const graph = full.graphs.at(-1)!
+    expect(graph.tasks.map(task => task.status)).toEqual(['completed', 'completed'])
+    expect(graph.tasks[1]?.content).toBe('read_file')
+    expect(resolveWorkflowTasks(graph, full.executions)).toBe(graph.tasks)
+  })
+
+  it.each([
+    ['completed', 'completed'], ['error', 'failed'], ['aborted', 'cancelled'], ['blocked', 'blocked'],
+    ['interrupted', 'interrupted'], ['forked', 'interrupted'], ['max-tokens', 'interrupted'],
+  ])('records %s turn endings without calling unfinished tools completed', (kind, status) => {
+    const value = snapshot(assembler([
+      at(1, 'turn/start', { turn: 1 }),
+      at(2, 'tool/call', { turn: 1, step: 1, callId: 'failed', name: 'failed', arguments: '{}' }),
+      at(3, 'tool/call', { turn: 1, step: 1, callId: 'unfinished', name: 'unfinished', arguments: '{}' }),
+      at(4, 'tool/result', { turn: 1, step: 1, message: { source: { kind: 'tool', callId: 'failed' }, isError: true } }),
+      at(5, 'turn/end', { turn: 1, reason: { kind } }),
+    ], false, true))
+    expect(value.graphs[0]?.tasks.map(task => task.status)).toEqual([status, 'failed', 'interrupted'])
+  })
+
   it('recovers identical planned steps and real execution failures from replace, prepend, and append', () => {
     const complete = snapshot(assembler(events))
     const paged = assembler(events.slice(3), true)
@@ -107,6 +148,68 @@ describe('workflow canvas replay', () => {
       { id: '["phase:Prepare","task:c"]', source: 'phase:Prepare', target: 'task:c' },
     ])
     expect(layoutWorkflow([{ id: 'a', phase: 'One', dependsOn: [] }, { id: 'b', phase: 'Two', dependsOn: [] }], []).edges).toEqual([])
+  })
+
+  it('keeps independent starts, forked branches, joins and separate outputs in a sixteen-node graph', () => {
+    const roots = ['source-a', 'source-b', 'independent'].map(id => ({ id, dependsOn: [] }))
+    const branches = Array.from({ length: 6 }, (_, index) => ({
+      id: `branch-${index}`, phase: 'Research', dependsOn: [index % 2 === 0 ? 'source-a' : 'source-b'],
+    }))
+    const tasks = [...roots, ...branches,
+      { id: 'merge-a', dependsOn: ['branch-0', 'branch-1', 'branch-2'] },
+      { id: 'merge-b', dependsOn: ['branch-3', 'branch-4', 'branch-5'] },
+      { id: 'report', dependsOn: ['merge-a', 'merge-b'] },
+      { id: 'image', dependsOn: ['merge-a'] }, { id: 'sheet', dependsOn: ['merge-b'] },
+      { id: 'verify', dependsOn: ['report'] },
+      { id: 'deliver', dependsOn: ['verify'] },
+    ]
+    const expanded = layoutWorkflow(tasks, [])
+    expect(expanded.nodes).toHaveLength(16)
+    expect(expanded.edges).toHaveLength(18)
+    expect(expanded.nodes.every(node => Number.isFinite(node.position.x) && Number.isFinite(node.position.y))).toBe(true)
+    const targets = new Set(expanded.edges.map(edge => edge.target))
+    const sources = new Set(expanded.edges.map(edge => edge.source))
+    expect(expanded.nodes.filter(node => !targets.has(node.id)).map(node => node.id).sort()).toEqual([
+      'task:independent', 'task:source-a', 'task:source-b',
+    ])
+    expect(expanded.nodes.filter(node => !sources.has(node.id)).map(node => node.id).sort()).toEqual([
+      'task:deliver', 'task:image', 'task:independent', 'task:sheet',
+    ])
+    const folded = layoutWorkflow(tasks, ['Research'])
+    expect(folded.nodes).toHaveLength(11)
+    expect(folded.edges.filter(edge => edge.source === 'phase:Research')).toHaveLength(2)
+  })
+
+  it('splits a folded phase across dependency layers instead of inventing a cycle', () => {
+    const result = layoutWorkflow([
+      { id: 'a', phase: 'Work', dependsOn: [] },
+      { id: 'b', phase: 'Review', dependsOn: ['a'] },
+      { id: 'c', phase: 'Work', dependsOn: ['b'] },
+      { id: 'd', phase: 'Work', dependsOn: ['b'] },
+    ], ['Work'])
+    expect(result.nodes.map(node => node.taskIds)).toEqual([['a'], ['b'], ['c', 'd']])
+    expect(result.edges.map(edge => [edge.source, edge.target])).toEqual([
+      ['phase:["Work",0]', 'task:b'], ['task:b', 'phase:["Work",2]'],
+    ])
+  })
+
+  it('retains legacy cycles and omits edges to steps absent from a partial historical plan', () => {
+    expect(layoutWorkflow([{ id: 'partial', dependsOn: ['not-loaded'] }], []).edges).toEqual([])
+    const cycle = layoutWorkflow([
+      { id: 'a', dependsOn: ['b'] }, { id: 'b', dependsOn: ['a'] },
+    ], [])
+    expect(cycle.nodes).toHaveLength(2)
+    expect(cycle.edges).toHaveLength(2)
+  })
+
+  it('keeps unresolved turn updates unpublished and requires a turn start to initialize them', () => {
+    const empty = { key: 'pending', kind: 'workflow-turn', id: '1', matches: [], start: undefined,
+      state: undefined, current: new Map() }
+    expect(turnActivityDefinition.buildViewNode?.(empty)).toBeNull()
+    const event = at(1, 'todo/write', { todos: [] })
+    if (event.type !== 'event') throw new Error('expected a durable event')
+    expect(() => turnActivityDefinition.start(empty, { role: 'start', event: event.event, location: { kind: 'session' } },
+      { previous: () => undefined })).toThrow('workflow turn requires turn/start')
   })
 
   it('repairs an unresolved legacy Turn without retaining an orphan graph', () => {

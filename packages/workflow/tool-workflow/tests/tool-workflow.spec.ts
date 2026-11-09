@@ -406,6 +406,7 @@ describe('dsh-tool-workflow', () => {
     const sections = (await ctx.systemPrompt.assemble()).sections
     const section = sections.find(s => s.name === 'tool:orchestrate')
     expect(section?.text).toContain('orchestrate')
+    expect(section?.text).toContain('record every branch and merge point as a separate step')
     expect(sections.some(s => s.name === 'tool:workflow')).toBe(false)
     ctx.systemPrompt.section({ name: 'tool:cordis-order-probe', order: 115.5, text: 'Cordis' })
     expect((await ctx.systemPrompt.assemble()).sections
