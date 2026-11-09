@@ -20,7 +20,7 @@ const BUILD_COMMAND_TEXT = BUILD_COMMANDS.map(args => `pnpm ${args.join(' ')}`).
 export interface FlockEntryLoaderSteps {
   /** Import `@deepseek-ai/node-addon-system/flock`; rejects with `ERR_MODULE_NOT_FOUND` while its `lib/` is unbuilt. */
   readonly importEntry: () => Promise<FlockEntry>
-  /** Whether every binary the host platform package declares in `prebuilds.json` exists. */
+  /** Whether the flock binary for the running platform and libc exists. */
   readonly hostAddonBuilt: () => boolean
   /** Compile the host addon and emit the entry's JavaScript; rejects when a build fails. */
   readonly build: () => Promise<void>
@@ -67,8 +67,14 @@ function hostAddonBuilt(): boolean {
     if ((error as NodeJS.ErrnoException).code !== 'MODULE_NOT_FOUND') throw error
     return false
   }
-  const manifest = JSON.parse(readFileSync(prebuilds, 'utf8')) as { readonly binaries: readonly { readonly path: string }[] }
-  return manifest.binaries.every(binary => existsSync(join(dirname(prebuilds), binary.path)))
+  const manifest = JSON.parse(readFileSync(prebuilds, 'utf8')) as {
+    readonly binaries: readonly { readonly tool: string; readonly path: string; readonly libc?: string }[]
+  }
+  const libc = platform === 'linux'
+    ? ((process.report.getReport() as { header: { glibcVersionRuntime?: string } }).header.glibcVersionRuntime ? 'glibc' : 'musl')
+    : undefined
+  const binary = manifest.binaries.find(binary => binary.tool === 'flock' && binary.libc === libc)
+  return binary !== undefined && existsSync(join(dirname(prebuilds), binary.path))
 }
 
 async function buildNativeSystem(): Promise<void> {

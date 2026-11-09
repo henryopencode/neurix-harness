@@ -7,6 +7,7 @@
     <title></title>
     <link rel="stylesheet" href="design-platform.css">
     <link rel="stylesheet" href="update-dialog.css">
+    <link rel="stylesheet" href="update-installation.css">
   </head>
   <body class="update-dialog">
     <script src="shell-theme.js"></script>
@@ -19,6 +20,24 @@
       </details>
       <div id="actions"></div>
     </main>
+    <section id="installation" class="installation" role="dialog" aria-modal="true" aria-labelledby="installation-title" aria-describedby="installation-detail" tabindex="-1" inert>
+      <div class="installation-grid" aria-hidden="true"></div>
+      <div class="installation-glow" aria-hidden="true"></div>
+      <div class="installation-content">
+        <div class="installation-scene" aria-hidden="true">
+          <div class="installation-orbit orbit-outer"><i></i></div>
+          <div class="installation-orbit orbit-inner"><i></i></div>
+          <div class="installation-core"><span class="installation-brand"></span></div>
+          <div class="installation-sparks"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="installation-copy" role="status" aria-live="polite">
+          <p id="installation-version" class="installation-version"></p>
+          <h1 id="installation-title"></h1>
+          <p id="installation-detail"></p>
+          <div class="installation-activity" aria-hidden="true"><span></span></div>
+        </div>
+      </div>
+    </section>
     <script src="update-dialog.js"></script>
   </body>
 </html>
