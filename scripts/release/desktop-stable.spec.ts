@@ -125,8 +125,10 @@ it('produces public metadata that all four desktop targets can discover and down
   }
   const publication = workflow.jobs.publish.steps.find(step => step.name === 'Publish complete platform set')?.run ?? ''
   const generate = /node --input-type=module <<'NODE'\n([\s\S]+?)\nNODE/u.exec(publication)?.[1]
+  const qualify = [...publication.matchAll(/node --input-type=module <<'NODE'\n([\s\S]+?)\nNODE/gu)][1]?.[1]
   expect(generate).toBeDefined()
   if (generate === undefined) throw new Error('The stable release must produce its public update metadata')
+  if (qualify === undefined) throw new Error('The stable release must bind alternate routes before publication')
   const directory = mkdtempSync(join(tmpdir(), 'neurix-published-feed-'))
   const payload = Buffer.from('installer bytes qualified by the release workflow')
   const targets = [['darwin', 'arm64', 'mac-arm64-unsigned.dmg'], ['darwin', 'x64', 'mac-x64-unsigned.dmg'],
@@ -139,11 +141,26 @@ it('produces public metadata that all four desktop targets can discover and down
     const hash = createHash('sha256').update(payload).digest('hex')
     writeFileSync(join(assets, 'SHA256SUMS.txt'), files.map(file => `${hash}  ${file}\n`).join(''))
     execFileSync(process.execPath, ['--input-type=module', '-e', generate], { cwd: assets, env: { RELEASE_TAG: 'v1.0.1' }, timeout: 10_000 })
+    const metadata = JSON.parse(readFileSync(join(assets, 'desktop-update.json'), 'utf8')) as {
+      assets: { name: string; size: number; sha256?: string }[]
+    }
+    const uploaded = metadata.assets.map((asset, index) => ({ ...asset, id: index + 100,
+      digest: 'sha256:' + createHash('sha256').update(readFileSync(join(assets, asset.name))).digest('hex'),
+    }))
+    for (const file of files) expect(metadata.assets.find(asset => asset.name === file)?.sha256).toBe(hash)
+    writeFileSync(join(directory, 'release-assets.json'), JSON.stringify(uploaded))
+    execFileSync(process.execPath, ['--input-type=module', '-e', qualify], { cwd: assets, timeout: 10_000 })
     for (const [platform, arch, suffix] of targets) {
       const updates = new GithubReleaseDownloads('henryopencode/neurix-harness', '1.0.0', state => state, {
         directory: join(directory, `${platform}-${arch}`), platform, arch, installMode: 'restart',
         metadataTimeoutMs: 10_000, idleTimeoutMs: 10_000, beforeRestart: async () => true, install: async () => {},
-        request: async url => new Response(new Uint8Array(readFileSync(join(assets, basename(new URL(url).pathname))))),
+        request: async (url) => {
+          if (url.endsWith('/desktop-update.json')) return new Response(new Uint8Array(readFileSync(join(assets, 'desktop-update.json'))))
+          if (url.startsWith('https://github.com/')) return new Response(null, { status: 504 })
+          const asset = uploaded.find(asset => String(asset.id) === basename(new URL(url).pathname))
+          if (asset === undefined) throw new Error('Update attempted an unexpected asset discovery request')
+          return new Response(new Uint8Array(readFileSync(join(assets, asset.name))))
+        },
       })
       try {
         expect(await updates.check()).toMatchObject({ phase: 'available', version: '1.0.1' })
@@ -151,5 +168,10 @@ it('produces public metadata that all four desktop targets can discover and down
         expect(readFileSync(join(directory, `${platform}-${arch}`, `neurix-harness-1.0.1-${suffix}`))).toEqual(payload)
       } finally { updates.dispose() }
     }
+    uploaded[0]!.size++
+    writeFileSync(join(directory, 'release-assets.json'), JSON.stringify(uploaded))
+    expect(() => execFileSync(process.execPath, ['--input-type=module', '-e', qualify], {
+      cwd: assets, timeout: 10_000, stdio: 'pipe',
+    })).toThrow('Uploaded release asset does not match qualified metadata')
   } finally { rmSync(directory, { recursive: true, force: true }) }
 })

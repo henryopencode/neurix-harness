@@ -206,7 +206,14 @@ jobs:
           sha256sum -- *.exe *.dmg *.AppImage *.tar.gz > SHA256SUMS.txt
           node --input-type=module <<'NODE'
           import fs from 'node:fs'
-          const assets = fs.readdirSync('.').map(name => ({ name, size: fs.statSync(name).size }))
+          const checksums = new Map(fs.readFileSync('SHA256SUMS.txt', 'utf8').trim().split('\n').map(line => {
+            const match = /^([a-f0-9]{64})  (.+)$/.exec(line)
+            if (!match) throw new Error('Invalid release checksum entry')
+            return [match[2], match[1]]
+          }))
+          const assets = fs.readdirSync('.').map(name => ({ name, size: fs.statSync(name).size,
+            ...(checksums.has(name) ? { sha256: checksums.get(name) } : {}),
+          }))
           fs.writeFileSync('desktop-update.json', JSON.stringify({
             tag_name: process.env.RELEASE_TAG, draft: false, prerelease: false, assets,
           }) + '\n')
@@ -231,4 +238,21 @@ jobs:
           release_id=$(gh api --paginate "repos/$GH_REPO/releases?per_page=100" \
             --jq ".[] | select(.tag_name == \"$RELEASE_TAG\") | .id")
           [[ "$release_id" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/$GH_REPO/releases/$release_id/assets?per_page=100" > ../release-assets.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+          const uploaded = JSON.parse(fs.readFileSync('../release-assets.json', 'utf8'))
+          const metadata = JSON.parse(fs.readFileSync('desktop-update.json', 'utf8'))
+          for (const asset of metadata.assets) {
+            const matches = uploaded.filter(item => item.name === asset.name)
+            const releaseAsset = matches[0]
+            if (matches.length !== 1 || !releaseAsset || !Number.isSafeInteger(releaseAsset.id) || releaseAsset.id <= 0
+              || releaseAsset.size !== asset.size || (asset.sha256 && releaseAsset.digest !== 'sha256:' + asset.sha256)) {
+              throw new Error('Uploaded release asset does not match qualified metadata: ' + asset.name)
+            }
+            asset.id = releaseAsset.id
+          }
+          fs.writeFileSync('desktop-update.json', JSON.stringify(metadata) + '\n')
+          NODE
+          gh release upload "$RELEASE_TAG" --clobber -- desktop-update.json
           gh api --method PATCH "repos/$GH_REPO/releases/$release_id" --silent -F draft=false -f make_latest=legacy
