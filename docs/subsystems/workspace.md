@@ -377,6 +377,13 @@ Host service backing the generated `ctx.remote.workspace` namespace.
 @Remote('unarchiveSession') unarchiveSession(request: WorkspaceUnarchiveSessionRequest): Promise<WorkspaceArchiveValue>
 
 /**
+ * Permanently delete an archived Session and its subagent descendants.
+ * @param request - archived root Session identity.
+ * @returns deleted identities and the resulting archive set.
+ */
+@Remote('deleteSession') deleteSession(request: WorkspaceDeleteSessionRequest): Promise<WorkspaceDeleteSessionValue>
+
+/**
  * Surface one known unarchived Session ahead of unpinned Sessions.
  * @param request - Session identity to pin.
  * @returns the complete resulting pin set, most recently pinned first.
@@ -596,6 +603,25 @@ archiveSession(sessionId: SessionId, options: ArchiveSessionOptions = {}): Promi
 unarchiveSession(sessionId: SessionId): Promise<void>
 
 /**
+ * Whether lifecycle acquisition must refuse an id while permanent deletion runs.
+ * @param sessionId - Session whose lifecycle would be acquired.
+ * @returns whether deletion owns this id until its cleanup settles.
+ */
+isDeletingSession(sessionId: SessionId): boolean
+
+/**
+ * Permanently delete an archived Session and its subagent descendants, deepest
+ * first. Independent forks and project files remain. Lifecycle owners release
+ * their writers before storage deletion; an unowned writer refuses deletion.
+ * Archive metadata remains on failure so the operation can be retried, including
+ * after some descendants or the root have already been deleted.
+ * @param sessionId - archived root Session.
+ * @returns every deleted Session id, descendants before their root.
+ * @throws {WorkspaceSessionNotArchivedError} for a Session that is not archived.
+ */
+deleteSession(sessionId: SessionId): Promise<readonly SessionId[]>
+
+/**
  * Pin one session durably, prepending it to the registry-global pin set.
  * The session must exist (live or in session persistence) and must not be
  * archived. An already pinned id resolves without writing or reordering.
@@ -651,6 +677,26 @@ Ask the composed providers what still runs for a session before it is archived. 
  */
 'workspace/session-activity'( request: SessionActivityRequest, next: () => Promise<readonly SessionActivity[]>, ): Promise<readonly SessionActivity[]>
 ```
+
+Source: [`packages/workspace/workspace/src/index.ts`](../../packages/workspace/workspace/src/index.ts)
+
+<a id="workspacesession-before-delete--serial"></a>
+
+#### `workspace/session-before-delete` — serial
+
+Release owned Session lifecycles and await their writers before deletion. The registry blocks restoration until the deletion operation settles.
+
+```ts cordis-catalog
+/**
+ * Release owned Session lifecycles and await their writers before deletion.
+ * The registry blocks restoration until the deletion operation settles.
+ * @param sessionIds - archived roots whose descendant lifecycles must also drain.
+ * @mode serial
+ */
+'workspace/session-before-delete'(sessionIds: readonly SessionId[]): Promise<void> | void
+```
+
+Types: [SessionId](core.md)
 
 Source: [`packages/workspace/workspace/src/index.ts`](../../packages/workspace/workspace/src/index.ts)
 

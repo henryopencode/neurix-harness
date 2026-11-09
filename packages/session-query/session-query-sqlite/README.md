@@ -25,6 +25,8 @@ Use this package to add ranked SQLite FTS5 search across session history, either
 <a id="use-this-package"></a>
 ## Use this package
 
+Permanent Session deletion removes its persisted and live search documents and invalidates existing pagination cursors before deletion completes. Subsequent searches reconcile against the remaining Session corpus.
+
 Mount this package when a composition needs ranked full-text search over session history — for example the Web content search or `/resume` prior-work retrieval. The common path is explicit: mount the plugin, give it a dedicated database path, and call `ctx.sessionQuery.searchSessions` or `searchEvents` from code.
 
 ### When to choose it

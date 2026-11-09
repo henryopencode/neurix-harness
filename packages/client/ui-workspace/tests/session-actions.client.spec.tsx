@@ -30,6 +30,7 @@ import {
   ArchiveSessionMenuItem, ArchiveSessionRowButton, SessionArchiveConfirmDialog,
 } from '../src/client/session-actions/ArchiveSession.tsx'
 import { ForkSessionMenuItem } from '../src/client/session-actions/ForkSession.tsx'
+import { DeleteSessionMenuItem, SessionDeleteDialog } from '../src/client/session-actions/DeleteSession.tsx'
 import { PinSessionMenuItem, PinSessionRowButton } from '../src/client/session-actions/PinSession.tsx'
 import { RenameSessionMenuItem, SessionRenameDialog } from '../src/client/session-actions/RenameSession.tsx'
 import { RowActionToast } from '../src/client/session-actions/RowActionToast.tsx'
@@ -863,4 +864,66 @@ it('shows effective Session shortcuts while menu clicks keep the row target', ()
   expect(requestSessionRename).toHaveBeenCalledWith(ROW.sessionId, ROW.displayTitle)
   expect(forkSession).toHaveBeenCalledWith(ROW.sessionId)
   expect(archiveSession).toHaveBeenCalledWith(ROW.sessionId)
+})
+
+describe('permanent Session deletion actions', () => {
+  it('offers deletion only for an archived Session with deletion access', () => {
+    const menu = openMenu()
+    const requestSessionDelete = vi.fn()
+    const props = { ...menuRow(menu.state), requestSessionDelete, useArchived: hook(idSet()) }
+    const view = render(<DeleteSessionMenuItem {...props} />)
+    expect(view.queryByRole('menuitem', { name: zh['menu.deleteSession'] })).toBeNull()
+    view.rerender(<DeleteSessionMenuItem {...props} useArchived={hook(idSet('one'))} useSessionAccess={() => false} />)
+    expect(view.queryByRole('menuitem', { name: zh['menu.deleteSession'] })).toBeNull()
+    view.rerender(<DeleteSessionMenuItem {...props} useArchived={hook(idSet('one'))} />)
+    fireEvent.click(view.getByRole('menuitem', { name: zh['menu.deleteSession'] }))
+    expect(requestSessionDelete).toHaveBeenCalledWith(ROW.sessionId, ROW.displayTitle)
+    expect(callOrder(menu.setMenuOpen)).toBeLessThan(callOrder(requestSessionDelete))
+  })
+
+  it('names the irreversible deletion and cancels without a Host call', () => {
+    const deleteSession = vi.fn(async () => {})
+    const settleSessionDelete = vi.fn()
+    render(<SessionDeleteDialog
+      {...overlay} useDeleteRequest={hook(ROW)} deleteSession={deleteSession} settleSessionDelete={settleSessionDelete}
+    />)
+    expect(screen.getByRole('dialog', { name: zh['delete.session.title'] })).toBeTruthy()
+    expect(screen.getByText(zh['delete.session.desc'].replace('{title}', ROW.displayTitle))).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: commonZh.cancel }))
+    expect(settleSessionDelete).toHaveBeenCalledOnce()
+    expect(deleteSession).not.toHaveBeenCalled()
+  })
+
+  it('blocks repeated confirmation and dismissal while pending, then settles on success', async () => {
+    const gate = Promise.withResolvers<undefined>()
+    const deleteSession = vi.fn(() => gate.promise)
+    const settleSessionDelete = vi.fn()
+    render(<SessionDeleteDialog
+      {...overlay} useDeleteRequest={hook(ROW)} deleteSession={deleteSession} settleSessionDelete={settleSessionDelete}
+    />)
+    const confirm = screen.getByRole('button', { name: zh['delete.session.action'] })
+    fireEvent.click(confirm)
+    fireEvent.click(confirm)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(deleteSession).toHaveBeenCalledExactlyOnceWith(ROW.sessionId)
+    expect(confirm.hasAttribute('disabled')).toBe(true)
+    expect(settleSessionDelete).not.toHaveBeenCalled()
+    await act(async () => { gate.resolve(undefined); await gate.promise })
+    expect(settleSessionDelete).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a failed request retryable without closing the dialog', async () => {
+    const deleteSession = vi.fn(async () => {}).mockRejectedValueOnce(new Error('storage unavailable'))
+    const settleSessionDelete = vi.fn()
+    render(<SessionDeleteDialog
+      {...overlay} useDeleteRequest={hook(ROW)} deleteSession={deleteSession} settleSessionDelete={settleSessionDelete}
+    />)
+    const confirm = screen.getByRole('button', { name: zh['delete.session.action'] })
+    fireEvent.click(confirm)
+    await waitFor(() => { expect(confirm.hasAttribute('disabled')).toBe(false) })
+    expect(settleSessionDelete).not.toHaveBeenCalled()
+    fireEvent.click(confirm)
+    await waitFor(() => { expect(settleSessionDelete).toHaveBeenCalledOnce() })
+    expect(deleteSession).toHaveBeenCalledTimes(2)
+  })
 })

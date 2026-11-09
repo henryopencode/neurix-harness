@@ -129,6 +129,11 @@ class TestHandle implements SessionHandle {
 }
 
 class TestPersistence extends SessionPersistence {
+  async delete(id: SessionIdType): Promise<boolean> {
+    const existed = TestPersistence.entries.delete(id)
+    await this.ctx.serial('session-persistence/deleted', id)
+    return existed
+  }
   static entries = new Map<SessionIdType, { meta: SessionHeader; events: SessionEvent[] }>()
   static revisions = new Map<SessionIdType, number>()
   static nextRevision = 0

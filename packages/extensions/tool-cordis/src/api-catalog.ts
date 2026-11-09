@@ -2620,6 +2620,13 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'options', description: 'optional cancellation.' }],
         returns: 'one snapshot per stored session.',
       },
+      {
+        signature: 'abstract delete(id: SessionId): Promise<boolean>',
+        description: 'Permanently remove every stored generation of one Session. An active writer refuses deletion before any artifact is removed. Missing ids are a no-op; derived-record cleanup still runs. Callers own lifecycle shutdown and lineage. Filesystem or cleanup failures can leave deletion partially complete; retry with the same id to finish. Project files and shared attachments are untouched.',
+        parameters: [{ name: 'id', description: 'stored Session to delete.' }],
+        returns: 'whether a stored artifact existed.',
+        throws: ['{SessionAlreadyOwnedError} while a write handle owns the Session.'],
+      },
     ],
   },
   {
@@ -4248,6 +4255,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the complete resulting archive set.',
       },
       {
+        signature: '@Remote(\'deleteSession\') deleteSession(request: WorkspaceDeleteSessionRequest): Promise<WorkspaceDeleteSessionValue>',
+        description: 'Permanently delete an archived Session and its subagent descendants.',
+        parameters: [{ name: 'request', description: 'archived root Session identity.' }],
+        returns: 'deleted identities and the resulting archive set.',
+      },
+      {
         signature: '@Remote(\'pinSession\') pinSession(request: WorkspacePinSessionRequest): Promise<WorkspacePinValue>',
         description: 'Surface one known unarchived Session ahead of unpinned Sessions.',
         parameters: [{ name: 'request', description: 'Session identity to pin.' }],
@@ -4377,6 +4390,19 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Unarchive one session durably by dropping it from the registry-global archive set; the accounting slot was never touched, so the session returns to its recorded position. Unarchiving runs no session-existence check because removing an id cannot introduce an unknown one, so an entry whose session is gone still resolves. An id that is not archived resolves without writing.',
         parameters: [{ name: 'sessionId', description: 'The session to unarchive.' }],
         returns: 'resolution after durability.',
+      },
+      {
+        signature: 'isDeletingSession(sessionId: SessionId): boolean',
+        description: 'Whether lifecycle acquisition must refuse an id while permanent deletion runs.',
+        parameters: [{ name: 'sessionId', description: 'Session whose lifecycle would be acquired.' }],
+        returns: 'whether deletion owns this id until its cleanup settles.',
+      },
+      {
+        signature: 'deleteSession(sessionId: SessionId): Promise<readonly SessionId[]>',
+        description: 'Permanently delete an archived Session and its subagent descendants, deepest first. Independent forks and project files remain. Lifecycle owners release their writers before storage deletion; an unowned writer refuses deletion. Archive metadata remains on failure so the operation can be retried, including after some descendants or the root have already been deleted.',
+        parameters: [{ name: 'sessionId', description: 'archived root Session.' }],
+        returns: 'every deleted Session id, descendants before their root.',
+        throws: ['{WorkspaceSessionNotArchivedError} for a Session that is not archived.'],
       },
       {
         signature: 'pinSession(sessionId: SessionId): Promise<void>',
@@ -4848,6 +4874,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'sessionId', description: 'Original Session receiving the reminder.' }],
   },
   {
+    name: 'session-persistence/deleted',
+    mode: 'serial',
+    signature: '\'session-persistence/deleted\'(id: SessionId): Promise<void> | void',
+    summary: 'Remove derived records after a Session\'s durable artifacts are deleted.',
+    description: 'Remove derived records after a Session\'s durable artifacts are deleted. Retried deletion of an absent Session dispatches again so cleanup can finish.',
+    parameters: [{ name: 'id', description: 'deleted Session identity.' }],
+  },
+  {
     name: 'session-telemetry/record',
     mode: 'waterfall',
     signature: '\'session-telemetry/record\'(record: SessionTelemetryRecord, next: () => SessionTelemetryRecord): SessionTelemetryRecord',
@@ -5078,6 +5112,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     summary: 'Ask the composed providers what still runs for a session before it is archived.',
     description: 'Ask the composed providers what still runs for a session before it is archived. A listener prepends its own SessionActivity entries to the result of `next()`; the registry\'s innermost callback returns an empty list, so a composition without providers archives freely. Any non-empty result refuses the archive without a write.',
     parameters: [{ name: 'request', description: 'the session about to be archived.' }, { name: 'next', description: 'delegate to the remaining providers.' }],
+  },
+  {
+    name: 'workspace/session-before-delete',
+    mode: 'serial',
+    signature: '\'workspace/session-before-delete\'(sessionIds: readonly SessionId[]): Promise<void> | void',
+    summary: 'Release owned Session lifecycles and await their writers before deletion.',
+    description: 'Release owned Session lifecycles and await their writers before deletion. The registry blocks restoration until the deletion operation settles.',
+    parameters: [{ name: 'sessionIds', description: 'archived roots whose descendant lifecycles must also drain.' }],
   },
   {
     name: 'workspace/session-stop',
@@ -9486,6 +9528,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkspaceDeleteRequest',
     declaration: 'export interface WorkspaceDeleteRequest {\n    readonly workspaceId: WorkspaceId;\n}',
+  },
+  {
+    name: 'WorkspaceDeleteSessionRequest',
+    declaration: 'export interface WorkspaceDeleteSessionRequest {\n    readonly sessionId: SessionId;\n}',
+  },
+  {
+    name: 'WorkspaceDeleteSessionValue',
+    declaration: 'export interface WorkspaceDeleteSessionValue extends WorkspaceArchiveValue {\n    readonly deletedSessionIds: readonly SessionId[];\n}',
   },
   {
     name: 'WorkspaceDeleteValue',

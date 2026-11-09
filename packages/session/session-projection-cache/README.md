@@ -25,6 +25,8 @@ This package keeps durable per-session projection checkpoints so history lists, 
 <a id="use-this-package"></a>
 ## Use this package
 
+Permanent Session deletion erases its checkpoint record through `session-persistence/deleted`. Late checkpoint writes for that deleted identity are suppressed until a new live Session with the same id is created.
+
 Mount this package beside the projection registry and the storage stack when clients should list projection values for cold sessions without loading their logs. Without it, consumers must obtain the log before they can reconstruct cold projection values.
 
 ### When to choose it
