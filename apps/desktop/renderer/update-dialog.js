@@ -3,7 +3,7 @@ const api = window.dshUpdateDialog
 let view
 let responding = false
 function respond(index) {
-  if (responding || view === undefined) return
+  if (responding || view === undefined || view.installationVersion !== undefined) return
   responding = true
   void api.respond(view.revision, index).catch(() => { responding = false })
 }
@@ -11,6 +11,7 @@ document.getElementById('close').addEventListener('click', () => { respond(view.
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && view !== undefined) { event.preventDefault(); respond(view.cancelId) }
   if (event.key !== 'Tab') return
+  if (view?.installationVersion !== undefined) { event.preventDefault(); return }
   const controls = [...document.querySelectorAll('button, details:not([hidden]) > summary, details[open]:not([hidden]) > pre')]
   const current = controls.indexOf(document.activeElement)
   const next = current < 0 ? (event.shiftKey ? controls.length - 1 : 0)
@@ -29,6 +30,20 @@ function render(state) {
   view = state
   document.documentElement.lang = state.locale
   document.title = state.title
+  const installing = state.installationVersion !== undefined
+  const installation = document.getElementById('installation')
+  document.getElementById('dialog').inert = installing
+  document.getElementById('dialog').setAttribute('aria-hidden', String(installing))
+  installation.inert = !installing
+  if (installing) {
+    document.getElementById('installation-title').textContent = state.message
+    document.getElementById('installation-detail').textContent = state.detail
+    document.getElementById('installation-version').textContent = `V${state.installationVersion}`
+    document.body.classList.add('installation-backdrop')
+    // Establish the transparent entrance even when this is the document's first view.
+    installation.getBoundingClientRect()
+  }
+  document.body.classList.toggle('installing', installing)
   document.getElementById('title').textContent = state.message
   document.getElementById('detail').textContent = state.detail
   document.getElementById('detail').hidden = state.detail === ''
@@ -49,7 +64,21 @@ function render(state) {
   document.querySelector('main').hidden = false
   document.getElementById('dialog').scrollTop = 0
   document.body.classList.add('visible')
-  document.getElementById('dialog').focus()
+  if (installing) {
+    installation.focus()
+    void acknowledgeCoverage(state.revision).catch(error => { console.error('desktop update: presentation failed', error) })
+  } else document.getElementById('dialog').focus()
+}
+async function acknowledgeCoverage(revision) {
+  // Animation completion and a subsequent paint precede service shutdown.
+  await new Promise(resolve => requestAnimationFrame(resolve))
+  await Promise.allSettled(document.getElementById('installation').getAnimations().map(animation => animation.finished))
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+  if (!responding && view?.revision === revision && view.installationVersion !== undefined
+    && getComputedStyle(document.getElementById('installation')).opacity === '1') {
+    document.getElementById('installation').focus()
+    await api.covered(revision)
+  }
 }
 let received = false
 const unsubscribe = api.subscribe(state => { received = true; render(state) })

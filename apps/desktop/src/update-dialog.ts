@@ -1,10 +1,11 @@
-/** Main-owned update confirmations; closing or replacing a dialog never grants installation permission. */
+/** Main-owned confirmations and approved installation coverage, independent of Host availability. */
 import { ipcMain, type BrowserWindow, type IpcMainInvokeEvent, type MessageBoxOptions, type MessageBoxReturnValue } from 'electron'
 import type { DesktopLocale } from './locale.ts'
 import type { DesktopUpdateOverlays, DesktopUpdateOverlay } from './update-overlay.ts'
 
 /** Channels available only to the isolated update-dialog document. */
-export const UPDATE_DIALOG_IPC = { status: 'dsh-update-dialog:status', changed: 'dsh-update-dialog:changed', respond: 'dsh-update-dialog:respond' } as const
+export const UPDATE_DIALOG_IPC = { status: 'dsh-update-dialog:status', changed: 'dsh-update-dialog:changed',
+  respond: 'dsh-update-dialog:respond', covered: 'dsh-update-dialog:covered' } as const
 
 /** Text and choices supplied by the main process, never by product documents. */
 export interface UpdateDialogView {
@@ -19,6 +20,8 @@ export interface UpdateDialogView {
   readonly closeLabel: string
   readonly technicalDetails: string
   readonly technicalDetailsLabel: string
+  /** Present only after installation approval; this view accepts no responses. */
+  readonly installationVersion?: string
 }
 
 /** Electron message options with separately expandable, main-owned diagnostics. */
@@ -30,6 +33,8 @@ export interface UpdateDialogOptions extends MessageBoxOptions {
 export interface UpdateDialogApi {
   status(): Promise<UpdateDialogView | null>
   respond(revision: number, index: number): Promise<void>
+  /** @param revision - Installation view whose opaque entrance has finished painting. */
+  covered(revision: number): Promise<void>
   subscribe(listener: (view: UpdateDialogView | null) => void): () => void
 }
 
@@ -43,7 +48,7 @@ export class DesktopUpdateDialog {
   private view: DesktopUpdateOverlay | undefined
   private parent: BrowserWindow | undefined
   private closing: ReturnType<typeof setTimeout> | undefined
-  private active: { view: UpdateDialogView; finish: (index: number, retain?: boolean) => void } | undefined
+  private active: { view: UpdateDialogView; finish: (index: number, retain?: boolean) => void; covered?: () => void } | undefined
 
   /** Focus the current explanation or confirmation without replacing it or granting permission. */
   focus(): void {
@@ -67,11 +72,21 @@ export class DesktopUpdateDialog {
       this.owned(event)
       const active = this.active
       if (active === undefined || revision !== active.view.revision) throw new Error('desktop update: stale dialog response')
+      if (active.view.installationVersion !== undefined) throw new Error('desktop update: installation has no dialog responses')
       if (typeof index !== 'number' || !Number.isInteger(index)
         || (index !== active.view.cancelId && (index < 0 || index >= active.view.buttons.length))) {
         throw new Error('desktop update: invalid dialog response')
       }
       active.finish(index)
+    })
+    ipcMain.handle(UPDATE_DIALOG_IPC.covered, (event, revision: unknown) => {
+      this.owned(event)
+      const active = this.active
+      if (active?.view.installationVersion === undefined || revision !== active.view.revision) {
+        throw new Error('desktop update: stale installation presentation')
+      }
+      active.covered?.()
+      delete active.covered
     })
   }
 
@@ -81,6 +96,37 @@ export class DesktopUpdateDialog {
    * @returns A displayed response, or cancellation on replacement, abort, close, or load failure; backdrop dismissal fades independently.
    */
   show(parent: BrowserWindow, options: UpdateDialogOptions): Promise<MessageBoxReturnValue> {
+    if (this.active?.view.installationVersion !== undefined) {
+      this.focus()
+      return Promise.resolve({ response: options.cancelId ?? (options.buttons?.length ?? 1) - 1, checkboxChecked: false })
+    }
+    return this.present(parent, options)
+  }
+
+  /**
+   * Cover the workspace before stopping services; failure never authorizes teardown.
+   * @param parent - Window whose installation was explicitly approved.
+   * @param version - Prepared update version.
+   * @returns Whether the owner survived the completed entrance; disposal or owner destruction cancels.
+   * @throws If the renderer fails or does not acknowledge an opaque presentation within fifteen seconds.
+   */
+  async showInstallation(parent: BrowserWindow, version: string): Promise<boolean> {
+    const locale = typeof this.locale === 'function' ? this.locale() : this.locale
+    const covered = Promise.withResolvers<boolean>()
+    const controller = new AbortController()
+    const deadline = setTimeout(() => { controller.abort() }, 15_000)
+    try {
+      void this.present(parent, { title: locale.messages.updateTitle, message: locale.messages.updateInstallingTitle,
+        detail: locale.messages.mandatoryRestarting, buttons: [], cancelId: -1, signal: controller.signal },
+      { version, covered: () => { covered.resolve(true) } }).then(() => { covered.resolve(false) })
+      const visible = await covered.promise
+      if (!visible && !parent.isDestroyed() && !this.disposed) throw new Error('desktop update: installation page could not be displayed')
+      return visible
+    } finally { clearTimeout(deadline) }
+  }
+
+  private present(parent: BrowserWindow, options: UpdateDialogOptions,
+    installation?: { version: string; covered: () => void }): Promise<MessageBoxReturnValue> {
     const locale = typeof this.locale === 'function' ? this.locale() : this.locale
     const buttons = options.buttons ?? [locale.messages.updateAcknowledge]
     const cancelId = options.cancelId ?? buttons.length - 1
@@ -97,7 +143,8 @@ export class DesktopUpdateDialog {
     this.parent = parent
     const view: UpdateDialogView = { revision: ++this.revision, locale: locale.id, title: options.title ?? '', message: options.message,
       detail: options.detail ?? '', buttons, cancelId, closeLabel: locale.messages.updateClose,
-      technicalDetails: options.technicalDetails ?? '', technicalDetailsLabel: locale.messages.updateTechnicalDetails }
+      technicalDetails: options.technicalDetails ?? '', technicalDetailsLabel: locale.messages.updateTechnicalDetails,
+      ...(installation === undefined ? {} : { installationVersion: installation.version }) }
     return new Promise((resolve) => {
       const abort = (): void => { finish(cancelId) }
       const finish = (response: number, retain = false): void => {
@@ -110,10 +157,12 @@ export class DesktopUpdateDialog {
         }
         resolve({ response, checkboxChecked: false })
       }
-      this.active = { view, finish }
+      this.active = { view, finish, ...(installation === undefined ? {} : { covered: installation.covered }) }
       options.signal?.addEventListener('abort', abort, { once: true })
       if (existing !== undefined) { surface.webContents.send(UPDATE_DIALOG_IPC.changed, view); return }
-      const failed = (): void => { if (this.view === surface) { this.cancel(); this.close() } }
+      const failed = (): void => {
+        if (this.view === surface) { this.active?.finish(this.active.view.cancelId); this.close() }
+      }
       surface.webContents.once('destroyed', failed)
       surface.webContents.once('render-process-gone', failed)
       surface.webContents.once('preload-error', failed)
@@ -124,17 +173,21 @@ export class DesktopUpdateDialog {
     })
   }
 
-  /** Cancel the displayed prompt without authorizing any operation. */
-  cancel(): void { this.active?.finish(this.active.view.cancelId) }
+  /** Cancel an ordinary prompt; an approved installation remains covered. */
+  cancel(): void { if (this.active?.view.installationVersion === undefined) this.active?.finish(this.active.view.cancelId) }
+
+  /** Release installation coverage after the updater leaves its installing phase. */
+  endInstallation(): void { if (this.active?.view.installationVersion !== undefined) this.active.finish(this.active.view.cancelId) }
 
   /** Close the document and detach its private IPC handlers. */
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
-    this.cancel()
+    this.active?.finish(this.active.view.cancelId)
     this.close()
     ipcMain.removeHandler(UPDATE_DIALOG_IPC.status)
     ipcMain.removeHandler(UPDATE_DIALOG_IPC.respond)
+    ipcMain.removeHandler(UPDATE_DIALOG_IPC.covered)
   }
 
   private close(): void {

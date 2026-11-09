@@ -561,6 +561,7 @@ async function main(): Promise<void> {
   const publishUpdate = (state: DesktopUpdateState): DesktopUpdateState => {
     updateJournal?.state(state)
     updateState = state
+    if (state.phase !== 'installing') updateDialog.endInstallation()
     mandatoryUI?.sync()
     for (const window of BrowserWindow.getAllWindows()) {
       window.webContents.send(DESKTOP_IPC.updatesPresentation, presentDesktopUpdate(state))
@@ -644,6 +645,7 @@ async function main(): Promise<void> {
       const result = await updateDialog.show(parent, confirmation)
       if (result.response !== 0 || isMandatory()) return false
     }
+    if (!await updateDialog.showInstallation(parent, updates.state.version ?? '')) return false
     // The update lock rejects new HTTP requests, including analytics intake.
     await track('desktop_upgrade_install_restart_click', {})
     if (backend.host !== host) throw new DesktopUpdatePreparationError('tasks-unavailable', locale.messages.updateTasksUnavailable)
@@ -1331,6 +1333,7 @@ async function main(): Promise<void> {
       backgroundNotice?.dispose()
       updateJournal?.action('quit-requested')
       tray?.dispose()
+      currentDialogWindow()?.hide()
       updateDialog.dispose()
       mandatoryUI?.dispose()
       // Installation preparation already awaited Platform storage cleanup.

@@ -63,7 +63,7 @@ function setup(locale: DesktopLocale | (() => DesktopLocale) = resolveDesktopLoc
     const view = fixture.views.at(-1)!
     const event = { sender: view.webContents, senderFrame: view.webContents.mainFrame }
     const state = fixture.handlers.get(UPDATE_DIALOG_IPC.status)!(event) as { revision: number }
-    return fixture.handlers.get(channel)!(event, ...(channel === UPDATE_DIALOG_IPC.respond ? [state.revision, ...args] : args))
+    return fixture.handlers.get(channel)!(event, ...(channel === UPDATE_DIALOG_IPC.status ? args : [state.revision, ...args]))
   }
   return { parent, owner, show, invoke, overlays }
 }
@@ -213,4 +213,60 @@ it('reads the current locale and keeps technical diagnostics separate from ordin
     dialogs!.cancel()
     await pending
   }
+})
+
+it('keeps the approved workspace covered until installation settles and gates shutdown on the renderer', async () => {
+  const f = setup()
+  const confirmation = f.show()
+  const contents = fixture.views[0]!.webContents
+  f.invoke(UPDATE_DIALOG_IPC.respond, 0)
+  await confirmation
+  const stopped = vi.fn()
+  const presentation = dialogs!.showInstallation(f.owner, '1.1.1').then((visible) => { if (visible) stopped(); return visible })
+  await Promise.resolve()
+  expect(fixture.views).toHaveLength(1)
+  expect(f.invoke(UPDATE_DIALOG_IPC.status)).toMatchObject({ installationVersion: '1.1.1', buttons: [],
+    message: '正在更新 Neurix Harness' })
+  expect(stopped).not.toHaveBeenCalled()
+  expect(() => f.invoke(UPDATE_DIALOG_IPC.respond, -1)).toThrow(/no dialog responses/)
+  const acknowledge = fixture.handlers.get(UPDATE_DIALOG_IPC.covered)!
+  const event = { sender: contents, senderFrame: contents.mainFrame }
+  expect(() => acknowledge(event, -1)).toThrow(/stale/)
+  expect(() => acknowledge({ ...event, sender: f.parent.webContents }, 2)).toThrow(/unowned/)
+  f.invoke(UPDATE_DIALOG_IPC.covered)
+  expect(await presentation).toBe(true)
+  expect(stopped).toHaveBeenCalledOnce()
+  dialogs!.cancel()
+  expect(await f.show()).toEqual({ response: 1, checkboxChecked: false })
+  expect(f.invoke(UPDATE_DIALOG_IPC.status)).toMatchObject({ installationVersion: '1.1.1' })
+  dialogs!.endInstallation()
+  const error = f.show(undefined, { message: '更新失败' })
+  expect(f.invoke(UPDATE_DIALOG_IPC.status)).toMatchObject({ message: '更新失败' })
+  expect(() => acknowledge(event, 2)).toThrow(/stale/)
+  dialogs!.cancel()
+  await error
+})
+
+it('leaves services running if installation coverage fails or times out', async () => {
+  vi.useFakeTimers()
+  const f = setup()
+  const failed = expect(dialogs!.showInstallation(f.owner, '1.1.1')).rejects.toThrow(/could not be displayed/)
+  fixture.views[0]!.webContents.emit('render-process-gone')
+  await failed
+  const expired = expect(dialogs!.showInstallation(f.owner, '1.1.1')).rejects.toThrow(/could not be displayed/)
+  await vi.advanceTimersByTimeAsync(15_000)
+  await expired
+  const disposed = dialogs!.showInstallation(f.owner, '1.1.1')
+  dialogs!.dispose()
+  expect(await disposed).toBe(false)
+  expect(fixture.handlers.size).toBe(0)
+  expect(f.overlays.input(f.owner).blocked).toBe(false)
+})
+
+it('cancels installation presentation when its native owner closes', async () => {
+  const f = setup()
+  const pending = dialogs!.showInstallation(f.owner, '1.1.1')
+  f.parent.destroy()
+  expect(await pending).toBe(false)
+  expect(f.overlays.input(f.owner).blocked).toBe(false)
 })

@@ -11,6 +11,7 @@
 ## 目录
 
 - [更新弹窗主题](#verification-theme)
+- [安装过渡](#verification-installation)
 - [原生浮层可见性](#verification-overlay)
 - [验证证据](#verification-evidence)
 - [手动演练](#verification-interactive)
@@ -27,6 +28,18 @@ apps/desktop/.desktop-build/targets/mac-arm64/electron/Electron.app/Contents/Mac
 ```
 
 夹具创建独立 profile，加载生产壳 HTML、sandboxed preload、渲染脚本及打包的 design token，仅替换固定 IPC 状态响应。12 个用例覆盖普通和强更文档的浅色／暗色初始状态、打开时切换及跟随系统。它检查文档背景透明、卡片／文字／按钮／遮罩配色、代码／地址表面、仅暗色显示的 1 CSS px 内描边及普通弹窗关闭图标，并将四张截图和 `result.json` 写入 `.desktop-build/qualification/update-theme-*`。它不启动 Host、不下载更新、不运行安装器，也不验证 Windows 原生渲染。首次关闭提示共用普通文档的 CSS 和主题脚本。
+
+<a id="verification-installation"></a>
+
+## 安装过渡
+
+Desktop 构建产物就绪后，在 macOS 上运行隔离的 Electron 安装页夹具：
+
+```sh
+apps/desktop/.desktop-build/targets/mac-arm64/electron/Electron.app/Contents/MacOS/Electron apps/desktop/tests/fixtures/update-installation.mjs
+```
+
+夹具使用生产浮层、preload、IPC 处理器和渲染资源。四个用例覆盖浅色／暗色主题、390px 窗口、减少动态效果、预览失效前的不透明覆盖、键盘焦点、失败提示及视图／输入清理。截图和 `result.json` 写入 `.desktop-build/qualification/update-installation-*`。它不启动 Host、不下载更新、不运行安装器；已安装签名版本的更新验收仍单独进行。
 
 <a id="verification-overlay"></a>
 
