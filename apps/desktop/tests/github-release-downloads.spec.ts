@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DesktopUpdateState } from '../src/ipc.ts'
 import { desktopGithubRepository, GithubReleaseDownloads } from '../src/github-release-downloads.ts'
+import type { GithubReleaseRequest } from '../src/github-release-transfer.ts'
 
 const bytes = Buffer.from('a verified installer fixture')
 const checksum = createHash('sha256').update(bytes).digest('hex')
@@ -24,7 +25,7 @@ async function fixture(platform: NodeJS.Platform = 'darwin', idleTimeoutMs = 10_
   const publish = vi.fn((state: DesktopUpdateState) => state)
   const install = vi.fn(async (_file: string) => {})
   const beforeRestart = vi.fn(async () => true)
-  const request = vi.fn(async (url: string, _init: { signal: AbortSignal }): Promise<Response> => {
+  const request = vi.fn<GithubReleaseRequest>(async (url, _init): Promise<Response> => {
     if (url.endsWith('/desktop-update.json')) return Response.json(metadata(platform, arch))
     if (url.endsWith('SHA256SUMS.txt')) return new Response(`${checksum}  ${filename(platform, arch)}\n`)
     return new Response(bytes)
@@ -150,14 +151,15 @@ describe('GitHub release downloads', () => {
     const f = await fixture()
     await f.updates.check()
     const started = Promise.withResolvers<undefined>()
-    f.request.mockImplementation(async (url, { signal }) => url.endsWith('SHA256SUMS.txt')
-      ? new Response(`${checksum}  ${filename()}\n`)
-      : new Response(new ReadableStream<Uint8Array>({
-        start(controller) {
-          signal.addEventListener('abort', () => { controller.error(signal.reason) }, { once: true })
-          started.resolve(undefined)
-        },
-      })))
+    f.request.mockImplementation(async (url, { signal }) => url.startsWith('https://api.github.com/')
+      ? new Response(null, { status: 404 }) : url.endsWith('SHA256SUMS.txt')
+        ? new Response(`${checksum}  ${filename()}\n`)
+        : new Response(new ReadableStream<Uint8Array>({
+          start(controller) {
+            signal.addEventListener('abort', () => { controller.error(signal.reason) }, { once: true })
+            started.resolve(undefined)
+          },
+        })))
     vi.useFakeTimers()
     try {
       const operation = f.updates.download('1.0.0')
@@ -176,10 +178,11 @@ describe('GitHub release downloads', () => {
     const f = await fixture()
     const pending = Promise.withResolvers<Response>()
     f.request.mockImplementationOnce(() => pending.promise)
+      .mockResolvedValueOnce(new Response(null, { status: 503 })).mockResolvedValueOnce(new Response(null, { status: 503 }))
     const automatic = f.updates.check(), manual = f.updates.check(true)
     pending.resolve(new Response(null, { status: 503 }))
     await Promise.all([automatic, manual])
-    expect(f.request).toHaveBeenCalledTimes(1)
+    expect(f.request).toHaveBeenCalledTimes(3)
     expect(f.updates.state).toMatchObject({ phase: 'error', failedOperation: 'check' })
     await f.updates.check(true)
     const transfer = Promise.withResolvers<Response>()
@@ -187,7 +190,7 @@ describe('GitHub release downloads', () => {
     const first = f.updates.download('1.0.0'), second = f.updates.download('1.0.0')
     transfer.resolve(new Response(`${checksum}  ${filename()}\n`))
     expect((await Promise.all([first, second])).map(result => result.phase)).toEqual(['ready', 'ready'])
-    expect(f.request).toHaveBeenCalledTimes(4)
+    expect(f.request).toHaveBeenCalledTimes(6)
   })
   it('cancels an admitted download before its first network request', async () => {
     const f = await fixture()
@@ -196,5 +199,143 @@ describe('GitHub release downloads', () => {
     await f.updates.cancel()
     expect((await operation).phase).toBe('available')
     expect(f.request).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([false, true])('verifies metadata SHA-256 without a checksum-list request (tampered=%s)', async (tampered) => {
+    const f = await fixture()
+    f.request.mockResolvedValueOnce(Response.json({ ...metadata(),
+      assets: metadata().assets.map(asset => ({ ...asset, sha256: checksum })),
+    }))
+    await f.updates.check()
+    f.request.mockResolvedValueOnce(new Response(tampered ? Buffer.alloc(bytes.length) : bytes))
+    expect((await f.updates.download('1.0.0')).phase).toBe(tampered ? 'error' : 'ready')
+    expect(f.request.mock.calls.some(([url]) => url.endsWith('SHA256SUMS.txt'))).toBe(false)
+    expect(f.install).not.toHaveBeenCalled()
+    if (tampered) expect(await readdir(f.directory)).toEqual([])
+  })
+
+  it.each([null, 123, '', 'a'.repeat(63), 'x'.repeat(64)])('rejects malformed published SHA-256 metadata: %s', async (sha256) => {
+    const f = await fixture()
+    f.request.mockResolvedValueOnce(Response.json({ ...metadata(), assets: metadata().assets.map(asset => ({ ...asset, sha256 })) }))
+    expect(await f.updates.check(true)).toMatchObject({ phase: 'error', failedOperation: 'check' })
+    expect(f.request).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects a nonnumeric alternate asset id from metadata', async () => {
+    const f = await fixture()
+    f.request.mockResolvedValueOnce(Response.json({ ...metadata(),
+      assets: metadata().assets.map(asset => ({ ...asset, sha256: checksum, id: '32' })),
+    }))
+    expect(await f.updates.check(true)).toMatchObject({ phase: 'error', failedOperation: 'check' })
+    expect(f.request).toHaveBeenCalledTimes(1)
+  })
+
+  it('recovers a checksum request after two gateway failures', async () => {
+    const f = await fixture()
+    await f.updates.check()
+    f.request.mockResolvedValueOnce(new Response(null, { status: 504 }))
+      .mockResolvedValueOnce(new Response(null, { status: 502 }))
+    expect((await f.updates.download('1.0.0')).phase).toBe('ready')
+    expect(f.request.mock.calls.filter(([url]) => url.endsWith('SHA256SUMS.txt'))).toHaveLength(3)
+    expect(f.request.mock.calls.some(([url]) => url.startsWith('https://api.github.com/'))).toBe(false)
+  })
+
+  it('recovers legacy checksum and installer gateway failures through one version-bound asset lookup', async () => {
+    const f = await fixture()
+    await f.updates.check()
+    const calls: string[] = []
+    f.request.mockImplementation(async (url, init) => {
+      calls.push(url)
+      if (url.startsWith('https://github.com/')) return new Response(null, { status: 504 })
+      if (url.endsWith('/releases/tags/v1.0.0')) return Response.json({ ...metadata(), assets: [
+        { id: 31, name: 'SHA256SUMS.txt', size: 128 },
+        { id: 32, name: filename(), size: bytes.length, browser_download_url: 'https://untrusted.invalid/ignored' },
+      ] })
+      expect(init.headers?.Accept).toBe('application/octet-stream')
+      expect(init.headers?.Range).toBeUndefined()
+      if (url.endsWith('/assets/31')) return new Response(`${checksum}  ${filename()}\n`)
+      if (url.endsWith('/assets/32')) return new Response(bytes)
+      throw new Error('Unexpected fallback destination')
+    })
+    expect((await f.updates.download('1.0.0')).phase).toBe('ready')
+    expect(await readFile(join(f.directory, filename()))).toEqual(bytes)
+    expect(calls.filter(url => url.endsWith('/releases/tags/v1.0.0'))).toHaveLength(1)
+    expect(calls.filter(url => url.endsWith('/assets/32'))).toHaveLength(1)
+    expect(f.install).not.toHaveBeenCalled()
+    await f.updates.install('1.0.0')
+    expect(f.install).toHaveBeenCalledOnce()
+  })
+
+  it('does not retry a permanent checksum refusal and permits an explicit fresh download', async () => {
+    const f = await fixture()
+    await f.updates.check()
+    f.request.mockResolvedValueOnce(new Response(null, { status: 403 }))
+    expect(await f.updates.download('1.0.0')).toMatchObject({ phase: 'error', failedOperation: 'download' })
+    expect(f.request).toHaveBeenCalledTimes(2)
+    expect(await readdir(f.directory)).toEqual([])
+    expect((await f.updates.download('1.0.0')).phase).toBe('ready')
+  })
+
+  it('restarts a partial direct transfer as one verified API response without retaining partial bytes', async () => {
+    const f = await fixture()
+    f.request.mockResolvedValueOnce(Response.json({ ...metadata(),
+      assets: metadata().assets.map(asset => ({ ...asset, sha256: checksum })),
+    }))
+    await f.updates.check()
+    let entered = false, sent = false
+    f.request.mockImplementation(async (url, init) => {
+      if (url.startsWith('https://github.com/')) {
+        if (entered) return new Response(null, { status: 504 })
+        entered = true
+        return new Response(new ReadableStream<Uint8Array>({ pull(controller) {
+          if (!sent) { sent = true; controller.enqueue(bytes.subarray(0, 10)) }
+          else controller.error(new TypeError('interrupted installer'))
+        } }))
+      }
+      if (url.endsWith('/releases/tags/v1.0.0')) return Response.json({ ...metadata(), assets: [
+        { id: 32, name: filename(), size: bytes.length },
+      ] })
+      expect(init.headers?.Range).toBeUndefined()
+      expect(init.headers?.Accept).toBe('application/octet-stream')
+      return new Response(bytes)
+    })
+    expect((await f.updates.download('1.0.0')).phase).toBe('ready')
+    expect(await readFile(join(f.directory, filename()))).toEqual(bytes)
+    expect(f.request.mock.calls.filter(([url]) => url.endsWith('/assets/32'))).toHaveLength(1)
+    const progress = f.publish.mock.calls.map(([state]) => state.percent ?? 0)
+    const advanced = progress.findIndex(percent => percent > 0)
+    expect(advanced).toBeGreaterThan(0)
+    expect(progress.slice(advanced + 1)).toContain(0)
+  })
+
+  it('uses the published alternate asset id without a release-discovery API request', async () => {
+    const f = await fixture()
+    f.request.mockResolvedValueOnce(Response.json({ ...metadata(),
+      assets: metadata().assets.map(asset => ({ ...asset, sha256: checksum, id: 32 })),
+    }))
+    await f.updates.check()
+    f.request.mockImplementation(async (url, init) => {
+      if (url.startsWith('https://github.com/')) return new Response(null, { status: 504 })
+      expect(url).toBe('https://api.github.com/repos/henryopencode/neurix-harness/releases/assets/32')
+      expect(init.headers?.Accept).toBe('application/octet-stream')
+      expect(init.headers?.Range).toBeUndefined()
+      return new Response(bytes)
+    })
+    expect((await f.updates.download('1.0.0')).phase).toBe('ready')
+    expect(await readFile(join(f.directory, filename()))).toEqual(bytes)
+    expect(f.request.mock.calls.filter(([url]) => url.includes('api.github.com/'))).toHaveLength(1)
+  })
+
+  it('cancels a pending checksum retry without reaching another request or installer', async () => {
+    const f = await fixture()
+    await f.updates.check()
+    const first = Promise.withResolvers<undefined>()
+    f.request.mockImplementationOnce(async () => { first.resolve(undefined); return new Response(null, { status: 504 }) })
+    const pending = f.updates.download('1.0.0')
+    await first.promise
+    await f.updates.cancel()
+    expect((await pending).phase).toBe('available')
+    expect(f.request).toHaveBeenCalledTimes(2)
+    expect(f.install).not.toHaveBeenCalled()
   })
 })

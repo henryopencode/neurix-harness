@@ -7,6 +7,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Workflow"
+- navigation "Turn navigation":
+  - button "Jump to turn 1"
 - text: Clean up the stale build log. {{clock}}
 - button "Copy"
 - status: Completed
@@ -32,6 +35,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Workflow"
+- navigation "Turn navigation":
+  - button "Jump to turn 1"
 - text: Clean up the stale build log. {{clock}}
 - button "Copy"
 - status: Completed

@@ -1,5 +1,6 @@
 /** Bounded installer ranges retain written bytes across connection failures and settle before cleanup. */
 import type { FileHandle } from 'node:fs/promises'
+import { GithubReleaseNetworkError } from './github-release-network.ts'
 
 /** Shell-owned HTTP transport, including the installed application's system proxy settings. */
 export type GithubReleaseRequest = (url: string, init: { signal: AbortSignal; headers?: Record<string, string> }) => Promise<Response>
@@ -12,10 +13,6 @@ interface TransferOptions {
   signal: AbortSignal
   idleTimeoutMs: number
   progress: (received: number) => void
-}
-
-class ConnectionFailure extends Error {
-  constructor(cause: unknown) { super(cause instanceof Error ? cause.message : String(cause), { cause }) }
 }
 
 /**
@@ -49,10 +46,10 @@ export async function transferGithubRelease(options: TransferOptions): Promise<v
         let response: Response
         try {
           response = await options.request(options.url, { signal: requestSignal, headers: { Range: `bytes=${position}-${end}` } })
-        } catch (error) { throw new ConnectionFailure(error) }
+        } catch (error) { throw new GithubReleaseNetworkError(error) }
         if (response.body !== null) reader = response.body.getReader()
         if ([408, 500, 502, 503, 504].includes(response.status)) {
-          throw new ConnectionFailure(new Error(`Installer download returned HTTP ${response.status}`))
+          throw new GithubReleaseNetworkError(new Error(`Installer download returned HTTP ${response.status}`))
         }
         if (response.status === 200 && position === 0) {
           fullResponse = true
@@ -60,11 +57,11 @@ export async function transferGithubRelease(options: TransferOptions): Promise<v
         } else if (response.status !== 206 || response.headers.get('content-range') !== `bytes ${position}-${end}/${options.size}`) {
           throw new Error(`Installer range response is invalid (HTTP ${response.status})`)
         }
-        if (reader === undefined) throw new ConnectionFailure(new Error('Installer response has no body'))
+        if (reader === undefined) throw new GithubReleaseNetworkError(new Error('Installer response has no body'))
         while (true) {
           signal.throwIfAborted()
           let chunk: ReadableStreamReadResult<Uint8Array>
-          try { chunk = await reader.read() } catch (error) { throw new ConnectionFailure(error) }
+          try { chunk = await reader.read() } catch (error) { throw new GithubReleaseNetworkError(error) }
           if (chunk.done) break
           refresh()
           if (position + chunk.value.byteLength > end + 1) throw new Error('Installer exceeds the requested byte range')
@@ -80,11 +77,11 @@ export async function transferGithubRelease(options: TransferOptions): Promise<v
           }
         }
         requestSignal.throwIfAborted()
-        if (position !== end + 1) throw new ConnectionFailure(new Error('Installer connection ended before the requested range completed'))
+        if (position !== end + 1) throw new GithubReleaseNetworkError(new Error('Installer connection ended before the requested range completed'))
         return fullResponse
       } catch (error) {
         signal.throwIfAborted()
-        if (!(error instanceof ConnectionFailure) || attempt >= 3 || position > end) throw error
+        if (!(error instanceof GithubReleaseNetworkError) || attempt >= 3 || position > end) throw error
       } finally {
         clearTimeout(idle)
         connection.abort()

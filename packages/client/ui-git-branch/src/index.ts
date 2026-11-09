@@ -188,9 +188,29 @@ export default class WorkspaceGit extends TypertRemoteService {
     return { kind: 'repository', root, current, commit, branches }
   }
 
+  /** Avoid invoking Apple's Git installer launcher when developer tools have not been selected. */
+  private async executableReady(executable: string, signal: AbortSignal): Promise<boolean> {
+    if (executable !== '/usr/bin/git') return true
+    let selector: string
+    try { selector = await this.ctx.subprocess.resolveExecutable('xcode-select', undefined, signal) }
+    catch (_error) { signal.throwIfAborted(); return true }
+    const child = this.ctx.subprocess.spawn({
+      argv: [selector, '-p'], cwd: '/', signal, graceMs: this.config.graceMs,
+      stdio: { stdin: 'ignore', stdout: { maxBytes: this.config.maxOutputBytes }, stderr: { maxBytes: this.config.maxOutputBytes } },
+    })
+    try {
+      const outcome = await child.done
+      signal.throwIfAborted()
+      return outcome.exitCode === 0
+    } finally { child.terminate(); await child.waitForExit() }
+  }
+
   private async run(session: Session, cwd: string, args: readonly string[], signal: AbortSignal) {
     const deadline = AbortSignal.any([signal, AbortSignal.timeout(this.config.timeoutMs)])
     const executable = await this.ctx.subprocess.resolveExecutable('git', undefined, deadline)
+    if (!await this.executableReady(executable, deadline)) {
+      throw new RemoteError('git-branch/read-failed', 'Git requires selected developer tools.', {})
+    }
     const policy = this.ctx.sandboxPolicy.resolve({ session })
     const argv = [executable, ...args]
     const command = policy.mode === 'danger-full-access'

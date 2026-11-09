@@ -36,6 +36,8 @@ kind: "package-reference"
 | `graceMs` | `1000` | 终止宽限时间 |
 | `refreshIntervalMs` | `3000` | 外部 Git 变更的观察间隔 |
 
+使用 Apple 的 Git 启动器前会检查是否已选择开发者工具；缺少工具时显示可重试的读取失败，不打开安装器。
+
 -----
 
 <a id="understand-the-implementation"></a>

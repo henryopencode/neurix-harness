@@ -35,6 +35,8 @@ The menu marks the current branch and disables branches checked out by another w
 | `graceMs` | `1000` | Termination grace period |
 | `refreshIntervalMs` | `3000` | External Git observation interval |
 
+Apple's Git launcher is checked for selected developer tools before use; missing tools produce a retryable read failure without opening the installer.
+
 -----
 
 ## Understand the implementation

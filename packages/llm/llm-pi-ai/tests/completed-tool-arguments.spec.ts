@@ -14,7 +14,7 @@ import { anthropicFrame, anthropicMessageStart, closeMockServers, mockServer } f
 
 afterEach(closeMockServers)
 
-type Api = 'anthropic-messages' | 'openai-completions' | 'openai-responses'
+type Api = 'anthropic-messages' | 'openai-completions' | 'openai-responses' | 'google-generative-ai'
 type WireEvent = string | { event: string; data: string }
 
 function completionsEvents(raw: string, stop: 'tool_calls' | 'length' = 'tool_calls'): WireEvent[] {
@@ -64,7 +64,10 @@ function responsesEvents(raw: string, prefix?: string, priorValid = false, prior
 
 function registerAdapter(ctx: Context, api: Api, baseURL: string): void {
   ctx.effect(() => ctx.llm.registerAdapter(['fixture'], new PiAiAdapter({
-    profiles: () => resolveProfiles({ fixture: { api, baseURL, models: [{ id: 'm' }], transport: 'sse' } }),
+    profiles: () => resolveProfiles({ fixture: {
+      api, baseURL: api === 'google-generative-ai' ? `${baseURL}/v1beta` : baseURL,
+      models: [{ id: 'm' }], transport: 'sse',
+    } }),
     resolveApiKey: () => Promise.resolve('fixture-key'),
     auth: memoryAuth(),
   })))
@@ -78,7 +81,10 @@ async function collect(api: Api, events: WireEvent[]) {
   registerAdapter(ctx, api, server.url)
   const chunks: StreamChunk[] = []
   const assembler = new BlockAssembler()
-  for await (const chunk of ctx.llm.stream({ provider: 'fixture', model: 'm', messages: [] })) {
+  for await (const chunk of ctx.llm.stream({
+    provider: 'fixture', model: 'm',
+    messages: [createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Use the tool.' }] })],
+  })) {
     chunks.push(chunk)
     assembler.push(chunk)
   }
@@ -86,6 +92,33 @@ async function collect(api: Api, events: WireEvent[]) {
 }
 
 describe('completed tool-call arguments through the public runtime', () => {
+  it.each([
+    { name: 'read', args: [
+      { file_path: 'page.tsx' }, { file_path: 'home.module.css' },
+      { file_path: 'layout.tsx' }, { file_path: 'tokens.css' },
+    ] },
+    { name: 'browser', args: [
+      { action: 'navigate', target: 'tab-1', url: 'https://example.com/press.html', screenshot: true },
+      { action: 'new_tab', url: 'https://example.com/instrument.html', screenshot: true },
+      { action: 'new_tab', url: 'https://example.com/object.html', screenshot: true },
+    ] },
+  ])('preserves separate Gemini $name calls through the native protocol', async ({ name, args }) => {
+    const { assembler, server } = await collect('google-generative-ai', [JSON.stringify({
+      candidates: [{ index: 0, content: { role: 'model', parts: args.map((input, index) => ({
+        functionCall: { id: `call_${index}`, name, args: input },
+      })) }, finishReason: 'STOP' }],
+      usageMetadata: { promptTokenCount: 3, candidatesTokenCount: 2, totalTokenCount: 5 },
+    })])
+    const calls = assembler.blocks().filter(block => block.type === 'tool-call')
+
+    expect(assembler.finish).toEqual({ kind: 'tool-calls' })
+    expect(calls.map(call => ({ name: call.name, arguments: call.arguments })))
+      .toEqual(args.map(input => ({ name, arguments: JSON.stringify(input) })))
+    expect(new Set(calls.map(call => call.id)).size).toBe(args.length)
+    expect(assembler.replayState).toBeDefined()
+    expect(server.paths[0]).toBe('/v1beta/models/m:streamGenerateContent?alt=sse')
+  })
+
   it.each([
     ['anthropic-messages', anthropicEvents],
     ['openai-completions', completionsEvents],
@@ -104,6 +137,27 @@ describe('completed tool-call arguments through the public runtime', () => {
   it.each(['null', '[]', '42'])('rejects non-object completed arguments %s', async (raw) => {
     const { assembler } = await collect('openai-completions', completionsEvents(raw))
     expect(assembler.finish).toMatchObject({ kind: 'error', failure: { code: 'MALFORMED_RESPONSE' } })
+    expect(assembler.replayState).toBeUndefined()
+  })
+
+  it.each(['openai-completions', 'openai-responses'] as const)('%s rejects concatenated argument objects without accepting only the first object', async (api) => {
+    const argumentsObjects = [
+      '{"file_path":"src/app/[locale]/page.tsx"}',
+      '{"file_path":"src/app/[locale]/home.module.css"}',
+      '{"file_path":"src/app/[locale]/layout.tsx"}',
+      '{"file_path":"src/styles/tokens.css"}',
+    ]
+    const raw = argumentsObjects.join('')
+    const events = api === 'openai-completions' ? completionsEvents(raw) : responsesEvents(raw)
+    if (api === 'openai-responses') {
+      events.splice(2, 0, ...argumentsObjects.map(delta => JSON.stringify({
+        type: 'response.function_call_arguments.delta', output_index: 0, item_id: 'item_invalid', delta,
+      })))
+    }
+    const { assembler } = await collect(api, events)
+
+    expect(assembler.finish).toMatchObject({ kind: 'error', failure: { code: 'MALFORMED_RESPONSE' } })
+    expect(assembler.finish).toHaveProperty('failure.message', expect.stringContaining(raw))
     expect(assembler.replayState).toBeUndefined()
   })
 

@@ -11,6 +11,7 @@ Installed qualification can opt into `DSH_DESKTOP_UPDATE_JOURNAL_DIR`, an absolu
 ## Table of Contents
 
 - [Update dialog themes](#verification-theme)
+- [Installation transitions](#verification-installation)
 - [Native overlay visibility](#verification-overlay)
 - [Evidence](#verification-evidence)
 - [Manual walkthrough](#verification-interactive)
@@ -27,6 +28,20 @@ apps/desktop/.desktop-build/targets/mac-arm64/electron/Electron.app/Contents/Mac
 ```
 
 The fixture creates a private profile, loads the production shell HTML, sandboxed preloads, renderer scripts, and bundled design tokens, and substitutes only fixed IPC status responses. Its 12 cases cover ordinary and mandatory documents starting in light/dark mode, switching while open, and following system appearance. It checks transparent document backgrounds, surface/text/button/mask colors, the code/address surface, the dark-only 1 CSS px inset outline, and the ordinary close icon, then writes four screenshots and `result.json` to `.desktop-build/qualification/update-theme-*`. It does not start a Host, download updates, run an installer, or qualify Windows native rendering. The first-close notice shares the ordinary document's CSS and theme script.
+
+<a id="verification-installation"></a>
+
+## Installation transitions
+
+With Desktop artifacts built, run the isolated Electron installation-page fixture on macOS:
+
+```sh
+apps/desktop/.desktop-build/targets/mac-arm64/electron/Electron.app/Contents/MacOS/Electron apps/desktop/tests/fixtures/update-installation.mjs
+```
+
+The fixture uses production overlays, preload, IPC handlers, and renderer assets. Four cases cover light/dark palettes, a 390px window, reduced motion, opaque coverage before preview loss, keyboard focus, failure presentation, and view/input cleanup. Screenshots and `result.json` are written under `.desktop-build/qualification/update-installation-*`. It starts no Host, download, or installer; signed installed-update qualification remains separate.
+
+The `fixtures/github-release-download.mjs` Electron fixture downloads the latest public release through the production updater and system proxy. It verifies complete installer bytes, SHA-256, denied installation confirmation, and an explicitly permitted handoff intercepted before any installer executes. Its private profile, downloaded installer, request statuses, and `result.json` stay under `.desktop-build/qualification/github-release-download-*`; `DSH_EXPECT_RELEASE_VERSION` can pin the expected discovered version. It does not replace an installed application or qualify actual relaunch.
 
 <a id="verification-overlay"></a>
 

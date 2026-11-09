@@ -204,7 +204,7 @@ const harness = await vi.hoisted(async () => {
     constructor(readonly image: unknown) { super(); trays.push(this) }
   }
   const backgroundNotice = { close: vi.fn((hide: () => void) => { hide() }), dispose: vi.fn(), markerPath: undefined as string | undefined }
-  const shellDialog = { isOpen: false, focus: vi.fn() }
+  const shellDialog = { isOpen: false, focus: vi.fn(), showInstallation: vi.fn(async () => true), endInstallation: vi.fn() }
   return {
     failWindow(error: Error) { windowFailure = error },
     windows, views, hosts, handlers, app, FakeWindow, FakeView, FakeHost, powerMonitor, nativeTheme, analytics,
@@ -259,6 +259,7 @@ const harness = await vi.hoisted(async () => {
       trays.length = 0
       backgroundNotice.markerPath = undefined
       shellDialog.isOpen = false
+      shellDialog.showInstallation.mockReset().mockResolvedValue(true)
       powerMonitor.removeAllListeners()
       app.isPackaged = true
       windowFailure = undefined
@@ -356,6 +357,8 @@ vi.mock('../src/update-dialog.ts', () => ({ DesktopUpdateDialog: class {
       : harness.dialog.showMessageBox(options)) as Promise<Electron.MessageBoxReturnValue>
   }
   cancel() {}
+  readonly showInstallation = harness.shellDialog.showInstallation
+  readonly endInstallation = harness.shellDialog.endInstallation
   readonly focus = harness.shellDialog.focus
   dispose() {}
 } }))
@@ -505,6 +508,7 @@ describe('desktop main startup', () => {
       if (handler === undefined) throw new Error('main did not register its protocol handler')
       for (const [name, mime] of [
         ['update-dialog.html', 'text/html'], ['update-dialog.css', 'text/css'], ['update-dialog.js', 'text/javascript'],
+        ['update-installation.css', 'text/css'], ['assets/welcome-brand.svg', 'image/svg+xml'],
         ['mandatory-update.html', 'text/html'], ['mandatory-update.css', 'text/css'], ['mandatory-update.js', 'text/javascript'],
         ['update-close.svg', 'image/svg+xml'], ['shell-theme.js', 'text/javascript'],
       ] as const) {
@@ -1844,6 +1848,34 @@ describe('desktop main startup', () => {
     harness.dialog.showMessageBox.mockResolvedValueOnce({ response: 0 })
     await expect(harness.prepareUpdate()).rejects.toThrow(/New tasks/u)
     expect(host.updateTasks.mock.calls).toEqual([['inspect'], ['lock'], ['unlock']])
+    expect(host.stop).not.toHaveBeenCalled()
+  })
+
+  it('keeps requests and previews available until the installation page covers the workspace', async () => {
+    const host = await readyForUpdate()
+    harness.dialog.showMessageBox.mockResolvedValueOnce({ response: 0 })
+    const visible = Promise.withResolvers<boolean>()
+    const entered = Promise.withResolvers<undefined>()
+    harness.shellDialog.showInstallation.mockImplementationOnce(() => { entered.resolve(undefined); return visible.promise })
+    const preparing = harness.prepareUpdate()
+    try {
+      await entered.promise
+      expect(host.updateTasks.mock.calls).toEqual([['inspect']])
+      expect(host.stop).not.toHaveBeenCalled()
+      expect(harness.platformCloseAndWait).not.toHaveBeenCalled()
+      visible.resolve(true)
+      await host.stopping.promise
+      host.exited.resolve()
+      await expect(preparing).resolves.toBe(true)
+    } finally { visible.resolve(false); host.exited.resolve(); await preparing.catch(() => undefined) }
+  })
+
+  it('does not lock or stop the Host if installation coverage is cancelled', async () => {
+    const host = await readyForUpdate()
+    harness.dialog.showMessageBox.mockResolvedValueOnce({ response: 0 })
+    harness.shellDialog.showInstallation.mockResolvedValueOnce(false)
+    await expect(harness.prepareUpdate()).resolves.toBe(false)
+    expect(host.updateTasks.mock.calls).toEqual([['inspect']])
     expect(host.stop).not.toHaveBeenCalled()
   })
 

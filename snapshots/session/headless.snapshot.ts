@@ -1347,7 +1347,7 @@ describe('headless recorded-session snapshots', () => {
           },
           inspect: async (cwd) => {
             actualLogs = await persistedSessions(cwd)
-            if (scenario.name === 'empty-response-retry-current') {
+            if (scenario.name === 'empty-response-retry-current' || scenario.name === 'malformed-response-retry') {
               const events = parseSessionLog(actualLogs[0]!.content)
               expect(events.filter(event => event.type === 'assistant/attempt' || event.type === 'llm/retry'
                 || event.type === 'llm/retry-started' || event.type === 'assistant/message')

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-experimental-agent-team-profile",
   "description": "Agent Teams collaboration, tools, and Web UI in one experimental bundle",
-  "version": "1.1.0",
+  "version": "1.1.6",
   "icon": "./icon.svg",
   "publishConfig": {
     "access": "public"
@@ -49,7 +49,6 @@
   "devDependencies": {
     "@deepseek-ai/cordis-plugin-include": "workspace:~",
     "@deepseek-ai/cordis": "workspace:~",
-    "js-yaml": "^4.3.2",
-    "@deepseek-ai/dsh-loader-smoke": "workspace:*"
+    "js-yaml": "^4.3.2"
   }
 }

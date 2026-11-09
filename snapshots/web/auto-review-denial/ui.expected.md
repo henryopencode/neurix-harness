@@ -7,6 +7,7 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Workflow"
 - navigation "Turn navigation":
   - button "Jump to turn 1"
 - text: Inspect the protected operation, but do not run it unless authorized. {{clock}}
@@ -35,6 +36,7 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Workflow"
 - navigation "Turn navigation":
   - button "Jump to turn 1"
 - text: Inspect the protected operation, but do not run it unless authorized. {{clock}}
@@ -67,6 +69,7 @@
   - tablist:
     - tab "Chat"
     - tab "Trajectory" [selected]
+    - tab "Workflow"
 - toolbar "Trajectory toolbar":
   - button "Use actual duration": Duration
   - button "Collapse turns": Turns

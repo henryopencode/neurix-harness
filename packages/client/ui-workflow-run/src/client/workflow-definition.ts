@@ -7,6 +7,8 @@ import type {
   ToolWorkflowAgentEndData, ToolWorkflowAgentStartData,
 } from '@deepseek-ai/dsh-tool-workflow/types'
 import type { WorkflowAgentOutcome, WorkflowStopReason } from '@deepseek-ai/dsh-workflow/types'
+import type { WorkflowCanvasNode } from './canvas-contract.ts'
+import { abandonedTurnSeq } from './workflow-lifecycle.ts'
 
 /** Status shown for a workflow, phase, or member. */
 export type WorkflowRunStatus = 'running' | 'completed' | 'failed' | 'cancelled' | 'interrupted'
@@ -43,12 +45,14 @@ declare module '@deepseek-ai/dsh-client-ui-chat/client' {
 
 interface WorkflowMemberState extends Omit<ToolWorkflowAgentStartData, 'runId'> {
   readonly outcome?: WorkflowAgentOutcome
+  readonly executionSeq: number
 }
 
 interface WorkflowState {
   readonly name: string
   readonly stopReason?: WorkflowStopReason
   readonly members: readonly WorkflowMemberState[]
+  readonly seq: number
 }
 
 /**
@@ -86,19 +90,13 @@ function statusFromOutcome(outcome: WorkflowAgentOutcome): WorkflowRunStatus {
  * nothing about liveness. Only a Turn closed after a crash or at a fork
  * boundary proves that a run without run-end stopped.
  */
-function turnAbandoned(location: ConversationLocation): boolean {
-  if (location.kind !== 'step' && location.kind !== 'turn') return false
-  const reason = location.turn.end?.data.reason.kind
-  return reason === 'interrupted' || reason === 'forked'
-}
-
 function projectWorkflow(
   context: ConversationNodeContext<WorkflowState>,
   location: ConversationLocation,
 ): WorkflowRunChatData {
   const state = context.state as WorkflowState
   const interrupted = state.stopReason === undefined
-    && turnAbandoned(location)
+    && abandonedTurnSeq(location) !== undefined
   const phases = new Map<string, { phase: string | null; members: WorkflowRunMemberData[] }>()
   for (const member of state.members) {
     const phase = member.phase === undefined ? null : member.phase
@@ -131,21 +129,23 @@ function projectWorkflow(
   }
 }
 
-function updateAgentStart(state: WorkflowState, data: ToolWorkflowAgentStartData): WorkflowState {
+function updateAgentStart(state: WorkflowState, data: ToolWorkflowAgentStartData, seq: number): WorkflowState {
   const member: WorkflowMemberState = {
+    executionSeq: seq,
     seq: data.seq,
     label: data.label,
     ...data.phase === undefined ? {} : { phase: data.phase },
     childId: data.childId,
   }
-  return { ...state, members: [...state.members, member] }
+  return { ...state, seq, members: [...state.members, member] }
 }
 
-function updateAgentEnd(state: WorkflowState, data: ToolWorkflowAgentEndData): WorkflowState {
+function updateAgentEnd(state: WorkflowState, data: ToolWorkflowAgentEndData, seq: number): WorkflowState {
   return {
     ...state,
+    seq,
     members: state.members.map(member => member.seq === data.seq
-      ? { ...member, outcome: data.outcome }
+      ? { ...member, outcome: data.outcome, executionSeq: seq }
       : member),
   }
 }
@@ -167,17 +167,17 @@ export const workflowRunDefinition: ConversationNodeDefinition<WorkflowState> = 
     if (match.event.type !== 'tool-workflow/run-start') {
       throw new Error('workflow-run start requires tool-workflow/run-start')
     }
-    return { name: match.event.data.name, members: [] }
+    return { name: match.event.data.name, members: [], seq: match.event.seq }
   },
   update: (context, match) => {
     if (match.event.type === 'tool-workflow/agent-start') {
-      return updateAgentStart(context.state, match.event.data)
+      return updateAgentStart(context.state, match.event.data, match.event.seq)
     }
     if (match.event.type === 'tool-workflow/agent-end') {
-      return updateAgentEnd(context.state, match.event.data)
+      return updateAgentEnd(context.state, match.event.data, match.event.seq)
     }
     if (match.event.type === 'tool-workflow/run-end') {
-      return { ...context.state, stopReason: match.event.data.stopReason }
+      return { ...context.state, stopReason: match.event.data.stopReason, seq: match.event.seq }
     }
     return context.state
   },
@@ -193,6 +193,40 @@ export const workflowRunDefinition: ConversationNodeDefinition<WorkflowState> = 
       location: context.start.location,
       visibility: 'visible',
       data,
+    }
+  },
+}
+
+/** The canvas projects the same run facts without introducing dependency edges. */
+export const workflowCanvasRunDefinition: ConversationNodeDefinition<WorkflowState> = {
+  ...workflowRunDefinition,
+  kind: 'workflow-canvas-run',
+  target: 'workflow',
+  buildViewNode: (context): WorkflowCanvasNode | null => {
+    if (context.start === undefined || context.state === undefined) return null
+    const location = context.start.location
+    const state = context.state
+    const interruptedAt = state.stopReason === undefined ? abandonedTurnSeq(location) : undefined
+    return {
+      key: context.key, kind: context.kind, id: context.id, target: 'workflow',
+      data: {
+        id: `run:${context.id}`,
+        seq: interruptedAt ?? state.seq,
+        ...location.kind === 'turn' || location.kind === 'step' ? { turn: location.turn.turn } : {},
+        name: state.name,
+        source: 'run',
+        tasks: state.members.map(member => ({
+          id: `member:${member.seq}`,
+          content: member.label,
+          status: member.outcome === undefined
+            ? interruptedAt === undefined ? 'running' : 'interrupted'
+            : statusFromOutcome(member.outcome),
+          ...member.phase === undefined ? {} : { phase: member.phase },
+          sessionId: member.childId,
+          executionSeq: member.outcome === undefined ? interruptedAt ?? member.executionSeq : member.executionSeq,
+          dependsOn: [],
+        })),
+      },
     }
   },
 }
