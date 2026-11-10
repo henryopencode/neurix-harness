@@ -1,0 +1,41 @@
+- log "Team view":
+  - article:
+    - text: You
+    - time: {{clock}} AM
+    - text: Show the team conversation.
+  - article:
+    - text: lead
+    - time: {{clock}} AM
+    - paragraph: Ready for team collaboration.
+  - article:
+    - text: You
+    - time: {{clock}} PM
+    - text: Spawn teammate reviewer, wait for its team-ready file, send it the message Review the direct inbox delivery., interrupt its waiting turn, then reply TEAM_DIRECT_INBOX_OK.
+  - article:
+    - text: lead
+    - time: {{clock}} PM
+    - group: spawn_teammate Completed
+  - article:
+    - text: You
+    - time: {{clock}} PM
+    - text: Create the empty file team-ready, then wait in Bash until interrupted.
+  - article:
+    - text: reviewer
+    - time: {{clock}} PM
+    - group: bash Tool failed
+  - article:
+    - text: lead
+    - time: {{clock}} PM
+    - group: bash Completed
+  - article:
+    - text: lead
+    - time: {{clock}} PM
+    - group: send_message Completed
+  - article:
+    - text: lead
+    - time: {{clock}} PM
+    - group: interrupt_agent Completed
+  - article:
+    - text: lead
+    - time: {{clock}} PM
+    - paragraph: TEAM_DIRECT_

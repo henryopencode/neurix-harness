@@ -240,7 +240,8 @@
     "tests/complex-history.perf.ts",
     "tests/pwsh-terminal.e2e.ts",
     "tests/workflow-run.e2e.ts",
-    "tests/workflow-canvas.e2e.ts"
+    "tests/workflow-canvas.e2e.ts",
+    "tests/team-view.e2e.ts"
   ],
   "references": [
     { "path": "../../packages/experimental/auto-review" },
