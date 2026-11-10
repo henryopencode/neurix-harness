@@ -1,0 +1,17 @@
+- log "Team view":
+  - article:
+    - text: You
+    - time: {{clock}} AM
+    - text: Show the team conversation.
+  - article:
+    - text: lead
+    - time: {{clock}} AM
+    - paragraph: Ready for team collaboration.
+  - article:
+    - text: You
+    - time: {{clock}} PM
+    - text: Spawn teammate reviewer, wait for its team-ready file, send it the message Review the direct inbox delivery., interrupt its waiting turn, then reply TEAM_DIRECT_INBOX_OK.
+  - article:
+    - text: lead
+    - time: {{clock}} PM
+    - status: Thinking…

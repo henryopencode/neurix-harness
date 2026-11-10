@@ -1,5 +1,5 @@
 ---
-description: "使用并排查实验性 Web Agent Teams roster、共享任务板与 teammate 导航面板。"
+description: "查看 Agent Teams 成员与任务，并在 Web 团队视角中跟踪独立的回复和工具调用。"
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-本包向 Web 会话页头添加 Agent Teams action，让用户检查当前 roster、查看共享任务板并导航到 teammate 会话。它从共享 Session store 读取 Lead Session 的 `agentTeam` 投影，Host 投影 frame 使其保持最新而无需刷新控件，并让普通 child history 导航继续使用稳定的 addressed-subagent 路径。通过公开发布的实验性 Agent Teams bundle 选择本包。这个浏览器 projection 不扩展稳定 API Proxy、不存储 Team 状态，也不注册面向模型的输入。
+查看团队成员与共享任务、打开成员会话，或通过聊天室样式的团队视角跟踪协作。每次回复与工具调用都独立显示发送者；正文到达时，思考状态转为流式回复。通过现有会话输入框发送消息。使用实验性 Agent Teams 组合包启用本包；团队视角可见时会加载成员历史。
 
 ## 目录
 
@@ -33,6 +33,12 @@ kind: "package-reference"
 
 Roster 行展示持久名称与阶段。provisioning 和 running 成员使用共享 ongoing loading，inactive 成员使用人物图标，failed 成员使用 error 红点。实时 Session 状态提供运行活动；共享 `modelSelection` 投影在可用时提供模型。当前会话带有“当前会话”标签且不可选择。在 teammate 会话中选择 Lead 会直接打开 Lead Session。选择 active teammate 会打开其普通 continuable 子会话地址。Host 在打开历史时校验 parent、child 与 mode；后续人类提示词使用同一 addressed-subagent 会话。
 
+### 查看团队视角
+
+在对话、工作流和轨迹旁选择 **团队视角**。回复、工具调用及已进入会话的成员消息按时间排列，并标明发送者。每次嵌套工具调用也有自己的消息；展开调用可查看参数与结果。思考期间显示活动提示，不展示思考正文；回复文字到达后在同一条消息中流式显示。现有输入框向当前打开的会话发送消息，切换视角会保留草稿。
+
+该视角通过现有历史和实时更新通道读取 Lead 与成员 Session。加载状态和成员失败与可读消息同时保留；切换视角会重试失败的获取操作。**加载更早的消息** 扩展已加载的历史。离开视角或卸载插件会释放其成员引用。
+
 ### 查看任务板
 
 可开始的 pending 任务使用 idle 灰点，被依赖阻塞的 pending 任务使用 warning 橙点，in-progress 任务使用 ongoing loading，completed 任务使用 done 绿点。
@@ -47,7 +53,7 @@ Roster 行展示持久名称与阶段。provisioning 和 running 成员使用共
 <details>
 <summary>实现细节——点击展开</summary>
 
-Client export 通过 Cordis effect 注册 locale dictionary 与一个 conversation-header slot；它不挂载任何 Remote namespace。Dispose plugin fiber 会移除这两项 registration。
+Client export 通过 Cordis effect 注册 locale dictionary、conversation-header action 与团队视角；它不挂载任何 Remote namespace。团队视角从现有 Chat target snapshot 派生独立消息，并通过共享 Session store 观察 roster。其 observable source 仅在被订阅时持有 Session 引用。Dispose plugin fiber 会移除这些 registration 并释放活动中的消息流引用。
 
 面板渲染在会话容器外，并保持在视口范围内。成员卡片在静止、选中和悬停状态下均使用共享 elevation 描边绘制轮廓。悬停触发按钮 150ms 后打开面板；指针离开触发按钮和面板后，经过 120ms 宽限关闭。点击触发按钮会固定面板并将焦点移入其中。点击外部或按 Escape 可关闭面板；仅当焦点原本位于面板内时，Escape 才将焦点返回触发按钮。页头较窄时触发按钮折叠为图标，只响应点击打开。组件从 `useSessions`、`useSessionStatus` 与 `useSession` 座位派生每一行：Lead 身份来自当前 Session 的 subagent address，Team 视图来自 `projectionsBySession[lead].values.agentTeam`，成员活动来自 Session 状态并以列表摘要为后备，model 来自 `projectionsBySession[member].values.modelSelection.next`。每个 roster 行只选择自己的运行状态。唯一的注入回调通过当前与目标 Session 的 id 打开 roster Session。切换会话会关闭面板并清除导航失败。
 
@@ -55,6 +61,9 @@ Client export 通过 Cordis effect 注册 locale dictionary 与一个 conversati
 |---|---|
 | [`src/client/mount.ts`](src/client/mount.ts) | locale、导航与 slot registration |
 | [`src/client/TeamAction.tsx`](src/client/TeamAction.tsx) | 由投影派生的 roster 与任务板及面板交互状态 |
+| [`src/client/TeamView.tsx`](src/client/TeamView.tsx) | 标注发送者的消息、思考状态与流式输出 |
+| [`src/client/team-feed.ts`](src/client/team-feed.ts) | 随订阅持有的成员引用与合并后的实时消息 |
+| [`src/client/team-messages.ts`](src/client/team-messages.ts) | 从 Chat target snapshot 派生独立回复和工具消息 |
 | [`src/client/locales.ts`](src/client/locales.ts) | 中英文 panel 文案 |
 | [`src/index.ts`](src/index.ts) | 不执行行为的 Host entry |
 
@@ -85,7 +94,7 @@ Client export 通过 Cordis effect 注册 locale dictionary 与一个 conversati
 
 <a id="known-limitations-and-deferred-work"></a>
 
-- **没有 mailbox timeline**——投影视图只承载 roster 与任务；不显示 peer 消息。
+- **成员消息进入会话**——成员消息进入接收者会话后才会显示；此视角不添加独立的待处理信箱。
 - **晚启用插件** — 在已经打开的会话中启用 Agent Teams 后，需要刷新页面才能接收其 Team 投影。
 - **模型可用性** — 仅当共享 store 包含该成员的持久选择或请求时才显示模型。冷缓存中缺少的值会保持缺失，直到正常 Session 加载或实时更新提供它们。
 - **普通 child continuation**——导航后发送的人类消息使用稳定 addressed-subagent 提示词路径，而不是 Team peer mailbox。

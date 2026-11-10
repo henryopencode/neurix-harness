@@ -1,5 +1,5 @@
 ---
-description: "Use and debug the experimental Web Agent Teams roster, shared task board, and teammate navigation panel."
+description: "Inspect Agent Teams members and tasks, and follow individual replies and Tool calls in the Web Team view."
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-This package adds an Agent Teams action to the Web conversation header, where a user can inspect the current roster, inspect the shared task board, and navigate into a teammate's conversation. It reads the Lead Session's `agentTeam` projection from the shared Session store, where Host projection frames keep it current without a refresh control, and keeps ordinary child-history navigation on the stable addressed-subagent path. Choose it through the published experimental Agent Teams bundle. The browser projection does not extend the stable API Proxy, store Team state, or register model-facing input.
+Inspect team members and shared tasks, open teammate conversations, or follow the team in a chat-room view. Each reply and Tool call appears as its own attributed message; thinking activity changes into a streamed reply when text arrives. Send messages through the existing conversation input. Enable this package through the experimental Agent Teams bundle; opening the Team view loads member histories while that view is visible.
 
 ## Table of Contents
 
@@ -33,6 +33,12 @@ The panel shows the Lead Session's roster and task board from the shared Session
 
 Roster rows show durable names and phases. Provisioning and running members use the shared ongoing loader, inactive members use a person icon, and failed members use error. Live Session status supplies running activity; the shared `modelSelection` projection supplies a model when available. The current conversation carries a Current chat tag and cannot be selected. Selecting the Lead from a teammate conversation opens the Lead Session directly. Selecting an active teammate opens its ordinary continuable child address. The Host validates the parent, child, and mode when history opens; later human prompts use the same addressed-subagent conversation.
 
+### Follow the Team view
+
+Select **Team view** beside Chat, Workflow, and Trajectory. Replies, Tool calls, and admitted peer messages appear chronologically with their sender names. Each nested Tool call also has its own message; expand a call to read its arguments and result. Thinking shows an activity indicator without reasoning text, and the same message displays the reply as text streams in. The existing input sends to the currently open conversation and retains its draft when changing views.
+
+The view reads the Lead and teammate Sessions through their existing history and live-update paths. Loading and member failures remain visible alongside readable messages; switching views retries failed acquisitions. **Load earlier messages** extends the loaded histories. Leaving the view or unloading the plugin releases its member references.
+
 ### Inspect the task board
 
 Ready pending tasks use idle, blocked pending tasks use warning, in-progress tasks use ongoing, and completed tasks use done.
@@ -47,7 +53,7 @@ The read-only task board shows task identity, owner, blockers, readiness, adviso
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The Client export registers its locale dictionaries and one conversation-header slot through Cordis effects; it mounts no Remote namespace. Disposing the plugin fiber removes both registrations.
+The Client export registers its locale dictionaries, conversation-header action, and Team view through Cordis effects; it mounts no Remote namespace. The view derives separate messages from existing Chat target snapshots and observes the roster through the shared Session store. Its observable source owns Session references only while subscribed. Disposing the plugin fiber removes the registrations and releases active transcript references.
 
 The panel renders outside the conversation container and stays within the viewport. Member cards use the shared elevation stroke for their outlines in resting, selected, and hover states. Hovering the trigger opens the panel after 150ms; leaving both trigger and panel closes it after a 120ms grace period. Clicking the trigger pins the panel and moves focus into it. Outside clicks and Escape dismiss the panel; Escape returns focus to the trigger only when focus was inside the panel. In a narrow header, the trigger becomes an icon and opens only on click. The component derives every row from the `useSessions`, `useSessionStatus`, and `useSession` seats: the Lead identity comes from the current Session's subagent address, the Team view from `projectionsBySession[lead].values.agentTeam`, member activity from Session status with the list summary as fallback, and the model from `projectionsBySession[member].values.modelSelection.next`. Each roster row selects its own running state. The only injected callback opens a roster Session using the current and target Session ids. Switching conversations closes the panel and clears a navigation failure.
 
@@ -55,6 +61,9 @@ The panel renders outside the conversation container and stays within the viewpo
 |---|---|
 | [`src/client/mount.ts`](src/client/mount.ts) | Locale, navigation, and slot registrations |
 | [`src/client/TeamAction.tsx`](src/client/TeamAction.tsx) | Projection-derived roster and task board with panel interaction state |
+| [`src/client/TeamView.tsx`](src/client/TeamView.tsx) | Attributed message rows, thinking activity, and streaming output |
+| [`src/client/team-feed.ts`](src/client/team-feed.ts) | Subscription-owned member references and merged live messages |
+| [`src/client/team-messages.ts`](src/client/team-messages.ts) | Independent reply and Tool rows from Chat target snapshots |
 | [`src/client/locales.ts`](src/client/locales.ts) | English and Chinese panel copy |
 | [`src/index.ts`](src/index.ts) | Inert Host entry |
 
@@ -85,7 +94,7 @@ No direct effect; the Team tools and ordinary conversation submission own any la
 
 <a id="known-limitations-and-deferred-work"></a>
 
-- **No mailbox timeline** — the projection view carries roster and tasks only; peer messages are not shown.
+- **Peer-message admission** — peer messages appear when admitted to a member's transcript; the view does not add a separate pending mailbox.
 - **Late plugin activation** — after enabling Agent Teams in an already-open conversation, reload the page to receive its Team projection.
 - **Model availability** — a model appears only when the shared store has a durable selection or request for that member. Missing cold-cache values stay absent until normal Session loading or a live update supplies them.
 - **Ordinary child continuation** — a human message sent after navigation uses the stable addressed-subagent prompt path, not the Team peer mailbox.
