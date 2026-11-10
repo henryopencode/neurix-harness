@@ -38,7 +38,7 @@ function render(state) {
   if (installing) {
     document.getElementById('installation-title').textContent = state.message
     document.getElementById('installation-detail').textContent = state.detail
-    document.getElementById('installation-version').textContent = `V${state.installationVersion}`
+    document.getElementById('installation-version').textContent = state.installationVersionLabel
     document.body.classList.add('installation-backdrop')
     // Establish the transparent entrance even when this is the document's first view.
     installation.getBoundingClientRect()
