@@ -1,83 +1,105 @@
-/** Git branch metadata traverses the real Host, generated Remote, resources, and header slots. */
-import { execFileSync } from 'node:child_process'
-import type { Browser, Page } from 'playwright'
-import { chromium } from 'playwright'
-import { afterAll, beforeAll, expect, it } from 'vitest'
-import { createChatScrollFixture } from './chat-scroll-fixture.ts'
-import { launchWebScaffold, seedSession, watchConsole, type WebScaffold } from './scaffold.ts'
+/** Real Git branch switching through the shipped composer context and Remote service. */
+
+import { execFile } from 'node:child_process'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
+import { chromium, type Browser, type Page } from 'playwright'
+import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
+import {
+  captureStableAria, compareOrRefreshGolden, launchWebScaffold, seedSession, watchConsole, webSnapshotMode, type WebScaffold,
+} from './scaffold.ts'
 import { newEnglishPage, saveFailureShot } from './support.ts'
 
-const fixture = createChatScrollFixture({ markerPrefix: 'GIT_BRANCH', title: 'GIT_BRANCH header context', turns: 1 })
-let app: WebScaffold
-let browser: Browser
-let page: Page
-let consoleState: ReturnType<typeof watchConsole>
+const execute = promisify(execFile)
+const mode = webSnapshotMode()
+const expectedRoot = fileURLToPath(new URL('./expected/git-branch', import.meta.url))
+const seed = fileURLToPath(new URL('../../../snapshots/web/seeded-history/session.v3.jsonl', import.meta.url))
+const longBranch = 'feature/session-header-with-a-long-branch-name'
 
-function git(...args: string[]): string {
-  return execFileSync('git', ['-c', 'user.name=Branch test', '-c', 'user.email=branch@example.com', '-c', 'commit.gpgsign=false', ...args], {
-    cwd: app.workspaceCwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
-  }).trim()
-}
+describe('web e2e: Session Git branches', () => {
+  let scaffold: WebScaffold
+  let browser: Browser
+  let page: Page
+  const git = async (...args: string[]): Promise<string> => (await execute('git', args, {
+    cwd: scaffold.workspaceCwd,
+    env: { ...process.env, GIT_DIR: undefined, GIT_WORK_TREE: undefined, GIT_INDEX_FILE: undefined,
+      GIT_CONFIG_COUNT: '0', GIT_CONFIG_PARAMETERS: '', GIT_CONFIG_GLOBAL: '', GIT_CONFIG_NOSYSTEM: '1' },
+  })).stdout.trim()
 
-beforeAll(async () => {
-  app = await launchWebScaffold()
-  await seedSession(app, fixture.log, 'git-branch-web-e2e')
-  browser = await chromium.launch()
-  page = await newEnglishPage(browser, 1200)
-  consoleState = watchConsole(page)
-  await page.goto(app.authenticatedUrl)
-  const search = page.getByRole('button', { name: 'Search sessions' })
-  try { await search.waitFor() } catch (error) {
-    await saveFailureShot(page, 'git-branch-startup')
-    console.error({ pageErrors: consoleState.pageErrors, body: await page.locator('body').innerText() })
-    throw error
-  }
-  if (await search.getAttribute('aria-expanded') !== 'true') await search.click()
-  await page.getByRole('textbox', { name: 'Search session names', exact: true }).fill(fixture.markers.user(1))
-  const result = page.getByRole('tree', { name: 'Search results' }).getByRole('treeitem')
-  await result.first().waitFor({ timeout: 30_000 })
-  expect(await result.count()).toBe(1)
-  await result.first().click()
-  await page.getByText(fixture.markers.assistant(1), { exact: false }).last().waitFor()
-})
+  beforeAll(async () => {
+    scaffold = await launchWebScaffold()
+    await git('init', '-b', 'main')
+    await git('config', 'user.name', 'Branch browser fixture')
+    await git('config', 'user.email', 'branch-browser@example.invalid')
+    await git('config', 'commit.gpgSign', 'false')
+    await writeFile(join(scaffold.workspaceCwd, 'file.txt'), 'initial\n')
+    await git('add', 'file.txt')
+    await git('commit', '-m', 'initial')
+    await git('branch', longBranch)
+    await seedSession(scaffold, await readFile(seed, 'utf8'), 'git-branch-ui')
+    browser = await chromium.launch()
+    page = await newEnglishPage(browser)
+  })
 
-afterAll(async () => {
-  try { await browser?.close() } finally { await app?.close() }
-})
+  afterAll(async () => {
+    try { await browser?.close() }
+    finally { await scaffold?.close() }
+  })
 
-it('follows repository initialization and branch changes without changing the Session or reloading', async () => {
-  expect(await page.getByRole('button', { name: /^Git branch:/u }).count()).toBe(0)
-  git('init', '-q', '-b', 'main')
-  const main = page.getByRole('button', { name: 'Git branch: main', exact: true })
-  await main.waitFor({ timeout: 15_000 })
-  await expect(`${await main.ariaSnapshot()}\n`).toMatchFileSnapshot('./expected/git-branch/badge.expected.md')
-  const location = page.url()
-  git('commit', '-q', '--allow-empty', '-m', 'initial')
-  const longName = 'feature/a-long-branch-name-for-the-conversation-header'
-  git('checkout', '-qb', longName)
-  const badge = page.getByRole('button', { name: `Git branch: ${longName}`, exact: true })
-  await badge.waitFor({ timeout: 15_000 })
-  for (const colorScheme of ['light', 'dark'] as const) {
-    await page.emulateMedia({ colorScheme })
-    for (const width of [1200, 390]) {
-      await page.setViewportSize({ width, height: 900 })
-      const box = await badge.boundingBox()
-      expect(box?.width).toBeGreaterThan(24)
-      expect(box!.x + box!.width).toBeLessThanOrEqual(width)
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-      await badge.click()
-      const tooltip = page.getByRole('tooltip')
-      await tooltip.waitFor()
-      expect(await tooltip.textContent()).toContain(longName)
-      const tip = (await tooltip.boundingBox())!
-      expect(tip.x).toBeGreaterThanOrEqual(0)
-      expect(tip.x + tip.width).toBeLessThanOrEqual(width)
-      await page.keyboard.press('Escape')
-      await expect.poll(() => tooltip.count()).toBe(0)
+  it('shows the branch, switches safely, and fits a 390px viewport in both themes', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-git-branch'))
+    const tripwire = watchConsole(page)
+    await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
+    const group = page.getByRole('treeitem').first()
+    await group.waitFor()
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+    await page.getByRole('treeitem').nth(1).click()
+    const trigger = page.getByRole('button', { name: 'Switch Git branch: main', exact: true })
+    await trigger.waitFor()
+    expect(await page.locator('[data-slot="conversation.session.header.utilities"]').getByRole('button', { name: 'Switch Git branch: main', exact: true }).count()).toBe(0)
+    const directoryContext = page.locator('[data-git-branch-context]')
+    const editor = page.locator('[data-slot="conversation.composer.bar"] [contenteditable]')
+    const contextBox = await directoryContext.boundingBox()
+    const inputBox = await editor.boundingBox()
+    expect(contextBox).not.toBeNull()
+    expect(inputBox).not.toBeNull()
+    expect(contextBox!.y).toBeLessThan(inputBox!.y)
+    await trigger.click()
+    if (process.env.DSH_GIT_BRANCH_SCREENSHOTS !== undefined) {
+      await mkdir(process.env.DSH_GIT_BRANCH_SCREENSHOTS, { recursive: true })
+      await page.screenshot({ path: join(process.env.DSH_GIT_BRANCH_SCREENSHOTS, 'desktop.png') })
     }
-  }
-  git('checkout', '-q', '--detach')
-  await page.getByRole('button', { name: `Detached · ${git('rev-parse', '--short', 'HEAD')}`, exact: true }).waitFor({ timeout: 15_000 })
-  expect(page.url()).toBe(location)
-  expect(consoleState.pageErrors).toEqual([])
+    await page.getByRole('searchbox', { name: 'Search branches' }).fill('session-header')
+    await page.getByRole('menuitem', { name: longBranch, exact: true }).waitFor()
+    await mkdir(expectedRoot, { recursive: true })
+    await compareOrRefreshGolden(join(expectedRoot, 'menu.expected.md'), await captureStableAria(page, 'role=menu', scaffold.workspaceCwd), mode)
+    await page.getByRole('menuitem', { name: longBranch, exact: true }).click()
+    const changed = page.getByRole('button', { name: `Switch Git branch: ${longBranch}`, exact: true })
+    await changed.waitFor()
+    expect(await git('branch', '--show-current')).toBe(longBranch)
+    await page.getByRole('alert').getByText(`Switched to ${longBranch}`, { exact: true }).waitFor()
+    await page.getByRole('alert').waitFor({ state: 'hidden' })
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    for (const colorScheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme })
+      await changed.click()
+      const menu = page.getByRole('menu')
+      await menu.waitFor()
+      const bounds = await menu.boundingBox()
+      expect(bounds).not.toBeNull()
+      expect(bounds!.x).toBeGreaterThanOrEqual(8)
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(382)
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390)
+      if (process.env.DSH_GIT_BRANCH_SCREENSHOTS !== undefined) {
+        await page.screenshot({ path: join(process.env.DSH_GIT_BRANCH_SCREENSHOTS, `mobile-${colorScheme}.png`) })
+      }
+      await page.keyboard.press('Escape')
+      await menu.waitFor({ state: 'hidden' })
+    }
+    expect(tripwire.pageErrors).toEqual([])
+    expect(tripwire.warnings).toEqual([])
+  })
 })

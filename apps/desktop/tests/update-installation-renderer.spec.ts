@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { runInContext } from 'node:vm'
 import { JSDOM } from 'jsdom'
 import { expect, it, onTestFinished, vi } from 'vitest'
-import { resolveDesktopLocale } from '../src/locale.ts'
+import { formatDesktopMessage, resolveDesktopLocale } from '../src/locale.ts'
 import type { UpdateDialogApi, UpdateDialogView } from '../src/update-dialog.ts'
 
 function fixture() {
@@ -21,6 +21,7 @@ function fixture() {
   const locale = resolveDesktopLocale('zh-CN')
   const state: UpdateDialogView = { revision: 1, locale: locale.id, title: locale.messages.updateTitle,
     message: locale.messages.updateInstallingTitle, detail: locale.messages.mandatoryRestarting, installationVersion: '1.1.1',
+    installationVersionLabel: formatDesktopMessage(locale.messages.updateInstallationVersion, { version: '1.1.1' }),
     buttons: [], cancelId: -1, closeLabel: locale.messages.updateClose, technicalDetails: '',
     technicalDetailsLabel: locale.messages.updateTechnicalDetails }
   let publish!: (view: UpdateDialogView | null) => void
@@ -60,11 +61,20 @@ it('acknowledges coverage only after the opaque entrance and subsequent paint', 
   expect(f.covered).toHaveBeenCalledExactlyOnceWith(1)
   const failure = { ...f.state, revision: 2, message: '更新失败', buttons: ['重试'], cancelId: 0 }
   delete failure.installationVersion
+  delete failure.installationVersionLabel
   f.publish(failure)
   expect(f.element('installation').inert).toBe(true)
   expect(f.dom.window.document.body.classList.contains('installation-backdrop')).toBe(true)
   expect(f.dom.window.document.activeElement).toBe(f.element('dialog'))
   expect(f.element('actions').textContent).toBe('重试')
+})
+
+it('uses the main-owned version label without adding a renderer prefix', async () => {
+  const f = fixture()
+  await Promise.resolve()
+  f.publish({ ...f.state, revision: 2, installationVersion: '1.2.0-nightly.2',
+    installationVersionLabel: 'Version 1.2.0-nightly.2' })
+  expect(f.element('installation-version').textContent).toBe('Version 1.2.0-nightly.2')
 })
 
 it('does not acknowledge an entrance replaced by a failure', async () => {
@@ -73,6 +83,7 @@ it('does not acknowledge an entrance replaced by a failure', async () => {
   await f.paint()
   const failure = { ...f.state, revision: 2, message: '更新失败', buttons: ['关闭'], cancelId: 0 }
   delete failure.installationVersion
+  delete failure.installationVersionLabel
   f.publish(failure)
   f.transition.resolve(undefined)
   await Promise.resolve()

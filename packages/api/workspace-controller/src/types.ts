@@ -31,6 +31,10 @@ export interface WorkspaceView {
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
+    /** Only archived Sessions may be permanently deleted. */
+    'workspace/session-not-archived': { readonly sessionId: SessionId }
+    /** A retry can finish deletion; some records may already be gone when partial is true. */
+    'workspace/session-delete-failed': { readonly sessionId: SessionId; readonly partial: boolean }
     /** The requested directory cannot back a Workspace. */
     'workspace/invalid-path': { readonly path: string }
     /** Another Workspace already uses the requested name. */
@@ -127,6 +131,16 @@ export interface WorkspaceArchiveSessionRequest {
 /** Session requested for restoration from the archived Session list. */
 export interface WorkspaceUnarchiveSessionRequest {
   readonly sessionId: SessionId
+}
+
+/** Archived root requested for permanent deletion with its subagent descendants. */
+export interface WorkspaceDeleteSessionRequest {
+  readonly sessionId: SessionId
+}
+
+/** Permanently deleted identities and the resulting archive set. */
+export interface WorkspaceDeleteSessionValue extends WorkspaceArchiveValue {
+  readonly deletedSessionIds: readonly SessionId[]
 }
 
 /** Complete archived Session set after a mutation. */

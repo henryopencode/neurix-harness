@@ -230,6 +230,7 @@
     "apps/web/tests/pwsh-terminal.e2e.ts",
     "apps/web/tests/workflow-run.e2e.ts",
     "apps/web/tests/workflow-canvas.e2e.ts",
+    "apps/web/tests/team-view.e2e.ts",
     "apps/web/stress-tests/reasoning-chunks.stress.ts",
     "apps/cli/tests/**/*.ts",
     "apps/plugin-market-generator/tests/**/*.ts",

@@ -43,16 +43,16 @@ export function WorkflowTaskDetails({
   })
   const artifacts = [...new Set(task.artifacts ?? [])]
   return <article className={css.details} aria-label={t('task.details')}>
-    <h2 className={css.detailsTitle}>{taskTitle(task.content, t)}</h2>
+    <h2 className={css.detailsTitle}>{taskTitle(task.content, t, task.titleKey)}</h2>
     <div className={css.detailStatus}><StateDot state={taskDot(task.status)} />{t(`status.${task.status}`)}
       {task.removed && task.status !== 'removed' && <span>{t('task.removed')}</span>}
     </div>
-    <span className={css.secondary}>{graph.source === 'run' || workflowExecutionStatus(snapshot.executions, task.sessionId, graph.seq) !== undefined ? t('task.recorded') : t('task.planned')}</span>
+    <span className={css.secondary}>{graph.source !== 'plan' || workflowExecutionStatus(snapshot.executions, task.sessionId, graph.seq) !== undefined ? t('task.recorded') : t('task.planned')}</span>
     {task.phase !== undefined && <span className={css.secondary}>{phaseTitle(task.phase, t)}</span>}
     {task.description !== undefined && <section className={css.detailSection}><h3>{t('task.description')}</h3><p>{task.description}</p></section>}
     {task.expectedOutput !== undefined && <section className={css.detailSection}><h3>{t('task.expectedOutput')}</h3><p>{task.expectedOutput}</p></section>}
     {prerequisites.length > 0 && <section className={css.detailSection}><h3>{t('task.dependencies')}</h3><ul>
-      {prerequisites.map(item => <li key={item.id}><StateDot state={taskDot(item.status)} />{taskTitle(item.content, t)} · {t(`status.${item.status}`)}</li>)}
+      {prerequisites.map(item => <li key={item.id}><StateDot state={taskDot(item.status)} />{taskTitle(item.content, t, item.titleKey)} · {t(`status.${item.status}`)}</li>)}
     </ul></section>}
     {task.blockedReason !== undefined && <section className={css.detailSection}><h3>{t('task.blocked')}</h3><p>{task.blockedReason}</p></section>}
     {task.result !== undefined && <section className={css.detailSection}><h3>{t('task.result')}</h3><p>{task.result}</p></section>}
@@ -81,5 +81,5 @@ export function WorkflowTaskTitle({ useTabInfo, useWorkflow, t }: WorkflowTaskTi
   const graphId = params !== undefined && 'workflowGraphId' in params ? params.workflowGraphId : undefined
   const taskId = params !== undefined && 'workflowTaskId' in params ? params.workflowTaskId : undefined
   const task = snapshot.graphs.find(graph => graph.id === graphId)?.tasks.find(item => item.id === taskId)
-  return <span className={css.tabTitle}><IconChecklistOutlineRegular size={14} /><span>{task === undefined ? t('task.details') : taskTitle(task.content, t)}</span></span>
+  return <span className={css.tabTitle}><IconChecklistOutlineRegular size={14} /><span>{task === undefined ? t('task.details') : taskTitle(task.content, t, task.titleKey)}</span></span>
 }

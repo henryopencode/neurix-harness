@@ -117,7 +117,7 @@ flowchart LR
   pkg_api_workspace_files["api-workspace-files"]
   svc_workspaceFiles["ctx.workspaceFiles<br/>Host workspace file Remote service"]
   pkg_client_ui_git_branch["client-ui-git-branch"]
-  svc_gitBranch["ctx.gitBranch<br/>Session Git HEAD observations"]
+  svc_workspaceGit["ctx.workspaceGit<br/>Host Git branch Remote service"]
   pkg_workspace_changes["workspace-changes"]
   svc_workspaceChanges["ctx.workspaceChanges<br/>Host per-turn changed-file summaries"]
   pkg_api_terminal_controller["api-terminal-controller"]
@@ -347,7 +347,7 @@ flowchart LR
   pkg_client_file_upload --> svc_fileUploads
   pkg_client_modules --> svc_clientModules
   pkg_client_product_analytics --> svc_productAnalytics
-  pkg_client_ui_git_branch --> svc_gitBranch
+  pkg_client_ui_git_branch --> svc_workspaceGit
   pkg_client_ui_plugin_manager --> svc_pluginRegistryProbe
   pkg_command_feedback --> svc_sessionFeedback
   pkg_commands --> svc_commands
@@ -528,7 +528,6 @@ flowchart LR
   svc_fileReferences --> pkg_api_session_controller
   svc_fileUploads --> pkg_api_session_controller
   svc_fs --> pkg_tool_fs
-  svc_gitBranch --> pkg_client_ui_git_branch
   svc_headlessStartup --> pkg_headless
   svc_hmr --> pkg_app_boot
   svc_jobs --> pkg_api_job_controller
@@ -693,7 +692,7 @@ flowchart LR
 | `ctx.credentialsController` | `core` | [`api-settings-controller`](../packages/api/settings-controller) | - | - | - | 把凭据引用 seam 投影到生成的 Remote namespace：批量扇出、视图投影与拒绝映射都在这里，而不在 seam Definition 上。 |
 | `ctx.settingsController` | `core` | [`api-settings-controller`](../packages/api/settings-controller) | - | - | - | 把用户设置 seam 投影到生成的 Remote namespace：读取一律脱敏，所有拒绝在这里分类，而不在 seam Definition 上。 |
 | `ctx.workspaceFiles` | `core` | [`api-workspace-files`](../packages/api/workspace-files) | - | - | - | 为会话工作区根内的文件提供 stat、分页文本、字节窗口、目录列举与变更流，经 lstat、包含关系与 stat 重检限定。 |
-| `ctx.gitBranch` | `core` | [`client-ui-git-branch`](../packages/client/ui-git-branch) | - | [`client-ui-git-branch`](../packages/client/ui-git-branch) | - | 通过已授权的工作区读取传送分支元数据，不修改仓库。 |
+| `ctx.workspaceGit` | `core` | [`client-ui-git-branch`](../packages/client/ui-git-branch) | - | - | - | 通过组合的子进程与沙箱提供程序，为已授权会话观察和切换已有本地分支。 |
 | `ctx.workspaceChanges` | `core` | [`workspace-changes`](../packages/deliverables/workspace-changes) | - | - | - | Serves the summary each workspace/changes event announced and each listed file's turn-start and turn-end comparison, by Session and event sequence, until that Session is disposed; the log carries only the turn. |
 | `ctx.terminalController` | `core` | [`api-terminal-controller`](../packages/api/terminal-controller) | - | - | - | 通过子进程提供方与类型化 Remote 传输管理用户终端进程、解析默认 shell，并恢复有界终端屏幕。 |
 | `ctx.workspaceController` | `core` | [`api-workspace-controller`](../packages/api/workspace-controller) | - | - | - | 通过生成的 Remote namespace 负责 Workspace 命令和可在重连后收敛的 Workspace 状态投递。 |

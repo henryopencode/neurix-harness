@@ -170,6 +170,10 @@ interface SessionActivity {
 
 [`dsh-workspace-controller`](../../packages/api/workspace-controller) serves workspace CRUD to GUI clients over `ctx.workspaceRegistry`, and [`dsh-session-controller`](../../packages/api/session-controller) performs the create-session-then-attach flow above. [dsh-agent-instructions](../../packages/context/agent-instructions) is **not** a consumer despite the name: it discovers AGENTS.md-style instruction files under an agent's own cwd and never touches `ctx.workspaceRegistry` — the shared word refers to the user's working directory, not to this registry's entities.
 
+## Git branches
+
+`GitBranchState` reports either `unavailable` or a repository root, local branches, and its current checkout. A symbolic branch can have no commit before its first commit; a detached HEAD always has a commit id. The Session-authorized `workspaceGit` service observes this state and switches existing local branches under the Session sandbox policy. The [Git branch plugin](../../packages/client/ui-git-branch/README.md) owns its shared-worktree effects, conflict protection, refresh cadence, and browser controls.
+
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
 <a id="cordis-surface"></a>
@@ -227,24 +231,6 @@ Host service backing the generated `ctx.remote.directoryPicker` namespace. The s
 ```
 
 Source: [`packages/api/workspace-controller/src/directory-picker.ts`](../../packages/api/workspace-controller/src/directory-picker.ts)
-
-<a id="ctxgitbranch--gitbranch"></a>
-
-### `ctx.gitBranch` — `GitBranch`
-
-Live repository metadata; the existing workspace lookup authorizes each Session.
-
-```ts cordis-catalog
-/**
- * Observe HEAD immediately and publish later branch changes without modifying the repository.
- * @param workspaceFileScope - authorized Session directory, resolved by the Host.
- * @param signal - caller lifetime; closes the pending command or refresh delay.
- * @returns current and changed HEAD values; missing Git is reported as unavailable.
- */
-@Remote({ mode: 'stream' }) async *follow(workspaceFileScope: WorkspaceFileScope, signal: AbortSignal): AsyncIterable<GitHead>
-```
-
-Source: [`packages/client/ui-git-branch/src/index.ts`](../../packages/client/ui-git-branch/src/index.ts)
 
 <a id="ctxterminalcontroller--terminalcontroller"></a>
 
@@ -391,6 +377,13 @@ Host service backing the generated `ctx.remote.workspace` namespace.
 @Remote('unarchiveSession') unarchiveSession(request: WorkspaceUnarchiveSessionRequest): Promise<WorkspaceArchiveValue>
 
 /**
+ * Permanently delete an archived Session and its subagent descendants.
+ * @param request - archived root Session identity.
+ * @returns deleted identities and the resulting archive set.
+ */
+@Remote('deleteSession') deleteSession(request: WorkspaceDeleteSessionRequest): Promise<WorkspaceDeleteSessionValue>
+
+/**
  * Surface one known unarchived Session ahead of unpinned Sessions.
  * @param request - Session identity to pin.
  * @returns the complete resulting pin set, most recently pinned first.
@@ -478,6 +471,37 @@ Host Remote file reads and workspace directory observations over the composed fi
 ```
 
 Source: [`packages/api/workspace-files/src/index.ts`](../../packages/api/workspace-files/src/index.ts)
+
+<a id="ctxworkspacegit--workspacegit"></a>
+
+### `ctx.workspaceGit` — `WorkspaceGit`
+
+Git service scoped to a live Session; it never creates, resets, stashes, or force-checks out branches.
+
+```ts cordis-catalog
+/**
+ * Observe the current checkout and local branches, including external Git changes.
+ * @param session - Authorized live Session selecting the directory and sandbox policy.
+ * @param signal - Remote subscription lifetime.
+ * @returns Complete observations; a failed read closes the stream with a typed failure.
+ */
+@Remote({ mode: 'stream' }) async *follow(session: Session, signal: AbortSignal): AsyncIterable<GitBranchState>
+
+/**
+ * Switch to one existing local branch using Git's normal file-conflict checks.
+ * @param session - Authorized live Session selecting the directory and sandbox policy.
+ * @param branch - Exact local branch name from the selector.
+ * @param expected - Branch name, or detached commit id, shown when the user selected it.
+ * @param signal - Caller lifetime; cancellation can leave a completed checkout and requires inspection.
+ * @returns The verified checkout after Git exits successfully.
+ * @throws A typed failure for active work, stale selection, Git refusal, or failed inspection; no automatic rollback runs.
+ */
+@Remote async checkout(session: Session, branch: string, expected: string, signal: AbortSignal): Promise<GitBranchState>
+```
+
+Types: [Session](session.md)
+
+Source: [`packages/client/ui-git-branch/src/index.ts`](../../packages/client/ui-git-branch/src/index.ts)
 
 <a id="ctxworkspaceregistry--workspaceregistry"></a>
 
@@ -579,6 +603,25 @@ archiveSession(sessionId: SessionId, options: ArchiveSessionOptions = {}): Promi
 unarchiveSession(sessionId: SessionId): Promise<void>
 
 /**
+ * Whether lifecycle acquisition must refuse an id while permanent deletion runs.
+ * @param sessionId - Session whose lifecycle would be acquired.
+ * @returns whether deletion owns this id until its cleanup settles.
+ */
+isDeletingSession(sessionId: SessionId): boolean
+
+/**
+ * Permanently delete an archived Session and its subagent descendants, deepest
+ * first. Independent forks and project files remain. Lifecycle owners release
+ * their writers before storage deletion; an unowned writer refuses deletion.
+ * Archive metadata remains on failure so the operation can be retried, including
+ * after some descendants or the root have already been deleted.
+ * @param sessionId - archived root Session.
+ * @returns every deleted Session id, descendants before their root.
+ * @throws {WorkspaceSessionNotArchivedError} for a Session that is not archived.
+ */
+deleteSession(sessionId: SessionId): Promise<readonly SessionId[]>
+
+/**
  * Pin one session durably, prepending it to the registry-global pin set.
  * The session must exist (live or in session persistence) and must not be
  * archived. An already pinned id resolves without writing or reordering.
@@ -637,6 +680,26 @@ Ask the composed providers what still runs for a session before it is archived. 
 
 Source: [`packages/workspace/workspace/src/index.ts`](../../packages/workspace/workspace/src/index.ts)
 
+<a id="workspacesession-before-delete--serial"></a>
+
+#### `workspace/session-before-delete` — serial
+
+Release owned Session lifecycles and await their writers before deletion. The registry blocks restoration until the deletion operation settles.
+
+```ts cordis-catalog
+/**
+ * Release owned Session lifecycles and await their writers before deletion.
+ * The registry blocks restoration until the deletion operation settles.
+ * @param sessionIds - archived roots whose descendant lifecycles must also drain.
+ * @mode serial
+ */
+'workspace/session-before-delete'(sessionIds: readonly SessionId[]): Promise<void> | void
+```
+
+Types: [SessionId](core.md)
+
+Source: [`packages/workspace/workspace/src/index.ts`](../../packages/workspace/workspace/src/index.ts)
+
 <a id="workspacesession-stop--parallel"></a>
 
 #### `workspace/session-stop` — parallel
@@ -662,4 +725,25 @@ Stop a session's running work because the caller archived it with `stopActivity`
 ```
 
 Source: [`packages/workspace/workspace/src/index.ts`](../../packages/workspace/workspace/src/index.ts)
+
+<a id="workspace-git-events"></a>
+
+### `workspace-git/*` events
+
+<a id="workspace-gitchanged--parallel"></a>
+
+#### `workspace-git/changed` — parallel
+
+A branch switch has completed in a working tree.
+
+```ts cordis-catalog
+/**
+ * A branch switch has completed in a working tree.
+ * @param root - Absolute repository working-tree root.
+ * @mode parallel
+ */
+'workspace-git/changed'(root: string): void
+```
+
+Source: [`packages/client/ui-git-branch/src/index.ts`](../../packages/client/ui-git-branch/src/index.ts)
 <!-- END GENERATED cordis-surface -->

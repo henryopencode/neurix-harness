@@ -69,6 +69,8 @@ function phaseStatus(tasks: readonly WorkflowTask[], initial: WorkflowTaskStatus
  */
 export default function WorkflowCanvas({ tasks, collapsed, selectedId, onSelect, onTogglePhase, t }: WorkflowCanvasProps) {
   const instance = useRef<ReactFlowInstance<TaskNode> | null>(null)
+  const fittedStructure = useRef<string>()
+  const manualViewport = useRef(false)
   const structure = JSON.stringify({ tasks: tasks.map(({ id, phase, dependsOn }) => ({ id, phase, dependsOn })), collapsed })
   const geometry = useMemo(() => {
     const input = JSON.parse(structure) as { tasks: LayoutTask[]; collapsed: string[] }
@@ -81,7 +83,7 @@ export default function WorkflowCanvas({ tasks, collapsed, selectedId, onSelect,
     const task = members[0] as WorkflowTask
     const phase = node.phase
     const status = phase === undefined ? task.status : phaseStatus(members, task.status)
-    const title = phase === undefined ? taskTitle(task.content, t) : t('canvas.phaseCount', { phase: phaseTitle(phase, t), count: members.length })
+    const title = phase === undefined ? taskTitle(task.content, t, task.titleKey) : t('canvas.phaseCount', { phase: phaseTitle(phase, t), count: members.length })
     const summary = phase === undefined
       ? task.removed ? t('task.removed') : task.status === 'blocked' ? task.blockedReason ?? task.expectedOutput : task.expectedOutput
       : undefined
@@ -100,22 +102,40 @@ export default function WorkflowCanvas({ tasks, collapsed, selectedId, onSelect,
     }
   })
   const running = nodes.filter(node => node.data.status === 'running')
+  const fitNewNodes = (): void => {
+    const flow = instance.current
+    if (flow === null || !flow.viewportInitialized || manualViewport.current || fittedStructure.current === structure) return
+    if (nodes.some(node => flow.getInternalNode(node.id)?.measured.width === undefined)) return
+    fittedStructure.current = structure
+    void flow.fitView({ maxZoom: 1, padding: 0.2 })
+  }
   return <div className={css.canvas} data-workflow-canvas>
     <div className={css.flow}>
       <ReactFlow<TaskNode>
         nodes={nodes} edges={geometry.edges} nodeTypes={NODE_TYPES} defaultEdgeOptions={EDGE_OPTIONS}
-        onInit={(flow) => { instance.current = flow }} fitView fitViewOptions={{ maxZoom: 1, padding: 0.2 }}
+        onInit={(flow) => { instance.current = flow; fitNewNodes() }} onNodesChange={fitNewNodes}
+        onMoveStart={(event) => { if (event !== null) manualViewport.current = true }}
+        fitView fitViewOptions={{ maxZoom: 1, padding: 0.2 }}
         nodesDraggable={false} nodesConnectable={false} nodesFocusable={false} edgesFocusable={false}
         minZoom={0.2} maxZoom={2} proOptions={PRO_OPTIONS} aria-label={t('canvas.label')}
         ariaLabelConfig={{ 'node.a11yDescription.default': '', 'node.a11yDescription.keyboardDisabled': '', 'edge.a11yDescription.default': '' }}
       />
     </div>
     <div className={css.zoom}>
-      <Button variant="toolbar" size="sm" onClick={() => { void instance.current?.zoomOut() }}>{t('canvas.zoomOut')}</Button>
-      <Button variant="toolbar" size="sm" onClick={() => { void instance.current?.zoomIn() }}>{t('canvas.zoomIn')}</Button>
-      <Button variant="toolbar" size="sm" onClick={() => { void instance.current?.fitView({ maxZoom: 1, padding: 0.2 }) }}>{t('canvas.fit')}</Button>
+      <Button variant="toolbar" size="sm" onClick={() => {
+        manualViewport.current = true; void instance.current?.zoomOut()
+      }}>{t('canvas.zoomOut')}</Button>
+      <Button variant="toolbar" size="sm" onClick={() => {
+        manualViewport.current = true; void instance.current?.zoomIn()
+      }}>{t('canvas.zoomIn')}</Button>
+      <Button variant="toolbar" size="sm" onClick={() => {
+        manualViewport.current = false; fittedStructure.current = structure
+        void instance.current?.fitView({ maxZoom: 1, padding: 0.2 })
+      }}>{t('canvas.fit')}</Button>
       <Button variant="toolbar" size="sm" disabled={running.length === 0}
-        onClick={() => { void instance.current?.fitView({ nodes: running, maxZoom: 1 }) }}>{t('canvas.current')}</Button>
+        onClick={() => {
+          manualViewport.current = true; void instance.current?.fitView({ nodes: running, maxZoom: 1 })
+        }}>{t('canvas.current')}</Button>
     </div>
   </div>
 }

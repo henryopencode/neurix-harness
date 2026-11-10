@@ -12,7 +12,8 @@ let runtime: ComputerRuntime
 
 beforeEach(() => {
   resetDesktop()
-  runtime = new ComputerRuntime(new NativeCalls(new CuaDriver(), 10_000), Config({ inputMode: 'background', showOverlay: false, screenshots: false }))
+  runtime = new ComputerRuntime(new NativeCalls(new CuaDriver(), 10_000), Config({ inputMode: 'background', showOverlay: false, screenshots: false,
+    observationMaxAgeMs: 30_000, coordinateMaxAgeMs: 30_000 }))
 })
 afterEach(async () => { vi.restoreAllMocks(); vi.useRealTimers(); desktop.call = undefined; await runtime.close() })
 

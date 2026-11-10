@@ -4,8 +4,8 @@
   - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
-    - tab "Workflow"
     - tab "Trajectory"
+    - tab "Workflow"
 - navigation "Turn navigation":
   - button "Jump to turn 1"
 - text: "Run two shell commands: wait for cancellation, then write skipped.txt. {{clock}}"

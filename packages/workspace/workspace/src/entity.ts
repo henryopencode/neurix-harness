@@ -103,6 +103,17 @@ export class WorkspaceEntity implements Workspace {
     return this.record.sessionIds.filter(id => this.host.candidateMatches(id, this.record.path))
   }
 
+  /**
+   * Drop permanently deleted Sessions from the durable account.
+   * @param ids - Session ids whose logs have been removed.
+   * @returns resolution after any changed account is durable.
+   */
+  async removeSessions(ids: ReadonlySet<SessionId>): Promise<void> {
+    await this.mutate(record => record.sessionIds.some(id => ids.has(id))
+      ? { ...record, sessionIds: record.sessionIds.filter(id => !ids.has(id)) }
+      : record)
+  }
+
   async setTitle(title: string): Promise<void> {
     await this.mutate(record => ({ ...record, title }))
   }

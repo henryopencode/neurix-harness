@@ -324,7 +324,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-api-workspace-controller`
 
 - `inject`: `remoteAccess` · `typert` · `workspaceRegistry`
-- `source`: [`packages/api/workspace-controller/src/index.ts:37`](../packages/api/workspace-controller/src/index.ts)
+- `source`: [`packages/api/workspace-controller/src/index.ts:39`](../packages/api/workspace-controller/src/index.ts)
 
 ```ts config-catalog
 /** First-use directory policy for the Host account. */
@@ -559,16 +559,20 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-client-ui-git-branch`
 
-- `inject`: `typert` · `subprocess` · `workspaceFiles`
-- `source`: [`packages/client/ui-git-branch/src/index.ts:14`](../packages/client/ui-git-branch/src/index.ts)
+- `inject`: `sessions` · `agents` · `subprocess` · `sandbox` · `sandboxPolicy`
+- `source`: [`packages/client/ui-git-branch/src/index.ts:18`](../packages/client/ui-git-branch/src/index.ts)
 
 ```ts config-catalog
-/** Deployment bounds for live branch observations. */
+/** Process bounds and refresh cadence for the branch selector. */
 export interface Config {
-  /** Maximum duration of one Git observation, in milliseconds. */
-  readonly timeoutMs: number
-  /** Delay between observations while the header is subscribed, in milliseconds. */
-  readonly refreshMs: number
+  /** Maximum duration of one Git subprocess, including executable resolution. */
+  timeoutMs: number
+  /** Maximum captured bytes per Git output stream; truncation fails the read. */
+  maxOutputBytes: number
+  /** Grace period before a cancelled Git process is killed. */
+  graceMs: number
+  /** Interval between observations of external branch changes. */
+  refreshIntervalMs: number
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-git-branch -->
@@ -3270,7 +3274,7 @@ export type JsonlCompression = 'zstd' | 'none'
 ## `@deepseek-ai/dsh-session-projection-cache`
 
 - `inject`: `storageDomain` · `sessionProjections` · `sessions`
-- `source`: [`packages/session/session-projection-cache/src/index.ts:76`](../packages/session/session-projection-cache/src/index.ts)
+- `source`: [`packages/session/session-projection-cache/src/index.ts:77`](../packages/session/session-projection-cache/src/index.ts)
 
 ```ts config-catalog
 /**

@@ -8,7 +8,7 @@ interface WorkflowCanvasState {
 }
 
 type WorkflowCanvasActions = {
-  selectGraph: (draft: WorkflowCanvasState, id: string) => void
+  selectGraph: (draft: WorkflowCanvasState, id: string | null) => void
   setMode: (draft: WorkflowCanvasState, mode: WorkflowCanvasState['mode']) => void
   togglePhase: (draft: WorkflowCanvasState, graphId: string, phase: string) => void
 }
@@ -21,7 +21,7 @@ export function createWorkflowCanvasStore(): EngineStoreHandle<WorkflowCanvasSta
   return defineStore({
     init: (): WorkflowCanvasState => ({ graphId: null, mode: 'canvas', collapsed: {} }),
     actions: {
-      selectGraph: (draft, id: string) => { draft.graphId = id },
+      selectGraph: (draft, id: string | null) => { draft.graphId = id },
       setMode: (draft, mode: WorkflowCanvasState['mode']) => { draft.mode = mode },
       togglePhase: (draft, graphId: string, phase: string) => {
         const current = draft.collapsed[graphId] ?? []

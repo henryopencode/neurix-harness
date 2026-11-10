@@ -176,6 +176,7 @@
     "tests/file-upload-round.e2e.ts",
     "tests/message-actions.e2e.ts",
     "tests/open-in-app-ssh.e2e.ts",
+    "tests/git-branch.e2e.ts",
     "tests/fork-mid-turn.e2e.ts",
     "tests/message-feedback.e2e.ts",
     "tests/markdown-images.e2e.ts",
@@ -239,7 +240,8 @@
     "tests/complex-history.perf.ts",
     "tests/pwsh-terminal.e2e.ts",
     "tests/workflow-run.e2e.ts",
-    "tests/workflow-canvas.e2e.ts"
+    "tests/workflow-canvas.e2e.ts",
+    "tests/team-view.e2e.ts"
   ],
   "references": [
     { "path": "../../packages/experimental/auto-review" },

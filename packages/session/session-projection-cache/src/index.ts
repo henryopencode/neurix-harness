@@ -33,6 +33,7 @@ import type {
   SessionProjectionMap,
 } from '@deepseek-ai/dsh-session-projection'
 import type { KvTable } from '@deepseek-ai/dsh-storage-domain'
+import type {} from '@deepseek-ai/dsh-session-persistence'
 import { projectionCacheDomainSpec } from './spec.ts'
 import type { CheckpointIdentity, CheckpointRecord } from './spec.ts'
 
@@ -109,6 +110,7 @@ export class SessionProjectionCache extends Service {
 
   private table?: KvTable<SessionId, CheckpointRecord>
   private readonly dirty = new Map<Session, DirtyState>()
+  private readonly deletedIds = new Set<SessionId>()
 
   constructor(ctx: Context, public config: Config) {
     super(ctx, 'sessionProjectionCache')
@@ -119,6 +121,10 @@ export class SessionProjectionCache extends Service {
     const domain = await this.ctx.storageDomain.open(projectionCacheDomainSpec)
     this.ctx.effect(() => () => domain.close(), 'sessionProjectionCache.domainClose')
     this.table = domain.table('sessions')
+    this.ctx.on('session-persistence/deleted', async (id) => {
+      this.deletedIds.add(id)
+      await this.requireTable().delete(id)
+    })
     this.installWritePath()
   }
 
@@ -336,6 +342,7 @@ export class SessionProjectionCache extends Service {
     // the store, would leave the seed-derived values (the title) unreadable
     // on the cold list. The creation write captures the seed-derived cut.
     this.ctx.on('session/created', (session: Session) => {
+      this.deletedIds.delete(session.id)
       void this.flushSoft(session, 'create')
     })
 
@@ -388,6 +395,7 @@ export class SessionProjectionCache extends Service {
 
   /** Replace one session's stored record with its log identity and a detached snapshot of `rows`. */
   private async put(id: SessionId, identity: CheckpointIdentity, rows: ProjectionCheckpoint): Promise<void> {
+    if (this.deletedIds.has(id)) return
     const detached = snapshotJsonValue(rows)
     if (detached === undefined) {
       throw new TypeError('projection checkpoint is not losslessly JSON-serializable (a unit state violates the plain-JSON contract)')

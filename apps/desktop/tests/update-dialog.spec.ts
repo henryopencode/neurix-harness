@@ -225,7 +225,7 @@ it('keeps the approved workspace covered until installation settles and gates sh
   const presentation = dialogs!.showInstallation(f.owner, '1.1.1').then((visible) => { if (visible) stopped(); return visible })
   await Promise.resolve()
   expect(fixture.views).toHaveLength(1)
-  expect(f.invoke(UPDATE_DIALOG_IPC.status)).toMatchObject({ installationVersion: '1.1.1', buttons: [],
+  expect(f.invoke(UPDATE_DIALOG_IPC.status)).toMatchObject({ installationVersion: '1.1.1', installationVersionLabel: 'V1.1.1', buttons: [],
     message: '正在更新 Neurix Harness' })
   expect(stopped).not.toHaveBeenCalled()
   expect(() => f.invoke(UPDATE_DIALOG_IPC.respond, -1)).toThrow(/no dialog responses/)

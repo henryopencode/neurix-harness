@@ -1,0 +1,46 @@
+- region "Workflow":
+  - combobox "Select task plan": Task 1
+  - text: 3 / 16 completed
+  - tablist "Workflow display":
+    - tab "Canvas"
+    - tab "List" [selected]
+  - group "Task phases":
+    - button "Inputs · 3" [expanded]
+    - button "Research · 6" [expanded]
+    - button "Merge · 2" [expanded]
+    - button "Outputs · 4" [expanded]
+    - button "Verification · 1" [expanded]
+  - tabpanel "List":
+    - list:
+      - listitem:
+        - button "Inspect Inspect requirements, Completed": Inspect requirements A verifiable result for inspect requirements. Completed
+      - listitem:
+        - button "Inspect Inspect existing data, Completed": Inspect existing data A verifiable result for inspect existing data. Completed
+      - listitem:
+        - button "Inspect Prepare independent notes, Completed": Prepare independent notes A verifiable result for prepare independent notes. Completed
+      - listitem:
+        - button "Inspect Explore branch 1, Running": Explore branch 1 A verifiable result for explore branch 1. Running
+      - listitem:
+        - button "Inspect Explore branch 2, Running": Explore branch 2 A verifiable result for explore branch 2. Running
+      - listitem:
+        - button "Inspect Explore branch 3, Waiting to run": Explore branch 3 A verifiable result for explore branch 3. Waiting for execution capacity. Waiting to run
+      - listitem:
+        - button "Inspect Explore branch 4, Not started": Explore branch 4 A verifiable result for explore branch 4. Not started
+      - listitem:
+        - button "Inspect Explore branch 5, Not started": Explore branch 5 A verifiable result for explore branch 5. Not started
+      - listitem:
+        - button "Inspect Explore branch 6, Not started": Explore branch 6 A verifiable result for explore branch 6. Not started
+      - listitem:
+        - button "Inspect Summarize user interface, Waiting for prerequisites": Summarize user interface A verifiable result for summarize user interface. Waiting for prerequisites
+      - listitem:
+        - button "Inspect Summarize data pipeline, Waiting for prerequisites": Summarize data pipeline A verifiable result for summarize data pipeline. Waiting for prerequisites
+      - listitem:
+        - button "Inspect Write final report, Waiting for prerequisites": Write final report A verifiable result for write final report. Waiting for prerequisites
+      - listitem:
+        - button "Inspect Render comparison image, Waiting for prerequisites": Render comparison image A verifiable result for render comparison image. Waiting for prerequisites
+      - listitem:
+        - button "Inspect Export result sheet, Waiting for prerequisites": Export result sheet A verifiable result for export result sheet. Waiting for prerequisites
+      - listitem:
+        - button "Inspect Verify the report, Waiting for prerequisites": Verify the report A verifiable result for verify the report. Waiting for prerequisites
+      - listitem:
+        - button "Inspect Deliver report, Waiting for prerequisites": Deliver report A verifiable result for deliver report. Waiting for prerequisites

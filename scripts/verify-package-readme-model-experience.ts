@@ -48,7 +48,6 @@ const NO_MODEL_EXPERIENCE_SECTION: Readonly<Record<string, string>> = {
  * blocks. A package moves on or off this list with its context behavior.
  */
 const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
-  'packages/client/ui-git-branch': { kind: 'none', reason: 'Git branch metadata stays in the conversation header and never enters model context.' },
   'packages/experimental/model-group': { kind: 'indirect', reason: 'The optional layer delegates logged guidance, assignments, and public replies to model-group-runtime.' },
   'packages/client/ui-knowledge-base': { kind: 'indirect', reason: 'Document management changes later knowledge tool results; the Host knowledge package owns every model-visible declaration and passage.' },
   'packages/experimental/mobile-access': { kind: 'none', reason: 'Phone connection and transport add no model-visible context.' },
@@ -198,6 +197,7 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/host/frontend-static': { kind: 'none', reason: 'The SPA dist server answers browser asset requests and registers nothing model-facing.' },
   'packages/host/plugin-inventory': { kind: 'none', reason: 'Host-side read-only Loader projection; registers nothing model-facing.' },
   'packages/host/open-in-app': { kind: 'none', reason: 'Host routes opening desktop applications for a human; registers nothing model-facing.' },
+  'packages/client/ui-git-branch': { kind: 'none', reason: 'Human Git branch controls add no model input.' },
   'packages/client/ui-open-in-app': { kind: 'none', reason: 'Browser-side split button opening the workspace directory for a human; registers nothing model-facing.' },
   'packages/client/ui-secret-mask': { kind: 'none', reason: 'Browser-side display masking of sent user text; registers nothing model-facing.' },
   'packages/experimental/session-search': { kind: 'indirect', reason: 'The profile layer delegates model-visible behavior to its selected capability.' },

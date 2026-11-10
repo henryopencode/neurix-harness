@@ -21,7 +21,9 @@ export const workflowCanvasView: ConversationViewDefinition<WorkflowCanvasNode, 
       const refresh = (id: string): void => {
         let latest: WorkflowGraph | undefined
         for (const candidate of (candidates.get(id) as Map<string, WorkflowGraph>).values()) {
-          if (latest === undefined || candidate.seq > latest.seq) latest = candidate
+          if (latest === undefined
+            || (candidate.source === 'plan' && latest.source === 'turn')
+            || (candidate.source === latest.source && candidate.seq > latest.seq)) latest = candidate
         }
         if (latest === undefined) { candidates.delete(id); graphs.delete(id) }
         else graphs.set(id, latest)
@@ -92,7 +94,7 @@ export function resolveWorkflowTasks(
   graph: WorkflowGraph,
   executions: WorkflowSnapshot['executions'],
 ): readonly WorkflowTask[] {
-  if (graph.source === 'run') return graph.tasks
+  if (graph.source !== 'plan') return graph.tasks
   const tasks = graph.tasks.map((task) => {
     const execution = workflowExecutionStatus(executions, task.sessionId, graph.seq)
     return execution === undefined ? task : { ...task, status: execution }

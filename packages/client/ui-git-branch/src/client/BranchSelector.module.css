@@ -1,0 +1,137 @@
+.contextRow {
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: calc(100% - 2 * var(--dsh-composer-side-clearance) - 4 * var(--dsh-composer-dock-inset));
+  max-width: calc(var(--dsh-composer-card-max-width) - 4 * var(--dsh-composer-dock-inset));
+  margin: 0 auto calc(-14px - var(--dsh-composer-stack-gap));
+  padding: 7px 14px 21px;
+  border: 0;
+  border-radius: var(--dsw-radius-xl);
+  background: var(--dsw-alias-interactive-bg-hover);
+  box-shadow: var(--dsw-elevation-panel);
+  color: var(--dsw-alias-label-secondary);
+}
+
+.inline {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 180px;
+}
+
+.directory {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: 55%;
+  font-size: 13px;
+  line-height: 24px;
+}
+
+.directory > svg {
+  flex: none;
+}
+
+.directoryName {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.menuAnchor {
+  display: inline-flex;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 55%;
+}
+
+.inline .menuAnchor {
+  max-width: 100%;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 3px 6px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.trigger > svg {
+  flex: none;
+}
+
+.label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.menu {
+  width: 320px;
+  max-width: calc(100vw - 24px);
+}
+
+.search {
+  box-sizing: border-box;
+  width: calc(100% - 12px);
+  margin: 4px 6px 8px;
+  padding: 7px 9px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: var(--dsw-radius-sm);
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.branches {
+  max-height: 260px;
+  overflow: auto;
+  padding: 0 3px;
+}
+
+.branchRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: normal;
+}
+
+.branchText {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.branchName {
+  overflow-wrap: anywhere;
+}
+
+.detail,
+.notice {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.notice {
+  margin: 8px 10px;
+}
+
+@media (pointer: coarse) {
+  .search {
+    font-size: 16px;
+  }
+}

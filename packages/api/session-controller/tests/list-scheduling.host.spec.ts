@@ -191,7 +191,7 @@ describe('Session-list work slices', () => {
     } as never)
     h.ctx.provide('fileUploads', { registerAgentResolver: () => dispose } as never)
     h.ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'test', model: 'test' }) } as never)
-    h.ctx.provide('workspaceRegistry', { list: () => [], archivedSessionIds: [] } as never)
+    h.ctx.provide('workspaceRegistry', { isDeletingSession: () => false, list: () => [], archivedSessionIds: [] } as never)
     const controller = await createSessionTestController(h.ctx, {
       nativeOpen: false, listWorkSliceMs: 4, canOpenPath: () => false,
       defaultModelSelection: () => ({ provider: 'test', model: 'test' }), cwd: '/tmp',

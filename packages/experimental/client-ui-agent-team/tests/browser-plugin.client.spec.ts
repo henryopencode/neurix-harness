@@ -42,11 +42,15 @@ async function bench(options: { addressed?: boolean } = {}) {
     openSession: (target: unknown) => { navigation.push(['open', target]) },
   } as never)
   ctx.provide('conversation', {})
+  ctx.provide('uiConversation', {})
   ctx.provide('locale', new LocaleRuntime(ctx))
   await ctx.plugin(SlotRegistry).await()
   const collapseHeader = ctx.slots.register({
     name: 'root',
-    children: { 'conversation.session.header.actions': { kind: 'list', scope: 'session' } },
+    children: {
+      'conversation.session.header.actions': { kind: 'list', scope: 'session' },
+      'conversation.view': { kind: 'list', scope: 'session' },
+    },
   } as never, () => null)
   const fiber = ctx.plugin({ inject: [...inject], apply })
   await fiber.await()
@@ -76,18 +80,21 @@ async function bench(options: { addressed?: boolean } = {}) {
 describe('ui-team browser plugin', () => {
   it('registers one disposable header action without a Team Remote namespace', async () => {
     const b = await bench()
-    expect(inject).toEqual(['sessions', 'uiWorkspace', 'slots', 'locale'])
+    expect(inject).toEqual(['sessions', 'uiWorkspace', 'uiConversation', 'slots', 'locale'])
     expect(b.entry()).toMatchObject({
       options: { id: 'agent-team', order: -20 },
       locale: 'agent-team',
     })
     const t = b.ctx.locale.bind('agent-team')
     expect(t('trigger')).toBe('Agent team')
+    expect(b.ctx.slots.entries('conversation.view').map(entry => entry.options.id)).toEqual(['team'])
+    expect(t('view.title')).toBe('Team view')
 
     expect(b.navigation).toEqual([])
 
     await b.fiber.dispose()
     expect(b.entry()).toBeUndefined()
+    expect(b.ctx.slots.entries('conversation.view')).toEqual([])
     expect(t('empty')).toBe('empty')
   })
 

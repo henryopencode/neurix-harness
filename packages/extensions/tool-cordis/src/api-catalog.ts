@@ -1367,19 +1367,6 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
-    key: 'gitBranch',
-    summary: 'Live repository metadata; the existing workspace lookup authorizes each Session.',
-    description: 'Live repository metadata; the existing workspace lookup authorizes each Session.',
-    methods: [
-      {
-        signature: '@Remote({ mode: \'stream\' }) async *follow(workspaceFileScope: WorkspaceFileScope, signal: AbortSignal): AsyncIterable<GitHead>',
-        description: 'Observe HEAD immediately and publish later branch changes without modifying the repository.',
-        parameters: [{ name: 'workspaceFileScope', description: 'authorized Session directory, resolved by the Host.' }, { name: 'signal', description: 'caller lifetime; closes the pending command or refresh delay.' }],
-        returns: 'current and changed HEAD values; missing Git is reported as unavailable.',
-      },
-    ],
-  },
-  {
     key: 'goals',
     summary: 'Goal service (`ctx.goals`) backed exclusively by the owning session log.',
     description: 'Goal service (`ctx.goals`) backed exclusively by the owning session log.',
@@ -2632,6 +2619,13 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'List every stored session visible to this process, in no promised order.',
         parameters: [{ name: 'options', description: 'optional cancellation.' }],
         returns: 'one snapshot per stored session.',
+      },
+      {
+        signature: 'abstract delete(id: SessionId): Promise<boolean>',
+        description: 'Permanently remove every stored generation of one Session. An active writer refuses deletion before any artifact is removed. Missing ids are a no-op; derived-record cleanup still runs. Callers own lifecycle shutdown and lineage. Filesystem or cleanup failures can leave deletion partially complete; retry with the same id to finish. Project files and shared attachments are untouched.',
+        parameters: [{ name: 'id', description: 'stored Session to delete.' }],
+        returns: 'whether a stored artifact existed.',
+        throws: ['{SessionAlreadyOwnedError} while a write handle owns the Session.'],
       },
     ],
   },
@@ -4261,6 +4255,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the complete resulting archive set.',
       },
       {
+        signature: '@Remote(\'deleteSession\') deleteSession(request: WorkspaceDeleteSessionRequest): Promise<WorkspaceDeleteSessionValue>',
+        description: 'Permanently delete an archived Session and its subagent descendants.',
+        parameters: [{ name: 'request', description: 'archived root Session identity.' }],
+        returns: 'deleted identities and the resulting archive set.',
+      },
+      {
         signature: '@Remote(\'pinSession\') pinSession(request: WorkspacePinSessionRequest): Promise<WorkspacePinValue>',
         description: 'Surface one known unarchived Session ahead of unpinned Sessions.',
         parameters: [{ name: 'request', description: 'Session identity to pin.' }],
@@ -4319,6 +4319,26 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'workspaceGit',
+    summary: 'Git service scoped to a live Session; it never creates, resets, stashes, or force-checks out branches.',
+    description: 'Git service scoped to a live Session; it never creates, resets, stashes, or force-checks out branches.',
+    methods: [
+      {
+        signature: '@Remote({ mode: \'stream\' }) async *follow(session: Session, signal: AbortSignal): AsyncIterable<GitBranchState>',
+        description: 'Observe the current checkout and local branches, including external Git changes.',
+        parameters: [{ name: 'session', description: 'Authorized live Session selecting the directory and sandbox policy.' }, { name: 'signal', description: 'Remote subscription lifetime.' }],
+        returns: 'Complete observations; a failed read closes the stream with a typed failure.',
+      },
+      {
+        signature: '@Remote async checkout(session: Session, branch: string, expected: string, signal: AbortSignal): Promise<GitBranchState>',
+        description: 'Switch to one existing local branch using Git\'s normal file-conflict checks.',
+        parameters: [{ name: 'session', description: 'Authorized live Session selecting the directory and sandbox policy.' }, { name: 'branch', description: 'Exact local branch name from the selector.' }, { name: 'expected', description: 'Branch name, or detached commit id, shown when the user selected it.' }, { name: 'signal', description: 'Caller lifetime; cancellation can leave a completed checkout and requires inspection.' }],
+        returns: 'The verified checkout after Git exits successfully.',
+        throws: ['A typed failure for active work, stale selection, Git refusal, or failed inspection; no automatic rollback runs.'],
+      },
+    ],
+  },
+  {
     key: 'workspaceRegistry',
     summary: 'Durable workspace registry.',
     description: 'Durable workspace registry. Startup waits for `sessionPersistence`, builds one canonical-cwd header index, and completes the one-time history bootstrap before the service becomes active. The persistence dependency is mandatory so an unavailable peer can never be mistaken for an empty history and commit the initialized marker.',
@@ -4370,6 +4390,19 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Unarchive one session durably by dropping it from the registry-global archive set; the accounting slot was never touched, so the session returns to its recorded position. Unarchiving runs no session-existence check because removing an id cannot introduce an unknown one, so an entry whose session is gone still resolves. An id that is not archived resolves without writing.',
         parameters: [{ name: 'sessionId', description: 'The session to unarchive.' }],
         returns: 'resolution after durability.',
+      },
+      {
+        signature: 'isDeletingSession(sessionId: SessionId): boolean',
+        description: 'Whether lifecycle acquisition must refuse an id while permanent deletion runs.',
+        parameters: [{ name: 'sessionId', description: 'Session whose lifecycle would be acquired.' }],
+        returns: 'whether deletion owns this id until its cleanup settles.',
+      },
+      {
+        signature: 'deleteSession(sessionId: SessionId): Promise<readonly SessionId[]>',
+        description: 'Permanently delete an archived Session and its subagent descendants, deepest first. Independent forks and project files remain. Lifecycle owners release their writers before storage deletion; an unowned writer refuses deletion. Archive metadata remains on failure so the operation can be retried, including after some descendants or the root have already been deleted.',
+        parameters: [{ name: 'sessionId', description: 'archived root Session.' }],
+        returns: 'every deleted Session id, descendants before their root.',
+        throws: ['{WorkspaceSessionNotArchivedError} for a Session that is not archived.'],
       },
       {
         signature: 'pinSession(sessionId: SessionId): Promise<void>',
@@ -4841,6 +4874,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'sessionId', description: 'Original Session receiving the reminder.' }],
   },
   {
+    name: 'session-persistence/deleted',
+    mode: 'serial',
+    signature: '\'session-persistence/deleted\'(id: SessionId): Promise<void> | void',
+    summary: 'Remove derived records after a Session\'s durable artifacts are deleted.',
+    description: 'Remove derived records after a Session\'s durable artifacts are deleted. Retried deletion of an absent Session dispatches again so cleanup can finish.',
+    parameters: [{ name: 'id', description: 'deleted Session identity.' }],
+  },
+  {
     name: 'session-telemetry/record',
     mode: 'waterfall',
     signature: '\'session-telemetry/record\'(record: SessionTelemetryRecord, next: () => SessionTelemetryRecord): SessionTelemetryRecord',
@@ -5057,12 +5098,28 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'info', description: 'the run\'s identity snapshot (id + meta).' }],
   },
   {
+    name: 'workspace-git/changed',
+    mode: 'parallel',
+    signature: '\'workspace-git/changed\'(root: string): void',
+    summary: 'A branch switch has completed in a working tree.',
+    description: 'A branch switch has completed in a working tree.',
+    parameters: [{ name: 'root', description: 'Absolute repository working-tree root.' }],
+  },
+  {
     name: 'workspace/session-activity',
     mode: 'waterfall',
     signature: '\'workspace/session-activity\'( request: SessionActivityRequest, next: () => Promise<readonly SessionActivity[]>, ): Promise<readonly SessionActivity[]>',
     summary: 'Ask the composed providers what still runs for a session before it is archived.',
     description: 'Ask the composed providers what still runs for a session before it is archived. A listener prepends its own SessionActivity entries to the result of `next()`; the registry\'s innermost callback returns an empty list, so a composition without providers archives freely. Any non-empty result refuses the archive without a write.',
     parameters: [{ name: 'request', description: 'the session about to be archived.' }, { name: 'next', description: 'delegate to the remaining providers.' }],
+  },
+  {
+    name: 'workspace/session-before-delete',
+    mode: 'serial',
+    signature: '\'workspace/session-before-delete\'(sessionIds: readonly SessionId[]): Promise<void> | void',
+    summary: 'Release owned Session lifecycles and await their writers before deletion.',
+    description: 'Release owned Session lifecycles and await their writers before deletion. The registry blocks restoration until the deletion operation settles.',
+    parameters: [{ name: 'sessionIds', description: 'archived roots whose descendant lifecycles must also drain.' }],
   },
   {
     name: 'workspace/session-stop',
@@ -6081,8 +6138,12 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface GenericResultView {\n    card: \'generic\';\n    title?: string;\n    content?: ContentBlock[];\n}',
   },
   {
-    name: 'GitHead',
-    declaration: 'export type GitHead = {\n    readonly kind: \'branch\';\n    readonly name: string;\n} | {\n    readonly kind: \'detached\';\n    readonly commit: string;\n} | {\n    readonly kind: \'not-repository\';\n} | {\n    readonly kind: \'unavailable\';\n};',
+    name: 'GitBranch',
+    declaration: 'export interface GitBranch {\n    readonly name: string;\n    readonly occupied: boolean;\n}',
+  },
+  {
+    name: 'GitBranchState',
+    declaration: 'export type GitBranchState = {\n    readonly kind: \'unavailable\';\n} | ({\n    readonly kind: \'repository\';\n    readonly root: string;\n    readonly branches: readonly GitBranch[];\n} & ({\n    readonly current: string;\n    readonly commit: string | null;\n} | {\n    readonly current: null;\n    readonly commit: string;\n}));',
   },
   {
     name: 'GoalActivation',
@@ -9467,6 +9528,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkspaceDeleteRequest',
     declaration: 'export interface WorkspaceDeleteRequest {\n    readonly workspaceId: WorkspaceId;\n}',
+  },
+  {
+    name: 'WorkspaceDeleteSessionRequest',
+    declaration: 'export interface WorkspaceDeleteSessionRequest {\n    readonly sessionId: SessionId;\n}',
+  },
+  {
+    name: 'WorkspaceDeleteSessionValue',
+    declaration: 'export interface WorkspaceDeleteSessionValue extends WorkspaceArchiveValue {\n    readonly deletedSessionIds: readonly SessionId[];\n}',
   },
   {
     name: 'WorkspaceDeleteValue',

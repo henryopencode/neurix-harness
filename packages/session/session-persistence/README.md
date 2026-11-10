@@ -25,6 +25,8 @@ This package lets applications persist and resume session event logs through a b
 <a id="use-this-package"></a>
 ## Use this package
 
+`delete(id)` permanently removes every stored generation after all write ownership is released. It also awaits derived-record cleanup; an absent id still runs that cleanup so a failed deletion can be retried. Lifecycle shutdown and subagent lineage belong to the caller. Storage or cleanup failures may leave partial deletion; project files and shared attachments are retained.
+
 Mount one persistence backend to make sessions durable. The backend registers itself as `ctx.sessionPersistence` and routes every published session's live events into that session's active write handle; agent-loop — the production publication point for sessions — acquires each session's write handle before publication, so nothing else in the composition changes.
 
 ### Choosing a backend

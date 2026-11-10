@@ -10,6 +10,7 @@ import { CANVAS_NS, zh, en, ja, es, fr, de, ru, pt, type CanvasKey } from './can
 import { EMPTY_WORKFLOW, workflowCanvasView } from './canvas-snapshot.ts'
 import { createWorkflowCanvasStore } from './canvas-store.ts'
 import { createPlanDefinition } from './plan-definition.ts'
+import { turnActivityDefinition } from './turn-activity.ts'
 import { workflowCanvasRunDefinition } from './workflow-definition.ts'
 import { WorkflowPlanPreview, WorkflowView, type WorkflowViewInjected } from './WorkflowView.tsx'
 import { WorkflowTaskDetails, WorkflowTaskTitle, type WorkflowDetailsInjected } from './WorkflowTaskDetails.tsx'
@@ -44,13 +45,14 @@ function applyCanvas(ctx: Context): void {
   ctx.uiConversation.events.register(createPlanDefinition('chat'))
   ctx.uiConversation.events.register(createPlanDefinition('workflow'))
   ctx.uiConversation.events.register(workflowCanvasRunDefinition)
+  ctx.uiConversation.events.register(turnActivityDefinition)
   ctx.uiConversation.views.register(workflowCanvasView)
   ctx.effect(() => ctx.sidebarRightTabs.register({
     id: DETAILS_ID, kind: 'workflow-node', priority: 'builtin',
     title: () => t('task.details'),
   }), 'workflow canvas: inspector type')
   ctx.slots.inject('conversation.view', () => ctx.slots.register({
-    name: 'conversation.view', id: 'workflow', order: 5, locale: CANVAS_NS, store: createWorkflowCanvasStore(),
+    name: 'conversation.view', id: 'workflow', order: 15, locale: CANVAS_NS, store: createWorkflowCanvasStore(),
     label: () => t('view.title'),
     inject: (sessionId): WorkflowViewInjected => ({
       hooks: { workflow: sourceFor(sessionId) }, openTask,

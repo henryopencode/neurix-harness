@@ -7,7 +7,6 @@
   },
   "files": [
     "src/index.ts",
-    "src/head.ts",
     "src/types.ts"
   ],
   "references": [
@@ -18,13 +17,22 @@
       "path": "../../../vendor/schemastery"
     },
     {
-      "path": "../../typert/protocol"
+      "path": "../../core/agent"
     },
     {
-      "path": "../../api/workspace-files/tsconfig.host.json"
+      "path": "../../core/session"
+    },
+    {
+      "path": "../../sandbox/sandbox"
+    },
+    {
+      "path": "../../sandbox/sandbox-policy"
     },
     {
       "path": "../../subprocess/subprocess"
+    },
+    {
+      "path": "../../typert/protocol"
     }
   ]
 }

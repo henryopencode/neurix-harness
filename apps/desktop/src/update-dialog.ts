@@ -1,6 +1,6 @@
 /** Main-owned confirmations and approved installation coverage, independent of Host availability. */
 import { ipcMain, type BrowserWindow, type IpcMainInvokeEvent, type MessageBoxOptions, type MessageBoxReturnValue } from 'electron'
-import type { DesktopLocale } from './locale.ts'
+import { formatDesktopMessage, type DesktopLocale } from './locale.ts'
 import type { DesktopUpdateOverlays, DesktopUpdateOverlay } from './update-overlay.ts'
 
 /** Channels available only to the isolated update-dialog document. */
@@ -22,6 +22,8 @@ export interface UpdateDialogView {
   readonly technicalDetailsLabel: string
   /** Present only after installation approval; this view accepts no responses. */
   readonly installationVersion?: string
+  /** Main-owned localized version label, present with installationVersion. */
+  readonly installationVersionLabel?: string
 }
 
 /** Electron message options with separately expandable, main-owned diagnostics. */
@@ -144,7 +146,8 @@ export class DesktopUpdateDialog {
     const view: UpdateDialogView = { revision: ++this.revision, locale: locale.id, title: options.title ?? '', message: options.message,
       detail: options.detail ?? '', buttons, cancelId, closeLabel: locale.messages.updateClose,
       technicalDetails: options.technicalDetails ?? '', technicalDetailsLabel: locale.messages.updateTechnicalDetails,
-      ...(installation === undefined ? {} : { installationVersion: installation.version }) }
+      ...(installation === undefined ? {} : { installationVersion: installation.version,
+        installationVersionLabel: formatDesktopMessage(locale.messages.updateInstallationVersion, { version: installation.version }) }) }
     return new Promise((resolve) => {
       const abort = (): void => { finish(cancelId) }
       const finish = (response: number, retain = false): void => {
