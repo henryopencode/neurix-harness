@@ -189,11 +189,11 @@ describe('Session Git branches', () => {
     const f = await fixture()
     const entered = Promise.withResolvers<undefined>()
     const resume = Promise.withResolvers<undefined>()
-    const original = f.ctx.subprocess.resolveExecutable.bind(f.ctx.subprocess)
-    let lookups = 0
-    const spy = vi.spyOn(f.ctx.subprocess, 'resolveExecutable').mockImplementation(async (...args) => {
-      // The first two lookups inspect the checkout; hold the admitted switch before spawning it.
-      if (++lookups === 3) { entered.resolve(undefined); await resume.promise }
+    const original = f.ctx.subprocess.terminalEnvironment.bind(f.ctx.subprocess)
+    const spy = vi.spyOn(f.ctx.subprocess, 'terminalEnvironment').mockImplementation(async (...args) => {
+      // Platform execution details are requested while the switch owns its working-tree reservation.
+      entered.resolve(undefined)
+      await resume.promise
       return original(...args)
     })
     const first = f.service.checkout(f.session, 'feature', 'main', new AbortController().signal)
