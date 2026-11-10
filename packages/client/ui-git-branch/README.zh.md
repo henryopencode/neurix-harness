@@ -38,6 +38,8 @@ kind: "package-reference"
 
 使用 Apple 的 Git 启动器前会检查是否已选择开发者工具；缺少工具时显示可重试的读取失败，不打开安装器。
 
+分支控件与恢复提示在全部八种内置语言中跟随当前界面语言。
+
 -----
 
 <a id="understand-the-implementation"></a>

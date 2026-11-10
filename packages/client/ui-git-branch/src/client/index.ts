@@ -15,7 +15,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { RemoteError, remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import type { GitBranchState } from '../types.ts'
 import { BranchSelector, ComposerBranchSelector, type BranchInjected } from './BranchSelector.tsx'
-import { en, zh, type GitBranchKey } from './locales.ts'
+import { en, zh, ja, es, fr, de, ru, pt, type GitBranchKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -52,7 +52,7 @@ export const inject = ['slots', 'locale', 'resources', 'remote', 'remote.workspa
  * @param ctx - Browser context with generated Remote calls and rendering services.
  */
 export function apply(ctx: Context): void {
-  ctx.effect(() => ctx.locale.register('gitBranch', { en, zh }))
+  ctx.effect(() => ctx.locale.register('gitBranch', { en, zh, ja, es, fr, de, ru, pt }))
   const t = ctx.locale.bind('gitBranch')
   const notice = createSnapshotStore<Notice | null>(null)
   let seq = 0

@@ -37,6 +37,8 @@ The menu marks the current branch and disables branches checked out by another w
 
 Apple's Git launcher is checked for selected developer tools before use; missing tools produce a retryable read failure without opening the installer.
 
+Branch controls and recovery messages follow the active UI language in all eight shipped languages.
+
 -----
 
 ## Understand the implementation
