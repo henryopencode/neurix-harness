@@ -1102,15 +1102,18 @@ describe('Runtime and LLM e2e Blacksmith routing', () => {
 })
 
 describe('bubblewrap preparation script', () => {
-  it('pins bubblewrap to a recorded Launchpad build and excludes Ubuntu pool downloads', () => {
+  it('retains the recorded Launchpad build behind the matching Ubuntu payload', () => {
     const script = readFileSync(resolve(root, 'scripts/prepare-ci-bubblewrap.sh'), 'utf8')
     const url = /^readonly BUBBLEWRAP_URL="([^"]+)"$/mu.exec(script)?.[1]
 
     expect(url).toMatch(
       /^https:\/\/launchpad\.net\/ubuntu\/\+source\/bubblewrap\/[^/]+\/\+build\/\d+\/\+files\/bubblewrap_[^/]+_amd64\.deb$/u,
     )
-    // Ubuntu removes superseded versions from its live package pool.
-    expect(script).not.toMatch(/https?:\/\/[^/'"\s]+\/ubuntu(?:-ports)?\/pool\//u)
+    // The immutable build remains the fallback when Ubuntu prunes the mirrored version.
+    expect(script).toContain('https://archive.ubuntu.com/ubuntu/pool/main/b/bubblewrap/')
+    expect(script).toContain('for url in "$BUBBLEWRAP_MIRROR_URL" "$BUBBLEWRAP_URL"')
+    expect(script).toContain('--connect-timeout 10 --max-time 45')
+    expect(script).toContain('--retry-max-time 60')
   })
 })
 
