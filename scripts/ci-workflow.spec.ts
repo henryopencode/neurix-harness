@@ -1111,7 +1111,8 @@ describe('bubblewrap preparation script', () => {
     )
     // The immutable build remains the fallback when Ubuntu prunes the mirrored version.
     expect(script).toContain('https://archive.ubuntu.com/ubuntu/pool/main/b/bubblewrap/')
-    expect(script).toContain('for url in "$BUBBLEWRAP_MIRROR_URL" "$BUBBLEWRAP_URL"')
+    expect(script).toContain('https://mirrors.kernel.org/ubuntu/pool/main/b/bubblewrap/')
+    expect(script).toContain('for url in "$BUBBLEWRAP_MIRROR_URL" "$BUBBLEWRAP_INDEPENDENT_MIRROR_URL" "$BUBBLEWRAP_URL"')
     expect(script).toContain('--connect-timeout 10 --max-time 45')
     expect(script).toContain('--retry-max-time 60')
   })

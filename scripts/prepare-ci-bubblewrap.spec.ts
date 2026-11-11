@@ -8,7 +8,7 @@ import { expect, it, onTestFinished } from 'vitest'
 const posixIt = it.skipIf(process.platform === 'win32')
 const source = readFileSync(new URL('./prepare-ci-bubblewrap.sh', import.meta.url), 'utf8')
 
-function run(options: { primaryFails?: boolean; allFail?: boolean; badChecksum?: boolean } = {}) {
+function run(options: { primaryFails?: boolean; mirrorsFail?: boolean; allFail?: boolean; badChecksum?: boolean } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'dsh-bubblewrap-'))
   onTestFinished(() => { rmSync(root, { recursive: true, force: true }) })
   const bin = join(root, 'bin')
@@ -24,6 +24,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 if [[ "$FAIL_ALL" == 1 || ( "$FAIL_PRIMARY" == 1 && "$url" == https://archive.ubuntu.com/* ) ]]; then exit 7; fi
+if [[ "$FAIL_MIRRORS" == 1 && "$url" != https://launchpad.net/* ]]; then exit 7; fi
 printf 'pinned payload' > "$output"`,
     sha256sum: `printf 'checksum %s\\n' "$(cat)" >> "$TRACE"
 if [[ "$BAD_CHECKSUM" == 1 ]]; then exit 1; fi`,
@@ -46,6 +47,7 @@ chmod +x "$3/usr/bin/bwrap"`,
     ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}`, TRACE: trace,
     RUNNER_TEMP: root, GITHUB_PATH: join(root, 'github-path'),
     FAIL_PRIMARY: options.primaryFails ? '1' : '0', FAIL_ALL: options.allFail ? '1' : '0',
+    FAIL_MIRRORS: options.mirrorsFail ? '1' : '0',
     BAD_CHECKSUM: options.badChecksum ? '1' : '0',
   } })
   expect(result.error).toBeUndefined()
@@ -63,19 +65,27 @@ posixIt('checks the pinned mirrored payload before extracting and probing it', (
   expect(trace.slice(2)).toEqual(['extract', 'sysctl', 'probe', 'probe'])
 })
 
-posixIt('uses the immutable build when the mirror refuses the pinned version', () => {
+posixIt('uses an independent mirror when the Ubuntu archive is unavailable', () => {
   const { result, trace } = run({ primaryFails: true })
   expect(result.status, result.stderr).toBe(0)
-  expect(trace[1]).toContain('https://launchpad.net/ubuntu/+source/bubblewrap/0.12.0-1/+build/33546835/')
+  expect(trace[1]).toContain('https://mirrors.kernel.org/ubuntu/pool/main/b/bubblewrap/bubblewrap_0.12.0-1_amd64.deb')
   expect(trace[2]).toMatch(/^checksum /)
   expect(trace[3]).toBe('extract')
 })
 
-posixIt('stops before extraction when both downloads fail', () => {
+posixIt('uses the immutable build when both mirrors refuse the pinned version', () => {
+  const { result, trace } = run({ mirrorsFail: true })
+  expect(result.status, result.stderr).toBe(0)
+  expect(trace[2]).toContain('https://launchpad.net/ubuntu/+source/bubblewrap/0.12.0-1/+build/33546835/')
+  expect(trace[3]).toMatch(/^checksum /)
+  expect(trace[4]).toBe('extract')
+})
+
+posixIt('stops before extraction when every download fails', () => {
   const { result, trace } = run({ allFail: true })
   expect(result.status).toBe(1)
   expect(result.stderr).toContain('Could not download the pinned bubblewrap payload')
-  expect(trace).toHaveLength(2)
+  expect(trace).toHaveLength(3)
   expect(trace.every(line => line.startsWith('curl '))).toBe(true)
 })
 
