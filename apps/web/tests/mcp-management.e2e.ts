@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { chromium, type Browser, type Page } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
-import type McpManager from '@deepseek-ai/dsh-mcp-manager'
+import type McpManager from '@deepseek-ai/dsh-mcp-config-manager'
 import { saveFailureShot } from './support.ts'
 import { captureStableAria, compareOrRefreshGolden, launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold } from './scaffold.ts'
 
@@ -42,7 +42,7 @@ describe.skipIf(MODE === 'record')('MCP management', () => {
     await server.getByText('Connected', { exact: true }).waitFor()
     await server.locator('summary').click()
     await server.getByText('mcp__knowledge__search_notes', { exact: true }).waitFor()
-    const manager = scaffold.ctx.get('mcpManager') as McpManager
+    const manager = scaffold.ctx.get('mcpConfigManager') as McpManager
     const state = await manager.list()
     const configured = state.servers[0]!
     const beforeInvalid = await readFile(join(scaffold.harnessHome, 'cordis.patch.yml'), 'utf8')

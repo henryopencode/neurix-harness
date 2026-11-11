@@ -9,12 +9,14 @@ import { existsSync, globSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { load as loadYaml } from 'js-yaml'
+import semver from 'semver'
 import {
   isPublicExperimentalPackageDirectory,
   isExperimentalPackageName,
   hasExperimentalPackageReference,
   EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS,
   EXPERIMENTAL_PACKAGE_NAME_PREFIX,
+  LEGACY_PREFIXED_EXPERIMENTAL_PACKAGE_DIRECTORIES,
   PRIVATE_EXPERIMENTAL_PACKAGE_DIRECTORIES,
 } from './experimental-package-policy.ts'
 import { hasTypertRemoteNavigation, isForbiddenPublicationFile } from './publication-payload.ts'
@@ -92,6 +94,8 @@ const appPackageFiles: Readonly<Record<string, readonly string[]>> = {
 export interface PackageManifest {
   name?: string
   version?: string
+  /** Official API baseline declared by a distribution with an independent release sequence. */
+  dshApiVersion?: unknown
   private?: boolean
   type?: string
   main?: string
@@ -191,8 +195,16 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   '@deepseek-ai/dsh-experimental-subagent-oar': ['LICENSE-OAR'],
   // CUA publishes its client API and attributed native source for local macOS builds.
   '@deepseek-ai/dsh-cua': ['lib/remote-types.js', 'lib/api.js', 'lib/bridge.js', 'lib/native-client.js', 'lib/protocol.js'],
-  '@deepseek-ai/dsh-experimental-cua-macos': ['native/bin', 'native/Package.swift', 'native/Sources', 'native/tests/swift', 'native/tests/test_swift.py', 'native/LICENSE.cua-driver', 'native/upstream.json', 'native/README.md', 'native/README.zh.md', 'native/protocol.schema.json'],
+  '@deepseek-ai/dsh-experimental-cua-macos': ['native/bin', 'cua-helper.json', 'native/Package.swift', 'native/Info.plist', 'native/DSHComputerUse.icns', 'native/build_app.py', 'native/Sources', 'native/tests/swift', 'native/tests/test_swift.py', 'native/LICENSE.cua-driver', 'native/LICENSE.computer-use-icon', 'native/upstream.json', 'native/README.md', 'native/README.zh.md', 'native/protocol.schema.json'],
   '@deepseek-ai/dsh-webhook-github': ['examples/github-review/cordis.yml', 'examples/github-review/github-ready-review-rule.mjs'],
+  // Liveshare publishes its built Relay gateway entry and the shared runtime
+  // chunk that entry imports. Its `./types` export is a type-only module, so
+  // the emitted tree contributes that one runtime file; the declarations still
+  // ship as the whole tree.
+  '@deepseek-ai/dsh-experimental-liveshare': [
+    'lib/owner-gateway/cli.js',
+    'lib/retry-backoff-*.js',
+  ],
   // Owned Worker bundles import this public bootstrap before their business entry.
   '@deepseek-ai/dsh-app-boot': ['lib/worker/profile-resolution-bootstrap.js'],
   // Statically linked client libraries keep their stylesheets next to the emitted
@@ -211,8 +223,8 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   // The CPython side ships as source .py files, published as-is rather than built.
   '@deepseek-ai/dsh-experimental-ptc-runtime-python': ['py/**/*.py'],
   '@deepseek-ai/dsh-experimental-speech-to-text-sensevoice': ['runtime/assets.json'],
-  // Node execution modes each launch a separately bundled bootstrap.
-  '@deepseek-ai/dsh-ptc-runtime-node': ['lib/process.js', 'lib/persistent-process.js'],
+  // Node profile configuration and process bootstraps have separate bundles.
+  '@deepseek-ai/dsh-ptc-runtime-node': ['lib/configuration.js', 'lib/process.js', 'lib/persistent-process.js'],
   // The Inspector owns a Worker and a mirrored frontend outside package export paths.
   '@deepseek-ai/dsh-experimental-inspector': ['lib/client.*.js', 'lib/worker.js', 'lib/devtools/**'],
   // Creator's composition guidance travels with the declaration package.
@@ -260,6 +272,11 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   // The headless entry and its startup row share the JSON projection code
   // through a hashed tsdown chunk; both import it by relative path.
   '@deepseek-ai/dsh-headless': ['lib/json-stream-*.js'],
+}
+
+/** Split Git faces publish shared DTOs; browser component JavaScript stays inside client.js with its CSS. */
+const emittedTreeFileOverrides: Readonly<Record<string, readonly string[]>> = {
+  '@deepseek-ai/dsh-client-ui-git-branch': ['lib/types/types.js'],
 }
 
 function sameStringList(actual: readonly string[] | undefined, expected: readonly string[]): boolean {
@@ -353,7 +370,9 @@ export function expectedDshPackageFiles(manifest: PackageManifest, detailFiles: 
     // browser-safe source channels rehomed off src so plain Node can import
     // them without type stripping) publish the emitted JS alongside the
     // declarations.
-    ...usesEmittedTreeDefaults(manifest) ? ['lib/types/**/*.js'] : [],
+    ...usesEmittedTreeDefaults(manifest)
+      ? manifest.name === undefined ? ['lib/types/**/*.js'] : emittedTreeFileOverrides[manifest.name] ?? ['lib/types/**/*.js']
+      : [],
     'lib/types/**/*.d.ts',
     ...hasExportPair(manifest, './typert', './lib/typert.host.d.ts', './lib/typert.host.js')
       ? ['lib/typert.host.js', 'lib/typert.host.d.ts']
@@ -415,9 +434,14 @@ export function checkExperimentalManifest(
   if (!experimentalPackageDirectory.test(dir)) return []
   const label = manifest.name ?? dir
   const errors: string[] = []
-  if (manifest.name === undefined || !manifest.name.startsWith(EXPERIMENTAL_PACKAGE_NAME_PREFIX)
-    && manifest.name !== EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS[dir]) {
-    errors.push(`${label}: experimental package name must start with ${JSON.stringify(EXPERIMENTAL_PACKAGE_NAME_PREFIX)} or match its declared directory exception`)
+  if (manifest.name === undefined) {
+    errors.push(`${label}: experimental package must declare a name`)
+  } else if (manifest.name.startsWith(EXPERIMENTAL_PACKAGE_NAME_PREFIX)) {
+    if (!LEGACY_PREFIXED_EXPERIMENTAL_PACKAGE_DIRECTORIES.includes(dir)) {
+      errors.push(`${label}: new experimental packages must not use the ${JSON.stringify(EXPERIMENTAL_PACKAGE_NAME_PREFIX)} prefix; name it @deepseek-ai/dsh-<name> and declare it in EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS (scripts/experimental-package-policy.ts)`)
+    }
+  } else if (manifest.name !== EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS[dir]) {
+    errors.push(`${label}: experimental package name must be declared for this directory in EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS (scripts/experimental-package-policy.ts)`)
   }
   if (isPublicExperimentalPackageDirectory(dir, privateDirectories)) {
     if (manifest.private === true) errors.push(`${label}: public experimental package must not set "private": true`)
@@ -432,7 +456,7 @@ export function checkExperimentalManifest(
 }
 
 /**
- * Reject missing, renamed, moved, or duplicated retained-name exceptions.
+ * Reject missing, renamed, moved, or duplicated unprefixed-name declarations and stale legacy prefixed directories.
  * @param manifests - every workspace manifest, with repository-relative directories.
  * @returns Violations of the exact directory/name ownership declarations.
  */
@@ -441,7 +465,12 @@ export function checkExperimentalNameExceptions(manifests: readonly WorkspaceMan
   for (const [dir, name] of Object.entries(EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS)) {
     const owners = manifests.filter(entry => entry.manifest.name === name)
     if (owners.length !== 1 || owners[0]?.dir !== dir) {
-      errors.push(`${dir}: retained experimental name ${name} must have exactly one workspace owner at this directory`)
+      errors.push(`${dir}: unprefixed experimental name ${name} must have exactly one workspace owner at this directory`)
+    }
+  }
+  for (const dir of LEGACY_PREFIXED_EXPERIMENTAL_PACKAGE_DIRECTORIES) {
+    if (!manifests.some(entry => entry.dir === dir && entry.manifest.name?.startsWith(EXPERIMENTAL_PACKAGE_NAME_PREFIX) === true)) {
+      errors.push(`${dir}: remove this directory from LEGACY_PREFIXED_EXPERIMENTAL_PACKAGE_DIRECTORIES; no package with the legacy prefix lives here`)
     }
   }
   return errors
@@ -473,6 +502,24 @@ export function checkDshFamilyVersion(manifest: PackageManifest, expected: strin
     return `${name}: package.json version must match root version ${expected ?? '(missing)'}`
   }
   return undefined
+}
+
+/**
+ * Verify that every DSH manifest carries the root's declared API baseline, including bundled entrypoints.
+ * @param apiVersion - Unvalidated root manifest value; absence leaves ordinary upstream releases unchanged.
+ * @param manifests - Discovered workspace manifests.
+ * @returns Invalid declarations and distribution members with missing or mismatched baselines.
+ */
+export function checkDshApiVersions(apiVersion: unknown, manifests: readonly WorkspaceManifest[]): string[] {
+  if (apiVersion === undefined) return []
+  if (typeof apiVersion !== 'string' || semver.valid(apiVersion) === null) {
+    return ['package.json: dshApiVersion must be a semantic version']
+  }
+  return manifests.flatMap(({ dir, manifest }) => {
+    const name = manifest.name ?? ''
+    if (name !== '@deepseek-ai/dsh' && !name.startsWith('@deepseek-ai/dsh-')) return []
+    return manifest.dshApiVersion === apiVersion ? [] : [`${dir}/package.json: dshApiVersion must be ${apiVersion}`]
+  })
 }
 
 /**
@@ -703,6 +750,7 @@ export function main(): void {
   const manifests = readWorkspaceManifests(root)
   const errors = [
     ...checkRepositoryVersion(),
+    ...checkDshApiVersions(rootManifest.dshApiVersion, manifests),
     ...workspaceManifests().flatMap(checkWorkspaceManifest),
     ...checkWorkspaceProtocol(manifests),
     ...checkExperimentalNameExceptions(manifests),

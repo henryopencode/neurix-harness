@@ -3,12 +3,11 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
-import { Context } from '@deepseek-ai/cordis'
 import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import { PartialArguments } from '@deepseek-ai/dsh-util-values'
-import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
-import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
+import { SlotTestRuntime, contextMenuHook, makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
 import { zh, en } from '@deepseek-ai/dsh-client-ui-conversation/src/client/locales.ts'
 import type { StartedToolCall, ToolResultNode } from '@deepseek-ai/dsh-client-ui-chat/client'
@@ -43,6 +42,7 @@ function props(block: StartedToolCall | ToolResultNode): ImageGenerationRowProps
   return {
     ...stage, callId: 'image-call', toolName: 'generate_image',
     useDisclosure, openFile: vi.fn(), loadImage: vi.fn(),
+    sessionId: 'image-session' as SessionId, useContextMenu: contextMenuHook(), resolveFilePath: path => path,
     t: makeTranslate(zh, commonZh),
     renderSlot: (_name: 'tool.call.generatedImages', owner: ToolImagesOwnerProps) => <div aria-label="generated images">
       {owner.images.map((source, index) => 'attachment' in source
@@ -93,9 +93,9 @@ describe('generated image previews', () => {
   })
 
   it('coexists with read_image and releases its independent gallery on disposal', async () => {
-    const ctx = new Context()
+    const runtime = await SlotTestRuntime.create()
+    const ctx = runtime.ctx
     try {
-      await ctx.plugin(SlotRegistry).await()
       ctx.slots.register({ name: 'root', children: {
         'tool.call.toolview': { kind: 'keyed', scope: 'session' },
       } } as never, () => null)
@@ -106,6 +106,6 @@ describe('generated image previews', () => {
       expect(entries[1]?.children).toEqual({ 'tool.call.generatedImages': { kind: 'single', scope: 'session' } })
       await generation.dispose()
       expect(ctx.slots.entries('tool.call.toolview').map(entry => entry.options.key)).toEqual(['read_image'])
-    } finally { await ctx.fiber.dispose() }
+    } finally { await runtime.dispose() }
   })
 })

@@ -1,54 +1,48 @@
-/** Client-safe MCP management requests and snapshots. @module */
-import type { Branded } from '@deepseek-ai/dsh-brand'
-import type { McpConnectionSnapshot } from '@deepseek-ai/dsh-mcp-resources/types'
+/**
+ * Per-server runtime status, list views, and the MCP manager's Cordis event.
+ * Types only — no runtime code.
+ *
+ * @module @deepseek-ai/dsh-mcp-manager/types
+ */
 
-/** Stable Loader identity of a configured MCP server. */
-export type McpServerId = Branded<'McpServerId'>
+import type { McpCloseResult, McpConnectionStatus } from '@deepseek-ai/dsh-mcp-client/types'
 
-/** Editable connection fields; omitted credentials retain existing values. */
-export interface McpServerDraft {
-  readonly serverName: string
-  readonly transport: 'stdio' | 'streamable-http'
-  readonly command: string
-  readonly args: string[]
-  readonly cwd: string
-  readonly url: string
-  readonly credentials?: Record<string, string>
+/**
+ * Status of one managed server. Extends the mcp-client connection status with
+ * manager-owned conditions: `disabled` when the configured entry requests no
+ * live instance, `load` when plugin activation failed, and `cleanup` when an
+ * instance or probe could not confirm closure or finish local cleanup.
+ * Cleanup results retain any unconfirmed closure and the first diagnostic.
+ */
+export type McpManagedServerStatus =
+  | McpConnectionStatus
+  | { state: 'disabled' }
+  | { state: 'failed'; reason: 'load'; lastError: string }
+  | { state: 'failed'; reason: 'cleanup'; result: McpCloseResult }
+
+/** One managed server as a management surface lists it. */
+export interface McpManagedServerView {
+  /** The configured `servers` key or registered name; also the instance's `serverName` tool namespace. */
+  name: string
+  /** Whether a configured or registered entry still exists; false for retained cleanup failures after removal. */
+  configured: boolean
+  /** Current runtime status. */
+  status: McpManagedServerStatus
 }
 
-/** One global server, with credentials excluded from every response. */
-export interface McpServerView {
-  readonly id: McpServerId
-  readonly serverName: string
-  readonly enabled: boolean
-  readonly removable: boolean
-  readonly editable: boolean
-  readonly connection: McpConnectionSnapshot | null
-  readonly draft: McpServerDraft
-}
-
-/** Configuration revision and current connections for this Host. */
-export interface McpManagerSnapshot {
-  readonly revision: string
-  readonly servers: McpServerView[]
-  readonly writable: boolean
-  readonly recoveryRequired: boolean
-}
-
-declare module '@deepseek-ai/dsh-typert-protocol' {
-  interface RemoteErrorDetailsMap {
-    'mcp/invalid-document': Record<string, never>
-    'mcp/expression': Record<string, never>
-    'mcp/invalid-config': Record<string, never>
-    'mcp/duplicate': Record<string, never>
-    'mcp/inherited': Record<string, never>
-    'mcp/disabled': Record<string, never>
-    'mcp/not-found': Record<string, never>
-    'mcp/unavailable': Record<string, never>
-    'mcp/read-only': Record<string, never>
-    'mcp/conflict': Record<string, never>
-    'mcp/overridden': Record<string, never>
-    'mcp/recovery-required': Record<string, never>
-    'mcp/reload-failed': Record<string, never>
+declare module '@deepseek-ai/cordis' {
+  interface Events {
+    /**
+     * One managed server's status transitioned. Emitted for every published
+     * change while the manager is live and either the entry is configured or
+     * registered, or a runtime record remains. Removed entries may emit cleanup
+     * failures; `watch` and `list()` report removals.
+     * Lifecycle operations do not wait for listeners. Synchronous throws and
+     * returned promise rejections are logged without skipping other listeners.
+     * @param name - the configured `servers` key or registered name.
+     * @param status - the status now current for that server.
+     * @mode parallel
+     */
+    'mcp-manager/status'(name: string, status: McpManagedServerStatus): void | Promise<void>
   }
 }

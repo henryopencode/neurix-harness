@@ -52,7 +52,7 @@ describe('web e2e: Desktop update workspace chrome', () => {
           const errorDetail = locale === 'zh-CN' ? '下载更新失败，请重试。' : 'Could not download the update. Please try again.'
           const readyLabel = locale === 'zh-CN' ? '安装并重启' : 'Install and restart'
           const version = '0.1.5-nightly.20260911'
-          // The carrier sends semantic state; the Web locale owns visible and accessible copy.
+          // The carrier exposes semantic states; Web copy follows its own locale.
           const available = presentDesktopUpdate({ phase: 'available', version })
           const publish = async (state: Presentation) => page.evaluate((value) => {
             (window as FixtureWindow).updateFixture.publish(value)

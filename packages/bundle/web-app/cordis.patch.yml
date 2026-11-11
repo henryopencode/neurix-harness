@@ -72,9 +72,9 @@
     - id: session-log-download
       name: '@deepseek-ai/dsh-session-log-export'
 
-    # Session-header "Open In..." split button over the host application
-    # resolution (macOS/Windows/Linux; a host with no resolved application
-    # renders no button). Two halves: the host routes and the browser surface.
+    # Session-menu application choices over Host resolution on macOS, Windows,
+    # and Linux. An empty catalog hides the action. The Host routes and browser
+    # controls also serve the file-tree directory opener.
     - id: open-in-app
       name: '@deepseek-ai/dsh-host-open-in-app'
       config:
@@ -85,6 +85,10 @@
     - id: ui-git-branch
       name: '@deepseek-ai/dsh-client-ui-git-branch'
 
+    - id: ui-file-actions
+      name: '@deepseek-ai/dsh-client-ui-file-actions'
+    - id: ui-context-menu
+      name: '@deepseek-ai/dsh-client-ui-context-menu'
     - id: ui-open-in-app
       name: '@deepseek-ai/dsh-client-ui-open-in-app'
 
@@ -133,7 +137,7 @@
       name: '@deepseek-ai/dsh-api-workspace-files'
 
     # The Schedule service owns the task store and delivers each due occurrence
-    # as a follow-up in its original Session. The clock reading and the four
+    # as a follow-up to the task's target Session. The clock reading and the four
     # reminder tools belong to the `standard`, `cordis`, and `ptc` presets,
     # which declare them in their own scope.
     - id: schedule
@@ -149,6 +153,14 @@
 
     - id: settings-controller
       name: '@deepseek-ai/dsh-api-settings-controller'
+
+    # One shared MCP server fleet: Settings-configured servers plus servers
+    # that installed plugins register, with status and recovery over Remote.
+    # Credential templates and OAuth grants resolve through the credentials
+    # provider, so the manager starts after it.
+    - id: mcp-manager
+      name: '@deepseek-ai/dsh-mcp-manager'
+      inject: [credentials]
 
     # Workspace commands and reconnect-safe projection over Typert Remote.
     - id: workspace-controller
@@ -338,7 +350,7 @@
     - id: ui-chat
       name: '@deepseek-ai/dsh-client-ui-chat'
 
-    # Official occupants for the generic sidebar and conversation brand slots.
+    # Official occupants for the sidebar brand slots and the home whale frame layer.
     - id: ui-brand-official
       name: '@deepseek-ai/dsh-client-ui-brand-official'
 
@@ -389,6 +401,9 @@
     - id: ui-skill
       name: '@deepseek-ai/dsh-client-ui-skill'
 
+    - id: ui-agent-team
+      name: '@deepseek-ai/dsh-client-ui-agent-team'
+
     - id: ui-subagent
       name: '@deepseek-ai/dsh-client-ui-subagent'
 
@@ -424,10 +439,6 @@
     - id: ui-model-selection
       name: '@deepseek-ai/dsh-client-ui-model-selection'
 
-    - id: ui-deepseek-model-label-1017
-      name: '@deepseek-ai/dsh-client-ui-deepseek-model-label-1017'
-      disabled: true
-
     - id: ui-permission
       name: '@deepseek-ai/dsh-client-ui-permission-presets'
 
@@ -447,8 +458,8 @@
     # The Built-in plugins settings section: the navigation entry and the tab
     # row the inventory tab registers into. The official configuration pages
     # are the companion rows below.
-    - id: mcp-manager
-      name: '@deepseek-ai/dsh-mcp-manager'
+    - id: mcp-config-manager
+      name: '@deepseek-ai/dsh-mcp-config-manager'
 
     - id: ui-mcp
       name: '@deepseek-ai/dsh-client-ui-mcp'
@@ -569,12 +580,9 @@
 - id: tool-result-pruner
   disabled: true
 
-# The subagent registry and its backends STAY in the host plane. `subagents` is
-# a process singleton with a cross-session query surface (`listChildren`,
-# `followup`) that the host api-proxy serves to the browser, and a provider
-# registers under a globally unique name, so a per-session copy would both
-# starve that host row and collide on the second session. What a preset
-# chooses is which delegation TOOLS its agent sees, below.
+# The subagent registry and its backends belong in the host composition: browser
+# prompt and interrupt requests share its runtime, and provider names are unique
+# within the registry. Presets select the delegation tools visible to each Agent.
 
 - id: tool-subagent-control
   disabled: true

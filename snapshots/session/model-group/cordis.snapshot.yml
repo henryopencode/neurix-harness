@@ -1,3 +1,7 @@
+- id: agent-team
+  disabled: true
+- id: tool-agent-team
+  disabled: true
 - id: llm-deepseek
   disabled: true
 - id: plugin-package-inventory-deepseek
@@ -11,7 +15,7 @@
             name: DeepSeek
             models:
               - id: deepseek-v4-flash
-    - id: agent-team
+    - id: legacy-agent-team
       name: '@deepseek-ai/dsh-experimental-agent-team'
     - id: model-group
       name: '@deepseek-ai/dsh-experimental-model-group-runtime'

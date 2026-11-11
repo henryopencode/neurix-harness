@@ -32,9 +32,7 @@ kind: "package-bundle"
 
 启动 GUI、打开浏览器，然后开始与 agent（智能体）对话。flag 用于微调本次调用。
 
-Web 组合使用不偏向厂商的配置入口与排序。可选的 `ui-deepseek-model-label-1017` 条目默认禁用；可通过 profile overlay 设置 `disabled: false` 启用其版本徽标。
-
-侧栏的 **MCP** 页面可管理全局 MCP 服务器，并显示实时连接状态及工具。配置和恢复说明见 [MCP 管理页](../../client/ui-mcp/README.zh.md)。
+[Agent Teams UI](../../client/ui-agent-team/README.zh.md) 随本 bundle 加载。在模型与推理等级菜单中按 Session 开启；通过 Subagent 控件打开成员树，下方显示共享任务。
 
 ### 启动 Web GUI
 

@@ -18,10 +18,6 @@
     "scripts",
     "tests"
   ],
-  // The web e2e lane (scaffold + replay specs) boots the host spine and reads
-  // its Context merges — host-plane programs, checked in tsconfig.host.json;
-  // this client-registered project must not also hold them (one program
-  // cannot see both sides of the cordis Context merges).
   "exclude": [
     "tests/git-branch.e2e.ts",
     "tests/knowledge-base.e2e.ts",
@@ -176,7 +172,6 @@
     "tests/file-upload-round.e2e.ts",
     "tests/message-actions.e2e.ts",
     "tests/open-in-app-ssh.e2e.ts",
-    "tests/git-branch.e2e.ts",
     "tests/fork-mid-turn.e2e.ts",
     "tests/message-feedback.e2e.ts",
     "tests/markdown-images.e2e.ts",
@@ -229,7 +224,6 @@
     "tests/tool-details.e2e.ts",
     "tests/turn-tail-actions.e2e.ts",
     "tests/goal-multi-turn-actions.e2e.ts",
-    "tests/chat-scroll-fixture.ts",
     "tests/chat-scroll-contract.e2e.ts",
     "tests/chat-long-interactions.e2e.ts",
     "tests/chat-continuous-conversation.e2e.ts",
@@ -241,10 +235,35 @@
     "tests/pwsh-terminal.e2e.ts",
     "tests/workflow-run.e2e.ts",
     "tests/workflow-canvas.e2e.ts",
-    "tests/team-view.e2e.ts"
+    "tests/team-view.e2e.ts",
+    "tests/home-whale.e2e.ts",
+    "tests/sidebar-drawer.e2e.ts",
+    "tests/context-menus.e2e.ts",
+    "tests/search-empty-include.e2e.ts",
+    "tests/subagent-summary.e2e.ts",
+    "tests/subagent-result-notice.e2e.ts",
+    "tests/forge-panel.e2e.ts",
+    "tests/question-composer-recommended.e2e.ts",
+    "tests/file-browser.e2e.ts",
+    "tests/file-browser-composition.e2e.ts",
+    "tests/plugin-market-toolbar.e2e.ts",
+    "tests/bundle-platform.e2e.ts",
+    "tests/schedule-header.e2e.ts",
+    "tests/schedule-pickers.e2e.ts",
+    "tests/plugin-install-silent-failure.e2e.ts",
+    "tests/desktop-channel.e2e.ts",
+    "tests/model-badge.e2e.ts",
+    "tests/sidebar-alignment.e2e.ts",
+    "tests/autolink-cjk-punctuation.e2e.ts",
+    "tests/open-in-app-menus.e2e.ts",
+    "tests/prompt-admission.e2e.ts",
+    "tests/schedule-manual.e2e.ts",
+    "tests/client-ui-stats-panel.e2e.ts"
   ],
   "references": [
-    { "path": "../../packages/experimental/auto-review" },
+    {
+      "path": "../../packages/experimental/auto-review"
+    },
     {
       "path": "../../packages/client/store"
     },

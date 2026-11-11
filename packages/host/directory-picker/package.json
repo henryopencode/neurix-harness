@@ -2,6 +2,7 @@
   "name": "@deepseek-ai/dsh-host-directory-picker",
   "description": "Abstract workspace-directory picking seam (ctx.directoryPicker) for the Neurix Harness web GUI host",
   "version": "1.1.7",
+  "dshApiVersion": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

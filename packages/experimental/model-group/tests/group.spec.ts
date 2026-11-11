@@ -91,8 +91,8 @@ describe('model-group conversations', () => {
     const failure = events.find(event => event.type === 'tool/result' && event.data.message.isError)
     expect(failure?.type === 'tool/result' ? failure.data.error : undefined).toMatchObject({ code: 'GROUP_SELF_ASSIGNMENT' })
     expect(events.filter(event => event.type === 'model-group/post')).toEqual([])
-    expect(ctx.agentTeams.listTasks(lead)).toEqual([])
-    expect(ctx.agentTeams.listMembers(lead).filter(member => member.role !== 'lead')).toEqual([])
+    expect(ctx.legacyAgentTeams.listTasks(lead)).toEqual([])
+    expect(ctx.legacyAgentTeams.listMembers(lead).filter(member => member.role !== 'lead')).toEqual([])
     expect(JSON.stringify(adapter.requests[0]?.messages)).toContain('You are a (Model a), the leader')
     await expect(ctx.modelGroups.assign(lead, 'a', [{ type: 'text', text: 'Self assignment' }], false, signal))
       .rejects.toMatchObject({ code: 'GROUP_SELF_ASSIGNMENT' })
@@ -101,9 +101,9 @@ describe('model-group conversations', () => {
   it('publishes worker replies without posting the private assignment as leader speech', async () => {
     const { ctx, lead } = await setup([textResponse('Worker opinion')])
     await ctx.modelGroups.assign(lead, 'b', [{ type: 'text', text: 'Give an opinion using these internal instructions.' }], true, signal)
-    await ctx.subagents.waitForChildren(lead)
+    await ctx.subagents.waitForTreeWork(lead)
     await lead.whenIdle()
-    await vi.waitFor(() => { expect(ctx.agentTeams.listTasks(lead)[0]?.status).toBe('completed') })
+    await vi.waitFor(() => { expect(ctx.legacyAgentTeams.listTasks(lead)[0]?.status).toBe('completed') })
     const posts = lead.session.snapshotEvents().filter(event => event.type === 'model-group/post')
     expect(posts).toHaveLength(1)
     expect(posts[0]?.type === 'model-group/post' ? posts[0].data : undefined)
@@ -146,15 +146,15 @@ describe('model-group conversations', () => {
     await Promise.all(['b', 'c'].map(name => ctx.modelGroups.assign(lead, name, [{ type: 'text', text: `Task ${name}` }], false, signal)))
     await vi.waitFor(() => { expect(adapter.requests).toHaveLength(2) })
     expect(new Set(adapter.requests.map(request => request.model))).toEqual(new Set(['b', 'c']))
-    for (const member of ctx.agentTeams.listMembers(lead).filter(member => member.role !== 'lead')) {
+    for (const member of ctx.legacyAgentTeams.listMembers(lead).filter(member => member.role !== 'lead')) {
       const worker = ctx.agents.get(member.id)
       expect(worker).toBeDefined()
       expect(() => { worker?.model.select({ provider: 'mock', model: 'a' }) }).toThrow('active model group')
       expect(worker?.model.current()?.model).toBe(member.name)
     }
-    expect(ctx.agentTeams.listTasks(lead).every(task => task.status === 'in_progress')).toBe(true)
+    expect(ctx.legacyAgentTeams.listTasks(lead).every(task => task.status === 'in_progress')).toBe(true)
     await ctx.modelGroups.stop(lead)
-    expect(ctx.agentTeams.listMembers(lead).filter(member => member.role !== 'lead').every(member => member.status === 'inactive')).toBe(true)
+    expect(ctx.legacyAgentTeams.listMembers(lead).filter(member => member.role !== 'lead').every(member => member.status === 'inactive')).toBe(true)
     expect(adapter.requests).toHaveLength(2)
     await expect(ctx.modelGroups.assign(lead, 'b', [{ type: 'text', text: 'Late task' }], false, signal)).rejects.toThrow()
   })
@@ -179,8 +179,8 @@ describe('model-group conversations', () => {
       await rejection
       await stopping
       expect(adapter.requests).toHaveLength(0)
-      expect(ctx.agentTeams.listMembers(lead)).toHaveLength(1)
-      expect(ctx.agentTeams.listTasks(lead)).toHaveLength(0)
+      expect(ctx.legacyAgentTeams.listMembers(lead)).toHaveLength(1)
+      expect(ctx.legacyAgentTeams.listTasks(lead)).toHaveLength(0)
     } finally { release.resolve(true); spy.mockRestore() }
   })
 
@@ -190,7 +190,7 @@ describe('model-group conversations', () => {
     const dispose = ctx.on('session/event', (session, event) => { if (session.id === lead.id) events.push(event) })
     try {
       await ctx.commands.execute(lead, '/model-group tell b Answer this question', [], signal)
-      await ctx.subagents.waitForChildren(lead)
+      await ctx.subagents.waitForTreeWork(lead)
       await lead.whenIdle()
       expect(adapter.requests.map(request => request.model)).toEqual(['b'])
       expect(adapter.requests[0]?.messages.some(message => message.content.some(block =>
@@ -219,17 +219,17 @@ describe('model-group conversations', () => {
     try {
       expect((await stored.read()).events.some(event => event.type === 'model-group/dispatched')).toBe(true)
     } finally { await stored.close() }
-    expect(ctx.agentTeams.listMembers(lead).find(member => member.name === 'b')?.status).toBe('running')
+    expect(ctx.legacyAgentTeams.listMembers(lead).find(member => member.name === 'b')?.status).toBe('running')
     await ctx.modelGroups.stop(lead)
   })
 
   it('retains human authorship when directly messaging an existing model again', async () => {
     const { ctx, lead, adapter } = await setup([textResponse('First answer'), textResponse('Second answer')])
     await ctx.commands.execute(lead, '/model-group tell b First question', [], signal)
-    await ctx.subagents.waitForChildren(lead)
+    await ctx.subagents.waitForTreeWork(lead)
     await lead.whenIdle()
     await ctx.commands.execute(lead, '/model-group tell b Second question', [], signal)
-    await ctx.subagents.waitForChildren(lead)
+    await ctx.subagents.waitForTreeWork(lead)
     await lead.whenIdle()
     expect(adapter.requests.map(request => request.model)).toEqual(['b', 'b'])
     const question = adapter.requests[1]?.messages.findLast(message => message.source?.kind === 'user')
@@ -239,7 +239,7 @@ describe('model-group conversations', () => {
   it('changing plugin defaults affects later conversations while preserving existing choices', async () => {
     const { ctx, lead, fiber } = await setup([])
     const updated = members.map(member => ({ ...member, strengths: 'Updated strengths' }))
-    fiber.update({ members: updated, leader: 'a', defaultMode: 'single' })
+    await fiber.update({ members: updated, leader: 'a', defaultMode: 'single' })
     await fiber.await()
     const next = await ctx.agentLoop.create(SessionId('new-default'), { provider: 'mock', model: 'a' })
     expect(ctx.modelGroups.snapshot(lead)?.mode).toBe('multi')
@@ -276,7 +276,7 @@ describe('model-group conversations', () => {
     await vi.waitFor(() => { expect(adapter.requests).toHaveLength(1) })
     await fiber.dispose()
     expect(ctx.commands.find(lead, 'model-group')).toBeUndefined()
-    expect(ctx.agentTeams.listMembers(lead).find(member => member.name === 'b')?.status).toBe('inactive')
+    expect(ctx.legacyAgentTeams.listMembers(lead).find(member => member.name === 'b')?.status).toBe('inactive')
   })
 
   it('rejects unconfigured models and limits new activations without cancelling existing work', async () => {
@@ -285,13 +285,13 @@ describe('model-group conversations', () => {
     await ctx.modelGroups.assign(lead, 'b', [{ type: 'text', text: 'Task b' }], false, signal)
     await vi.waitFor(() => { expect(adapter.requests).toHaveLength(1) })
     await expect(ctx.modelGroups.assign(lead, 'c', [{ type: 'text', text: 'Task c' }], false, signal)).rejects.toThrow('parallelism limit')
-    expect(ctx.agentTeams.listMembers(lead).find(member => member.name === 'b')?.status).toBe('running')
+    expect(ctx.legacyAgentTeams.listMembers(lead).find(member => member.name === 'b')?.status).toBe('running')
     await ctx.modelGroups.stop(lead)
   })
 
   it('does not reuse a same-named teammate created by another coordinator', async () => {
     const { ctx, lead, adapter } = await setup(['hang', textResponse('Legacy work stopped')])
-    const old = await ctx.agentTeams.spawnTeammate(lead, {
+    const old = await ctx.legacyAgentTeams.spawnTeammate(lead, {
       name: 'b', description: 'Existing teammate', context: 'fresh', provider: 'spawn',
       agentOptions: { provider: 'mock', model: 'legacy-model' }, prompt: [{ type: 'text', text: 'Legacy task' }], signal,
     })
@@ -306,7 +306,7 @@ describe('model-group conversations', () => {
   it('refuses conversion without interrupting another Team coordinator', async () => {
     const { ctx, lead, adapter } = await setup(['hang', textResponse('Legacy work stopped')])
     await ctx.modelGroups.setMode(lead, 'single')
-    const old = await ctx.agentTeams.spawnTeammate(lead, {
+    const old = await ctx.legacyAgentTeams.spawnTeammate(lead, {
       name: 'legacy', description: 'Existing teammate', context: 'fresh', provider: 'spawn',
       agentOptions: { provider: 'mock', model: 'legacy-model' }, prompt: [{ type: 'text', text: 'Legacy task' }], signal,
     })
@@ -339,7 +339,7 @@ describe('model-group conversations', () => {
     await Promise.all(['b', 'c'].map(name => ctx.modelGroups.assign(lead, name, [{ type: 'text', text: `Task ${name}` }], true, signal)))
     await vi.waitFor(() => { expect(adapter.requests).toHaveLength(2) })
     await ctx.modelGroups.stop(lead, 'b')
-    expect(ctx.agentTeams.listMembers(lead).find(member => member.name === 'c')?.status).toBe('running')
+    expect(ctx.legacyAgentTeams.listMembers(lead).find(member => member.name === 'c')?.status).toBe('running')
     await expect(ctx.modelGroups.assign(lead, 'b', [{ type: 'text', text: 'Restart' }], false, signal)).rejects.toThrow('user stopped')
     await ctx.modelGroups.stop(lead)
   })

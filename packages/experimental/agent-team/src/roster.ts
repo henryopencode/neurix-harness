@@ -269,11 +269,9 @@ export class TeamRoster {
         childId,
         provider: request.provider,
         label: description,
-        request: {
-          prompt: request.prompt,
-          parent: root,
-          ...(request.agentOptions === undefined ? {} : { agentOptions: request.agentOptions }),
-        },
+        prompt: request.prompt,
+        parent: root,
+        ...(request.agentOptions === undefined ? {} : { agentOptions: request.agentOptions }),
         signal,
       })
       await this.checkpointInitialPrompt(childId, started.messageId, signal)

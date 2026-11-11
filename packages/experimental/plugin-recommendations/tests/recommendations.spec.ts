@@ -25,6 +25,9 @@ describe('official recommendations', () => {
       { ...bundle, name: 'custom', official: false }, { ...bundle, name: 'missing', availability: 'missing' },
       { ...bundle, name: 'on-demand', optional: false }, { ...bundle, name: 'read-only', readOnlyReason: 'management-required' },
       { ...bundle, name: 'failed', error: { code: 'operation-error', diagnostic: 'load failed' } },
+      { ...bundle, name: 'unsupported-shipped', listedByDefault: false, error: { code: 'unsupported-platform' } },
+      { ...bundle, name: 'unsupported-installed', installed: true, error: { code: 'unsupported-platform' } },
+      { ...bundle, name: 'unsupported-catalog', availability: 'missing', error: { code: 'unsupported-platform' } },
     ])
     const result = await executeToolFixture(f.ctx, { name: 'skill', arguments: { name: 'official-plugins' }, agent: f.agent,
       callId: ToolCallId('discovery'), signal: new AbortController().signal })
@@ -89,7 +92,7 @@ describe('official recommendations', () => {
     expect(await f.ctx.pluginRecommendations.describe(f.agent, unnamed)).toEqual({ status: 'refused', reason: 'unknown' })
     expect(await f.ctx.actionCards.act(f.agent, unnamed, 'enable')).toEqual({ status: 'refused', reason: 'unavailable' })
     expect(await f.ctx.pluginRecommendations.describe(f.agent, ToolCallId('toString'))).toEqual({ status: 'refused', reason: 'unknown' })
-    vi.spyOn(f.ctx.agents, 'roots').mockReturnValueOnce([])
+    vi.spyOn(f.ctx.agents, 'get').mockReturnValueOnce(undefined)
     expect(await f.ctx.pluginRecommendations.describe(f.agent, callId)).toEqual({ status: 'refused', reason: 'not-live-root' })
     const service = f.ctx.pluginRecommendations
     await f.fiber.dispose()
@@ -206,8 +209,7 @@ describe('official recommendations', () => {
   it('refuses a click whose root leaves while the catalog is read', async () => {
     const f = await fixture()
     f.propose()
-    const roots = f.ctx.agents.roots()
-    vi.spyOn(f.ctx.agents, 'roots').mockReturnValueOnce(roots).mockReturnValue([])
+    vi.spyOn(f.ctx.agents, 'get').mockReturnValueOnce(f.agent).mockReturnValue(undefined)
     expect(await f.ctx.actionCards.act(f.agent, callId, 'enable')).toEqual({ status: 'refused', reason: 'not-live-root' })
     expect(f.manager.setBundleEnabled).not.toHaveBeenCalled()
   })

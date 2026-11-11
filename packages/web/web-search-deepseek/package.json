@@ -2,6 +2,7 @@
   "name": "@deepseek-ai/dsh-web-search-deepseek",
   "description": "DeepSeek-backed search provider (native web_search via the Anthropic-compatible API) for the Neurix Harness web capability seam (ctx.web)",
   "version": "1.1.7",
+  "dshApiVersion": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },
@@ -33,6 +34,7 @@
     "@deepseek-ai/dsh-credentials": "workspace:*",
     "@deepseek-ai/dsh-deepseek-account": "workspace:*",
     "@deepseek-ai/dsh-launch-environment": "workspace:*",
+    "@deepseek-ai/dsh-llm-deepseek": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-web": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~"
@@ -46,6 +48,7 @@
     "@deepseek-ai/dsh-credentials-local": "workspace:*",
     "@deepseek-ai/dsh-deepseek-account": "workspace:*",
     "@deepseek-ai/dsh-launch-environment": "workspace:*",
+    "@deepseek-ai/dsh-llm-deepseek": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-web": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~",

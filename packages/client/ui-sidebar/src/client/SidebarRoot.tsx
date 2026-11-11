@@ -5,13 +5,14 @@
  * desktop window-chrome controls retain their platform-specific placement.
  * The column also owns pointer-based scrollbar visibility for its descendants.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createScrollHandoff } from './scroll-handoff.ts'
 import clsx from 'clsx'
 import {
   FishLogo, IconEllipsisOutlineRegular, IconNewChatOutlineMedium, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular,
   isDarwinDesktop, Menu, ShortcutKeys, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { InjectFace, PropsRenderFactories, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {
   SidebarPanelActionsOwnerProps, SidebarPanelMetadata, SidebarRootComponentProps, SidebarRootInjected,
 } from './contract/slots.ts'
@@ -33,7 +34,7 @@ type PanelRowProps =
   Pick<SidebarPanelMetadata, 'id' | 'label'>
   & Pick<PropsRuntime<'sidebar'>, 'usePanelInfo'>
   & Pick<InjectFace<SidebarRootInjected>, 'selectPanel' | 'trackEntryClick'>
-  & PropsRenderSlots<'sidebar.panellist'>
+  & PropsRenderFactories
 
 /** Analytics category of an official panel; other panels are never reported. */
 function officialEntry(id: string): 'plugin' | 'cron' | undefined {
@@ -42,7 +43,7 @@ function officialEntry(id: string): 'plugin' | 'cron' | undefined {
 }
 
 /** Each panel row subscribes only to its own selection state. */
-function PanelRow({ id, label, usePanelInfo, selectPanel, trackEntryClick, renderSlot }: PanelRowProps) {
+function PanelRow({ id, label, usePanelInfo, selectPanel, trackEntryClick, renderFactorySlot }: PanelRowProps) {
   const active = usePanelInfo(info => info.activePanelId === id)
   return (
     <Tooltip label={label} delayMs={500} side="right" portal>
@@ -58,7 +59,7 @@ function PanelRow({ id, label, usePanelInfo, selectPanel, trackEntryClick, rende
         }}
       >
         <span className={css.panelGlyph} aria-hidden="true">
-          {renderSlot('sidebar.panellist', { size: 18, active }, { only: id })}
+          {renderFactorySlot('sidebar.panel.icon', { id, size: 18, active })}
         </span>
       </button>
     </Tooltip>
@@ -99,7 +100,8 @@ function PanelMoreMenu({ label, entries, onOpen, onPinnedChange, trackEntryClick
  * @returns the sidebar element tree.
  */
 export function SidebarRoot({
-  collapsed,
+  collapsed: collapsedPreference,
+  drawer,
   width,
   startSession,
   toggleSidebar,
@@ -114,7 +116,9 @@ export function SidebarRoot({
   usePanelInfo,
   t,
   renderSlot,
+  renderFactorySlot,
 }: SidebarRootComponentProps) {
+  const collapsed = collapsedPreference && !drawer
   const panels = usePanels(snapshot => snapshot)
   const unpinned = useEntryPins(ids => ids)
   const activePanelId = usePanelInfo(info => info.activePanelId)
@@ -137,6 +141,8 @@ export function SidebarRoot({
     return () => { window.clearTimeout(timer) }
   }, [collapsed])
   const windowsTitlebar = document.documentElement.hasAttribute('data-windows-titlebar')
+  const [scrollHandoff] = useState(createScrollHandoff)
+  const sectionHookContext = useMemo(() => ({ useSectionScroller: scrollHandoff.useSectionScroller }), [scrollHandoff])
   const wide = !collapsed || !settled
   // The Windows titlebar hosts the New Session controls while the sidebar is collapsed.
   const openNewSession = (): void => {
@@ -303,7 +309,7 @@ export function SidebarRoot({
         </Tooltip>
         {panels.length > 0 && (
           <nav className={css.panelList} aria-label={t('panels.label')}>
-            {panels.filter(({ id }) => id === FIXED_PANEL_ID || !unpinned.includes(id)).map(({ id, label }) => (
+            {panels.filter(({ id }) => id === FIXED_PANEL_ID || !hasEntryActions || !unpinned.includes(id)).map(({ id, label }) => (
               <PanelRow
                 key={id}
                 id={id}
@@ -311,7 +317,7 @@ export function SidebarRoot({
                 usePanelInfo={usePanelInfo}
                 selectPanel={selectPanel}
                 trackEntryClick={trackEntryClick}
-                renderSlot={renderSlot}
+                renderFactorySlot={renderFactorySlot}
               />
             ))}
             {hasEntryActions && (
@@ -335,13 +341,13 @@ export function SidebarRoot({
       </div>
 
       {/* The browser owns its full list and its collapsed expansion controls. */}
-      <div className={css.regionArea} data-sidebar-browser onTransitionEnd={(event) => {
+      <div ref={scrollHandoff.bindViewportRef} className={css.regionArea} data-sidebar-browser onTransitionEnd={(event) => {
         if (collapsed && event.target === event.currentTarget && event.propertyName === 'opacity') setSettled(true)
       }}>
         {renderSlot('sidebar.workspaces', {
           wide,
           expandSidebar: () => { if (collapsed) toggleSidebar() },
-        })}
+        }, { hookContext: sectionHookContext })}
       </div>
 
       {/* Footer actions stack above Settings in both sidebar widths. */}

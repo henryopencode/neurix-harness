@@ -2,6 +2,7 @@
   "name": "@deepseek-ai/dsh-llm",
   "description": "Provider-neutral LLM service interface for the Neurix Harness",
   "version": "1.1.7",
+  "dshApiVersion": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },
@@ -71,6 +72,7 @@
   },
   "devDependencies": {
     "@deepseek-ai/dsh-attachment": "workspace:*",
+    "@deepseek-ai/dsh-package-manifest": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~"
   }
 }

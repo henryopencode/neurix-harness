@@ -75,7 +75,7 @@ When a reader rejects a JSON property by name, declare the property as optional 
 <a id="history-and-limitations"></a>
 ## History and limitations
 
-One baseline records the complete initial inventory. Later records use their predecessor's after schema as the before schema. The verifier rejects missing predecessors, cycles, duplicate successors for one root, digest mismatches, and current roots that disagree with their latest records. Independent roots can advance independently. Two changes to the same predecessor require a single ordered history after integration.
+One baseline records the complete initial inventory. Later records use their predecessor's after schema as the before schema. The verifier rejects missing predecessors, cycles, unjoined history branches, digest mismatches, and current roots that disagree with their latest records. Independent roots can advance independently. A transition may join independent branch tips by listing their ids in `previous`; it is checked against every predecessor. Duplicate or ancestral merge parents are invalid. Ordinary verification still requires one final tip per root.
 
 Accepted records describe historical transitions; preserve their machine declarations and schema snapshots when adding a successor. An unaccepted terminal record can be refreshed explicitly; the command rejects baselines, records with dependants, and checkpoint-locked records before producing artifacts. Verification checks retained checkpoint hashes; it does not prove that the checkpoints and their authority record were never edited together. No Git ref, remote service, or released checkout supplies the baseline.
 

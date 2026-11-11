@@ -16,9 +16,8 @@ export interface ProductPackagePolicy {
  * Optional integrations may be reached by an optional bundle without becoming default capabilities.
  */
 export const PRODUCT_PACKAGE_POLICY: Readonly<Record<string, ProductPackagePolicy>> = {
-  'packages/client/ui-deepseek-model-label-1017': {
-    category: 'optional', reason: 'Optional model-label badge selected through an explicit profile overlay.',
-  },
+  'packages/web/web-search-exa': { category: 'optional', reason: 'Credential-backed search provider selected explicitly in a deployment.' },
+  'packages/web/web-search-perplexity': { category: 'optional', reason: 'Credential-backed search provider selected explicitly in a deployment.' },
   'packages/image-generation/tool-image-generation': { category: 'optional', reason: 'Text-to-image generation requires explicitly configured external credentials and a model.' },
   'packages/core/agent-tool-presentation': { category: 'optional', reason: 'Deprecated selector retained for existing executor configurations.' },
   'packages/browser-use/browser-use': { category: 'optional', reason: 'Service definition used by explicitly selected browser providers.' },
@@ -36,10 +35,9 @@ export const PRODUCT_PACKAGE_POLICY: Readonly<Record<string, ProductPackagePolic
   'packages/subagent/subagent-claude-code': { category: 'optional', reason: 'Separately installed native Claude Code agent integration.' },
   'packages/subagent/subagent-codex': { category: 'optional', reason: 'Separately installed native Codex agent integration.' },
   'packages/subagent/subagent-dsh-sdk': { category: 'optional', reason: 'Requires an explicitly configured external DSH home.' },
-  'packages/web/web-search-exa': { category: 'optional', reason: 'Alternative search provider requiring its own API credentials.' },
-  'packages/web/web-search-perplexity': { category: 'optional', reason: 'Alternative search provider requiring its own API credentials.' },
   'packages/context/tmux-context': { category: 'optional', reason: 'Context contribution requiring a tmux pane.' },
   'packages/fs/tool-str-replace-editor': { category: 'optional', reason: 'Explicit alternative to the default filesystem editing tools.' },
+  'packages/fs/fs-observation-policy': { category: 'optional', reason: 'Read-before-mutation guard that a deployment enables on the disabled dsh-base row.' },
   'packages/sdk/client': { category: 'sdk', reason: 'Published TypeScript embedding client runs in the consumer process.' },
   'packages/typert/generator': { category: 'build', reason: 'Build-time generation of type metadata.' },
   'packages/test-support/agent-loop-testkit': { category: 'test', reason: 'Published agent-loop test harness.' },

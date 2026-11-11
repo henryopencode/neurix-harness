@@ -18,15 +18,18 @@ function manifestAt(file: string): WorkspaceManifest {
  * @param name - Official catalog package name.
  * @param installAnchor - Running application's DSH package.json, possibly reached through a symlink.
  * @param version - Running DSH version used by its release family.
+ * @param apiVersion - Published official API version; defaults to the release version. Source workspaces still match the release.
  * @returns An ordinary package-manager spec and its package version.
  * @throws when a source installation lacks its workspace package, bundle patch, or built runtime.
  */
-export function officialBundleInstallTarget(name: string, installAnchor: string, version: string): { spec: string; version: string } {
+export function officialBundleInstallTarget(
+  name: string, installAnchor: string, version: string, apiVersion = version,
+): { spec: string; version: string } {
   const anchor = realpathSync(installAnchor)
   const installation = manifestAt(anchor)
   const source = installation.name === '@deepseek-ai/dsh'
     && Object.values(installation.dependencies ?? {}).some(value => value.startsWith('workspace:'))
-  if (!source) return { spec: `${name}@${version}`, version }
+  if (!source) return { spec: `${name}@${apiVersion}`, version: apiVersion }
   const root = resolve(dirname(anchor), '../..')
   if (anchor !== join(root, 'apps', 'cli', 'package.json')
     || !existsSync(join(root, 'package.json'))

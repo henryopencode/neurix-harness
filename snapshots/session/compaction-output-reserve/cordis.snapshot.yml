@@ -1,9 +1,6 @@
-# Keep this finite compaction budget independent of reference retrieval.
-- id: knowledge-base
-  disabled: true
+# With 1,800 tokens of headroom, a 1,000-token output reservation lowers the
+# trigger from 6,980 to 5,980, between the history and its condensed replacement.
 
-# With 2,170 tokens of headroom, a 1,000-token output reservation lowers the
-# trigger from 7,192 to 6,192, between the history and its condensed replacement.
 
 - id: agent-instructions
   disabled: true
@@ -35,7 +32,12 @@
             name: DeepSeek
             models:
               - id: deepseek-v4-flash
-                contextWindow: 9362
+                contextWindow: 8980
                 defaultMaxTokens: 1000
     - id: compaction-working-directory
       name: '../../../packages/test-support/session-snapshot/tests/fixtures/compaction-working-directory.ts'
+
+# Fixed-budget compaction scenario: keep the recorded tool set, whose token counts the thresholds were tuned to.
+- id: tool-fs
+  config:
+    applyPatch: false

@@ -44,6 +44,13 @@ function proseFile(root: string): string {
   return path
 }
 
+function copyAcknowledgement(from: string, to: string, id: string): void {
+  for (const suffix of ['.md', '.zh.md', '.i18n.yaml', '.schema.json']) {
+    const name = `docs/persistence-changes/${id}${suffix}`
+    writeFileSync(join(to, name), readFileSync(join(from, name)))
+  }
+}
+
 const roots: string[] = []
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }) })
 
@@ -91,7 +98,7 @@ function inventory(eventShape: Shape = { value: 'string' }, version = 3): Persis
 }
 
 function entry(
-  id: string, schema: PersistenceSchemaInventory, previous: string | null,
+  id: string, schema: PersistenceSchemaInventory, previous: string | readonly string[] | null,
   baseline = false, decision: 'same-version' | 'version-bump' = 'same-version',
 ): PersistenceHistoryEntry {
   return {
@@ -598,6 +605,43 @@ describe('persistence change classification', () => {
 })
 
 describe('persistence history verification', () => {
+  it('joins independent histories while retaining each predecessor and its schema', () => {
+    const base = entry(BASE_ID, inventory(), null, true)
+    const left = entry(NEXT_ID, onlyEvent(inventory({ value: 'string', 'label?': 'string' })), BASE_ID)
+    const right = entry('2026-09-11-fork', onlyEvent(inventory({ value: 'string', 'extra?': 'number' })), BASE_ID)
+    const merged = entry('2026-09-11-merge', onlyEvent(inventory({ value: 'string', 'label?': 'string', 'extra?': 'number' })), [left.record.id, right.record.id])
+    const history = validatePersistenceHistory([merged, right, base, left])
+    expect(history.tips.get('event:example/value')?.id).toBe(merged.record.id)
+    expect(history.entries).toContain(left)
+    expect(history.entries).toContain(right)
+    const checkpoint = createPersistenceFinalizationCheckpoint(history, inventory({ value: 'string', 'label?': 'string', 'extra?': 'number' }))
+    expect(Object.keys(checkpoint.acceptedRecords)).toEqual(expect.arrayContaining([left.record.id, right.record.id, merged.record.id]))
+    const root = fixture()
+    mkdirSync(join(root, 'docs/persistence-changes/finalized'))
+    const checkpointPath = join(root, 'docs/persistence-changes/finalized/v3.json')
+    writeFileSync(checkpointPath, JSON.stringify(checkpoint))
+    for (const suffix of ['.md', '.zh.md']) {
+      writeFileSync(join(root, `docs/session-format-status${suffix}`), '```yaml session-format-finalization\nlatestFinalizedVersion: 3\n```\n')
+    }
+    expect(loadPersistenceFinalization(root, history)?.acceptedRecords.has(merged.record.id)).toBe(true)
+    const locked = Object.fromEntries(Object.entries(checkpoint.acceptedRecords).filter(([id]) => id !== left.record.id))
+    writeFileSync(checkpointPath, JSON.stringify({ ...checkpoint, acceptedRecords: locked }))
+    expect(() => loadPersistenceFinalization(root, history)).toThrow(`accepted history omits predecessor ${left.record.id}`)
+  })
+
+  it('joins equal branch outcomes but rejects duplicate or ancestral merge parents', () => {
+    const base = entry(BASE_ID, inventory(), null, true)
+    const schema = onlyEvent(inventory({ value: 'string', 'label?': 'string' }))
+    const left = entry(NEXT_ID, schema, BASE_ID)
+    const right = entry('2026-09-11-fork', schema, BASE_ID)
+    const merge = entry('2026-09-11-merge', schema, [left.record.id, right.record.id])
+    expect(validatePersistenceHistory([base, left, right, merge]).tips.get('event:example/value')?.id).toBe(merge.record.id)
+    expect(() => validatePersistenceHistory([base, left, entry('2026-09-11-merge', schema, [left.record.id, left.record.id])])).toThrow('distinct records')
+    expect(() => validatePersistenceHistory([base, left, entry('2026-09-11-merge', schema, [BASE_ID, left.record.id])])).toThrow('independent history tips')
+    expect(() => validatePersistenceHistory([base, left, entry('2026-09-11-merge', schema, [left.record.id])])).toThrow('distinct records')
+    const unjoined = entry('2026-09-11-third', schema, BASE_ID)
+    expect(() => validatePersistenceHistory([base, left, right, merge, unjoined])).toThrow('forked')
+  })
   it('accepts a baseline and a successive optional addition without comparing the historical schema to current', () => {
     const before = inventory()
     const after = inventory({ value: 'string', 'label?': 'string' })
@@ -657,6 +701,53 @@ describe('persistence history verification', () => {
 })
 
 describe('persistence changes current-tree commands', () => {
+  it('requires an explicit merge record and decision without rewriting either history', () => {
+    const root = fixture()
+    const other = fixture()
+    baseline(root)
+    baseline(other)
+    const forkId = '2026-09-11-fork'
+    runPersistenceChanges(['--record', NEXT_ID, '--prose', proseFile(root)], root, () => inventory({ value: 'string', 'label?': 'string' }))
+    runPersistenceChanges(['--record', forkId, '--prose', proseFile(other)], other, () => inventory({ value: 'string', 'extra?': 'number' }))
+    copyAcknowledgement(other, root, forkId)
+    const unchanged = new Map(readdirSync(join(root, 'docs/persistence-changes')).map(name => [name, readFileSync(join(root, 'docs/persistence-changes', name), 'utf8')]))
+    const combined = inventory({ value: 'string', 'label?': 'string', 'extra?': 'number' })
+    const args = ['--record', '2026-09-11-merge', '--prose', proseFile(root)]
+    expect(() => runPersistenceChanges(args, root, () => combined)).toThrow('forked')
+    expect(() => runPersistenceChanges([...args, '--merge-histories'], root, () => combined)).toThrow('choose --decision')
+    runPersistenceChanges([...args, '--merge-histories', '--decision', 'same-version'], root, () => combined)
+    const history = loadPersistenceHistory(root)
+    expect(history.entries.find(item => item.record.id === '2026-09-11-merge')?.record.changes[0]?.previous).toEqual([NEXT_ID, forkId])
+    for (const [name, content] of unchanged) expect(readFileSync(join(root, 'docs/persistence-changes', name), 'utf8')).toBe(content)
+    expect(jsonResult(runPersistenceChanges(['--check', '--json'], root, () => combined)).ok).toBe(true)
+    expect(() => runPersistenceChanges(['--update', NEXT_ID], root, () => combined)).toThrow('with successors')
+    expect(() => runPersistenceChanges(['--check', '--merge-histories'], root, () => combined)).toThrow('requires --record')
+    for (const suffix of ['.md', '.zh.md']) {
+      const file = join(root, `docs/persistence-changes/2026-09-11-merge${suffix}`)
+      writeFileSync(file, readFileSync(file, 'utf8').replace(JSON.stringify([NEXT_ID, forkId]), JSON.stringify([NEXT_ID, NEXT_ID])))
+    }
+    expect(runPersistenceChanges(['--check', '--json'], root, () => combined)).toContain('merge predecessors must be distinct records')
+  })
+
+  it('joins independent deletion tombstones and reports their retained root identity', () => {
+    const root = fixture()
+    const other = fixture()
+    baseline(root)
+    baseline(other)
+    const deleted = { ...inventory(), roots: inventory().roots.filter(item => item.key !== 'event:example/value') }
+    const forkId = '2026-09-11-fork'
+    for (const [directory, id] of [[root, NEXT_ID], [other, forkId]] as const) {
+      runPersistenceChanges(['--record', id, '--decision', 'same-version', '--prose', proseFile(directory)], directory, () => deleted)
+    }
+    copyAcknowledgement(other, root, forkId)
+    const result = runPersistenceChanges(['--record', '2026-09-11-merge', '--merge-histories', '--decision', 'same-version', '--prose', proseFile(root), '--json'], root, () => deleted)
+    expect(JSON.parse(result)).toMatchObject({ ok: true, roots: [
+      { root: 'event:example/value', kind: 'event', before: null, after: null },
+      { root: 'event:example/value', kind: 'event', before: null, after: null },
+    ] })
+    expect(loadPersistenceHistory(root).tips.get('event:example/value')?.root).toBeNull()
+    expect(jsonResult(runPersistenceChanges(['--check', '--json'], root, () => deleted)).ok).toBe(true)
+  })
   it('requires completed record prose, rejects stale generated output, and reports unacknowledged paths', () => {
     const root = fixture()
     const before = inventory()

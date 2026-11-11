@@ -1,6 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-root",
   "version": "1.1.7",
+  "dshApiVersion": "0.2.2-rc.1",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -48,6 +49,7 @@
     "upload:latest:mac:arm64": "pnpm --filter @deepseek-ai/dsh-desktop run upload:latest:mac:arm64",
     "upload:latest:mac:x64": "pnpm --filter @deepseek-ai/dsh-desktop run upload:latest:mac:x64",
     "upload:latest:win:x64": "pnpm --filter @deepseek-ai/dsh-desktop run upload:latest:win:x64",
+    "purge:latest": "pnpm --filter @deepseek-ai/dsh-desktop run purge:latest",
     "clean": "tsx scripts/clean.ts",
     "change-scope": "tsx scripts/change-scope.ts",
     "typecheck": "tsx scripts/build.ts --scope typecheck",
@@ -63,7 +65,7 @@
     "test:coverage:partitioned": "tsx scripts/run-coverage-partitions.ts",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "test:bench": "npm run build:bench && npm run build:web && npm run test:bench:built",
-    "test:bench:built": "vitest run --config vitest.bench.config.ts",
+    "test:bench:built": "tsx scripts/run-bench-suite.ts",
     "test:bench:memory": "tsx scripts/run-memory-pressure-bench.ts",
     "test:expected": "vitest run --config vitest.expected.config.ts",
     "test:expected:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.expected.config.ts",
@@ -306,6 +308,9 @@
     "@deepseek-ai/dsh-experimental-computer-use-unified": "workspace:*",
     "@deepseek-ai/dsh-experimental-computer-control": "workspace:*",
     "@deepseek-ai/dsh-knowledge-base": "workspace:*",
-    "@deepseek-ai/dsh-client-ui-knowledge-base": "workspace:*"
+    "@deepseek-ai/dsh-client-ui-knowledge-base": "workspace:*",
+    "@deepseek-ai/dsh-experimental-forge": "workspace:*",
+    "@deepseek-ai/dsh-experimental-forge-github": "workspace:*",
+    "@deepseek-ai/dsh-experimental-forge-session": "workspace:*"
   }
 }

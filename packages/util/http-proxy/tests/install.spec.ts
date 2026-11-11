@@ -1,7 +1,8 @@
 import { spawnSync } from 'node:child_process'
+import dns from 'node:dns'
 import { createServer, type Server } from 'node:http'
-import type { AddressInfo } from 'node:net'
-import { afterEach, beforeAll, afterAll, describe, expect, it } from 'vitest'
+import type { AddressInfo, LookupFunction } from 'node:net'
+import { afterEach, beforeAll, afterAll, describe, expect, it, vi } from 'vitest'
 import { getGlobalDispatcher } from 'undici'
 import {
   clearedProxyEnv,
@@ -106,14 +107,39 @@ describe('installProxyFromEnvironment', () => {
     }
   })
 
-  it('connects directly when the bypass list covers the target', async () => {
-    const { dispose } = await install(env({ HTTP_PROXY: proxyUrl, NO_PROXY: 'origin.test' }))
+  it.each([
+    ['origin.test', 'DIRECT'],
+    ['unrelated.test', 'VIA-PROXY'],
+  ] as const)('routes an owned origin with NO_PROXY=%s', async (noProxy, expected) => {
+    const before = getGlobalDispatcher()
+    const beforeLookup = dns.lookup
+    // Resolution reaches the owned origin after the proxy policy selects a route.
+    const lookup = vi.spyOn(dns, 'lookup').mockImplementation(
+      (...args: Parameters<typeof dns.lookup> | Parameters<LookupFunction>) => {
+        if (args[0] !== 'origin.test') {
+          if (args.length === 2) beforeLookup(args[0], args[1])
+          else beforeLookup(args[0], args[1], args[2])
+          return
+        }
+        if (args.length === 2) args[1](null, '127.0.0.1', 4)
+        else args[2](null, args[1].all ? [{ address: '127.0.0.1', family: 4 }] : '127.0.0.1', 4)
+      },
+    )
+    const target = new URL(originUrl)
+    target.hostname = 'origin.test'
     try {
-      await expect(fetch(proxyTarget, { signal: AbortSignal.timeout(1500) })).rejects.toThrow()
-      expect(proxied).toEqual([])
+      const { dispose } = await install(env({ HTTP_PROXY: proxyUrl, NO_PROXY: noProxy }))
+      try {
+        await expect((await fetch(target)).text()).resolves.toBe(expected)
+        expect(proxied).toEqual(expected === 'DIRECT' ? [] : [`GET ${target.href}`])
+      } finally {
+        await dispose()
+      }
     } finally {
-      await dispose()
+      lookup.mockRestore()
     }
+    expect(getGlobalDispatcher()).toBe(before)
+    expect(dns.lookup).toBe(beforeLookup)
   })
 
   it('reports a value it cannot use and installs the rest', async () => {

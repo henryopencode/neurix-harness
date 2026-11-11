@@ -22,7 +22,7 @@ const group: ModelGroupSnapshot = {
 
 function bench() {
   const sessions = createSnapshotStore<SessionListState>({ ids: [], byId: {}, phase: 'ready', projectionsBySession: {
-    [id]: { state: 'ready', error: null, values: { modelGroup: group, agentTeam: { members: [], tasks: [] } } },
+    [id]: { state: 'ready', error: null, values: { modelGroup: group, legacyAgentTeam: { members: [], tasks: [] } } },
   } })
   const session = createSnapshotStore<SessionSnapshot>({
     sessionId: id, running: false, subagent: null, pendingSubmissions: [], removed: false,
@@ -73,7 +73,7 @@ describe('model-group controls', () => {
     const { props, command, sessions, statuses } = bench()
     const workerId = 'worker-b' as SessionId
     sessions.set({ ...sessions.getSnapshot(), projectionsBySession: {
-      [id]: { state: 'ready', error: null, values: { modelGroup: group, agentTeam: {
+      [id]: { state: 'ready', error: null, values: { modelGroup: group, legacyAgentTeam: {
         members: [{ id: workerId, name: 'b', role: 'teammate', phase: 'active', coordinationOwner: 'model-group' }], tasks: [],
       } } },
     } })

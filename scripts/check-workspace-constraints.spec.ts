@@ -8,9 +8,11 @@ import {
   isPublicExperimentalPackageDirectory,
   PRIVATE_EXPERIMENTAL_PACKAGE_DIRECTORIES,
   EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS,
+  LEGACY_PREFIXED_EXPERIMENTAL_PACKAGE_DIRECTORIES,
 } from './experimental-package-policy.ts'
 import {
   checkDshFamilyVersion,
+  checkDshApiVersions,
   checkWorkspaceManifest,
   checkWorkspaceProtocol,
   checkExperimentalDependencyIsolation,
@@ -22,8 +24,30 @@ import {
   type WorkspaceManifest,
 } from './check-workspace-constraints.ts'
 
+const legacyManifests = LEGACY_PREFIXED_EXPERIMENTAL_PACKAGE_DIRECTORIES
+  .map(dir => ({ dir, manifest: { name: dir.replace('packages/experimental/', '@deepseek-ai/dsh-experimental-') } }))
+
+describe('distribution API versions', () => {
+  const member = { dir: 'packages/core/agent', manifest: { name: '@deepseek-ai/dsh-agent', dshApiVersion: '0.2.2-rc.1' } }
+
+  it('keeps ordinary upstream manifests valid and verifies a declared distribution baseline', () => {
+    expect(checkDshApiVersions(undefined, [member])).toEqual([])
+    expect(checkDshApiVersions('0.2.2-rc.1', [member])).toEqual([])
+    expect(checkDshApiVersions('0.2.2-rc.1', [{ dir: 'vendor/cordis', manifest: { name: '@deepseek-ai/cordis' } }])).toEqual([])
+  })
+
+  it.each([null, 1, '', 'not-semver'])('rejects an invalid root API version: %j', (version) => {
+    expect(checkDshApiVersions(version, [member])).toEqual(['package.json: dshApiVersion must be a semantic version'])
+  })
+
+  it.each([undefined, '0.2.1-rc.5'])('rejects a missing or mismatched member baseline: %s', (dshApiVersion) => {
+    expect(checkDshApiVersions('0.2.2-rc.1', [{ ...member, manifest: { ...member.manifest, dshApiVersion } }]))
+      .toEqual(['packages/core/agent/package.json: dshApiVersion must be 0.2.2-rc.1'])
+  })
+})
+
 const experimental = {
-  dir: 'packages/experimental/prototype',
+  dir: LEGACY_PREFIXED_EXPERIMENTAL_PACKAGE_DIRECTORIES[0]!,
   manifest: {
     name: '@deepseek-ai/dsh-experimental-prototype',
     publishConfig: { access: 'public' },
@@ -118,36 +142,51 @@ describe('workspace manifest discovery', () => {
 })
 
 describe('experimental workspace constraints', () => {
-  it('requires the experimental package-name prefix', () => {
+  it('requires an unprefixed name to have a directory entry', () => {
     expect(checkExperimentalManifest({
       ...experimental,
       manifest: { ...experimental.manifest, name: '@deepseek-ai/dsh-prototype' },
     })).toEqual([
-      '@deepseek-ai/dsh-prototype: experimental package name must start with "@deepseek-ai/dsh-experimental-" or match its declared directory exception',
+      '@deepseek-ai/dsh-prototype: experimental package name must be declared for this directory in EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS (scripts/experimental-package-policy.ts)',
     ])
   })
 
   it.each(Object.entries(EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS))('retains %s only at its declared directory', (dir, name) => {
     expect(checkExperimentalManifest({ dir, manifest: { name, publishConfig: { access: 'public' } } })).toEqual([])
     expect(checkExperimentalManifest({ ...experimental, manifest: { ...experimental.manifest, name } }))
-      .toEqual([expect.stringContaining('declared directory exception')])
+      .toEqual([expect.stringContaining('declared for this directory')])
   })
 
-  it('rejects a missing manifest name even when the directory has no exception', () => {
-    expect(checkExperimentalManifest({ ...experimental, manifest: { publishConfig: { access: 'public' } } }))
-      .toEqual([expect.stringContaining('experimental package name must start')])
+  it('rejects the legacy prefix outside the legacy directory list', () => {
+    expect(checkExperimentalManifest({ ...experimental, dir: 'packages/experimental/prototype' })).toEqual([
+      '@deepseek-ai/dsh-experimental-prototype: new experimental packages must not use the "@deepseek-ai/dsh-experimental-" prefix; name it @deepseek-ai/dsh-<name> and declare it in EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS (scripts/experimental-package-policy.ts)',
+    ])
   })
 
-  it('rejects stale, moved and duplicated retained-name declarations', () => {
+  it('rejects a missing manifest name', () => {
+    expect(checkExperimentalManifest({ dir: 'packages/experimental/prototype', manifest: { publishConfig: { access: 'public' } } }))
+      .toEqual(['packages/experimental/prototype: experimental package must declare a name'])
+  })
+
+  it('rejects stale, moved and duplicated unprefixed-name declarations', () => {
     const manifests = Object.entries(EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS).map(([dir, name]) => ({ dir, manifest: { name } }))
-    expect(checkExperimentalNameExceptions(manifests)).toEqual([])
+    expect(checkExperimentalNameExceptions([...manifests, ...legacyManifests])).toEqual([])
     const [first, ...rest] = manifests
     for (const invalid of [
       rest,
       [{ ...first!, manifest: { name: '@deepseek-ai/dsh-experimental-replacement' } }, ...rest],
       [{ ...first!, dir: 'packages/core/replacement' }, ...rest],
       [...manifests, { ...first!, dir: 'packages/experimental/duplicate' }],
-    ]) expect(checkExperimentalNameExceptions(invalid)).toEqual([expect.stringContaining(first!.manifest.name)])
+    ]) expect(checkExperimentalNameExceptions([...invalid, ...legacyManifests])).toEqual([expect.stringContaining(first!.manifest.name)])
+  })
+
+  it('rejects a legacy directory without a prefixed package', () => {
+    const unprefixed = Object.entries(EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS).map(([dir, name]) => ({ dir, manifest: { name } }))
+    const others = legacyManifests.filter(entry => entry.dir !== experimental.dir)
+    for (const invalid of [others, [...others, { dir: experimental.dir, manifest: { name: '@deepseek-ai/dsh-renamed' } }]]) {
+      expect(checkExperimentalNameExceptions([...unprefixed, ...invalid]))
+        .toEqual([`${experimental.dir}: remove this directory from LEGACY_PREFIXED_EXPERIMENTAL_PACKAGE_DIRECTORIES; no package with the legacy prefix lives here`])
+    }
   })
 
   it.each(Object.values(EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS))('rejects retained runtime names and aliases: %s', (name) => {
@@ -307,8 +346,8 @@ describe('package payload constraints', () => {
     ])
   })
 
-  it('accepts the Agent Team icon payload and rejects its omission', () => {
-    const dir = 'packages/experimental/agent-team-profile'
+  it('accepts the Voice Input icon payload and rejects its omission', () => {
+    const dir = 'packages/experimental/voice-input-bundle'
     const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
     expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
     expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files: manifest.files!.filter(file => file !== 'icon.svg') } }))
@@ -406,9 +445,19 @@ describe('package payload constraints', () => {
     })).toEqual(['lib/index.js', 'lib/types/**/*.d.ts'])
   })
 
-  it.each(['agent-team', 'agent-team-profile', 'auto-review', 'client-ui-agent-team', 'tool-agent-team'])(
+  it('publishes only the Git DTO runtime and rejects unbundled browser components', () => {
+    const dir = 'packages/client/ui-git-branch'
+    const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
+    expect(expectedDshPackageFiles(manifest)).toContain('lib/types/types.js')
+    expect(expectedDshPackageFiles(manifest)).not.toContain('lib/types/**/*.js')
+    expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
+    const files = (manifest.files ?? []).map(file => file === 'lib/types/types.js' ? 'lib/types/**/*.js' : file)
+    expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files } }).join('\n')).toContain('package.json files must be')
+  })
+
+  it.each(['team/agent-team', 'experimental/voice-input-bundle', 'experimental/auto-review', 'client/ui-agent-team', 'team/tool-agent-team'])(
     'accepts the published locale files for %s and rejects their omission', (name) => {
-      const dir = `packages/experimental/${name}`
+      const dir = `packages/${name}`
       const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
       expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
       expect(checkWorkspaceManifest({ dir, manifest: {
@@ -556,11 +605,11 @@ it('requires the local speech worker and locked runtime in the published payload
   }
 })
 
-it('requires both Node execution bootstraps in the published payload', () => {
+it('requires Node profile configuration and both execution bootstraps in the published payload', () => {
   const dir = 'packages/ptc-runtime/ptc-runtime-node'
   const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
   expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
-  for (const omitted of ['lib/process.js', 'lib/persistent-process.js']) {
+  for (const omitted of ['lib/configuration.js', 'lib/process.js', 'lib/persistent-process.js']) {
     const files = expectedDshPackageFiles(manifest).filter(file => file !== omitted)
     expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files } }))
       .toEqual([expect.stringContaining('package.json files must be')])
