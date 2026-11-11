@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-experimental-forge-github",
   "description": "GitHub provider for the experimental forge registry, read through the GitHub CLI on the host",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "dshApiVersion": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"

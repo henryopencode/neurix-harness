@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-util-time",
   "description": "Strict instant and IANA zone parsing, millisecond spans, and bounded Cron/RRULE recurrence arithmetic",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "dshApiVersion": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
