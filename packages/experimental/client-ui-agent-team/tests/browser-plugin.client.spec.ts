@@ -82,10 +82,10 @@ describe('ui-team browser plugin', () => {
     const b = await bench()
     expect(inject).toEqual(['sessions', 'uiWorkspace', 'uiConversation', 'slots', 'locale'])
     expect(b.entry()).toMatchObject({
-      options: { id: 'agent-team', order: -20 },
-      locale: 'agent-team',
+      options: { id: 'legacy-agent-team', order: -20 },
+      locale: 'legacy-agent-team',
     })
-    const t = b.ctx.locale.bind('agent-team')
+    const t = b.ctx.locale.bind('legacy-agent-team')
     expect(t('trigger')).toBe('Agent team')
     expect(b.ctx.slots.entries('conversation.view').map(entry => entry.options.id)).toEqual(['team'])
     expect(t('view.title')).toBe('Team view')

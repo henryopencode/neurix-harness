@@ -1,0 +1,46 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/mcp/mcp-config-manager/README.md
+/:
+  en: cd4909fae5094aab
+  zh: d41ed51b3b1570d5
+/deepseek-ai-dsh-mcp-config-manager:
+  en: 85cc2de54386ebc9
+  zh: 278181f8cc41b585
+/deepseek-ai-dsh-mcp-config-manager/summary:
+  en: ab9b3d44ab30daae
+  zh: b194ba712389cf8c
+/deepseek-ai-dsh-mcp-config-manager/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 1db86285abf6c499
+/deepseek-ai-dsh-mcp-config-manager/use-this-package:
+  en: a8d98256e5619ac8
+  zh: 4d9e985c22bb10ea
+/deepseek-ai-dsh-mcp-config-manager/understand-the-implementation:
+  en: adc574c82b28fe76
+  zh: 7b63e729a3e74fd5
+/deepseek-ai-dsh-mcp-config-manager/further-exploration:
+  en: 22d19332f8500c0c
+  zh: 13a800aa88267ae0
+/deepseek-ai-dsh-mcp-config-manager/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-mcp-config-manager/model-experience/mcp-configuration:
+  en: 945e8fb8b63ed34e
+  zh: 3dac810a7f768c04
+/deepseek-ai-dsh-mcp-config-manager/model-experience/mcp-configuration/what-the-model-sees:
+  en: 8e7197014c699e75
+  zh: 4da49280413ea57d
+/deepseek-ai-dsh-mcp-config-manager/model-experience/mcp-configuration/token-effect:
+  en: 63e6644634fa2bf0
+  zh: 8f4aa534121c73b4
+/deepseek-ai-dsh-mcp-config-manager/model-experience/mcp-configuration/kv-cache-effect:
+  en: b25cc3e464f85db3
+  zh: 1ef40667798890ed
+/deepseek-ai-dsh-mcp-config-manager/known-limitations-and-deferred-work:
+  en: e09fae1feeeb415f
+  zh: c9982b2bd600a19f
+/deepseek-ai-dsh-mcp-config-manager/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: e88aeb617ffb74ea

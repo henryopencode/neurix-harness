@@ -15,6 +15,28 @@ const currentHeader: SessionFormatHeader = {
 }
 
 describe('installed current Session restoration', () => {
+  it('reads legacy Team input alongside upstream caller and retry attribution', () => {
+    const sources = [
+      { kind: 'user' },
+      { kind: 'user', rpcId: 'request-owner', principal: { kind: 'owner' } },
+      { kind: 'user', rpcId: 'request-viewer', principal: {
+        kind: 'share-viewer', shareId: 'share',
+        actor: { providerId: 'provider', tenantId: 'tenant', subjectId: 'reader' },
+      } },
+      { kind: 'retry', rpcId: 'request-retry' },
+      { kind: 'model-group', form: 'notice', summary: 'Recorded member input' },
+    ]
+    for (const source of sources) {
+      const artifact: SessionFormatArtifact = {
+        header: { ...currentHeader }, inheritedEventCount: 0,
+        events: [{ type: 'user/message', seq: 0, time: 1, surfaceOp: 'append', data: {
+          id: 'restored-input', role: 'user', source, content: [],
+        } }],
+      }
+      expect(() => { validateInstalledCurrentSessionArtifact(artifact) }).not.toThrow()
+    }
+  })
+
   it('rejects version skew before entering current Session validation', () => {
     expect(() => { validateInstalledCurrentSessionHeader({ ...currentHeader, version: 0 }) })
       .toThrow(`installed Session format is v${SESSION_FORMAT_VERSION}, got v0`)

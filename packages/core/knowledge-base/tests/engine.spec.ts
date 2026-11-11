@@ -7,6 +7,9 @@ import { KnowledgeIndex } from '../src/engine.ts'
 import { resolveConfig, type Config } from '../src/config.ts'
 import { extractSource, splitSource } from '../src/sources.ts'
 import type { KnowledgeSpace } from '../src/types.ts'
+import { nativeKnowledgeAvailable } from './native-platform.ts'
+
+const nativeIt = it.skipIf(!nativeKnowledgeAvailable)
 
 const signal = new AbortController().signal
 const first = brandString<KnowledgeSpace>('workspace-a')
@@ -34,7 +37,7 @@ async function fixture(overrides: Partial<Config> = {}) {
   return { index, path, config }
 }
 
-it('retrieves Chinese source text with line citations and preserves it after restart', async () => {
+nativeIt('retrieves Chinese source text with line citations and preserves it after restart', async () => {
   const { index, config } = await fixture()
   const imported = await importBytes(index, first, '/reference/运营指南.md', bytes('# 发布规范\n视频发布前必须检查字幕和封面。\n每周复盘选题效果。'), signal)
   const result = await index.search(first, '字幕', 5, signal)
@@ -48,7 +51,7 @@ it('retrieves Chinese source text with line citations and preserves it after res
   expect(await reopened.read(first, imported.documentId, 0, imported.version, signal)).toEqual(result.passages[0])
 })
 
-it('filters workspace ownership before limiting keyword matches and exact reads', async () => {
+nativeIt('filters workspace ownership before limiting keyword matches and exact reads', async () => {
   const { index } = await fixture()
   await importBytes(index, first, '/reference/a.md', bytes('字幕 字幕 字幕 字幕'), signal)
   const own = await importBytes(index, second, '/reference/a.md', bytes('字幕检查规则'), signal)
@@ -59,7 +62,7 @@ it('filters workspace ownership before limiting keyword matches and exact reads'
   expect((await index.search(first, '字幕', 5, signal)).passages).toHaveLength(1)
 })
 
-it('derives bounded document graphs from the current workspace and paginates their headers', async () => {
+nativeIt('derives bounded document graphs from the current workspace and paginates their headers', async () => {
   const { index } = await fixture({ graphDocuments: 1, graphKeywords: 2, graphKeywordsPerDocument: 2 })
   await importBytes(index, first, '/reference/a.md', bytes('字幕审核需要检查字幕。'), signal)
   await importBytes(index, first, '/reference/b.md', bytes('封面审核需要检查封面。'), signal)
@@ -83,7 +86,7 @@ it('derives bounded document graphs from the current workspace and paginates the
   expect(JSON.stringify(page)).not.toContain('绝密')
 })
 
-it('rejects unconfirmed replacement and oversized management snapshots without changing indexed content', async () => {
+nativeIt('rejects unconfirmed replacement and oversized management snapshots without changing indexed content', async () => {
   const { index } = await fixture({ maxDashboardBytes: 256 })
   const load = async () => ({ source: '/reference/a.md', bytes: bytes('字幕审核。') })
   const original = await index.import(first, load, signal, false)
@@ -92,7 +95,7 @@ it('rejects unconfirmed replacement and oversized management snapshots without c
   expect((await index.read(first, original.documentId, 0, original.version, signal)).text).toBe('字幕审核。')
 })
 
-it('replaces a document revision and removes its old tail without deleting another document', async () => {
+nativeIt('replaces a document revision and removes its old tail without deleting another document', async () => {
   const { index } = await fixture({ chunkSize: 64 })
   const old = await importBytes(index, first, '/reference/versioned.md', bytes('旧版封面审核要求。'.repeat(30)), signal)
   expect(old.chunks).toBeGreaterThan(1)
@@ -107,7 +110,7 @@ it('replaces a document revision and removes its old tail without deleting anoth
   expect((await index.list(first, 0, 8, signal)).documents).toEqual([other])
 })
 
-it('rejects unsupported, oversized, empty, and cancelled imports before replacing a valid revision', async () => {
+nativeIt('rejects unsupported, oversized, empty, and cancelled imports before replacing a valid revision', async () => {
   const { index } = await fixture({ maxFileBytes: 100, maxDocumentChars: 50, chunkSize: 64 })
   const original = await importBytes(index, first, '/reference/source.md', bytes('有效资料'), signal)
   for (const [source, content, code] of [
@@ -121,7 +124,7 @@ it('rejects unsupported, oversized, empty, and cancelled imports before replacin
   expect((await index.list(first, 0, 5, signal)).documents).toEqual([original])
 })
 
-it('enforces complete UTF-8 result budgets and rejects a single oversized passage', async () => {
+nativeIt('enforces complete UTF-8 result budgets and rejects a single oversized passage', async () => {
   const { index, config } = await fixture({ maxResultBytes: 1100 })
   for (const name of ['a', 'b', 'c']) await importBytes(index, first, `/reference/${name}.md`, bytes('字幕'.repeat(100)), signal)
   const result = await index.search(first, '字幕', 8, signal)
@@ -132,7 +135,7 @@ it('enforces complete UTF-8 result budgets and rejects a single oversized passag
   await expect(index.search(first, '大字', 1, signal)).rejects.toMatchObject({ code: 'KNOWLEDGE_TOO_LARGE' })
 })
 
-it('paginates metadata, rejects a changed embedding identity, and releases admission on close', async () => {
+nativeIt('paginates metadata, rejects a changed embedding identity, and releases admission on close', async () => {
   const { index, path } = await fixture()
   for (const name of ['a', 'b', 'c']) await importBytes(index, first, `/reference/${name}.md`, bytes(name), signal)
   const page = await index.list(first, 0, 1, signal)
@@ -153,7 +156,7 @@ it('retains original line positions for repeated text across non-overlapping pas
   for (const chunk of chunks) expect(text.split('\n').slice(chunk.startLine! - 1, chunk.endLine!).join('\n')).toContain(chunk.text)
 })
 
-it('extracts PDF source text and retains its original page number', async () => {
+nativeIt('extracts PDF source text and retains its original page number', async () => {
   const { index, path } = await fixture()
   const stream = 'BT /F1 12 Tf 50 700 Td (Publishing checklist) Tj ET'
   const objects = [

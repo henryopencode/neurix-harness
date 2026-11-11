@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, expect, it } from 'vitest'
+import { nativeKnowledgeAvailable } from './native-platform.ts'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
@@ -18,6 +19,8 @@ import RemoteAccessService from '@deepseek-ai/dsh-api-remote-access'
 import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
 import { ownerPeer, peerFor } from '../../../api/gateway/tests/peer.ts'
 import KnowledgeBase from '../src/index.ts'
+
+const nativeIt = it.skipIf(!nativeKnowledgeAvailable)
 
 const contexts: Context[] = []
 const roots: string[] = []
@@ -75,7 +78,7 @@ async function fixture() {
   return { root, ctx, agent, harness }
 }
 
-it('loads through Cordis, logs real import/search results, and unregisters all tools on disposal', async () => {
+nativeIt('loads through Cordis, logs real import/search results, and unregisters all tools on disposal', async () => {
   const { root, ctx, agent } = await fixture()
   await writeFile(join(root, 'guide.md'), '# 发布规范\n发布前检查字幕和封面。\n')
   ctx.llm.registerAdapter(['scripted'], new ScriptedModel())
@@ -97,7 +100,7 @@ it('loads through Cordis, logs real import/search results, and unregisters all t
   expect(ctx.tools.schemas().some(tool => tool.name.startsWith('knowledge_'))).toBe(false)
 })
 
-it('denies missing callers and cross-workspace reads through the native executor', async () => {
+nativeIt('denies missing callers and cross-workspace reads through the native executor', async () => {
   const { root, ctx, agent, harness } = await fixture()
   const signal = new AbortController().signal
   const denied = await executeToolFixture(ctx, { name: 'knowledge_list', arguments: {}, callId: ToolCallId('missing-agent'), signal })
@@ -112,7 +115,7 @@ it('denies missing callers and cross-workspace reads through the native executor
   expect(invalid).toMatchObject({ isError: true, error: { info: { code: 'KNOWLEDGE_INVALID_INPUT' } } })
 })
 
-it('keeps the optional management controller registered and shares uploaded references with native tools', async () => {
+nativeIt('keeps the optional management controller registered and shares uploaded references with native tools', async () => {
   const { ctx, root, agent } = await fixture()
   const workspaceId = brandString<WorkspaceId>('knowledge-workspace')
   await ctx.plugin(TypertRegistry)

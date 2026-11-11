@@ -67,7 +67,7 @@ export function createTeamFeed(
     try {
       const list = sessions.list.getSnapshot()
       const leadId = sessions.binding(sessionId)?.session.getSnapshot().subagent?.address.parentSessionId ?? sessionId
-      const team = list.projectionsBySession[leadId]?.values.agentTeam
+      const team = list.projectionsBySession[leadId]?.values.legacyAgentTeam
       const roster: readonly TeamMemberProjection[] = team?.members
         ?? [{ id: leadId, name: '', role: 'lead', phase: 'active' }]
       const wanted = new Set(roster.filter(member => member.phase === 'active').map(member => member.id))

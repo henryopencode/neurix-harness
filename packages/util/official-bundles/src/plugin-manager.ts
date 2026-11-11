@@ -19,7 +19,7 @@ export const PROTECTED_PLUGINS: ReadonlySet<string> = new Set([
 ])
 
 /**
- * Built-in profile bundles and persistent terminals, which have no plugin manager page.
+ * Built-in profile bundles, persistent terminals, and the standalone worktree tool, which have no plugin manager page.
  * Their Host availability and activation stay intact.
  */
 export const HIDDEN_BUNDLES: ReadonlySet<string> = new Set([
@@ -30,6 +30,7 @@ export const HIDDEN_BUNDLES: ReadonlySet<string> = new Set([
   '@deepseek-ai/dsh-acp-app',
   '@deepseek-ai/dsh-sdk-minimal',
   '@deepseek-ai/dsh-experimental-terminal-bundle',
+  '@deepseek-ai/dsh-experimental-tool-worktree',
 ])
 
 /**
@@ -37,7 +38,6 @@ export const HIDDEN_BUNDLES: ReadonlySet<string> = new Set([
  * this list, decides whether a bundle appears on the main list.
  */
 export const EXTENSION_BUNDLES: readonly string[] = [
-  '@deepseek-ai/dsh-experimental-agent-team-profile',
   '@deepseek-ai/dsh-experimental-voice-input-bundle',
   '@deepseek-ai/dsh-experimental-plugin-market-bundle',
   '@deepseek-ai/dsh-experimental-auto-review',
@@ -51,7 +51,6 @@ export const MORE_BUNDLES: readonly string[] = [
   '@deepseek-ai/dsh-personalized-recommendations',
   '@deepseek-ai/dsh-experimental-inspector-profile',
   '@deepseek-ai/dsh-cua-bundle',
-  '@deepseek-ai/dsh-experimental-tool-worktree',
   '@deepseek-ai/dsh-experimental-cot-translation-bundle',
   '@deepseek-ai/dsh-experimental-session-search',
   '@deepseek-ai/dsh-experimental-session-titles-bundle',
@@ -65,10 +64,10 @@ export const MORE_BUNDLES: readonly string[] = [
 export const EXPERIMENTAL_BUNDLES: ReadonlySet<string> = new Set([
   '@deepseek-ai/dsh-personalized-recommendations',
   '@deepseek-ai/dsh-cua-bundle',
-  '@deepseek-ai/dsh-experimental-agent-team-profile',
   '@deepseek-ai/dsh-experimental-voice-input-bundle',
   '@deepseek-ai/dsh-experimental-auto-review',
   '@deepseek-ai/dsh-experimental-inspector-profile',
+  '@deepseek-ai/dsh-experimental-forge-bundle',
   '@deepseek-ai/dsh-experimental-tool-worktree',
   '@deepseek-ai/dsh-experimental-cot-translation-bundle',
   '@deepseek-ai/dsh-experimental-session-search',
@@ -76,4 +75,5 @@ export const EXPERIMENTAL_BUNDLES: ReadonlySet<string> = new Set([
   '@deepseek-ai/dsh-experimental-badge-skill-bundle',
   '@deepseek-ai/dsh-experimental-ralph-bundle',
   '@deepseek-ai/dsh-experimental-plugin-market-bundle',
+  '@deepseek-ai/dsh-experimental-liveshare',
 ])

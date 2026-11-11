@@ -19,7 +19,7 @@ export type { McpPageProps } from './McpPage.tsx'
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** MCP connection management and operation feedback. */
-    mcpManager: McpLocaleKey
+    mcpConfigManager: McpLocaleKey
   }
   interface ResourceProtocolMap {
     /** Current global MCP configuration and supervised connections. */
@@ -28,14 +28,14 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 /** Runtime services used by this page; the generated remote is mounted during activation. */
-export const inject = ['slots', 'locale', 'remote', 'remote.mcpManager', 'remoteAccess', 'resources']
+export const inject = ['slots', 'locale', 'remote', 'remote.mcpConfigManager', 'remoteAccess', 'resources']
 
 /**
  * Add the MCP sidebar page and retain completed-operation notices after navigation.
  * @param ctx - running browser Client.
  */
 export function apply(ctx: Context): void {
-  ctx.effect(() => ctx.locale.register('mcpManager', { en, zh, ja, es, fr, de, ru, pt }))
+  ctx.effect(() => ctx.locale.register('mcpConfigManager', { en, zh, ja, es, fr, de, ru, pt }))
   const notice = createSnapshotStore<McpNoticeValue | null>(null)
   let seq = 0
   const failures: Record<string, McpLocaleKey> = {
@@ -56,31 +56,31 @@ export function apply(ctx: Context): void {
     }
   }
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
-    name: 'shell.overlay', id: 'mcp-operation-notice', locale: 'mcpManager',
+    name: 'shell.overlay', id: 'mcp-operation-notice', locale: 'mcpConfigManager',
     inject: () => ({ hooks: { notice }, dismiss: () => { notice.set(null) } }),
   }, McpNotice))
-  ctx.inject(['remote.mcpManager'], (owner) => {
+  ctx.inject(['remote.mcpConfigManager'], (owner) => {
     owner.effect(() => owner.resources.register<'mcp'>({
       protocol: 'mcp',
       async *open(_address, { signal }) {
         try {
-          for await (const value of owner.remote.mcpManager.watch(signal)) yield { ok: true as const, value }
+          for await (const value of owner.remote.mcpConfigManager.watch(signal)) yield { ok: true as const, value }
         } catch (_remoteError) {
           if (!signal.aborted) yield { ok: false as const, error: new RemoteError('mcp/unavailable', 'Reopen MCP management to retry', {}) }
         }
       },
     }))
     const face: McpPageInjected = {
-      save: (id, draft, revision) => perform(() => owner.remote.mcpManager.save(id, draft, revision), 'saved'),
-      remove: (id, revision) => perform(() => owner.remote.mcpManager.removeServer(id, revision), 'removed'),
-      setEnabled: (id, enabled, revision) => perform(() => owner.remote.mcpManager.setEnabled(id, enabled, revision), enabled ? 'enabled' : 'stopped'),
-      reconnect: id => perform(() => owner.remote.mcpManager.reconnect(id), 'restarted'),
+      save: (id, draft, revision) => perform(() => owner.remote.mcpConfigManager.save(id, draft, revision), 'saved'),
+      remove: (id, revision) => perform(() => owner.remote.mcpConfigManager.removeServer(id, revision), 'removed'),
+      setEnabled: (id, enabled, revision) => perform(() => owner.remote.mcpConfigManager.setEnabled(id, enabled, revision), enabled ? 'enabled' : 'stopped'),
+      reconnect: id => perform(() => owner.remote.mcpConfigManager.reconnect(id), 'restarted'),
     }
-    owner.remoteAccess.whenAccess('mcpManager/list', function* () {
+    owner.remoteAccess.whenAccess('mcpConfigManager/list', function* () {
       yield owner.slots.inject('main', () => owner.slots.register({ name: 'main', key: 'mcp' as MainPanelId,
-        locale: 'mcpManager', inject: () => face }, McpPage))
+        locale: 'mcpConfigManager', inject: () => face }, McpPage))
       yield owner.slots.inject('sidebar.panellist', () => owner.slots.register({ name: 'sidebar.panellist', id: 'mcp',
-        order: 5, locale: 'mcpManager', label: () => owner.locale.bind('mcpManager')('title') }, McpPanelIcon))
+        order: 5, locale: 'mcpConfigManager', label: () => owner.locale.bind('mcpConfigManager')('title') }, McpPanelIcon))
     })
   })
 }

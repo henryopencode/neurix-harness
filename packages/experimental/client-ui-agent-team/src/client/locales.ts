@@ -1,7 +1,7 @@
 /** Agent Teams Web dictionaries. */
 
 /** Locale namespace owned by the Agent Teams Web UI. */
-export const NS = 'agent-team'
+export const NS = 'legacy-agent-team'
 
 /** Simplified Chinese dictionary and key source. */
 export const zh = {

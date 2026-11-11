@@ -11,6 +11,8 @@
 - status: Completed
 - button "Completed in {{duration}}" [expanded]
 - button "Searched the web" [expanded]
+- button "Context injection runtime-context"
+- button "Context injection time-context"
 - button "Search Neurix Harness snapshot search, Neurix Harness multi-query search"
 - paragraph: SEARCH_DONE
 - button "Copy"

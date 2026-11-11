@@ -37,6 +37,7 @@ External packages installed for runtime use or embedded in distributed Host or b
 | [`@babel/code-frame`](https://github.com/babel/babel) | MIT |
 | [`@botiverse/oar`](https://github.com/botiverse/oar) | Apache-2.0 |
 | [`@browserbasehq/stagehand`](https://github.com/browserbase/stagehand) | MIT |
+| [`@dagrejs/dagre`](https://github.com/dagrejs/dagre) | MIT |
 | [`@deepseek-ai/libreoffice-kit`](https://github.com/deepseek-ai/dsh-libreoffice-kit) | MPL-2.0 |
 | [`@earendil-works/pi-ai`](https://github.com/earendil-works/pi) | MIT |
 | [`@earendil-works/pi-coding-agent`](https://github.com/earendil-works/pi) | MIT |
@@ -77,8 +78,10 @@ External packages installed for runtime use or embedded in distributed Host or b
 | [`@xterm/addon-serialize`](https://github.com/xtermjs/xterm.js/tree/master/addons/addon-serialize) | MIT |
 | [`@xterm/headless`](https://github.com/xtermjs/xterm.js) | MIT |
 | [`@xterm/xterm`](https://github.com/xtermjs/xterm.js) | MIT |
+| [`@xyflow/react`](https://github.com/xyflow/xyflow) | MIT |
 | [`@yarnpkg/parsers`](https://github.com/yarnpkg/berry) | BSD-2-Clause |
 | [`acorn`](https://github.com/acornjs/acorn) | MIT |
+| [`acorn-walk`](https://github.com/acornjs/acorn) | MIT |
 | [`ajv`](https://github.com/ajv-validator/ajv) | MIT |
 | [`anser`](https://github.com/IonicaBizau/anser) | MIT |
 | [`apache-arrow`](https://github.com/apache/arrow-js) | Apache-2.0 |
@@ -96,6 +99,8 @@ External packages installed for runtime use or embedded in distributed Host or b
 | [`diff`](https://github.com/kpdecker/jsdiff) | BSD-3-Clause |
 | [`dompurify`](https://github.com/cure53/DOMPurify) | (MPL-2.0 OR Apache-2.0) |
 | [`electron-updater`](https://github.com/electron-userland/electron-builder) | MIT |
+| [`eslint-scope`](https://github.com/eslint/js) | BSD-2-Clause |
+| [`eslint-visitor-keys`](https://github.com/eslint/js) | Apache-2.0 |
 | [`eventsource-parser`](https://github.com/rexxars/eventsource-parser) | MIT |
 | [`exceljs`](https://github.com/exceljs/exceljs) | MIT |
 | [`execa`](https://github.com/sindresorhus/execa) | MIT |
@@ -119,6 +124,7 @@ External packages installed for runtime use or embedded in distributed Host or b
 | [`micromark-factory-space`](https://github.com/micromark/micromark/tree/main/packages/micromark-factory-space) | MIT |
 | [`micromark-util-character`](https://github.com/micromark/micromark/tree/main/packages/micromark-util-character) | MIT |
 | [`micromark-util-classify-character`](https://github.com/micromark/micromark/tree/main/packages/micromark-util-classify-character) | MIT |
+| [`micromark-util-decode-string`](https://github.com/micromark/micromark/tree/main/packages/micromark-util-decode-string) | MIT |
 | [`micromark-util-sanitize-uri`](https://github.com/micromark/micromark/tree/main/packages/micromark-util-sanitize-uri) | MIT |
 | [`micromark-util-symbol`](https://github.com/micromark/micromark/tree/main/packages/micromark-util-symbol) | MIT |
 | [`mime`](https://github.com/broofa/mime) | MIT |
@@ -138,9 +144,11 @@ External packages installed for runtime use or embedded in distributed Host or b
 | [`react-dom`](https://github.com/facebook/react) | MIT |
 | [`readable-stream`](https://github.com/nodejs/readable-stream) | MIT |
 | [`resolve.exports`](https://github.com/lukeed/resolve.exports) | MIT |
+| [`rrule`](https://github.com/jakubroztocil/rrule) | BSD-3-Clause |
 | [`semver`](https://github.com/npm/node-semver) | ISC |
 | [`serve-static`](https://github.com/expressjs/serve-static) | MIT |
 | [`sharp`](https://github.com/lovell/sharp) | Apache-2.0 |
+| [`shell-quote`](http://github.com/ljharb/shell-quote) | MIT |
 | [`sherpa-onnx-node`](https://github.com/csukuangfj/sherpa-onnx) | Apache-2.0 |
 | [`shiki`](https://github.com/shikijs/shiki) | MIT |
 | [`simple-icons`](https://github.com/simple-icons/simple-icons) | CC0-1.0 |
@@ -170,6 +178,8 @@ pnpm applies local patches to the following packages at install time, so shipped
 - `app-builder-lib@26.17.0` — [`patches/app-builder-lib@26.17.0.patch`](patches/app-builder-lib@26.17.0.patch)
 - `exceljs@4.4.0` — [`patches/exceljs@4.4.0.patch`](patches/exceljs@4.4.0.patch)
 - `lexical@0.49.0` — [`patches/lexical@0.49.0.patch`](patches/lexical@0.49.0.patch)
+- `mdast-util-gfm-autolink-literal@2.0.1` — [`patches/mdast-util-gfm-autolink-literal@2.0.1.patch`](patches/mdast-util-gfm-autolink-literal@2.0.1.patch)
+- `micromark-extension-gfm-autolink-literal@2.1.0` — [`patches/micromark-extension-gfm-autolink-literal@2.1.0.patch`](patches/micromark-extension-gfm-autolink-literal@2.1.0.patch)
 - `node-pty@1.2.0-beta.15` — [`patches/node-pty@1.2.0-beta.15.patch`](patches/node-pty@1.2.0-beta.15.patch)
 
 ## Chrome DevTools frontend
@@ -224,6 +234,7 @@ External packages **directly declared** for development, tests, types, or toolin
 | [`@types/big.js`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/compression`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/d3-force`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
+| [`@types/estree`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/hosted-git-info`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/js-yaml`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/jsdom`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
@@ -275,6 +286,7 @@ External packages **directly declared** for development, tests, types, or toolin
 | [`selfsigned`](https://github.com/jfromaniello/selfsigned) | MIT |
 | [`smol-toml`](https://github.com/squirrelchat/smol-toml) | BSD-3-Clause |
 | [`spdx-expression-parse`](https://github.com/jslicense/spdx-expression-parse.js) | MIT |
+| [`tencentcloud-sdk-nodejs-teo`](https://github.com/tencentcloud/tencentcloud-sdk-nodejs) | Apache-2.0 |
 | [`tsdown`](https://github.com/rolldown/tsdown) | MIT |
 | [`typescript-language-server`](https://github.com/typescript-language-server/typescript-language-server) | Apache-2.0 |
 | [`vite`](https://github.com/vitejs/vite) | MIT |

@@ -215,7 +215,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       {
         signature: 'fork(opts: { sessionId: SessionId atSeq?: number increaseTitle?: boolean onCreated?: (childId: SessionId) => void /** False refuses source migration; omission preserves the Host default. */ allowMigration?: boolean }): Promise<SessionId>',
         description: 'Fork a session from an exact inclusive prefix of the source; on resolution the child is catalogued and can be explicitly retained.',
-        parameters: [{ name: 'opts', description: 'source session id, the optional exact inclusive boundary seq (a real event seq the caller already knows; a cut inside an open turn is balanced Host-side with synthetic closers, and omission selects the latest completed-turn prefix), and whether to increment an inherited durable title before resolving. `onCreated` observes the catalogued child before that optional rename.' }],
+        parameters: [{ name: 'opts', description: 'source session id, the optional exact inclusive boundary seq (a real event seq the caller already knows; a cut inside an open turn is balanced Host-side with synthetic closers, and omission selects the latest completed-turn prefix), and whether to increment an inherited durable title, skipping numbers Host-listed titles already use, before resolving. `onCreated` observes the catalogued child before that optional rename.' }],
         returns: 'the child session id.',
         throws: ['when the fork fails, or when a requested child-title rename fails after creation.'],
       },
@@ -493,7 +493,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'BeginSubmissionInput',
-    declaration: 'export interface BeginSubmissionInput {\n    readonly mode: \'queue\' | \'steer\';\n    readonly text: string;\n    readonly attachments: readonly PendingSubmissionAttachment[];\n    readonly onRetire?: (retirement: PendingSubmissionRetirement) => void;\n}',
+    declaration: 'export interface BeginSubmissionInput {\n    readonly mode: \'queue\' | \'steer\';\n    readonly text: string;\n    readonly attachments: readonly PendingSubmissionAttachment[];\n    readonly onAccept?: () => void;\n    readonly onRetire?: (retirement: PendingSubmissionRetirement) => void;\n}',
   },
   {
     name: 'BoundActions',
@@ -529,7 +529,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ComposedProps',
-    declaration: 'export type ComposedProps<K extends keyof SlotMap & string, EntryKey extends EntryKeyOf<K>, S extends keyof SlotMap & string, H, I extends object, M = never, N = undefined> = PropsRuntime<K, EntryKey> & PropsRenderSlots<S> & PropsRenderFactories & PropsStore<H> & InjectFace<I> & MatchedShare<SlotMap[K], M> & PropsLocale<N>;',
+    declaration: 'export type ComposedProps<K extends keyof SlotMap & string, EntryKey extends EntryKeyOf<K>, S extends keyof SlotMap & string, H, I extends object, M = never, N = undefined> = PropsRuntime<K, EntryKey> & PropsRenderSlots<S> & PropsRenderFactories & PropsStore<H> & InjectFace<I> & MatchedShare<SlotMap[K], M> & HocShare<SlotMap[K]> & PropsLocale<N>;',
   },
   {
     name: 'ConnectionGeneration',
@@ -640,6 +640,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type HandleOf<H> = H extends () => infer R ? R : H;',
   },
   {
+    name: 'HocShare',
+    declaration: 'export type HocShare<E extends SlotEntryDef> = E[\'kind\'] extends \'hoc\' ? {\n    children: ReactNode;\n} : object;',
+  },
+  {
     name: 'HooksSources',
     declaration: 'export type HooksSources = Record<string, HostObservable<unknown>>;',
   },
@@ -673,7 +677,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ISession',
-    declaration: 'export interface ISession {\n    readonly sessionId: SessionId;\n    readonly projections: ProjectionsFace;\n    beginSubmission(input: BeginSubmissionInput): SubmissionHandle;\n    prompt(content: PromptContentPart[], mode: \'queue\' | \'steer\', signal?: AbortSignal, requestId?: SessionRequestId): Promise<RemoteResult<{\n        accepted: true;\n    }>>;\n    readAttachment(attachmentId: AttachmentIdType): Promise<RemoteResult<{\n        attachment: ImageAttachmentRef;\n        data: Uint8Array;\n    }>>;\n    updateQueue(itemId: MessageId, action: QueueAction): Promise<RemoteResult<{\n        accepted: true;\n    }>>;\n    cancel(): Promise<RemoteResult<{\n        accepted: true;\n    }>>;\n    rename(title: string): Promise<RemoteResult<{\n        title: string;\n        seq: SessionSeq;\n    }>>;\n    loadOlder(): Promise<void>;\n    loadThrough(seq: SessionSeq): Promise<void>;\n    command(line: string): Promise<RemoteResult<{\n        matched: boolean;\n    }>>;\n}',
+    declaration: 'export interface ISession {\n    readonly sessionId: SessionId;\n    readonly projections: ProjectionsFace;\n    beginSubmission(input: BeginSubmissionInput): SubmissionHandle;\n    prompt(content: PromptContentPart[], mode: \'queue\' | \'steer\', signal?: AbortSignal, requestId?: SessionRequestId): Promise<RemoteResult<{\n        accepted: true;\n    }>>;\n    readAttachment(attachment: ImageAttachmentRef): Promise<RemoteResult<{\n        attachment: ImageAttachmentRef;\n        data: Uint8Array;\n    }>>;\n    updateQueue(itemId: MessageId, action: QueueAction): Promise<RemoteResult<{\n        accepted: true;\n    }>>;\n    cancel(): Promise<RemoteResult<{\n        accepted: true;\n    }>>;\n    rename(title: string): Promise<RemoteResult<{\n        title: string;\n        seq: SessionSeq;\n    }>>;\n    loadOlder(): Promise<void>;\n    loadThrough(seq: SessionSeq): Promise<void>;\n    command(line: string): Promise<RemoteResult<{\n        matched: boolean;\n    }>>;\n}',
   },
   {
     name: 'ISessions',
@@ -965,7 +969,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SessionSnapshot',
-    declaration: 'export interface SessionSnapshot {\n    readonly sessionId: SessionId;\n    readonly pendingSubmissions: readonly PendingSubmission[];\n    readonly running: boolean;\n    readonly subagent: {\n        readonly address: SubagentAddress;\n        readonly parentAvailable?: boolean;\n    } | null;\n    readonly removed: boolean;\n    readonly openState: OpenState;\n    readonly openError: RemoteFailure | null;\n    readonly hasMore: boolean;\n    readonly loadingOlder: boolean;\n    readonly promptError: PromptError | null;\n    readonly blank: boolean;\n    readonly lastAgentError: string | null;\n    readonly promptAttempted: boolean;\n    readonly awaitingFirstTurn: boolean;\n}',
+    declaration: 'export interface SessionSnapshot {\n    readonly sessionId: SessionId;\n    readonly pendingSubmissions: readonly PendingSubmission[];\n    readonly running: boolean;\n    readonly subagent: {\n        readonly address: SubagentAddress;\n    } | null;\n    readonly removed: boolean;\n    readonly openState: OpenState;\n    readonly openError: RemoteFailure | null;\n    readonly hasMore: boolean;\n    readonly loadingOlder: boolean;\n    readonly promptError: PromptError | null;\n    readonly blank: boolean;\n    readonly lastAgentError: string | null;\n    readonly promptAttempted: boolean;\n    readonly awaitingFirstTurn: boolean;\n}',
   },
   {
     name: 'SessionStandardProps',
@@ -1001,7 +1005,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SlotKind',
-    declaration: 'export type SlotKind = \'single\' | \'list\' | \'keyed\' | \'chain\';',
+    declaration: 'export type SlotKind = \'single\' | \'list\' | \'keyed\' | \'chain\' | \'hoc\';',
   },
   {
     name: 'SlotLabel',

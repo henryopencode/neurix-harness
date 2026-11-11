@@ -103,7 +103,7 @@ pnpm --silent run persistence-changes --update 2026-09-11-poc-optional --prose .
 
 命令刷新机器声明、schema、目录和配对。没有 `--prose` 时，它保留已有说明。根据完整转换重新评估说明，并为任何被标记的同版本更新提供 `--decision same-version`。更新会拒绝初始基线、其他记录所依赖的记录，以及已被定稿检查点锁定的记录。定稿检查点之外，目录不会推断审阅接受状态：保留已接受历史，并创建后继。
 
-集成产生竞争末端记录时，根据剩余历史更新尚未接受的记录，再重新评估最终差异。无关根的确认无需刷新。[机制决策](../../.agents/notes/implemented/process/2026-09-11-persistence-type-history.zh.md)解释为何保留完整快照和逐根前驱。
+集成产生相互独立的已接受历史时，保留双方，并使用 `--record <id> --merge-histories --decision same-version --prose <file>` 创建后继。命令将所有分支末端记录为前驱，并将当前 schema 分别与每个末端比较。逐分支评审两个方向上的读取行为。常规检查仍拒绝未合流的分支。仅在需要替换草稿时刷新尚未接受的末端记录。无关根的确认无需刷新。[机制决策](../../.agents/notes/implemented/process/2026-09-11-persistence-type-history.zh.md)解释为何保留完整快照和逐根前驱。
 
 若已有属性的值类型变化需要评审，先修改说明文件中的兼容性与验证部分，解释实际的新转换及已执行检查。不要为不同变更复用先前必选改可选的说明。然后使用该说明与显式同版本选择更新记录：
 

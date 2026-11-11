@@ -1,11 +1,10 @@
+import { steerHostSubagentPrompt } from '@deepseek-ai/dsh-subagent/internal'
 /** Agent Teams service façade over roster, messaging, task, and runtime lifecycle owners. */
 
 import { Context, Service } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-session-persistence'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import { steerHostSubagentPrompt } from '@deepseek-ai/dsh-subagent/internal'
 import { TeamActivity } from './activity.ts'
 import { errorMessage, TeamError } from './error.ts'
 import { TeamJournal } from './journal.ts'
@@ -35,7 +34,7 @@ export { TeamError } from './error.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
-    agentTeams: TeamService
+    legacyAgentTeams: TeamService
   }
 }
 
@@ -73,7 +72,7 @@ export class TeamService extends Service {
   private tasks!: TeamTaskBoard
 
   constructor(ctx: Context, config: Config = {}) {
-    super(ctx, 'agentTeams')
+    super(ctx, 'legacyAgentTeams')
     this.config = {
       maxMembers: positiveLimit('maxMembers', config.maxMembers ?? DEFAULT_MAX_MEMBERS),
       maxTasks: positiveLimit('maxTasks', config.maxTasks ?? DEFAULT_MAX_TASKS),
@@ -94,7 +93,7 @@ export class TeamService extends Service {
     this.journal = new TeamJournal(ctx, teamProjectionHandle, (root) => { this.activity.notify(TeamId(root.id)) })
     this.roster = new TeamRoster(ctx, this.journal, this.lifecycle, this.config.maxMembers)
     this.tasks = new TeamTaskBoard(this.journal, this.config.maxTasks)
-    ctx.effect(() => () => this.disposeRuntime(), 'agentTeams.runtimeLifecycle()')
+    ctx.effect(() => () => this.disposeRuntime(), 'legacyAgentTeams.runtimeLifecycle()')
 
     ctx.on('agent/created', ({ agent }) => { this.scheduleRecovery(agent) })
     ctx.on('agent/status', ({ agent }) => {
@@ -231,14 +230,7 @@ export class TeamService extends Service {
       throw new TeamError(`team message exceeds ${this.config.maxMessageBytes} bytes`, 'TEAM_MESSAGE_TOO_LARGE')
     }
     const source = { kind: 'agent-message' as const, form: 'relay' as const, senderSessionId: caller.id }
-    let messageId
-    if (target.id === root.id) {
-      const input = createUserMessage({ content, source })
-      root.steer(input)
-      messageId = input.id
-    } else {
-      messageId = await steerHostSubagentPrompt(this.ctx.subagents, root, target.id, content, source, request.signal)
-    }
+    const messageId = await steerHostSubagentPrompt(this.ctx.subagents, root, target.id, content, source, request.signal)
     this.activity.notify(membership.id)
     return { messageId }
   }

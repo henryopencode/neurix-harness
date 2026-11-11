@@ -1,3 +1,4 @@
+import { steerHostSubagentPrompt } from '@deepseek-ai/dsh-subagent/internal'
 /**
  * Configurable model-group orchestration over Team and subagent lifecycles.
  * @module
@@ -13,7 +14,6 @@ import type {} from '@deepseek-ai/dsh-session-persistence'
 import type {} from '@deepseek-ai/dsh-settings'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-subagent'
-import { steerHostSubagentPrompt } from '@deepseek-ai/dsh-subagent/internal'
 import { TeamTaskId } from '@deepseek-ai/dsh-experimental-agent-team'
 import type { Session, SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
 import type { ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
@@ -57,7 +57,7 @@ export interface Config {
  * Model groups with independent model routes, shared tasks, and direct human addressing.
  */
 export class ModelGroups extends Service {
-  static inject = ['agents', 'sessions', 'sessionProjections', 'sessionPersistence', 'subagents', 'agentTeams', 'commands', 'tools', 'systemPrompt', 'llm']
+  static inject = ['agents', 'sessions', 'sessionProjections', 'sessionPersistence', 'subagents', 'legacyAgentTeams', 'commands', 'tools', 'systemPrompt', 'llm']
   static Config = Schema.object({
     defaultMode: Schema.union(['multi', 'single']).default('multi').volatile(),
     leader: Schema.string().default('').volatile(),
@@ -97,7 +97,7 @@ export class ModelGroups extends Service {
         const parent = agent.session.header.parentSession
         const owner = parent === undefined ? undefined : this.ctx.agents.get(parent)
         if (owner === undefined) return undefined
-        const member = this.ctx.agentTeams.listMembers(owner).find(member => member.id === agent.id)
+        const member = this.ctx.legacyAgentTeams.listMembers(owner).find(member => member.id === agent.id)
         if (member?.coordinationOwner !== 'model-group') return undefined
         root = owner; name = member.name
       }
@@ -111,20 +111,20 @@ export class ModelGroups extends Service {
     this.ctx.on('session/event', (session, event) => { this.postMemberOutput(session, event) })
     this.ctx.on('subagent/end', (info) => {
       const parent = [...this.installed.keys()].find(agent => agent.session.header.origin !== 'subagent'
-        && this.ctx.agentTeams.listMembers(agent).some(member => member.id === info.id && member.coordinationOwner === 'model-group'))
+        && this.ctx.legacyAgentTeams.listMembers(agent).some(member => member.id === info.id && member.coordinationOwner === 'model-group'))
       if (parent === undefined) return
       const admissions = [...this.pending].filter(([, root]) => root === parent).map(([operation]) => operation)
       const operation = Promise.allSettled(admissions).then(async () => {
         const group = this.snapshot(parent)
-        const row = this.ctx.agentTeams.listMembers(parent).find(member => member.id === info.id)
+        const row = this.ctx.legacyAgentTeams.listMembers(parent).find(member => member.id === info.id)
         const member = group?.members.find(member => member.name === row?.name)
         if (member === undefined) return
         if (info.stopReason !== 'completed' && group?.stopped !== true) parent.session.append('model-group/post', {
           member: member.name, label: member.label, text: '', failure: info.stopReason, sourceSession: info.id,
         })
-        for (const task of this.ctx.agentTeams.listTasks(parent)) {
+        for (const task of this.ctx.legacyAgentTeams.listTasks(parent)) {
           if (task.ownerName !== member.name || task.status !== 'in_progress') continue
-          await this.ctx.agentTeams.updateTask(parent, { taskId: task.id, expectedRevision: task.revision, action: info.stopReason === 'completed' ? 'complete' : 'release' })
+          await this.ctx.legacyAgentTeams.updateTask(parent, { taskId: task.id, expectedRevision: task.revision, action: info.stopReason === 'completed' ? 'complete' : 'release' })
         }
       })
       this.pending.set(operation, parent)
@@ -146,7 +146,7 @@ export class ModelGroups extends Service {
         if (message.source.kind === 'model-group') return false
         if (message.source.kind !== 'subagent-settled') return !group.stopped || human
         const sender = message.source.senderSessionId
-        const member = this.ctx.agentTeams.listMembers(agent).find(member => member.id === sender)
+        const member = this.ctx.legacyAgentTeams.listMembers(agent).find(member => member.id === sender)
         return !group.stopped && !group.direct.includes(member?.name ?? '')
       }
       if ((!human && group.stopped) || (messages.length > 0 && !messages.some(admittedMessage))) return { kind: 'reject' }
@@ -204,7 +204,7 @@ export class ModelGroups extends Service {
       await Promise.allSettled([...this.pending.keys()])
       await Promise.allSettled([...this.stopping.values()])
       const drained = await Promise.allSettled(roots.map(async (root) => {
-        const ids = this.ctx.agentTeams.listMembers(root)
+        const ids = this.ctx.legacyAgentTeams.listMembers(root)
           .filter(member => member.coordinationOwner === 'model-group').map(member => member.id)
         await this.ctx.subagents.drainChildren(root, ids)
       }))
@@ -234,7 +234,7 @@ export class ModelGroups extends Service {
     this.requireRoot(agent)
     const prior = this.snapshot(agent)
     if (prior?.mode === mode) return
-    const foreign = this.ctx.agentTeams.listMembers(agent).some(member => member.role !== 'lead' && member.coordinationOwner !== 'model-group')
+    const foreign = this.ctx.legacyAgentTeams.listMembers(agent).some(member => member.role !== 'lead' && member.coordinationOwner !== 'model-group')
     if (mode === 'multi' && foreign) throw new ModelGroupError('GROUP_MODEL_BUSY', 'This conversation has another Team coordinator; start a new group conversation')
     if (prior?.mode === 'multi' || mode === 'multi') await this.stop(agent)
     this.lifetime.signal.throwIfAborted()
@@ -253,7 +253,7 @@ export class ModelGroups extends Service {
    */
   async stop(agent: Agent, member?: string): Promise<void> {
     this.requireRoot(agent)
-    const roster = this.ctx.agentTeams.listMembers(agent)
+    const roster = this.ctx.legacyAgentTeams.listMembers(agent)
     if (member !== undefined) {
       const target = roster.find(candidate => candidate.name === member && candidate.id !== agent.id)
       if (target === undefined || target.coordinationOwner !== 'model-group') throw new Error(`Unknown active model-group member: ${member}`)
@@ -275,7 +275,7 @@ export class ModelGroups extends Service {
     this.rounds.get(agent)?.abort(new Error('Model-group round stopped'))
     agent.cancel({ kind: 'user' })
     await Promise.allSettled([...this.pending].filter(([, root]) => root === agent).map(([operation]) => operation))
-    const roster = this.ctx.agentTeams.listMembers(agent)
+    const roster = this.ctx.legacyAgentTeams.listMembers(agent)
     await this.ctx.subagents.drainChildren(agent, roster.filter(member => member.coordinationOwner === 'model-group').map(member => member.id))
     await Promise.allSettled([...this.pending].filter(([, root]) => root === agent).map(([operation]) => operation))
     await agent.whenIdle()
@@ -322,7 +322,7 @@ export class ModelGroups extends Service {
     const parentId = agent.session.header.origin === 'subagent' ? agent.session.header.parentSession : undefined
     if (parentId !== undefined) {
       const parent = this.ctx.agents.get(parentId)
-      const member = parent === undefined ? undefined : this.ctx.agentTeams.listMembers(parent).find(member => member.id === agent.id)
+      const member = parent === undefined ? undefined : this.ctx.legacyAgentTeams.listMembers(parent).find(member => member.id === agent.id)
       if (parent !== undefined && this.snapshot(parent)?.mode === 'multi' && member?.coordinationOwner === 'model-group') this.installTasks(agent)
       return
     }
@@ -413,7 +413,7 @@ export class ModelGroups extends Service {
     }
     const reservations = this.reservations.get(agent) ?? new Set<string>()
     this.reservations.set(agent, reservations)
-    const roster = this.ctx.agentTeams.listMembers(agent)
+    const roster = this.ctx.legacyAgentTeams.listMembers(agent)
     if (reservations.has(name)) throw new ModelGroupError('GROUP_MODEL_BUSY', `Model ${name} is being started; retry after acceptance`)
     const existing = roster.find(member => member.name === name)
     if (existing !== undefined && existing.coordinationOwner !== 'model-group') {
@@ -431,26 +431,26 @@ export class ModelGroups extends Service {
       const text = prompt.filter(block => block.type === 'text').map(block => block.text).join('\n')
       const [subject = ''] = text.split('\n')
       const task = taskId === undefined
-        ? await this.ctx.agentTeams.createTask(agent, { subject: subject.slice(0, 200), description: text })
-        : this.ctx.agentTeams.getTask(agent, taskId)
+        ? await this.ctx.legacyAgentTeams.createTask(agent, { subject: subject.slice(0, 200), description: text })
+        : this.ctx.legacyAgentTeams.getTask(agent, taskId)
       if (task.status !== 'pending' || !task.ready) throw new ModelGroupError('GROUP_MODEL_BUSY', `Task ${task.id} is not ready for assignment`)
       const taskPrompt: ContentBlock[] = [{ type: 'text', text: `Shared task ${task.id}. Group conversation Session: ${agent.id}. Use the available session-query tools to read earlier group messages when the task refers to them. Return the complete requested answer in your reply; task completion is recorded automatically when your run finishes. Use model_group_tasks only when you need to coordinate dependencies or shared work.` }, ...prompt]
       if (existing?.status !== 'running') agent.session.append('model-group/delivery', { member: name, direct })
       let sessionId: SessionId
       if (existing !== undefined) {
         if (direct) await steerHostSubagentPrompt(this.ctx.subagents, agent, existing.id, taskPrompt, { kind: 'user' }, signal)
-        else await this.ctx.agentTeams.sendMessage(agent, { target: name, content: taskPrompt, signal })
+        else await this.ctx.legacyAgentTeams.sendMessage(agent, { target: name, content: taskPrompt, signal })
         sessionId = existing.id
       } else {
-        const spawned = await this.ctx.agentTeams.spawnTeammate(agent, {
+        const spawned = await this.ctx.legacyAgentTeams.spawnTeammate(agent, {
           name, description: selected.label, prompt: taskPrompt, context: 'fresh', provider: 'spawn',
           coordinationOwner: 'model-group',
           agentOptions: { provider: selected.provider, model: selected.model, reasoningEffort: undefined }, signal,
         })
         sessionId = spawned.member.id
       }
-      const current = this.ctx.agentTeams.getTask(agent, task.id)
-      if (current.status === 'pending') await this.ctx.agentTeams.updateTask(agent, { taskId: task.id, expectedRevision: current.revision, action: 'reassign', owner: name })
+      const current = this.ctx.legacyAgentTeams.getTask(agent, task.id)
+      if (current.status === 'pending') await this.ctx.legacyAgentTeams.updateTask(agent, { taskId: task.id, expectedRevision: current.revision, action: 'reassign', owner: name })
       return { member: name, sessionId, taskId: task.id, accepted: true }
     } finally { reservations.delete(name) }
   }
@@ -477,17 +477,17 @@ export class ModelGroups extends Service {
       output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: value }] },
       execute: async (args, exec) => {
         if (exec.agent !== agent) throw new ModelGroupError('GROUP_UNAUTHORIZED', 'Use the current member’s task board')
-        if (args.action === 'list') return JSON.stringify(this.ctx.agentTeams.listTasks(agent))
+        if (args.action === 'list') return JSON.stringify(this.ctx.legacyAgentTeams.listTasks(agent))
         if (args.action === 'create') {
           if (args.subject === undefined || args.description === undefined) throw new Error('A task subject and description are required')
-          return JSON.stringify(await this.ctx.agentTeams.createTask(agent, {
+          return JSON.stringify(await this.ctx.legacyAgentTeams.createTask(agent, {
             subject: args.subject, description: args.description,
             ...args.blocked_by === undefined ? {} : { blockedBy: args.blocked_by.map(TeamTaskId) },
             ...args.write_scopes === undefined ? {} : { writeScopes: args.write_scopes },
           }))
         }
         if (args.task === undefined || args.revision === undefined) throw new Error('A task id and current revision are required')
-        return JSON.stringify(await this.ctx.agentTeams.updateTask(agent, {
+        return JSON.stringify(await this.ctx.legacyAgentTeams.updateTask(agent, {
           taskId: TeamTaskId(args.task), expectedRevision: args.revision, action: args.action,
           ...args.blocked_by === undefined ? {} : { blockedBy: args.blocked_by.map(TeamTaskId) },
         }))
@@ -509,7 +509,7 @@ export class ModelGroups extends Service {
     if (parent === undefined) return
     const group = this.snapshot(parent)
     if (group === null) return
-    const member = this.ctx.agentTeams.listMembers(parent).find(member => member.id === session.id)
+    const member = this.ctx.legacyAgentTeams.listMembers(parent).find(member => member.id === session.id)
     if (member?.coordinationOwner !== 'model-group') return
     const configured = group.members.find(candidate => candidate.name === member.name)
     if (configured === undefined) return

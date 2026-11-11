@@ -61,7 +61,7 @@ export function GroupMode({ sessionId, useSessions, command, t }: GroupModeProps
  */
 export function GroupDock({ sessionId, useSession, useSessions, useSessionStatus, inputActions, command, t }: GroupDockProps) {
   const group = useSessions(state => state.projectionsBySession[sessionId]?.values.modelGroup)
-  const team = useSessions(state => state.projectionsBySession[sessionId]?.values.agentTeam)
+  const team = useSessions(state => state.projectionsBySession[sessionId]?.values.legacyAgentTeam)
   const statuses = useSessionStatus(state => state)
   const leaderRunning = useSession(state => state.running)
   const [busy, setBusy] = useState(false)

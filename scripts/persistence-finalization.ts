@@ -140,9 +140,10 @@ export function loadPersistenceFinalization(root: string, history: Pick<Persiste
     if (selected.length === 0 || !selected.some(entry => entry.record.baseline)) throw new Error(`${file}: accepted records must include the persistence baseline`)
     const predecessors = new Set<string>()
     for (const entry of selected) for (const change of entry.record.changes) {
-      if (change.previous !== null) {
-        if (!Object.hasOwn(locked, change.previous)) throw new Error(`${file}: accepted history omits predecessor ${change.previous}`)
-        predecessors.add(JSON.stringify([change.previous, change.root]))
+      const previousIds = typeof change.previous === 'string' ? [change.previous] : change.previous ?? []
+      for (const previous of previousIds) {
+        if (!Object.hasOwn(locked, previous)) throw new Error(`${file}: accepted history omits predecessor ${previous}`)
+        predecessors.add(JSON.stringify([previous, change.root]))
       }
     }
     const tips = new Map<string, PersistenceRoot>()

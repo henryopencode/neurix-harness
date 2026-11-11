@@ -76,6 +76,7 @@ const teamMemberSnapshotSchema = z.object({
 }).strict() as z.ZodType<TeamMemberSnapshot>
 
 const teamTaskSnapshotSchema = z.object({
+  ownerName: z.string().min(1).optional(),
   id: teamTaskIdSchema,
   revision: positiveSafeInteger,
   subject: z.string(),
@@ -383,10 +384,10 @@ export function teamProjectionView(state: TeamProjectionState): TeamProjection {
 
 /** Team projection selected by the projected Session identity; the wire view carries durable roster and task state only. */
 export const teamProjectionDefinition = {
-  key: 'agentTeam',
+  key: 'legacyAgentTeam',
   stateVersion: 5,
   stateSchema: teamProjectionEntrySchema,
   init: header => emptyTeamState(header.id),
   apply: applyProjectionEvent,
   wire: { viewSchema: teamProjectionSchema, view: teamProjectionView },
-} satisfies ProjectionDefinition<'agentTeam', TeamProjectionState>
+} satisfies ProjectionDefinition<'legacyAgentTeam', TeamProjectionState>

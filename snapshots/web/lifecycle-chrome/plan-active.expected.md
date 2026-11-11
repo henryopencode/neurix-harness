@@ -7,6 +7,7 @@
   - button "MCP"
   - button "Knowledge base"
   - button "Automation tasks"
+  - button "Unpin Automation tasks from sidebar"
   - button "More"
 - text: Workspaces
 - button "Search sessions"

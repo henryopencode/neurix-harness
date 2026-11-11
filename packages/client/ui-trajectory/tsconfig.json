@@ -1,12 +1,4 @@
 {
-  "extends": "../../../tsconfig.base.client.json",
-  "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "lib/types"
-  },
-  "include": [
-    "src"
-  ],
   "references": [
     {
       "path": "../../llm/token-meter"
@@ -55,6 +47,13 @@
     },
     {
       "path": "../../core/tool-executor-ptc"
+    },
+    {
+      "path": "./tsconfig.host.json"
+    },
+    {
+      "path": "./tsconfig.client.json"
     }
-  ]
+  ],
+  "files": []
 }

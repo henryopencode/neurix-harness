@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Gestor de servidores MCP",
-    "description": "Guarda la configuración global de los servidores MCP y muestra los estados de conexión y las herramientas registradas."
+    "title": "Administrador de servidores MCP",
+    "description": "Administra los servidores MCP configurados en Configuración o registrados por complementos e informa su estado de conexión."
   }
 }

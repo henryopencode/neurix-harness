@@ -16,7 +16,7 @@ import { en, ja, es, fr, de, ru, pt, NS, zh, type TeamKey } from './locales.ts'
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** Agent Teams roster and task-board copy. */
-    'agent-team': TeamKey
+    'legacy-agent-team': TeamKey
   }
 }
 
@@ -81,7 +81,7 @@ export function registerAgentTeamUi(ctx: ClientContext): void {
     'conversation.session.header.actions',
     () => ctx.slots.register({
       name: 'conversation.session.header.actions',
-      id: 'agent-team',
+      id: 'legacy-agent-team',
       order: -20,
       locale: NS,
       inject: () => actions,

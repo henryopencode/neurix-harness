@@ -338,6 +338,8 @@ export default withMermaid({
     },
   },
   vite: {
+    // VitePress 1 uses an esbuild release that predates the repository's ES2024 target.
+    esbuild: { target: 'es2022' },
     // `srcDir` puts the Vite root inside the disposable generated tree, whose
     // own `public/` no tracked asset can live in.
     publicDir: resolve(import.meta.dirname, '../public'),

@@ -283,7 +283,7 @@ describe('workflow task inspector', () => {
       ...fixture.props, openArtifact, openSession, useSessions: bindSnapshotSelector(createSnapshotStore(sessions)),
       useTabInfo: (): ReturnType<WorkflowTaskDetailsProps['useTabInfo']> => ({
         sidebar: { expanded: true, fullscreen: false },
-        panel: { id: 'pane' as ReturnType<WorkflowTaskDetailsProps['useTabInfo']>['panel']['id'] },
+        panel: { isFloating: false, id: 'pane' as ReturnType<WorkflowTaskDetailsProps['useTabInfo']>['panel']['id'] },
         tab: {
           id: 'details' as ReturnType<WorkflowTaskDetailsProps['useTabInfo']>['tab']['id'],
           kind: 'workflow-node', contentId: 'sidebar://workflow-node', title: 'Task details', visible: true, signal,

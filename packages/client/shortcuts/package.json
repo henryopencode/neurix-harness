@@ -1,7 +1,8 @@
 {
   "name": "@deepseek-ai/dsh-client-shortcuts",
   "description": "Application keyboard command registry and physical-key routing",
-  "version": "1.1.6",
+  "version": "1.1.7",
+  "dshApiVersion": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

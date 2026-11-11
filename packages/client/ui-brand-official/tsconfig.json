@@ -19,9 +19,6 @@
     },
     {
       "path": "../ui-sidebar"
-    },
-    {
-      "path": "../ui-slots"
     }
   ]
 }

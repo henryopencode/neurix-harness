@@ -14,7 +14,7 @@ export interface McpNoticeInjected {
 }
 
 /** Framework-provided notice hook and page copy. */
-export type McpNoticeProps = InjectFace<McpNoticeInjected> & PropsLocale<'mcpManager'>
+export type McpNoticeProps = InjectFace<McpNoticeInjected> & PropsLocale<'mcpConfigManager'>
 
 /** Render the most recent completed operation after navigation.
  * @param props - notice source and localized text.

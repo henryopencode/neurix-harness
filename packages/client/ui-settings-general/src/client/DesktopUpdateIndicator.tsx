@@ -12,6 +12,7 @@ const BUSY_PHASES: ReadonlySet<DesktopUpdatePresentation['phase']> = new Set([
 ])
 
 function updateCopy(state: DesktopUpdatePresentation, t: SettingsTranslate): { label: string; detail: string } {
+  if (state.configurationError !== undefined) return { label: t('desktop.channel.unavailable'), detail: t(`desktop.update.configuration.${state.configurationError}`) }
   const labels: Readonly<Record<DesktopUpdatePresentation['phase'], string>> = {
     idle: '',
     checking: t('desktop.update.checking'),
@@ -31,9 +32,13 @@ function updateCopy(state: DesktopUpdatePresentation, t: SettingsTranslate): { l
   }
   if (state.phase === 'error') {
     const failures: Readonly<Record<DesktopUpdateFailureKind, string>> = {
+      configuration: t('desktop.update.configurationFailed'),
       check: t('desktop.update.checkFailed'),
       'check-network': t('desktop.update.checkNetworkFailed'),
       download: t('desktop.update.downloadFailed'),
+      'download-space': t('desktop.update.downloadSpaceFailed'),
+      'download-permission': t('desktop.update.downloadPermissionFailed'),
+      'download-busy': t('desktop.update.downloadBusyFailed'),
       'download-network': t('desktop.update.downloadNetworkFailed'),
       install: t('desktop.update.installFailed'),
       'install-network': t('desktop.update.installNetworkFailed'),
@@ -54,7 +59,7 @@ function updateCopy(state: DesktopUpdatePresentation, t: SettingsTranslate): { l
 
 /**
  * Render a rail action with determinate transfer progress and an explicit stop action.
- * @param props - Localized carrier state and shell-owned actions; wide is retained for existing callers.
+ * @param props - Localized state and shell actions. Configuration errors stay actionable during downloads; wide remains supported.
  * @returns An icon button above Settings, or nothing without a reported update.
  */
 export function DesktopUpdateIndicator({ hidden, t, view, onOpen, onStop }: {
@@ -66,13 +71,14 @@ export function DesktopUpdateIndicator({ hidden, t, view, onOpen, onStop }: {
   onStop?: () => void
 }) {
   const { presentation: state, failed, opening } = view
-  if (hidden || (!failed && (state === undefined || state.phase === 'idle'))) return null
+  if (hidden || (!failed && (state === undefined || (state.phase === 'idle' && state.configurationError === undefined)))) return null
   const retryLabel = t('desktop.update.retry')
   const copy = state === undefined ? { label: retryLabel, detail: retryLabel } : updateCopy(state, t)
-  const canStop = state?.phase === 'downloading' && state.canCancel === true && onStop !== undefined
+  const showConfiguration = state?.phase === 'downloading' && state.configurationError !== undefined
+  const canStop = !showConfiguration && state?.phase === 'downloading' && state.canCancel === true && onStop !== undefined
   const label = canStop ? t('desktop.update.stop') : failed ? retryLabel : copy.label
-  const error = failed || state?.phase === 'error'
-  const busy = !canStop && (opening || (state !== undefined && BUSY_PHASES.has(state.phase)))
+  const error = failed || state?.phase === 'error' || state?.configurationError !== undefined
+  const busy = !canStop && (opening || (state !== undefined && !showConfiguration && BUSY_PHASES.has(state.phase)))
   const percent = Math.min(100, Math.max(0, state?.percent ?? 0))
   return <Tooltip label={canStop ? `${failed ? t('desktop.update.cancelFailed') : copy.detail}\n${label}` : failed ? retryLabel : copy.detail} side="right">
     <button type="button" className={css.indicator}
@@ -120,7 +126,7 @@ export function DesktopUpdateBadge({ useDesktopUpdate, useConnectionState, t }: 
   const { presentation: state, failed } = useDesktopUpdate(value => value)
   const connection = useConnectionState(value => value)
   if (((connection === 'disconnected' || connection === 'connecting') && state?.phase !== 'installing')
-    || (!failed && (state === undefined || state.phase === 'idle'))) return null
+    || (!failed && (state === undefined || (state.phase === 'idle' && state.configurationError === undefined)))) return null
   const retryLabel = t('desktop.update.retry')
   const copy = state === undefined ? { label: retryLabel, detail: retryLabel } : updateCopy(state, t)
   const label = failed ? retryLabel : copy.label

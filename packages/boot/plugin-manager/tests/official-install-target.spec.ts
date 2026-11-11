@@ -98,3 +98,16 @@ it.each(['missing', 'directory'])('refuses an unavailable bundle patch: %s', (ki
   if (kind === 'directory') mkdirSync(patch)
   expect(() => officialBundleInstallTarget(name, anchor, version)).toThrow('bundle patch')
 })
+
+it('uses the official API version for packed distributions with an independent release version', () => {
+  const { anchor } = fixture()
+  writeFileSync(anchor, JSON.stringify({ name: '@deepseek-ai/dsh', version: '1.1.7' }))
+  expect(officialBundleInstallTarget(name, anchor, '1.1.7', '0.2.2-rc.1'))
+    .toEqual({ spec: `${name}@0.2.2-rc.1`, version: '0.2.2-rc.1' })
+})
+
+it('keeps source checkout links on their release version when the official API version differs', () => {
+  const { anchor, directory } = fixture()
+  expect(officialBundleInstallTarget(name, anchor, version, '0.2.2-rc.1'))
+    .toEqual({ spec: `link:${directory}`, version })
+})

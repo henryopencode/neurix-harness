@@ -1,3 +1,4 @@
+import { contextMenuHook } from '@deepseek-ai/dsh-client-test-runtime'
 // @vitest-environment jsdom
 import type { GlobalStandardProps } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ShortcutCatalogEntry, ShortcutCommandId } from '@deepseek-ai/dsh-client-shortcuts/client'
@@ -50,7 +51,7 @@ function mountShell({ collapsed = false, width = 300, shortcuts = [] }: {
   const brandName = <span data-testid="custom-brand-name">Custom Brand</span>
   let current = { collapsed, width }
   const root = () => (
-    <SidebarRoot
+    <SidebarRoot drawer={false} renderFactorySlot={() => null} useContextMenu={contextMenuHook()}
       collapsed={current.collapsed} width={current.width}
       useSessions={neverHook} useSessionStatus={useSessionStatus} useSessionRetainInfo={neverHook}
       usePanelInfo={usePanelInfo} selectPanel={() => {}} usePanels={selector => selector([])} useEntryPins={selector => selector([])}
@@ -105,6 +106,7 @@ function mountShell({ collapsed = false, width = 300, shortcuts = [] }: {
 
 describe('SidebarRoot shell', () => {
   it('advertises the effective new-session binding', () => {
+    document.documentElement.dataset.platform = 'darwin'
     const shortcut: ShortcutCatalogEntry = { id: 'session.new' as ShortcutCommandId, label: 'New', aliases: [],
       binding: null, modified: true, conflicts: [], issue: null, keys: ['Ctrl', 'N'], aria: 'Control+N' }
     mountShell({ shortcuts: [shortcut] })
@@ -117,7 +119,8 @@ describe('SidebarRoot shell', () => {
     expect(screen.queryByRole('tooltip')).toBeNull()
     expect(Array.from(expanded.querySelectorAll('kbd'), key => key.textContent)).toEqual(['Ctrl', 'N'])
     cleanup()
-    render(<HeaderLeadingControls toggleSidebar={vi.fn()} startSession={vi.fn()} selectPanel={vi.fn()} trackEntryClick={vi.fn()} t={t}
+    render(<HeaderLeadingControls useContextMenu={contextMenuHook()} toggleSidebar={vi.fn()} startSession={vi.fn()}
+      selectPanel={vi.fn()} trackEntryClick={vi.fn()} t={t}
       usePanelInfo={neverHook} useSessions={neverHook} useSessionStatus={neverHook}
       useSessionRetainInfo={neverHook} useResource={useResource} useWorkspaces={neverHook}
       {...allowAllAccess}
@@ -160,7 +163,7 @@ describe('SidebarRoot shell', () => {
     const toggleSidebar = vi.fn()
     const startSession = vi.fn()
     const useRemoteAccess = vi.fn((action: string) => action !== 'session/create')
-    render(<SidebarRoot
+    render(<SidebarRoot drawer={false} renderFactorySlot={() => null} useContextMenu={contextMenuHook()}
       collapsed={false} width={300}
       useSessions={neverHook} useSessionStatus={useSessionStatus} useSessionRetainInfo={neverHook}
       usePanelInfo={usePanelInfo} selectPanel={() => {}} usePanels={selector => selector([])} useEntryPins={selector => selector([])}
@@ -191,7 +194,7 @@ describe('SidebarRoot shell', () => {
     vi.stubEnv('DSH_CLIENT_COMMIT_HASH', '0123456')
     vi.stubEnv('DSH_CLIENT_GIT_DIRTY', 'true')
     vi.stubEnv('DSH_CLIENT_VERSION', '1.2.3-rc.4')
-    const { container } = render(<SidebarRoot
+    const { container } = render(<SidebarRoot drawer={false} renderFactorySlot={() => null} useContextMenu={contextMenuHook()}
       collapsed={false} width={300}
       useSessions={neverHook} useSessionStatus={useSessionStatus} useSessionRetainInfo={neverHook}
       usePanelInfo={usePanelInfo} selectPanel={() => {}} usePanels={selector => selector([])} useEntryPins={selector => selector([])}
@@ -210,7 +213,7 @@ describe('SidebarRoot shell', () => {
   })
 
   it('retains the local-build fallback without complete build metadata', () => {
-    render(<SidebarRoot
+    render(<SidebarRoot drawer={false} renderFactorySlot={() => null} useContextMenu={contextMenuHook()}
       collapsed={false} width={300}
       useSessions={neverHook} useSessionStatus={useSessionStatus} useSessionRetainInfo={neverHook}
       usePanelInfo={usePanelInfo} selectPanel={() => {}} usePanels={selector => selector([])} useEntryPins={selector => selector([])}
@@ -285,7 +288,7 @@ describe('SidebarRoot shell', () => {
 
   it('shows only the badge bubble while the rail badge is hovered inside the toggle', () => {
     vi.useFakeTimers()
-    render(<SidebarRoot
+    render(<SidebarRoot drawer={false} renderFactorySlot={() => null} useContextMenu={contextMenuHook()}
       collapsed width={56}
       useSessions={neverHook} useSessionStatus={useSessionStatus} useSessionRetainInfo={neverHook}
       usePanelInfo={usePanelInfo} selectPanel={() => {}} usePanels={selector => selector([])} useEntryPins={selector => selector([])}
@@ -329,6 +332,7 @@ it('keeps the macOS sidebar toggle in its top strip', () => {
 })
 
 it('wires the shell.leading controls to the shared sidebar actions', () => {
+  document.documentElement.dataset.platform = 'darwin'
   const toggleSidebar = vi.fn()
   const startSession = vi.fn()
   const trackEntryClick = vi.fn<HeaderLeadingControlsProps['trackEntryClick']>()

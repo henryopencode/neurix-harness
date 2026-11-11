@@ -1,6 +1,12 @@
 # Experimental Agent Teams profile layer. Apply after dsh-base so these replacements
 # keep direct delegation and coordination on the Team tools.
 
+- id: agent-team
+  disabled: true
+
+- id: tool-agent-team
+  disabled: true
+
 - id: tool-subagent-control
   disabled: true
 
@@ -11,7 +17,7 @@
   disabled: true
 
 - insert:
-    - id: agent-team
+    - id: legacy-agent-team
       name: '@deepseek-ai/dsh-experimental-agent-team'
       config:
         maxMembers: 8
@@ -19,11 +25,11 @@
         maxMessageBytes: 65536
         disposalTimeoutMs: 5000
 
-    - id: tool-agent-team
+    - id: legacy-tool-agent-team
       name: '@deepseek-ai/dsh-experimental-tool-agent-team'
       config:
         freshProvider: spawn
         forkProvider: fork
 
-    - id: ui-agent-team
+    - id: legacy-ui-agent-team
       name: '@deepseek-ai/dsh-experimental-client-ui-agent-team'

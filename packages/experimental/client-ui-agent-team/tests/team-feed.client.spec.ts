@@ -48,7 +48,7 @@ async function bench(options: { childSelected?: boolean; failChild?: boolean; fa
   ])
   const list = sessions.list
   list.set({ ...list.getSnapshot(),
-    projectionsBySession: { [LEAD]: { state: 'ready', error: null, values: { agentTeam: { members: [lead, child], tasks: [] } } } },
+    projectionsBySession: { [LEAD]: { state: 'ready', error: null, values: { legacyAgentTeam: { members: [lead, child], tasks: [] } } } },
   })
   const releases: SessionId[] = []
   const originalRetain = sessions.retain.bind(sessions)
@@ -104,7 +104,7 @@ describe('Team transcript ownership', () => {
     expect(b.loadLead).toHaveBeenCalledOnce()
     expect(b.loadChild).not.toHaveBeenCalled()
     b.list.set({ ...b.list.getSnapshot(), projectionsBySession: {
-      [LEAD]: { state: 'ready', error: null, values: { agentTeam: { members: [lead], tasks: [] } } },
+      [LEAD]: { state: 'ready', error: null, values: { legacyAgentTeam: { members: [lead], tasks: [] } } },
     } })
     expect(b.releases).toEqual([CHILD])
     expect(b.feed.getSnapshot().messages.map(row => row.senderId)).toEqual([LEAD])

@@ -4,10 +4,12 @@
     "rootDir": "src",
     "outDir": "lib/types"
   },
-  "include": [
-    "src"
-  ],
+  "include": ["src"],
   "references": [
+    { "path": "../../util/timeout" },
+    {
+      "path": "../../../vendor/cosmokit"
+    },
     {
       "path": "../../../vendor/cordis"
     },
@@ -18,22 +20,19 @@
       "path": "../../../vendor/schemastery"
     },
     {
-      "path": "../../boot/app-boot"
-    },
-    {
-      "path": "../../boot/hmr"
-    },
-    {
-      "path": "../../util/atomic-write"
-    },
-    {
-      "path": "../../util/brand"
-    },
-    {
       "path": "../mcp-client"
     },
     {
-      "path": "../mcp-resources"
+      "path": "../../settings/settings"
+    },
+    {
+      "path": "../../credentials/credentials"
+    },
+    {
+      "path": "../../core/tools"
+    },
+    {
+      "path": "../../util/values"
     },
     {
       "path": "../../typert/protocol"

@@ -191,7 +191,7 @@ export function TeamAction({
   })
   const positioned = position !== null
   const leadSessionId = useSession(snapshot => snapshot.subagent?.address.parentSessionId) ?? sessionId
-  const team = useSessions(state => state.projectionsBySession[leadSessionId]?.values.agentTeam)
+  const team = useSessions(state => state.projectionsBySession[leadSessionId]?.values.legacyAgentTeam)
   const opening = useSession(snapshot => snapshot.openState === 'loading')
   const listing = useSessions(state => state.phase === 'pending')
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)

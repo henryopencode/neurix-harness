@@ -119,6 +119,13 @@
   transition: none;
 }
 
+/* A Turn's duration control renders empty until the Turn closes; its gap appears with it in the same
+   frame, so the layout below changes once instead of sliding after the control's own height. */
+.column[data-chat-motion] > [data-chat-flow-kind="turn-process"],
+.column[data-chat-motion] > :global([data-slot="conversation.chat.flow"]) > [data-chat-flow-kind="turn-process"] {
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .column[data-chat-motion] > :not([data-chat-motion]),
   .column[data-chat-motion] > :global([data-slot="conversation.chat.flow"]) > :not([data-chat-motion]) {
@@ -167,6 +174,8 @@
   :where(.column > :global([data-slot="conversation.chat.flow"]) > .flowItem[data-chat-flow-kind="steering"]) + .running {
     animation: running-enters-slot 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
+
+
 }
 
 @keyframes running-enters-slot {
@@ -270,6 +279,42 @@
   line-height: calc(22px + var(--dsh-content-font-delta, 0px));
 }
 
+/* After the Session stops running and before the Turn's actions row arrives, the status keeps its slot
+   unseen so the tail does not shrink for that interval. */
+.running[data-holding] {
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* The last visible row before the status must contain output, not an input.
+   Hidden and empty seats do not separate a user message from the status, and
+   the steering/Inbox echoes after the status are outside the count. */
+:is(.column, :global([data-slot="conversation.chat.flow"])) > :nth-last-child(2 of :not([hidden]):not([data-pending-steering]):not(.flowItem:is(:empty, :has(> [data-slot="conversation.chat.node"]:empty)))):is(
+  .flowItem:not([data-chat-flow-kind="user"]):not([data-chat-flow-kind="steering"]):not([data-chat-flow-kind="turn-trigger"]),
+  [data-chat-group-key]
+) ~ .running > .runningDivider {
+  opacity: 1;
+}
+
+/* Drawn inside the 16px offset above the status row, so showing or hiding it
+   never changes the tail slot's height. */
+.runningDivider {
+  position: absolute;
+  top: -4px;
+  left: 0;
+  right: 0;
+  height: 0.5px;
+  background: color-mix(in srgb, var(--dsw-alias-border-l1) 75%, var(--dsw-alias-border-l2));
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .runningDivider {
+    transition: opacity 160ms ease;
+  }
+}
+
 /* Same offset and height as the completed Turn's tail actions row. */
 .runningContent {
   display: inline-flex;
@@ -356,10 +401,10 @@
   right: 0;
   bottom: 16px;
   left: 0;
-  /* Above the sticky composer (z-index 7) so the control stays clickable and
-     visible over the input card. Exception: while an @/slash menu is open the
-     seat lifts to 9 (ui-conversation ConversationRoot) so the menu is never
-     covered by this control. */
+  /* Above transcript sticky chrome (CodeBlock banners 6, the pinned compaction
+     header and turn rail 7) and below the composer seat (9, ui-conversation
+     ConversationRoot), so menus the composer opens upward cover this control.
+     At rest the control sits 16px above the input card. */
   z-index: 8;
   height: 0;
   display: flex;

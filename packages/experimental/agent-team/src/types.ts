@@ -1,3 +1,4 @@
+import type {} from '@deepseek-ai/dsh-agent-team/types'
 /** Public Agent Teams identities, durable records, and service request values. */
 
 import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
@@ -122,6 +123,8 @@ export type TeamTaskStatus = 'pending' | 'in_progress' | 'completed' | 'deleted'
 
 /** Whole durable task snapshot; every mutation increments {@link revision}. */
 export interface TeamTaskSnapshot {
+  /** Optional assigned name retained when reading tasks created by the built-in Team mode. */
+  readonly ownerName?: string
   readonly id: TeamTaskId
   readonly revision: number
   readonly subject: string
@@ -174,7 +177,7 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
     /** Historical candidate models and leader retained in stored projection views. */
     teamModels: TeamModelSelection | null
     /** Durable roster and non-deleted task board of the Team rooted at the projected Session. */
-    agentTeam: TeamProjection
+    legacyAgentTeam: TeamProjection
   }
 }
 
@@ -289,18 +292,5 @@ declare module '@deepseek-ai/dsh-session/types' {
     'team/control': { readonly stopped: boolean; readonly stoppedMembers: readonly string[] }
     /** Attributed teammate output at its committed root-conversation position. */
     'team/post': TeamPost
-    /** Whole teammate lifecycle value, stored only in the Team Lead Session. */
-    'team/member': { version: 2; teamId: TeamId; member: TeamMemberSnapshot }
-    /** Whole shared-task value, stored only in the Team Lead Session. */
-    'team/task': { version: 2; teamId: TeamId; task: TeamTaskSnapshot }
-    /** Historical mailbox enqueue; new sends use the target Agent inbox. */
-    'team/message/queued': { version: 2; teamId: TeamId; message: TeamMessageSnapshot }
-    /** Historical acknowledgement that the target Session recorded a queued message. */
-    'team/message/delivered': {
-      version: 2
-      teamId: TeamId
-      messageId: TeamMessageId
-      targetId: SessionId
-    }
   }
 }

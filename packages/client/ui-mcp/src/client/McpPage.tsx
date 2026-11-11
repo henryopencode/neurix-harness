@@ -14,7 +14,7 @@ export interface McpPageInjected {
 }
 
 /** Main-panel data and framework resource/localization hooks. */
-export type McpPageProps = PropsRuntime<'main'> & PropsLocale<'mcpManager'> & InjectFace<McpPageInjected>
+export type McpPageProps = PropsRuntime<'main'> & PropsLocale<'mcpConfigManager'> & InjectFace<McpPageInjected>
 
 /** MCP sidebar glyph from the shared icon library.
  * @param props - icon size requested by the sidebar.

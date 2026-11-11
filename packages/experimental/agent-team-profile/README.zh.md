@@ -25,6 +25,8 @@ kind: "package-bundle"
 <a id="use-this-package"></a>
 ## 使用本包
 
+此组合包使用命名队友工具和团队记录视图。要使用内置团队模式，请关闭此组合包。
+
 ### 安装到 profile
 
 将本包添加到已初始化的 profile，然后运行一个要求 Lead 委派工作的任务：

@@ -63,7 +63,7 @@ function bench(options: {
   for (const [id, running] of Object.entries(options.running ?? {}) as [SessionId, boolean][]) byId[id] = summary(id, running)
   const sessions = createSnapshotStore<SessionListState>({
     ids: Object.keys(byId) as SessionId[], byId, phase: 'ready',
-    projectionsBySession: options.projections ?? { [SESSION]: { state: 'ready', error: null, values: { agentTeam: team } } },
+    projectionsBySession: options.projections ?? { [SESSION]: { state: 'ready', error: null, values: { legacyAgentTeam: team } } },
   })
   const statuses = createSnapshotStore<SessionStatusSnapshot>(options.statuses ?? new Map())
   const session = createSnapshotStore<SessionSnapshot>({
@@ -119,7 +119,7 @@ function setProjectionSnapshot(
 }
 
 function setProjection(sessions: ReturnType<typeof bench>['sessions'], sessionId: SessionId, value: TeamProjection): void {
-  setProjectionSnapshot(sessions, sessionId, { state: 'ready', error: null, values: { agentTeam: value } })
+  setProjectionSnapshot(sessions, sessionId, { state: 'ready', error: null, values: { legacyAgentTeam: value } })
 }
 
 describe('TeamAction', () => {
@@ -149,7 +149,7 @@ describe('TeamAction', () => {
       projections: {
         [SESSION]: {
           state: 'ready', error: null,
-          values: { agentTeam: team, modelSelection: { lastUsed: null, next: { provider: 'p', model: 'lead-model' } } },
+          values: { legacyAgentTeam: team, modelSelection: { lastUsed: null, next: { provider: 'p', model: 'lead-model' } } },
         },
         [WORKER]: {
           state: 'ready', error: null,
@@ -193,7 +193,7 @@ describe('TeamAction', () => {
     expect(screen.getByRole('status').textContent).toBe(zh.loading)
     act(() => { b.session.set({ ...b.session.getSnapshot(), openState: 'open' }) })
     expect(screen.getByRole('status').textContent).toBe(zh.unavailable)
-    setProjectionSnapshot(b.sessions, SESSION, { state: 'idle', error: null, values: { agentTeam: team } })
+    setProjectionSnapshot(b.sessions, SESSION, { state: 'idle', error: null, values: { legacyAgentTeam: team } })
     expect(screen.getByText('Implement runtime')).toBeTruthy()
     expect(screen.queryByRole('status')).toBeNull()
     setProjectionSnapshot(b.sessions, SESSION, { state: 'idle', error: null, values: {} })
@@ -210,7 +210,7 @@ describe('TeamAction', () => {
     expect(screen.getByRole('status').textContent).toBe(zh.loading)
     act(() => { b.sessions.set({
       ...b.sessions.getSnapshot(), phase: 'ready',
-      projectionsBySession: { [SESSION]: { state: 'idle', error: null, values: { agentTeam: team } } },
+      projectionsBySession: { [SESSION]: { state: 'idle', error: null, values: { legacyAgentTeam: team } } },
     }) })
     expect(screen.getByText('Implement runtime')).toBeTruthy()
     expect(screen.queryByRole('status')).toBeNull()
@@ -232,7 +232,7 @@ describe('TeamAction', () => {
         byId: { ...current.byId, ['unrelated' as SessionId]: summary('unrelated' as SessionId, true) },
         projectionsBySession: {
           ...projectionsBySession,
-          ['unrelated' as SessionId]: { state: 'ready', error: null, values: { agentTeam: { members: [], tasks: [] } } },
+          ['unrelated' as SessionId]: { state: 'ready', error: null, values: { legacyAgentTeam: { members: [], tasks: [] } } },
         },
       })
       b.statuses.set(new Map([['unrelated' as SessionId, { running: true, pendingInteraction: undefined, completionUnread: false }]]))
@@ -258,7 +258,7 @@ describe('TeamAction', () => {
 
   it('surfaces a Team projection failure beside the last valid state', () => {
     const b = bench({
-      projections: { [SESSION]: { state: 'ready', error: null, values: { agentTeam: { ...team, failure: 'revision is not contiguous' } } } },
+      projections: { [SESSION]: { state: 'ready', error: null, values: { legacyAgentTeam: { ...team, failure: 'revision is not contiguous' } } } },
     })
     render(<TeamAction {...b.props} />)
     openPanel()
@@ -273,7 +273,7 @@ describe('TeamAction', () => {
         [SESSION]: {
           state: 'ready', error: null,
           values: {
-            agentTeam: {
+            legacyAgentTeam: {
               members: [
                 lead,
                 worker,

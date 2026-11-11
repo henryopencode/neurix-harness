@@ -97,4 +97,33 @@ describe('Project Reference compiler faces', () => {
       'packages/core/host-consumer/tsconfig.json: Project Reference "../../api/split/tsconfig.client.json" enters split project packages/api/split from a Host config; reference "packages/api/split/tsconfig.host.json" instead',
     ])
   })
+
+  it('allows the Git Host metadata producer only from the API Remote assembly', () => {
+    const root = workspaceFixture({
+      host: [],
+      client: ['./packages/api/remotes/tsconfig.client.json', './packages/core/other-client'],
+    })
+    const git = join(root, 'packages/client/ui-git-branch')
+    const remotes = join(root, 'packages/api/remotes')
+    const other = join(root, 'packages/core/other-client')
+    for (const dir of [git, remotes, other]) mkdirSync(dir, { recursive: true })
+    writeJson(join(git, 'package.json'), { name: '@deepseek-ai/dsh-client-ui-git-branch' })
+    writeJson(join(git, 'tsconfig.host.json'), {})
+    writeJson(join(git, 'tsconfig.client.json'), {})
+    writeJson(join(remotes, 'tsconfig.client.json'), {
+      references: [
+        { path: '../../client/ui-git-branch/tsconfig.host.json' },
+        { path: '../split/tsconfig.host.json' },
+      ],
+    })
+    writeJson(join(other, 'tsconfig.json'), {
+      extends: '../../../tsconfig.base.client.json',
+      references: [{ path: '../../client/ui-git-branch/tsconfig.host.json' }],
+    })
+
+    expect(collectProjectReferenceFaceViolations(root)).toEqual([
+      'packages/api/remotes/tsconfig.client.json: Project Reference "../split/tsconfig.host.json" enters split project packages/api/split from a Client config; reference "packages/api/split/tsconfig.client.json" instead',
+      'packages/core/other-client/tsconfig.json: Project Reference "../../client/ui-git-branch/tsconfig.host.json" enters split project packages/client/ui-git-branch from a Client config; reference "packages/client/ui-git-branch/tsconfig.client.json" instead',
+    ])
+  })
 })

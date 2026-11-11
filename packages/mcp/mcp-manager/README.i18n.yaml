@@ -3,44 +3,62 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/mcp/mcp-manager/README.md
 /:
-  en: cd4909fae5094aab
-  zh: d41ed51b3b1570d5
+  en: 706845526cca8ee3
+  zh: 8807cb31259da85a
 /deepseek-ai-dsh-mcp-manager:
   en: 4aaba88431d337f0
   zh: dbeb71a252aa7748
 /deepseek-ai-dsh-mcp-manager/summary:
-  en: ab9b3d44ab30daae
-  zh: b194ba712389cf8c
+  en: d2b26c63ca0e837b
+  zh: ea377b20252a0fbe
 /deepseek-ai-dsh-mcp-manager/table-of-contents:
   en: d152484eb41ac6b4
-  zh: 1db86285abf6c499
+  zh: f14f34fce35a8d90
 /deepseek-ai-dsh-mcp-manager/use-this-package:
-  en: a8d98256e5619ac8
-  zh: 4d9e985c22bb10ea
+  en: f36f5244cd0b34f9
+  zh: a9df08b327869f1d
+/deepseek-ai-dsh-mcp-manager/use-this-package/when-to-choose-it:
+  en: 5a005b1ef5f53881
+  zh: d8bae243d10b2da5
+/deepseek-ai-dsh-mcp-manager/use-this-package/minimal-configuration:
+  en: 3d76f37b955a2b1f
+  zh: 995e71d500fa074b
+/deepseek-ai-dsh-mcp-manager/use-this-package/managing-configured-servers:
+  en: 765209b5639c4be2
+  zh: 48211813d2d25afc
+/deepseek-ai-dsh-mcp-manager/use-this-package/registering-a-server-from-a-plugin:
+  en: 313bcb35b12be8e1
+  zh: a85f75db6b138547
+/deepseek-ai-dsh-mcp-manager/use-this-package/observing-and-recovering:
+  en: 1aab15d93a450282
+  zh: 2c3a04ab964db576
+/deepseek-ai-dsh-mcp-manager/use-this-package/remote-operations:
+  en: 38be117d2c122c61
+  zh: 3a0bffa9a708fdc4
 /deepseek-ai-dsh-mcp-manager/understand-the-implementation:
-  en: adc574c82b28fe76
-  zh: 7b63e729a3e74fd5
+  en: 8a74186fa5bfe79d
+  zh: c7c952876ca2992b
+/deepseek-ai-dsh-mcp-manager/understand-the-implementation/design-philosophy:
+  en: 910e4cfd420dad93
+  zh: 4985a140ffd51160
+/deepseek-ai-dsh-mcp-manager/understand-the-implementation/source-map:
+  en: 874fe61698123da8
+  zh: 85f9cb1eb4881cbc
+/deepseek-ai-dsh-mcp-manager/understand-the-implementation/lifecycle-notes:
+  en: 22a062b31ef64262
+  zh: db244dae206d56fc
 /deepseek-ai-dsh-mcp-manager/further-exploration:
-  en: 22d19332f8500c0c
-  zh: 13a800aa88267ae0
+  en: 1383d0b5ab881285
+  zh: bef9f5386cb092e1
 /deepseek-ai-dsh-mcp-manager/model-experience:
-  en: 215e7ba838619b7b
-  zh: a311da3843709f90
-/deepseek-ai-dsh-mcp-manager/model-experience/mcp-configuration:
-  en: 945e8fb8b63ed34e
-  zh: 3dac810a7f768c04
-/deepseek-ai-dsh-mcp-manager/model-experience/mcp-configuration/what-the-model-sees:
-  en: 8e7197014c699e75
-  zh: 4da49280413ea57d
-/deepseek-ai-dsh-mcp-manager/model-experience/mcp-configuration/token-effect:
-  en: 63e6644634fa2bf0
-  zh: 8f4aa534121c73b4
-/deepseek-ai-dsh-mcp-manager/model-experience/mcp-configuration/kv-cache-effect:
-  en: b25cc3e464f85db3
-  zh: 1ef40667798890ed
+  en: 622033747c4c0066
+  zh: 821213fd61a98105
+/deepseek-ai-dsh-mcp-manager/model-experience/kv-cache-effect:
+  en: 7a8d0bf11425040b
+  zh: b39181f89ba4fbe8
 /deepseek-ai-dsh-mcp-manager/known-limitations-and-deferred-work:
-  en: e09fae1feeeb415f
-  zh: c9982b2bd600a19f
+  en: 4c85bea0533cc44a
+  zh: 73fdc5d1a90a3011
 /deepseek-ai-dsh-mcp-manager/known-limitations-and-deferred-work/dev-note:
-  en: e67f633dc6fe7773
-  zh: e88aeb617ffb74ea
+  en: 8b2c53fe07fdaf2d
+  zh: 7839d0302f02fa5b

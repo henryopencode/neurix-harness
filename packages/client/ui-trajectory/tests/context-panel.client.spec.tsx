@@ -1,9 +1,10 @@
+import type { SessionProjectionViewValues } from '@deepseek-ai/dsh-session-projection/types'
 // @vitest-environment jsdom
 /** User-visible context diagnostics and recovery through the shared modal. */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import type { ComponentProps } from 'react'
-import type { SessionProjectionMap, SessionSnapshot } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { SessionSnapshot } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { ContextDiagnosticsPanel } from '../src/client/ContextDiagnosticsPanel.tsx'
 import type { TrajectorySnapshot } from '../src/client/trajectory-contract.ts'
@@ -12,17 +13,19 @@ import { t } from './locale.client.ts'
 
 afterEach(cleanup)
 
-function projectionReader(values: Partial<SessionProjectionMap>) {
-  function read<K extends keyof SessionProjectionMap>(key: K): SessionProjectionMap[K] | undefined
-  function read<K extends keyof SessionProjectionMap, S>(key: K, selector: (value: SessionProjectionMap[K] | undefined) => S): S
-  function read<K extends keyof SessionProjectionMap, S>(key: K, selector?: (value: SessionProjectionMap[K] | undefined) => S) {
+function projectionReader(values: Partial<SessionProjectionViewValues>) {
+  function read<K extends keyof SessionProjectionViewValues>(key: K): SessionProjectionViewValues[K] | undefined
+  function read<K extends keyof SessionProjectionViewValues, S>(
+    key: K, selector: (value: SessionProjectionViewValues[K] | undefined) => S): S
+  function read<K extends keyof SessionProjectionViewValues, S>(
+    key: K, selector?: (value: SessionProjectionViewValues[K] | undefined) => S) {
     return selector === undefined ? values[key] : selector(values[key])
   }
   return read
 }
 
 function props(overrides: Partial<ComponentProps<typeof ContextDiagnosticsPanel>> = {}): ComponentProps<typeof ContextDiagnosticsPanel> {
-  const projections: Partial<SessionProjectionMap> = {
+  const projections: Partial<SessionProjectionViewValues> = {
     contextPressure: { projectedTokens: 2_000, contextWindow: 10_000 },
     contextBreakdown: { systemTokens: 100, toolsTokens: 200, messageTokens: 300 },
   }

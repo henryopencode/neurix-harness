@@ -88,7 +88,11 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
                 onFocus={(event) => { event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' }) }}
                 onClick={() => { onSelect(row.id) }}
               >
-                {navIcon(row.id)}
+                <span className={css.navIcon} aria-hidden="true">
+                  {renderSlot('settings.section.icon', { size: 16, active: row.id === active }, {
+                    only: row.id, fallback: navIcon(row.id),
+                  })}
+                </span>
                 <span className={css.navLabel}>{row.label}</span>
               </button>
             ))}

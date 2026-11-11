@@ -121,6 +121,15 @@
     },
     {
       "path": "../../client/ui-git-branch/tsconfig.host.json"
+    },
+    {
+      "path": "../../team/agent-team"
+    },
+    {
+      "path": "../../web/web"
+    },
+    {
+      "path": "../../mcp/mcp-config-manager"
     }
   ]
 }

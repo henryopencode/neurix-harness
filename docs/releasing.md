@@ -29,6 +29,8 @@ The installers use no release-signing secrets: Windows is unsigned, macOS uses a
 
 The first release is `1.0.0`; later stable releases increment the patch. A deliberately higher stable manifest version, or the workflow's explicit version input, selects a minor or major release. The automation aligns the dsh workspace manifests and lockfile in one version commit on `master`, then atomically pushes it with `v<version>` and `dsh-v<version>` tags. Vendored and native package versions retain their independent sequences.
 
+`package.json` declares the official plugin API baseline in `dshApiVersion`, independently of the Neurix release version. Keep that value aligned across DSH workspace manifests when synchronizing upstream; workspace constraints reject missing or mismatched declarations. [Plugin requirement checks](../packages/boot/app-boot/README.md#profiles) use this baseline and retain exact Neurix release pins.
+
 Version reservation uses the latest `master` so a concurrent merge cannot be overwritten. The version commit records the triggering merge; retrying that workflow reuses its immutable tags. If a platform fails, fix the failure before another stable merge, or rerun the failed jobs for a transient infrastructure failure. A reserved version is not reused for different source. A published Release is not overwritten.
 
 For a build rehearsal, run the release workflow manually with **validation_only** enabled. Select a platform or all platforms; it builds the selected branch and uploads Actions artifacts without writing versions, tags, or Releases. Manual publication requires selecting `master` and disabling **validation_only**. To inspect local version selection without changes, run:

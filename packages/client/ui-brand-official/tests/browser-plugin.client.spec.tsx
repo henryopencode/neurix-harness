@@ -7,9 +7,15 @@ import { apply, inject } from '../src/client/index.ts'
 import { OfficialBrandMark, OfficialBrandName } from '../src/client/Brand.tsx'
 import { apply as hostApply } from '../src/index.ts'
 
-afterEach(() => {
+const contexts = new Set<Context>()
+
+afterEach(async () => {
   cleanup()
+  for (const ctx of contexts) await ctx.fiber.dispose()
+  contexts.clear()
   vi.unstubAllEnvs()
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 const HOLES = [
@@ -18,14 +24,19 @@ const HOLES = [
 ] as const
 
 const HERO_HOLE = 'conversation.hero.brand.mark'
+const FRAME_HOLE = 'conversation.hero.frame'
 
 async function bench(declare = true) {
   const ctx = new Context()
+  contexts.add(ctx)
   await ctx.plugin(SlotRegistry).await()
   const slots = ctx.get('slots') as SlotRegistry
   const declareHoles = () => slots.register({
     name: 'root',
-    children: Object.fromEntries([...HOLES, HERO_HOLE].map(name => [name, { kind: 'single', scope: 'root' }])),
+    children: Object.fromEntries([...HOLES, FRAME_HOLE, HERO_HOLE].map(name => [name, {
+      kind: name === 'conversation.hero.frame' ? 'hoc' : 'single',
+      scope: 'root',
+    }])),
   } as never, () => null)
   const disposeHoles = declare ? declareHoles() : undefined
   return { ctx, slots, declareHoles, disposeHoles }
@@ -40,11 +51,13 @@ describe('official browser-brand plugin', () => {
     expect(inject).toEqual(['slots'])
   })
 
-  it('leaves every slot empty outside the official build profile', async () => {
+  it('keeps local sidebar branding and leaves home decorations to the shell', async () => {
     vi.stubEnv('DSH_CLIENT_BUILD_PROFILE', 'local')
     const subject = await bench()
     await subject.ctx.plugin({ inject: [...inject], apply }).await()
-    for (const hole of HOLES) expect(subject.slots.entries(hole)).toHaveLength(0)
+    expect(subject.slots.entries('sidebar.brand.mark')).toHaveLength(0)
+    expect(subject.slots.entries('sidebar.brand.name')).toHaveLength(0)
+    expect(subject.slots.entries(FRAME_HOLE)).toHaveLength(0)
   })
 
   it('fills declarations before or after apply and removes every occupant on teardown', async () => {
@@ -76,6 +89,19 @@ describe('official browser-brand plugin', () => {
     const subject = await bench()
     await subject.ctx.plugin({ inject: [...inject], apply }).await()
     expect(subject.slots.entries(HERO_HOLE)).toHaveLength(0)
+  })
+
+  it('keeps the declaring home decorations and hero mark in official builds', async () => {
+    vi.stubEnv('DSH_CLIENT_BUILD_PROFILE', 'official')
+    const subject = await bench()
+    const fiber = subject.ctx.plugin({ inject: [...inject], apply })
+    try {
+      await fiber.await()
+      expect(subject.slots.entries(FRAME_HOLE)).toHaveLength(0)
+      expect(subject.slots.entries(HERO_HOLE)).toHaveLength(0)
+    } finally {
+      await fiber.dispose()
+    }
   })
 
   it('renders the official name independently from both requested mark sizes', () => {
