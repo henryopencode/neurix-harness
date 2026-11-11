@@ -31,9 +31,7 @@ Run `dsh --profile web` for browser chat, model and settings management, and ses
 
 Start the GUI, open your browser, and start talking to the agent. The flags fine-tune the invocation.
 
-The **MCP** sidebar page manages global MCP servers and shows live connection states and tools. See the [MCP manager](../../client/ui-mcp/README.md) for configuration and recovery.
-
-The Web composition uses provider-neutral setup and ordering. The optional `ui-deepseek-model-label-1017` entry is disabled by default; a profile overlay can set `disabled: false` to enable its release badge.
+[Agent Teams UI](../../client/ui-agent-team/README.md) loads with this bundle. Enable it per Session in the model and reasoning menu; shared tasks open below the member tree from the Subagent control.
 
 ### Starting the Web GUI
 

@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import semver from 'semver'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { evaluatePluginCompatibility, getDshRuntimeVersion, pluginCompatibilityWarning } from '../src/plugin-compatibility.ts'
+import { evaluatePluginCompatibility, getDshApiVersion, getDshRuntimeVersion, pluginCompatibilityWarning } from '../src/plugin-compatibility.ts'
 
 const runtime = '0.1.7-alpha.1'
 const identity = { name: '@example/plugin', version: '2.0.0' }
@@ -46,6 +46,35 @@ describe('dsh runtime version', () => {
 })
 
 describe('plugin compatibility', () => {
+  it('uses the declared official API baseline while retaining the distribution release identity', () => {
+    vi.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ version: '1.1.7', dshApiVersion: '0.2.2-rc.1' }))
+    expect(getDshRuntimeVersion()).toBe('1.1.7')
+    expect(getDshApiVersion()).toBe('0.2.2-rc.1')
+    expect(evaluatePluginCompatibility({ ...identity, peerDependencies: { '@deepseek-ai/dsh-settings': '^0.2.1-rc.1' } })).toBeUndefined()
+    expect(evaluatePluginCompatibility({ ...identity, peerDependencies: { '@deepseek-ai/dsh-settings': '1.1.7' } })).toBeUndefined()
+    const issue = evaluatePluginCompatibility({ ...identity, engines: { dsh: '>=0.3.0' } })
+    expect(issue).toEqual({ ...identity, runtimeVersion: '1.1.7', apiVersion: '0.2.2-rc.1',
+      requirements: { 'engines.dsh': '>=0.3.0' }, exempted: false })
+    expect(pluginCompatibilityWarning(issue!)).toContain('1.1.7 (official API 0.2.2-rc.1)')
+  })
+
+  it('keeps incompatible-plugin grants tied to the exact distribution release', () => {
+    vi.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ version: '1.1.7', dshApiVersion: '0.2.2-rc.1' }))
+    const plugin = { ...identity, engines: { dsh: '>=0.3.0' } }
+    expect(evaluatePluginCompatibility(plugin, { '@example/plugin@2.0.0': ['0.2.2-rc.1'] })?.exempted).toBe(false)
+    expect(evaluatePluginCompatibility(plugin, { '@example/plugin@2.0.0': ['1.1.7'] })?.exempted).toBe(true)
+  })
+
+  it('uses the release version when an installation declares no separate API baseline', () => {
+    vi.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ version: runtime }))
+    expect(getDshApiVersion()).toBe(runtime)
+  })
+
+  it.each([null, 1, '', 'not-semver'])('rejects an invalid declared API baseline: %j', (dshApiVersion) => {
+    vi.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ version: '1.1.7', dshApiVersion }))
+    expect(() => evaluatePluginCompatibility({})).toThrow('Invalid dsh API compatibility version')
+  })
+
   it('defaults to the installed runtime and needs no identity without mismatches', () => {
     expect(evaluatePluginCompatibility({})).toBeUndefined()
     expect(evaluatePluginCompatibility({ peerDependencies: { '@deepseek-ai/dsh': getDshRuntimeVersion() } })).toBeUndefined()

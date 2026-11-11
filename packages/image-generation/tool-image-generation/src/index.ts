@@ -1,6 +1,6 @@
 /** Opt-in text-to-image tool over OpenAI-compatible or MiniMax endpoints and durable attachments. @module */
 
-import type { Context, Fiber, Volatile } from '@deepseek-ai/cordis'
+import type { Context, Volatile } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -244,9 +244,9 @@ export function apply(ctx: Context, config: Config): void {
       }, { keepInbox: true })
     }
   })
-  ctx.on('internal/config', function (this: Fiber, _raw, next) {
+  ctx.on('internal/config', (fiber, next) => {
     const raw: unknown = next()
-    if (this === ctx.fiber) {
+    if (fiber === ctx.fiber) {
       const candidate = Config(raw as Options)
       assertConfig(resolveConfig(candidate), candidate.enabled.get())
     }

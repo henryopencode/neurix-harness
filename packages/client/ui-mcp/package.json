@@ -2,6 +2,7 @@
   "name": "@deepseek-ai/dsh-client-ui-mcp",
   "description": "Inspect MCP servers and manage their connections from an independent sidebar page",
   "version": "1.1.7",
+  "dshApiVersion": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },
@@ -65,7 +66,7 @@
     "react-dom": "^18.2.0",
     "@testing-library/react": "^16.3.3",
     "@deepseek-ai/dsh-client-test-runtime": "workspace:*",
-    "@deepseek-ai/dsh-mcp-manager": "workspace:*",
+    "@deepseek-ai/dsh-mcp-config-manager": "workspace:*",
     "@deepseek-ai/dsh-typert-protocol": "workspace:*"
   },
   "files": [

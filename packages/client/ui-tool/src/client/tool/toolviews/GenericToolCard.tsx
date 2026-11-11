@@ -1,3 +1,4 @@
+import type { ContextMenuTriggerProps } from '@deepseek-ai/dsh-client-ui-context-menu/client'
 import type { ReactNode } from 'react'
 import {
   IconApiOutlineRegular, IconBrowseOutlineRegular, IconCodeOutlineRegular, IconEditOutlineRegular, IconSearchOutlineRegular,
@@ -27,12 +28,16 @@ const VARIANT_ICONS: Record<ToolRowVariant, ReactNode> = {
 /** Card props: the owner payload plus the render site's locale seat (plain prop). */
 export type GenericToolCardProps = ToolCallOwnerProps & {
   t: ToolTreeProps['t']
-  /** Text consumed by a validated image gallery; omits serialized attachment objects from row details. */
+  /** Text consumed by a validated image gallery; omits serialized attachments from details. */
   resultText?: string | undefined
+  /** Bind the recorded file to the original Session. */
+  getFileTriggerProps: (path: string) => ContextMenuTriggerProps
 }
 
 /** @param props - current tool stage and locale. @returns its preparation or dispatched card. */
-export function GenericToolCard({ toolName, block, cwd, home, openFile, inspect, useDisclosure, t, resultText }: GenericToolCardProps) {
+export function GenericToolCard({
+  toolName, block, cwd, home, openFile, getFileTriggerProps, inspect, useDisclosure, t, resultText,
+}: GenericToolCardProps) {
   const model = toolRowModel(toolName, block, cwd, home)
   const autoReview = model.autoReviewDenial === null
     ? null
@@ -50,6 +55,7 @@ export function GenericToolCard({ toolName, block, cwd, home, openFile, inspect,
   const singleFile = model.filePath !== undefined
   return (
     <ToolRow
+      fileContextMenuProps={model.filePath === undefined ? undefined : getFileTriggerProps(model.filePath)}
       useDisclosure={useDisclosure}
       t={t}
       variant={model.variant}

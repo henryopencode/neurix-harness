@@ -25,5 +25,6 @@ export class ManagementFailure extends Error {
  * @returns The package, runtime, and unmet DSH requirements.
  */
 export function incompatiblePlugin(issue: PluginCompatibility): IncompatiblePlugin {
-  return { name: issue.name, version: issue.version, runtimeVersion: issue.runtimeVersion, requirements: issue.requirements }
+  return { name: issue.name, version: issue.version, runtimeVersion: issue.runtimeVersion, requirements: issue.requirements,
+    ...(issue.apiVersion === undefined ? {} : { apiVersion: issue.apiVersion }) }
 }

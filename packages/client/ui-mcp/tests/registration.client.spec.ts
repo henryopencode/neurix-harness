@@ -13,7 +13,7 @@ async function bench(allowed = true) {
   onTestFinished(async () => { await ctx.fiber.dispose() })
   await ctx.plugin(SlotRegistry).await()
   ctx.provide('locale', new LocaleRuntime(ctx))
-  new TestRemote(ctx, { mcpManager: {} })
+  new TestRemote(ctx, { mcpConfigManager: {} })
   new StaticRemoteAccess(ctx, () => allowed)
   const slots = ctx.get('slots') as SlotRegistry
   slots.register({ name: 'root', children: {

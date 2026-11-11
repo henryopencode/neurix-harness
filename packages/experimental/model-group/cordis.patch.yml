@@ -1,5 +1,11 @@
+- id: agent-team
+  disabled: true
+
+- id: tool-agent-team
+  disabled: true
+
 - insert:
-    - id: agent-team
+    - id: legacy-agent-team
       name: '@deepseek-ai/dsh-experimental-agent-team'
     - id: model-group
       name: '@deepseek-ai/dsh-experimental-model-group-runtime'

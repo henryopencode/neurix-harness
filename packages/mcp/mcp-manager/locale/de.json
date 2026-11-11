@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "MCP-Serververwaltung",
-    "description": "Globale MCP-Servereinstellungen speichern und Verbindungszustände sowie registrierte Werkzeuge anzeigen."
+    "description": "Verwaltet die MCP-Server, die in den Einstellungen konfiguriert oder von Plugins registriert wurden, und meldet ihren Verbindungsstatus."
   }
 }

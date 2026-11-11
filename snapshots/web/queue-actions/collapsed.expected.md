@@ -11,6 +11,8 @@
   - button "Jump to turn 1"
 - text: Reply with a one-sentence description of event sourcing, then stop. {{clock}}
 - button "Copy"
+- button "Context injection runtime-context"
+- button "Context injection time-context"
 - paragraph: partial
 - status: Working
 - text: Working for {{duration}} ···

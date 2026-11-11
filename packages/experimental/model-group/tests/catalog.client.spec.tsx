@@ -1,3 +1,4 @@
+import { contextMenuHook } from '@deepseek-ai/dsh-client-test-runtime'
 // @vitest-environment jsdom
 /** Group members are selected from the shared configured model catalog. */
 import { afterEach, expect, it, vi } from 'vitest'
@@ -28,7 +29,7 @@ it('selects an exact configured route and repairs the leader when removing it', 
   const standard = {
     usePanelInfo: unusedHook, useSessions: unusedHook, useWorkspaces: unusedHook,
     useSessionStatus: unusedHook, useSessionRetainInfo: unusedHook, useResource: unusedHook,
-    ...allowAllAccess,
+    ...allowAllAccess, useContextMenu: contextMenuHook(),
   }
   render(<GroupSettings view="page" t={makeTranslate(zh)} useGroupSettings={bindSnapshotSelector(settings)}
     useGroupCatalog={bindSnapshotSelector(directory)} refreshCatalog={vi.fn()} setMembers={setMembers}

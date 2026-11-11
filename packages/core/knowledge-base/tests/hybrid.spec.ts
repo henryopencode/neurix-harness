@@ -3,13 +3,16 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
+import { nativeKnowledgeAvailable } from './native-platform.ts'
 import { z } from 'zod'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import { KnowledgeIndex } from '../src/engine.ts'
 import { resolveConfig } from '../src/config.ts'
 import type { KnowledgeSpace } from '../src/types.ts'
 
-it('uses the configured LangChain embedding provider with native LanceDB hybrid retrieval', async () => {
+const nativeIt = it.skipIf(!nativeKnowledgeAvailable)
+
+nativeIt('uses the configured LangChain embedding provider with native LanceDB hybrid retrieval', async () => {
   const requests: string[] = []
   const pending = new Set<Promise<void>>()
   async function respond(request: IncomingMessage, response: ServerResponse): Promise<void> {
@@ -55,7 +58,7 @@ it('uses the configured LangChain embedding provider with native LanceDB hybrid 
   }
 })
 
-it('awaits an in-flight source read during disposal and prevents late document publication', async () => {
+nativeIt('awaits an in-flight source read during disposal and prevents late document publication', async () => {
   const path = await mkdtemp(join(tmpdir(), 'knowledge-drain-'))
   const config = resolveConfig({ path })
   const index = new KnowledgeIndex(config)

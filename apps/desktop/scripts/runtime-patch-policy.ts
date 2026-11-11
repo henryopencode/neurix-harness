@@ -20,6 +20,8 @@ export const DESKTOP_RUNTIME_PATCHES: Readonly<Record<string, DesktopRuntimePatc
   '@deepseek-ai/libreoffice-kit@0.1.5': { scope: 'runtime-only',
     path: 'apps/desktop/patches/libreoffice-kit-asar-stat.patch',
     reason: 'Electron ASAR returns null for a missing stat; Linux must retain the WASM fallback.' },
+  'mdast-util-gfm-autolink-literal@2.0.1': { scope: 'workspace-only', reason: 'The patched Markdown parser is embedded in the client bundle.' },
+  'micromark-extension-gfm-autolink-literal@2.1.0': { scope: 'workspace-only', reason: 'The patched Markdown parser is embedded in the client bundle.' },
   'node-pty@1.2.0-beta.15': { scope: 'shared', reason: 'Runtime terminals need helper resolution and Windows worker cleanup.' },
 }
 

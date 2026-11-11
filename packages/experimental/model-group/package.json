@@ -2,6 +2,7 @@
   "name": "@deepseek-ai/dsh-experimental-model-group",
   "description": "Model group chats with a configurable leader, direct mentions and shared tasks",
   "version": "1.1.7",
+  "dshApiVersion": "0.2.2-rc.1",
   "type": "module",
   "license": "MIT",
   "publishConfig": {

@@ -47,7 +47,7 @@ export function apply(ctx: Context): void {
       const state = ctx.sessions.list.getSnapshot()
       const parent = state.byId[id]?.parentId
       return parent !== undefined && groupOf(parent)?.mode === 'multi'
-        && state.projectionsBySession[parent]?.values.agentTeam?.members.some(member => member.id === id && member.coordinationOwner === 'model-group') === true
+        && state.projectionsBySession[parent]?.values.legacyAgentTeam?.members.some(member => member.id === id && member.coordinationOwner === 'model-group') === true
     },
     subscribe: listener => ctx.sessions.list.subscribe(listener),
   }), 'model-group: leader model selection')
@@ -59,7 +59,7 @@ export function apply(ctx: Context): void {
   ctx.effect(() => ctx.uiConversation.stops.register({
     id: 'model-group',
     owns: id => groupOf(id)?.mode === 'multi',
-    active: id => ctx.sessions.list.getSnapshot().projectionsBySession[id]?.values.agentTeam?.members.some(member =>
+    active: id => ctx.sessions.list.getSnapshot().projectionsBySession[id]?.values.legacyAgentTeam?.members.some(member =>
       member.coordinationOwner === 'model-group' && ctx.uiSession.sessionStatus.getSnapshot().get(member.id)?.running === true) === true,
     subscribe: (listener) => {
       const offList = ctx.sessions.list.subscribe(listener)

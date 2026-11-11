@@ -22,7 +22,9 @@ const WORKSPACE_MANIFESTS = [
  *
  * A single-config project is neutral and may participate in either graph. Once
  * a package declares both face configs, every reachable reference must name
- * the leaf matching the aggregate from which traversal began.
+ * the leaf matching the referencing compiler face. The API Remote assembly may
+ * reference the Git Host metadata producer; its generated `/remote` entry imports
+ * only shared DTOs and does not load the Git UI or Host implementation.
  *
  * @param root - Repository root containing both aggregate tsconfigs.
  * @returns Repo-relative diagnostics for every mismatched reference edge.
@@ -48,7 +50,7 @@ export function collectProjectReferenceFaceViolations(root: string): string[] {
           continue
         }
         const expected = resolve(splitRoot, `tsconfig.${face}.json`)
-        if (targetConfig !== expected) {
+        if (targetConfig !== expected && !isRemoteMetadataReference(root, configPath, targetConfig)) {
           violations.push(
             `${repoPath(root, configPath)}: Project Reference ${JSON.stringify(reference)} enters split project ${repoPath(root, splitRoot)} from a ${faceLabel(face)} config; reference ${JSON.stringify(repoPath(root, expected))} instead`,
           )
@@ -60,6 +62,11 @@ export function collectProjectReferenceFaceViolations(root: string): string[] {
   }
 
   return violations.sort()
+}
+
+function isRemoteMetadataReference(root: string, source: string, target: string): boolean {
+  return repoPath(root, source) === 'packages/api/remotes/tsconfig.client.json'
+    && repoPath(root, target) === 'packages/client/ui-git-branch/tsconfig.host.json'
 }
 
 function splitProjectRoots(root: string): string[] {

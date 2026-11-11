@@ -25,6 +25,8 @@ English | [中文](README.zh.md)
 <a id="use-this-package"></a>
 ## Use this package
 
+This bundle selects the named-teammate tools and Team transcript. Disable it to use the built-in Team mode.
+
 ### Install into a profile
 
 Add the package to an initialized profile, then run a task that asks the Lead to delegate work:

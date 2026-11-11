@@ -1,3 +1,4 @@
+import { contextMenuHook } from '@deepseek-ai/dsh-client-test-runtime'
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -36,7 +37,7 @@ function fixture(value: Dashboard = dashboard) {
     t: makeTranslate(en), useView: select => select(view), useWorkspaces: select => select(workspaces),
     useResource: resources as KnowledgePageProps['useResource'],
     useSessions: unused, usePanelInfo: unused, useSessionStatus: unused, useSessionRetainInfo: unused,
-    ...allowAllAccess,
+    ...allowAllAccess, useContextMenu: contextMenuHook(),
     selectWorkspace: vi.fn(), search: vi.fn(), page: vi.fn(), refresh: vi.fn(),
     upload: vi.fn<KnowledgePageProps['upload']>(async () => 'done'), remove: vi.fn(async () => true), report: vi.fn(),
   }
