@@ -262,8 +262,10 @@ describe('release pack CLI', () => {
 
   it('does not broaden an empty parallel family to the whole workspace', async () => {
     const root = fixture()
-    packageFixture(root, 'vendor/private', '@deepseek-ai/private', { private: true })
-    packageFixture(root, 'native/unselected', '@deepseek-ai/unselected')
+    // pnpm may prepare a fresh workspace before exec; only pack hooks identify an unintended pack here.
+    const scripts = { prepack: 'node hook.cjs prepack', postpack: 'node hook.cjs postpack' }
+    packageFixture(root, 'vendor/private', '@deepseek-ai/private', { private: true, scripts })
+    packageFixture(root, 'native/unselected', '@deepseek-ai/unselected', { scripts })
 
     const result = await runPack(root, ['--concurrency', '8'])
 

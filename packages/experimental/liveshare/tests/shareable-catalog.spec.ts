@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { onTestFinished } from 'vitest'
 import { describe, expect, it } from 'vitest'
+import type {} from '@deepseek-ai/dsh-experimental-client-ui-forge'
 import {
   EXCLUDED_SHARE_NAMESPACES,
   packageRoot,
