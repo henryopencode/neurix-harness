@@ -74,6 +74,7 @@
     "@deepseek-ai/dsh-scope": "workspace:*"
   },
   "devDependencies": {
+    "@deepseek-ai/dsh-experimental-client-ui-forge": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/cordis-plugin-loader": "workspace:~",
     "@deepseek-ai/dsh-agent": "workspace:*",
