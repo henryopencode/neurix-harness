@@ -11,6 +11,8 @@ readonly BUBBLEWRAP_SHA256='db4d572a7927bfd34cc9b8e24b56983efa8e0483d03da6c810f6
 readonly BUBBLEWRAP_URL="https://launchpad.net/ubuntu/+source/bubblewrap/${BUBBLEWRAP_VERSION}/+build/33546835/+files/bubblewrap_${BUBBLEWRAP_VERSION}_amd64.deb"
 # Ubuntu's archive serves the same pinned payload when Launchpad is unavailable.
 readonly BUBBLEWRAP_MIRROR_URL="https://archive.ubuntu.com/ubuntu/pool/main/b/bubblewrap/bubblewrap_${BUBBLEWRAP_VERSION}_amd64.deb"
+# An independent mirror remains reachable during Canonical DNS outages.
+readonly BUBBLEWRAP_INDEPENDENT_MIRROR_URL="https://mirrors.kernel.org/ubuntu/pool/main/b/bubblewrap/bubblewrap_${BUBBLEWRAP_VERSION}_amd64.deb"
 
 : "${RUNNER_TEMP:?prepare-ci-bubblewrap requires RUNNER_TEMP}"
 : "${GITHUB_PATH:?prepare-ci-bubblewrap requires GITHUB_PATH}"
@@ -24,7 +26,7 @@ archive="${RUNNER_TEMP}/bubblewrap_${BUBBLEWRAP_VERSION}_amd64.deb"
 root="${RUNNER_TEMP}/dsh-bubblewrap"
 
 downloaded=false
-for url in "$BUBBLEWRAP_MIRROR_URL" "$BUBBLEWRAP_URL"; do
+for url in "$BUBBLEWRAP_MIRROR_URL" "$BUBBLEWRAP_INDEPENDENT_MIRROR_URL" "$BUBBLEWRAP_URL"; do
   if curl --fail --silent --show-error --location --connect-timeout 10 --max-time 45 \
     --retry 1 --retry-all-errors --retry-max-time 60 --output "$archive" "$url"; then
     downloaded=true
