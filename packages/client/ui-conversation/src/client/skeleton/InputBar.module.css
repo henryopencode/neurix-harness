@@ -395,9 +395,6 @@
   cursor: default;
 }
 
-/* Primary send (figma IconButton 34:10465): 34px circle, #3964FE light /
-   #679EFE dark — the info-fill pair (500→400), NOT button-primary (ink);
-   white glyph; empty text = 0.4 opacity. */
 .primary {
   display: grid;
   place-items: center;
@@ -407,16 +404,10 @@
   border: none;
   border-radius: 999px;
   corner-shape: round;
-  background: var(--dsw-alias-button-primary-fill);
-  /* Static white, not the foreground token: the arrow stays white on the blue
-     fill in both themes (design 34:10465). */
-  color: var(--dsw-alias-label-primary-foreground);
+  background: var(--dsw-alias-composer-action-fill);
+  color: var(--dsw-alias-composer-action-foreground);
   cursor: pointer;
   transition: background-color 100ms ease;
-  /* Opts out of the row's 2px downward shift (.row top pad): the send circle
-     keeps its original seat while the smaller chips sit lower. Transform, not
-     margin, so flex centering math is untouched. */
-  transform: none;
 }
 
 /* Solid artwork uses a smaller footprint than the thin send arrow. */
@@ -426,7 +417,7 @@
 
 @media (hover: hover) {
   .primary:hover:not(:disabled) {
-    background: var(--dsw-alias-button-primary-hover);
+    background: var(--dsw-alias-composer-action-hover);
   }
 }
 
