@@ -6,6 +6,7 @@
  * experimental name only through this map.
  */
 export const EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS: Readonly<Record<string, string>> = {
+  'packages/experimental/voice-chat': '@deepseek-ai/dsh-voice-chat',
   'packages/experimental/cua': '@deepseek-ai/dsh-cua',
   'packages/experimental/cua-bundle': '@deepseek-ai/dsh-cua-bundle',
   'packages/experimental/tool-session-query': '@deepseek-ai/dsh-tool-session-query',

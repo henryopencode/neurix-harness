@@ -5047,6 +5047,20 @@ export type ApprovalPolicy = 'ask' | 'never'
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-user-approval -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-voice-chat -->
+<a id="deepseek-aidsh-voice-chat"></a>
+
+## `@deepseek-ai/dsh-voice-chat`
+
+- `inject`: `subprocess` · `typert`
+- `source`: [`packages/experimental/voice-chat/src/config.ts:35`](../packages/experimental/voice-chat/src/config.ts)
+
+```ts config-catalog
+/** Validated local speech configuration. */
+export type Config = ReturnType<typeof Config>
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-voice-chat -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-web -->
 <a id="deepseek-aidsh-web"></a>
 

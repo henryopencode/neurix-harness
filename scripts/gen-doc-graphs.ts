@@ -401,6 +401,13 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Validates bounded browser audio before provider dispatch.',
   },
   {
+    key: 'voiceChat',
+    pkg: 'voice-chat',
+    title: 'Local voice conversation Remote',
+    mode: 'service',
+    note: 'Selects local Breeze weights, owns explicit preparation and cancellable PCM synthesis, and serves the browser voice controls.',
+  },
+  {
     key: 'sessionController',
     pkg: 'api-session-controller',
     title: 'Host Session Remote controller',

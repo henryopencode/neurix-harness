@@ -1,0 +1,32 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types",
+    "tsBuildInfoFile": "lib/tsconfig.host.tsbuildinfo"
+  },
+  "references": [
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../../vendor/schemastery"
+    },
+    {
+      "path": "../../typert/protocol"
+    },
+    {
+      "path": "../../util/timeout"
+    },
+    {
+      "path": "../../subprocess/subprocess"
+    }
+  ],
+  "files": [
+    "src/index.ts",
+    "src/config.ts",
+    "src/hardware.ts",
+    "src/runtime.ts",
+    "src/types.ts"
+  ]
+}

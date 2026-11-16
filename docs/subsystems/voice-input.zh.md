@@ -26,6 +26,12 @@ Host Provider 在页面和 Session 变化期间拥有同一个准备任务。Cli
 
 麦克风占用模型选择器与发送按钮之间的 `conversation.input.activity`。点击开始录音并展开工具栏；停止后转写并插入草稿。活动栏保留编辑器与提交按钮，拥有局部反馈，并在卸载时释放展开状态。取消、Escape 或隐藏页面会丢弃录音。波形历史展示实测麦克风音量。Bundle 详情包含识别偏好、准备状态和进度。显式启用时通过 `plugins.bundle.activation` 引导缺少模型的用户前往安装；列表只显示 Bundle 描述和开关。
 
+## 实时语音对话
+
+可选的[实时语音插件](../../packages/experimental/voice-chat/README.zh.md)提供按静音分段自动提交和 Breeze TTS 2 流式播报。硬件选型与显式准备由 Host 拥有；录音与打断由浏览器拥有。助手语音派生自现有 Chat 快照，识别文字通过普通提交写入 Session 日志。切换 Session、隐藏页面、断开连接或插件卸载会停止语音模式。结束语音模式后，文字智能体继续运行。
+
+`VoiceStatus` 报告按硬件选择的 `VoiceModel`、准备操作、模型字节进度和分类错误。`VoiceHardware` 记录原生架构与物理内存，包括通过 Rosetta 检测到的 Apple Silicon。`VoiceOptions` 提供有界的采样时钟检测和语音队列设置。`VoiceAudio` 通过规范 base64 携带单声道 24 kHz PCM16 分片；取消会丢弃排队音频并等待工作进程终止。准备状态观察者不拥有或取消 Host 的下载任务。
+
 ## 设计依据
 
 [语音输入决策](../../.agents/notes/implemented/architecture/2026-09-16-experimental-voice-input.zh.md)解释临时音频、显式 Provider 选择和延迟准备本地运行时。
@@ -161,4 +167,44 @@ async transcribe(spec: SpeechSpec, signal: AbortSignal): Promise<Transcript>
 ```
 
 Source: [`packages/experimental/speech-to-text/src/index.ts`](../../packages/experimental/speech-to-text/src/index.ts)
+
+<a id="ctxvoicechat--voicechat"></a>
+
+### `ctx.voiceChat` — `VoiceChat`
+
+Owns one model worker; downloads and Python installation require prepare().
+
+```ts cordis-catalog
+/**
+ * Observe hardware selection and preparation without starting downloads.
+ * @param signal - browser observation lifetime, independent of the preparation task.
+ * @returns complete initial and subsequent coalesced states.
+ */
+@Remote({ mode: 'stream' }) async *follow(signal: AbortSignal): AsyncIterable<VoiceStatus>
+
+/**
+ * Read the deployment's utterance and playback limits.
+ * @returns browser turn-detection options; no microphone or model is activated.
+ */
+@Remote options(): VoiceOptions
+
+/** Start or join explicit local runtime and model preparation; failures appear in follow(). */
+@Remote prepare(): void
+
+/**
+ * Cancel preparation and join its cleanup; verified files remain reusable.
+ * @returns after the shared preparation settles.
+ */
+@Remote async cancelPreparation(): Promise<void>
+
+/**
+ * Speak one bounded plain-text segment with the prepared local model.
+ * @param text - one sentence or bounded fragment of the assistant's visible answer.
+ * @param signal - playback cancellation; stopping inference reclaims and joins the worker.
+ * @returns mono 24 kHz PCM16 fragments. Partial failures reject and never report success.
+ */
+@Remote({ mode: 'stream' }) async *synthesize(text: string, signal: AbortSignal): AsyncIterable<VoiceAudio>
+```
+
+Source: [`packages/experimental/voice-chat/src/index.ts`](../../packages/experimental/voice-chat/src/index.ts)
 <!-- END GENERATED cordis-surface -->

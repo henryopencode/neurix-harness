@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-desktop-host",
   "description": "Private Node-mode host process for the Electron desktop application",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "dshApiVersion": "0.2.2-rc.1",
   "private": true,
   "license": "MIT",

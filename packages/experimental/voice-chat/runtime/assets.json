@@ -1,0 +1,170 @@
+{
+  "uv": {
+    "name": "uv-aarch64-apple-darwin.tar.gz",
+    "url": "https://github.com/astral-sh/uv/releases/download/0.13.8/uv-aarch64-apple-darwin.tar.gz",
+    "bytes": 14375545,
+    "sha256": "6b71028a6b904f2ae3340ef52e595512de807d06c0a20eaef2f692581b246558"
+  },
+  "models": {
+    "mlx-4bit": [
+      {
+        "name": "LICENSE",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit/resolve/3a06d26b172ea4ae1da2f42d708383e9c79d5526/LICENSE",
+        "bytes": 18856,
+        "sha256": "2a143ae167cb0253d95bafa694e415570dcce336d712230d205c538523bbd855"
+      },
+      {
+        "name": "NOTICE",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit/resolve/3a06d26b172ea4ae1da2f42d708383e9c79d5526/NOTICE",
+        "bytes": 146,
+        "sha256": "70bc248b98e5bb527f160c86be56d60ef8c63776c43051273643db036ebee40d"
+      },
+      {
+        "name": "audio_tokenizer/config.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit/resolve/3a06d26b172ea4ae1da2f42d708383e9c79d5526/audio_tokenizer/config.json",
+        "bytes": 2336,
+        "sha256": "ee65bb901c876664ab8707c487157aa1a6ee57c65969b28fb5ec9dc211e68167"
+      },
+      {
+        "name": "audio_tokenizer/configuration.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit/resolve/3a06d26b172ea4ae1da2f42d708383e9c79d5526/audio_tokenizer/configuration.json",
+        "bytes": 76,
+        "sha256": "6bc26d64eb5024b4d1dab5a52371958b429256d6c9d59787f1f5294a54e0cebd"
+      },
+      {
+        "name": "audio_tokenizer/model.safetensors",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit/resolve/3a06d26b172ea4ae1da2f42d708383e9c79d5526/audio_tokenizer/model.safetensors",
+        "bytes": 682293092,
+        "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258"
+      },
+      {
+        "name": "audio_tokenizer/preprocessor_config.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit/resolve/3a06d26b172ea4ae1da2f42d708383e9c79d5526/audio_tokenizer/preprocessor_config.json",
+        "bytes": 234,
+        "sha256": "fcb3805e597e786d4067706e602f6688524640f8d3396790e2e09b5942fcbdfb"
+      },
+      {
+        "name": "config.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit/resolve/3a06d26b172ea4ae1da2f42d708383e9c79d5526/config.json",
+        "bytes": 12379,
+        "sha256": "f6871e70a5e937cf23f8ca6eb252ea377c9e489f87f3f7c70b76066ff5768bdf"
+      },
+      {
+        "name": "generation_config.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit/resolve/3a06d26b172ea4ae1da2f42d708383e9c79d5526/generation_config.json",
+        "bytes": 251,
+        "sha256": "2ef3f2c0ab8d9ad241059138a795433c5410fd9954efb9625674ecd2a9529434"
+      },
+      {
+        "name": "model.safetensors",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit/resolve/3a06d26b172ea4ae1da2f42d708383e9c79d5526/model.safetensors",
+        "bytes": 2325487160,
+        "sha256": "e8499e75e043b16d0734897869a124198aca2fa88436eb83c855d58a39fdac0a"
+      },
+      {
+        "name": "model.safetensors.index.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit/resolve/3a06d26b172ea4ae1da2f42d708383e9c79d5526/model.safetensors.index.json",
+        "bytes": 98863,
+        "sha256": "fe6889d333789126501d6f3c5aa9fe198b00477403c7c1507d86f8cf3b32e381"
+      },
+      {
+        "name": "special_tokens_map.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit/resolve/3a06d26b172ea4ae1da2f42d708383e9c79d5526/special_tokens_map.json",
+        "bytes": 886,
+        "sha256": "194f265bb588d142a16f27d9576104eb3dab3d7ba9961541d2d6e3d5e77e6470"
+      },
+      {
+        "name": "tokenizer.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit/resolve/3a06d26b172ea4ae1da2f42d708383e9c79d5526/tokenizer.json",
+        "bytes": 33386945,
+        "sha256": "d3ec9ac3eb2392389b9f5112e85d8b43316494addb587ba7b7a9d61eac23af96"
+      },
+      {
+        "name": "tokenizer_config.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit/resolve/3a06d26b172ea4ae1da2f42d708383e9c79d5526/tokenizer_config.json",
+        "bytes": 1157960,
+        "sha256": "2c084fd6725c2284e8aa6da095a8d036d48fe79665595bfcd50371821b620e44"
+      }
+    ],
+    "mlx-8bit": [
+      {
+        "name": "LICENSE",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-8bit/resolve/c6e4a2ff6ab9afba68b7853de802273ffe23fb49/LICENSE",
+        "bytes": 18856,
+        "sha256": "2a143ae167cb0253d95bafa694e415570dcce336d712230d205c538523bbd855"
+      },
+      {
+        "name": "NOTICE",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-8bit/resolve/c6e4a2ff6ab9afba68b7853de802273ffe23fb49/NOTICE",
+        "bytes": 146,
+        "sha256": "70bc248b98e5bb527f160c86be56d60ef8c63776c43051273643db036ebee40d"
+      },
+      {
+        "name": "audio_tokenizer/config.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-8bit/resolve/c6e4a2ff6ab9afba68b7853de802273ffe23fb49/audio_tokenizer/config.json",
+        "bytes": 2336,
+        "sha256": "ee65bb901c876664ab8707c487157aa1a6ee57c65969b28fb5ec9dc211e68167"
+      },
+      {
+        "name": "audio_tokenizer/configuration.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-8bit/resolve/c6e4a2ff6ab9afba68b7853de802273ffe23fb49/audio_tokenizer/configuration.json",
+        "bytes": 76,
+        "sha256": "6bc26d64eb5024b4d1dab5a52371958b429256d6c9d59787f1f5294a54e0cebd"
+      },
+      {
+        "name": "audio_tokenizer/model.safetensors",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-8bit/resolve/c6e4a2ff6ab9afba68b7853de802273ffe23fb49/audio_tokenizer/model.safetensors",
+        "bytes": 682293092,
+        "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258"
+      },
+      {
+        "name": "audio_tokenizer/preprocessor_config.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-8bit/resolve/c6e4a2ff6ab9afba68b7853de802273ffe23fb49/audio_tokenizer/preprocessor_config.json",
+        "bytes": 234,
+        "sha256": "fcb3805e597e786d4067706e602f6688524640f8d3396790e2e09b5942fcbdfb"
+      },
+      {
+        "name": "config.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-8bit/resolve/c6e4a2ff6ab9afba68b7853de802273ffe23fb49/config.json",
+        "bytes": 12379,
+        "sha256": "91cf471c3a9bd00e61046a5e08dce22967f161e75488d21b128026154111be65"
+      },
+      {
+        "name": "generation_config.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-8bit/resolve/c6e4a2ff6ab9afba68b7853de802273ffe23fb49/generation_config.json",
+        "bytes": 251,
+        "sha256": "2ef3f2c0ab8d9ad241059138a795433c5410fd9954efb9625674ecd2a9529434"
+      },
+      {
+        "name": "model.safetensors",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-8bit/resolve/c6e4a2ff6ab9afba68b7853de802273ffe23fb49/model.safetensors",
+        "bytes": 3885721536,
+        "sha256": "d7a82315bcc59c3057f13bb85100743c7cd40692e38145fb255d6c1f0bf447bc"
+      },
+      {
+        "name": "model.safetensors.index.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-8bit/resolve/c6e4a2ff6ab9afba68b7853de802273ffe23fb49/model.safetensors.index.json",
+        "bytes": 98863,
+        "sha256": "113da60084ed077d67dd99706e5619f4c40056d777225923302cb957b3677026"
+      },
+      {
+        "name": "special_tokens_map.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-8bit/resolve/c6e4a2ff6ab9afba68b7853de802273ffe23fb49/special_tokens_map.json",
+        "bytes": 886,
+        "sha256": "194f265bb588d142a16f27d9576104eb3dab3d7ba9961541d2d6e3d5e77e6470"
+      },
+      {
+        "name": "tokenizer.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-8bit/resolve/c6e4a2ff6ab9afba68b7853de802273ffe23fb49/tokenizer.json",
+        "bytes": 33386945,
+        "sha256": "d3ec9ac3eb2392389b9f5112e85d8b43316494addb587ba7b7a9d61eac23af96"
+      },
+      {
+        "name": "tokenizer_config.json",
+        "url": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-8bit/resolve/c6e4a2ff6ab9afba68b7853de802273ffe23fb49/tokenizer_config.json",
+        "bytes": 1157960,
+        "sha256": "2c084fd6725c2284e8aa6da095a8d036d48fe79665595bfcd50371821b620e44"
+      }
+    ]
+  }
+}
