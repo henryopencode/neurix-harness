@@ -47,15 +47,22 @@ export const DRAG_MARK = 'data-window-drag'
  */
 export const RECALL_MARK = 'data-window-drag-recall'
 
+/** Raised surfaces that subtract their whole boxes, including outside chrome rows. */
+export const OVERLAY_SELECTOR = [
+  "[role='dialog']", "[role='alertdialog']", "[role='menu']", "[role='listbox']", "[role='tooltip']",
+].join(', ')
+
 /**
- * The interactive-element selector that subtracts a control from any drag row it
- * overlaps. ui-web `base.css` declares it for the darwin platform; this constant
+ * The interactive-element selector used inside drag rows and body portals.
+ * Controls in scrollable content must not subtract their clipped boxes from
+ * chrome. Raised surfaces use {@link OVERLAY_SELECTOR} wherever they render.
+ * ui-web `base.css` declares these rules for darwin; this constant
  * is the single source both that sheet and its contract spec compare against, so
  * the two cannot drift.
  */
 export const INTERACTIVE_SELECTOR = [
   'button', 'a', 'input', 'select', 'textarea', 'summary', "[contenteditable='true']", '[tabindex]',
-  "[role='dialog']", "[role='alertdialog']", "[role='menu']", "[role='listbox']", "[role='tooltip']",
+  OVERLAY_SELECTOR,
   "[role='button']", "[role='link']", "[role='tab']", "[role='menuitem']", "[role='menuitemcheckbox']",
   "[role='menuitemradio']", "[role='option']", "[role='checkbox']", "[role='radio']", "[role='switch']",
   "[role='slider']", "[role='combobox']", "[role='textbox']",

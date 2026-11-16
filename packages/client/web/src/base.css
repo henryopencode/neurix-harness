@@ -72,19 +72,24 @@ html[data-platform='darwin'] body > :not(#root) {
   -webkit-app-region: no-drag;
 }
 
-/* Inside #root, interactive controls and raised surfaces (dialogs, menus)
-   subtract themselves from any drag row they overlap, wherever they render.
-   Electron composes app-regions from geometry in document order, so a drag rule
-   must sit on a chrome row that precedes the overlays covering it — never on a
-   content container, which would override every overlay mounted earlier in the
-   DOM. One selector on the native elements, ARIA roles, and tabindexed custom
-   widgets replaces per-component no-drag opt-outs. */
-html[data-platform='darwin'] :is(
+/* Controls subtract only inside chrome rows or body portals. Scroll clipping can
+   leave a conversation control's box behind the header; a global no-drag rule
+   would erase that header's native drag region. Portals include onboarding,
+   whose drag band and controls are siblings. :where keeps inert resets at
+   equal specificity so hidden drawer controls cannot subtract foreground rows. */
+html[data-platform='darwin'] :where([data-window-drag], body > :not(#root)) :is(
   button, a, input, select, textarea, summary, [contenteditable='true'], [tabindex],
   [role='dialog'], [role='alertdialog'], [role='menu'], [role='listbox'], [role='tooltip'],
   [role='button'], [role='link'], [role='tab'], [role='menuitem'], [role='menuitemcheckbox'],
   [role='menuitemradio'], [role='option'], [role='checkbox'], [role='radio'], [role='switch'],
   [role='slider'], [role='combobox'], [role='textbox']
+) {
+  -webkit-app-region: no-drag;
+}
+
+/* Raised surfaces subtract their whole boxes even outside chrome rows. */
+html[data-platform='darwin'] :is(
+  [role='dialog'], [role='alertdialog'], [role='menu'], [role='listbox'], [role='tooltip']
 ) {
   -webkit-app-region: no-drag;
 }

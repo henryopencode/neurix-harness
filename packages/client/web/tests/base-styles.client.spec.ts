@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { INTERACTIVE_SELECTOR } from '../src/window-drag/regions.ts'
+import { INTERACTIVE_SELECTOR, OVERLAY_SELECTOR } from '../src/window-drag/regions.ts'
 
 const THEME_PACKAGE = '@deepseek-ai/dsh-client-ui-theme'
 const baseCss = readFileSync(fileURLToPath(new URL('../src/base.css', import.meta.url)), 'utf8')
@@ -39,14 +39,23 @@ describe('web shell base.css', () => {
     expect(baseCss).not.toContain(THEME_PACKAGE)
   })
 
-  it('declares exactly the interactive subtraction the drag contract publishes', () => {
+  it('limits interactive subtraction to chrome rows and body portals', () => {
     // One source for the selector: the model constant. The darwin rule must
     // declare the same list, so a new interactive role is added in one place
     // and a drift between the sheet and the composition model fails here.
-    const rule = /html\[data-platform='darwin'\] :is\(([^)]*)\)\s*\{[^}]*app-region:\s*no-drag/.exec(normalizedCss)
+    const rule = new RegExp(
+      String.raw`html\[data-platform='darwin'\] :where\(\[data-window-drag\], body > :not\(#root\)\) `
+        + String.raw`:is\(([^)]*)\)\s*\{[^}]*app-region:\s*no-drag`,
+    ).exec(normalizedCss)
     expect(rule, 'base.css declares no darwin interactive no-drag rule').not.toBeNull()
     const declared = rule![1]!.split(',').map(part => part.trim()).join(', ')
     expect(declared).toBe(INTERACTIVE_SELECTOR)
+  })
+
+  it('subtracts raised surfaces outside chrome rows', () => {
+    const rule = /html\[data-platform='darwin'\] :is\(([^)]*)\)\s*\{[^}]*app-region:\s*no-drag/.exec(normalizedCss)
+    expect(rule).not.toBeNull()
+    expect(rule![1]!.split(',').map(part => part.trim()).join(', ')).toBe(OVERLAY_SELECTOR)
   })
 
   it('declares the darwin drag surface through the mark chrome rows set', () => {
