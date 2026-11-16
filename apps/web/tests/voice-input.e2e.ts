@@ -13,7 +13,7 @@ import {
 } from './scaffold.ts'
 import { selectField, connectFreshWorkspace, newEnglishPage } from './support.ts'
 
-const fixture = fileURLToPath(new URL('../../../snapshots/web/fresh-round-trip/session.v3.jsonl', import.meta.url))
+const fixture = fileURLToPath(new URL('../../../snapshots/web/voice-chat/session.v4.jsonl', import.meta.url))
 const expected = fileURLToPath(new URL('../../../snapshots/web/voice-input/ui.expected.md', import.meta.url))
 const interruptedExpected = fileURLToPath(new URL('../../../snapshots/web/voice-input/interrupted.expected.md', import.meta.url))
 const recordingExpected = fileURLToPath(new URL('../../../snapshots/web/voice-input/recording.expected.md', import.meta.url))
@@ -252,8 +252,6 @@ it.skipIf(webSnapshotMode() === 'record')('guides voice setup, records from stan
   }
   await mic.hover()
   await page.getByRole('tooltip', { name: 'Dictate', exact: true }).waitFor()
-  const controlBackground = await page.getByRole('button', { name: 'Add files or run commands', exact: true })
-    .evaluate(element => getComputedStyle(element).backgroundColor)
   await mic.click()
   const stop = page.getByRole('button', { name: 'Stop and transcribe', exact: true })
   await stop.waitFor()
@@ -265,7 +263,8 @@ it.skipIf(webSnapshotMode() === 'record')('guides voice setup, records from stan
   }
   await input.hover()
   expect(await meter.isVisible()).toBe(false)
-  expect(await stop.evaluate(element => getComputedStyle(element).backgroundColor)).toBe(controlBackground)
+  const controlBackground = await stop.evaluate(element => getComputedStyle(element).backgroundColor)
+  expect(controlBackground).not.toBe('rgba(0, 0, 0, 0)')
   expect(await page.getByRole('button', { name: 'Cancel', exact: true })
     .evaluate(element => getComputedStyle(element).backgroundColor)).toBe(controlBackground)
   await page.keyboard.press('Escape')

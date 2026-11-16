@@ -4591,6 +4591,42 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'voiceChat',
+    summary: 'Owns one model worker; downloads and Python installation require prepare().',
+    description: 'Owns one model worker; downloads and Python installation require prepare().',
+    methods: [
+      {
+        signature: '@Remote({ mode: \'stream\' }) async *follow(signal: AbortSignal): AsyncIterable<VoiceStatus>',
+        description: 'Observe hardware selection and preparation without starting downloads.',
+        parameters: [{ name: 'signal', description: 'browser observation lifetime, independent of the preparation task.' }],
+        returns: 'complete initial and subsequent coalesced states.',
+      },
+      {
+        signature: '@Remote options(): VoiceOptions',
+        description: 'Read the deployment\'s utterance and playback limits.',
+        parameters: [],
+        returns: 'browser turn-detection options; no microphone or model is activated.',
+      },
+      {
+        signature: '@Remote prepare(): void',
+        description: 'Start or join explicit local runtime and model preparation; failures appear in follow().',
+        parameters: [],
+      },
+      {
+        signature: '@Remote async cancelPreparation(): Promise<void>',
+        description: 'Cancel preparation and join its cleanup; verified files remain reusable.',
+        parameters: [],
+        returns: 'after the shared preparation settles.',
+      },
+      {
+        signature: '@Remote({ mode: \'stream\' }) async *synthesize(text: string, signal: AbortSignal): AsyncIterable<VoiceAudio>',
+        description: 'Speak one bounded plain-text segment with the prepared local model.',
+        parameters: [{ name: 'text', description: 'one sentence or bounded fragment of the assistant\'s visible answer.' }, { name: 'signal', description: 'playback cancellation; stopping inference reclaims and joins the worker.' }],
+        returns: 'mono 24 kHz PCM16 fragments. Partial failures reject and never report success.',
+      },
+    ],
+  },
+  {
     key: 'web',
     summary: 'The web access service.',
     description: 'The web access service. Registered as `ctx.web` (one instance per context) and exposed to Clients as the `web` Remote namespace (`listProviders`).\n\nSelection semantics (resolved at execution time, never order-dependent):\n\n- A configured id that is registered and `available()` → that provider.\n- A configured id not registered → `WEB_PROVIDER_CONFIGURED_MISSING`.\n- A configured id registered but unavailable → `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`.\n- No id configured, exactly one registered usable provider → that provider.\n- No id configured, multiple usable providers → `WEB_PROVIDER_AMBIGUOUS`.\n- No id configured, no usable provider → `WEB_PROVIDER_UNAVAILABLE`.',
@@ -10449,6 +10485,26 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ViewerPluginPolicy',
     declaration: 'export interface ViewerPluginPolicy {\n    readonly plugin: string;\n    readonly mode: \'all\' | \'none\' | \'selected\';\n    readonly endpoints?: readonly string[];\n}',
+  },
+  {
+    name: 'VoiceAudio',
+    declaration: 'export interface VoiceAudio {\n    readonly pcmBase64: string;\n    readonly sampleRate: number;\n}',
+  },
+  {
+    name: 'VoiceHardware',
+    declaration: 'export interface VoiceHardware {\n    readonly platform: string;\n    readonly architecture: string;\n    readonly memoryBytes: number;\n}',
+  },
+  {
+    name: 'VoiceModel',
+    declaration: 'export type VoiceModel = \'mlx-4bit\' | \'mlx-8bit\';',
+  },
+  {
+    name: 'VoiceOptions',
+    declaration: 'export interface VoiceOptions {\n    readonly speechThreshold: number;\n    readonly silenceMs: number;\n    readonly minimumSpeechMs: number;\n    readonly preRollMs: number;\n    readonly maxUtteranceSeconds: number;\n    readonly maxSentenceCharacters: number;\n    readonly maxPendingSentences: number;\n    readonly warmupText: string;\n}',
+  },
+  {
+    name: 'VoiceStatus',
+    declaration: 'export interface VoiceStatus {\n    readonly phase: \'unprepared\' | \'preparing\' | \'ready\' | \'unsupported\' | \'failed\';\n    readonly model: VoiceModel | null;\n    readonly hardware: VoiceHardware;\n    readonly downloadBytes: number;\n    readonly completedBytes: number;\n    readonly operation: \'runtime\' | \'model\' | \'loading\' | null;\n    readonly error?: \'download\' | \'runtime\' | undefined;\n}',
   },
   {
     name: 'WebBootBatch',

@@ -1,0 +1,46 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/voice-chat/README.md
+/:
+  en: 5d5d4952e4f35a61
+  zh: 0992ada28410ee1a
+/deepseek-ai-dsh-voice-chat:
+  en: 13cfb8d0917e6821
+  zh: 075021d52e6b95d3
+/deepseek-ai-dsh-voice-chat/summary:
+  en: d46accc7c5a20202
+  zh: aabcc7892565b3fd
+/deepseek-ai-dsh-voice-chat/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 364c80ee00a374ff
+/deepseek-ai-dsh-voice-chat/use-this-package:
+  en: 301a99ae80dec7d6
+  zh: 7d40e2fe61459010
+/deepseek-ai-dsh-voice-chat/understand-the-implementation:
+  en: 7553b2876b98335f
+  zh: c4111ad139738aa2
+/deepseek-ai-dsh-voice-chat/further-exploration:
+  en: 435b4f42a1622e75
+  zh: c0b5eb96d3506f17
+/deepseek-ai-dsh-voice-chat/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-voice-chat/model-experience/recognized-utterances:
+  en: bafba1d70bfbd597
+  zh: 5d74f99c8d632b87
+/deepseek-ai-dsh-voice-chat/model-experience/recognized-utterances/what-the-model-sees:
+  en: 157238f55d775687
+  zh: 41d3e3470e28b344
+/deepseek-ai-dsh-voice-chat/model-experience/recognized-utterances/token-effect:
+  en: b2a1470d0675edef
+  zh: 730d6f4bee0479b6
+/deepseek-ai-dsh-voice-chat/model-experience/recognized-utterances/kv-cache-effect:
+  en: babb435722e38e3e
+  zh: 326844762cbddb69
+/deepseek-ai-dsh-voice-chat/known-limitations-and-deferred-work:
+  en: f2befb5a111ac7e1
+  zh: 7e05c38d7f8b9049
+/deepseek-ai-dsh-voice-chat/known-limitations-and-deferred-work/dev-note:
+  en: 0225ba087c5266f3
+  zh: 4e706f1b2b984e63

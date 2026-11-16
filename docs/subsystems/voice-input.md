@@ -26,6 +26,12 @@ Failed preparation can include `SpeechDownloadFailure` with the asset, source or
 
 The microphone occupies `conversation.input.activity`, between the model selector and Send. Clicking starts capture and expands the toolbar; Stop transcribes and inserts into the draft. The activity preserves the editor and submit action, owns local feedback, and releases expansion on unmount. Cancel, Escape or hiding the page discards capture. Waveform history displays measured microphone amplitude. Bundle details contain recognition preferences, preparation state and progress. Explicit enablement uses `plugins.bundle.activation` to guide users with missing models to setup; the list shows only the bundle description and switch.
 
+## Realtime voice conversations
+
+The optional [voice chat plugin](../../packages/experimental/voice-chat/README.md) adds silence-delimited automatic submission and streamed Breeze TTS 2 playback. Hardware selection and explicit preparation belong to the Host; microphone capture and interruption belong to the browser. Assistant speech derives from the existing Chat snapshots, while recognized text enters the ordinary logged Session submission. Voice mode stops on Session changes, page hiding, connection loss, or plugin disposal. The text agent continues after voice mode ends.
+
+`VoiceStatus` reports the hardware-selected `VoiceModel`, preparation operation, checkpoint byte progress, and classified failure. `VoiceHardware` records native architecture and physical memory, including Apple Silicon detected through Rosetta. `VoiceOptions` supplies bounded sample-clock detection and speech queue settings. `VoiceAudio` carries mono 24 kHz PCM16 fragments as canonical base64; cancellation discards queued audio and joins worker termination. Preparation observers do not own or cancel the Host's download task.
+
 ## Design rationale
 
 The [voice input decision](../../.agents/notes/implemented/architecture/2026-09-16-experimental-voice-input.md) explains transient audio, explicit provider selection and lazy local preparation.
@@ -161,4 +167,44 @@ async transcribe(spec: SpeechSpec, signal: AbortSignal): Promise<Transcript>
 ```
 
 Source: [`packages/experimental/speech-to-text/src/index.ts`](../../packages/experimental/speech-to-text/src/index.ts)
+
+<a id="ctxvoicechat--voicechat"></a>
+
+### `ctx.voiceChat` — `VoiceChat`
+
+Owns one model worker; downloads and Python installation require prepare().
+
+```ts cordis-catalog
+/**
+ * Observe hardware selection and preparation without starting downloads.
+ * @param signal - browser observation lifetime, independent of the preparation task.
+ * @returns complete initial and subsequent coalesced states.
+ */
+@Remote({ mode: 'stream' }) async *follow(signal: AbortSignal): AsyncIterable<VoiceStatus>
+
+/**
+ * Read the deployment's utterance and playback limits.
+ * @returns browser turn-detection options; no microphone or model is activated.
+ */
+@Remote options(): VoiceOptions
+
+/** Start or join explicit local runtime and model preparation; failures appear in follow(). */
+@Remote prepare(): void
+
+/**
+ * Cancel preparation and join its cleanup; verified files remain reusable.
+ * @returns after the shared preparation settles.
+ */
+@Remote async cancelPreparation(): Promise<void>
+
+/**
+ * Speak one bounded plain-text segment with the prepared local model.
+ * @param text - one sentence or bounded fragment of the assistant's visible answer.
+ * @param signal - playback cancellation; stopping inference reclaims and joins the worker.
+ * @returns mono 24 kHz PCM16 fragments. Partial failures reject and never report success.
+ */
+@Remote({ mode: 'stream' }) async *synthesize(text: string, signal: AbortSignal): AsyncIterable<VoiceAudio>
+```
+
+Source: [`packages/experimental/voice-chat/src/index.ts`](../../packages/experimental/voice-chat/src/index.ts)
 <!-- END GENERATED cordis-surface -->
