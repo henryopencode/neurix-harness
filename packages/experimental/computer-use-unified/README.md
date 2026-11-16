@@ -25,7 +25,7 @@ Operate browser tabs and macOS applications through one `computer` tool. Tabs re
 <a id="use-this-package"></a>
 ## Use this package
 
-Enable [Application control](../computer-control/README.md) for macOS foreground windows or [Browser control](../browser-control/README.md) for isolated hidden tabs from Plugins → Extension tools. Each bundle mounts only its own operation set, tool, approval, and preview; standalone compositions below retain the combined `computer` tool. Use the [computer-control guide](../../../docs/user/guide/computer-control.md) for source checkout setup and a complete workflow. Mount the following rows in a composition that supplies Agents, tools, system prompts, and an attachment store.
+Enable [Application control](../computer-control/README.md) for macOS foreground windows or [Browser control](../browser-control/README.md) for isolated hidden tabs from Plugins → Custom plugins. Each bundle mounts only its own operation set, tool, approval, and preview; standalone compositions below retain the combined `computer` tool. Use the [computer-control guide](../../../docs/user/guide/computer-control.md) for source checkout setup and a complete workflow. Mount the following rows in a composition that supplies Agents, tools, system prompts, and an attachment store.
 
 ```yaml
 - name: '@deepseek-ai/dsh-computer-use'

@@ -3,7 +3,7 @@
 - status
 - switch "启用 图像生成" [checked]
 - heading "图像生成" [level=3]
-- text: v0.2.1-rc.3
+- text: v{{version}}
 - paragraph:
   - code: "@deepseek-ai/dsh-image-generation-bundle"
 - paragraph: 配置生图接口，在对话中生成并保存图片
@@ -43,4 +43,4 @@
 - term: 代码来源
 - definition: 内置
 - term: 当前版本
-- definition: 0.2.1-rc.3
+- definition: {{version}}

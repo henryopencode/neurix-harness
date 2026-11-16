@@ -16,6 +16,9 @@ const FIXTURE = fileURLToPath(new URL('../../../snapshots/session/generate-image
 const MINIMAX_FIXTURE = fileURLToPath(new URL('../../../snapshots/session/generate-image-minimax/session.v4.jsonl', import.meta.url))
 const MULTIPLE_FIXTURE = fileURLToPath(new URL('../../../snapshots/session/generate-image-multiple/session.v4.jsonl', import.meta.url))
 const FAILURE_FIXTURE = fileURLToPath(new URL('../../../snapshots/session/generate-image-minimax-failures/session.v4.jsonl', import.meta.url))
+const { version: imageBundleVersion } = JSON.parse(await readFile(
+  new URL('../../../packages/image-generation/image-generation-bundle/package.json', import.meta.url), 'utf8',
+)) as { version: string }
 
 describe('web e2e: image generation', () => {
   let scaffold: WebScaffold | undefined
@@ -69,15 +72,15 @@ describe('web e2e: image generation', () => {
     await page.keyboard.press('Escape')
     await page.getByRole('navigation', { name: '全局面板' }).getByRole('button', { name: '插件', exact: true }).click()
     const panel = page.locator('[data-plugin-panel]')
-    const tools = panel.locator('[data-plugin-group="tools"]')
-    await tools.getByRole('heading', { name: '扩展工具', exact: true }).waitFor({ timeout: 20_000 })
-    expect(await tools.getByRole('button', { name: '查看 图像生成', exact: true }).count()).toBe(1)
-    expect(await tools.getByText('已停用', { exact: true }).count()).toBe(1)
+    const custom = panel.locator('[data-plugin-group="custom"]')
+    await custom.getByRole('heading', { name: '自定义插件', exact: true }).waitFor({ timeout: 20_000 })
+    expect(await custom.getByRole('button', { name: '查看 图像生成', exact: true }).count()).toBe(1)
+    expect(await custom.getByText('已停用', { exact: true }).count()).toBe(1)
     if (provider === 'openai' && reply === 'path') {
-      const snapshot = await captureStableAria(page, '[data-plugin-group="tools"]', scaffold.workspaceCwd)
-      await compareOrRefreshGolden(fileURLToPath(new URL('./expected/image-generation/tools.expected.md', import.meta.url)), snapshot, webSnapshotMode())
+      const snapshot = await captureStableAria(page, '[data-plugin-group="custom"]', scaffold.workspaceCwd)
+      await compareOrRefreshGolden(fileURLToPath(new URL('./expected/image-generation/custom.expected.md', import.meta.url)), snapshot, webSnapshotMode())
     }
-    await tools.getByRole('button', { name: '查看 图像生成', exact: true }).click()
+    await custom.getByRole('button', { name: '查看 图像生成', exact: true }).click()
     const form = panel.locator('[data-plugin-config]')
     expect(scaffold.ctx.tools.schemas().map(tool => tool.name)).not.toContain('generate_image')
     await panel.getByRole('switch', { name: '启用 图像生成', exact: true }).click()
@@ -112,11 +115,11 @@ describe('web e2e: image generation', () => {
     expect(await form.getByText('已覆盖', { exact: true }).count()).toBe(0)
     expect(await form.getByRole('button', { name: '恢复默认', exact: true }).count()).toBe(0)
     if (provider === 'openai' && reply === 'path') {
-      const snapshot = await captureStableAria(page, '[data-plugin-detail]', scaffold.workspaceCwd)
+      const snapshot = await captureStableAria(page, '[data-plugin-detail]', scaffold.workspaceCwd, { replacements: [[imageBundleVersion, '{{version}}']] })
       await compareOrRefreshGolden(fileURLToPath(new URL('./expected/image-generation/configuration.expected.md', import.meta.url)), snapshot, webSnapshotMode())
     }
     if (provider === 'minimax' && reply === 'path') {
-      expect(await form.getByRole('combobox', { name: '默认图片比例', exact: true }).inputValue()).toBe(defaultRatio)
+      expect(await form.getByRole('combobox', { name: '默认图片比例', exact: true }).textContent()).toContain(defaultRatio)
       const snapshot = await captureStableAria(page, '[data-plugin-config]', scaffold.workspaceCwd)
       await compareOrRefreshGolden(fileURLToPath(new URL('./expected/image-generation/ratios.expected.md', import.meta.url)), snapshot, webSnapshotMode())
     }
@@ -128,9 +131,9 @@ describe('web e2e: image generation', () => {
     expect(JSON.stringify(redacted)).not.toContain('fixture-key')
 
     await panel.getByRole('button', { name: '返回插件', exact: true }).click()
-    expect(await tools.getByRole('switch', { name: '启用 图像生成', exact: true }).isChecked()).toBe(true)
-    expect(await tools.getByText('已配置', { exact: true }).count()).toBe(0)
-    await tools.getByRole('button', { name: '查看 图像生成', exact: true }).click()
+    expect(await custom.getByRole('switch', { name: '启用 图像生成', exact: true }).isChecked()).toBe(true)
+    expect(await custom.getByText('已配置', { exact: true }).count()).toBe(0)
+    await custom.getByRole('button', { name: '查看 图像生成', exact: true }).click()
     await expect.poll(() => form.getByLabel('生图接口地址', { exact: true }).inputValue()).toBe(endpoint)
     await expect.poll(() => panel.getByLabel('图片模型', { exact: true }).inputValue()).toBe(model)
     expect(await panel.getByText('已配置', { exact: true }).count()).toBe(1)
@@ -208,12 +211,12 @@ describe('web e2e: image generation', () => {
     await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0)
 
     await page.getByRole('navigation', { name: '全局面板' }).getByRole('button', { name: '插件', exact: true }).click()
-    await tools.getByRole('button', { name: '查看 图像生成', exact: true }).click()
+    await custom.getByRole('button', { name: '查看 图像生成', exact: true }).click()
     await form.getByLabel('生图接口地址', { exact: true }).waitFor({ timeout: 20_000 })
     expect(await apiKey.inputValue()).toBe('')
     expect(await form.getByLabel('生图接口地址', { exact: true }).inputValue()).toBe(endpoint)
     await panel.getByRole('button', { name: '返回插件', exact: true }).click()
-    const card = tools.locator('[data-plugin-package="@deepseek-ai/dsh-image-generation-bundle"]')
+    const card = custom.locator('[data-plugin-package="@deepseek-ai/dsh-image-generation-bundle"]')
     await card.evaluate((element) => {
       const observer = new MutationObserver((records) => {
         if (records.some(record => Array.from(record.addedNodes).some(node => node.textContent?.includes('待配置')))) {
@@ -224,13 +227,13 @@ describe('web e2e: image generation', () => {
       })
       observer.observe(element, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-checked', 'disabled'] })
     })
-    await tools.getByRole('switch', { name: '启用 图像生成', exact: true }).click()
+    await custom.getByRole('switch', { name: '启用 图像生成', exact: true }).click()
     await expect.poll(() => scaffold!.ctx.tools.schemas().map(tool => tool.name), { timeout: PLUGIN_TOGGLE_SETTLE_MS }).not.toContain('generate_image')
-    await expect.poll(() => tools.getByRole('switch', { name: '启用 图像生成', exact: true }).isChecked(), { timeout: PLUGIN_TOGGLE_SETTLE_MS }).toBe(false)
-    await expect.poll(() => tools.getByRole('switch', { name: '启用 图像生成', exact: true }).isEnabled(), { timeout: PLUGIN_TOGGLE_SETTLE_MS }).toBe(true)
+    await expect.poll(() => custom.getByRole('switch', { name: '启用 图像生成', exact: true }).isChecked(), { timeout: PLUGIN_TOGGLE_SETTLE_MS }).toBe(false)
+    await expect.poll(() => custom.getByRole('switch', { name: '启用 图像生成', exact: true }).isEnabled(), { timeout: PLUGIN_TOGGLE_SETTLE_MS }).toBe(true)
     expect(await card.getAttribute('data-setup-flashed')).toBeNull()
-    expect(await tools.getByText('已停用', { exact: true }).count()).toBe(1)
-    expect(await tools.getByRole('button', { name: '查看 图像生成', exact: true }).isVisible()).toBe(true)
+    expect(await custom.getByText('已停用', { exact: true }).count()).toBe(1)
+    expect(await custom.getByRole('button', { name: '查看 图像生成', exact: true }).isVisible()).toBe(true)
     expect(consoleWatch.pageErrors).toEqual([])
   }, 120_000)
 

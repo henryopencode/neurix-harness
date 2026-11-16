@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/user/guide/computer-control.md
 /browser-and-application-control:
-  en: 8cff86cfc2af9c6b
-  zh: 9480a5c3112c1554
+  en: d32d10d0673e53fa
+  zh: 6fdfdffc97c19bd5
 /browser-and-application-control/choose-a-plugin:
   en: 56251ec4b45912d7
   zh: 501324792aab6766
