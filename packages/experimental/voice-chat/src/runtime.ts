@@ -5,7 +5,6 @@ import { access, mkdir, open, readFile, rename, rm, writeFile } from 'node:fs/pr
 import { dirname, join } from 'node:path'
 import { Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import type { SubprocessOutcome } from '@deepseek-ai/dsh-subprocess'
 import { z } from 'zod'
@@ -17,10 +16,42 @@ const assetSchema = z.object({ name: z.string(), url: z.url(), bytes: z.number()
 const manifestSchema = z.object({ uv: assetSchema, models: z.object({ 'mlx-4bit': z.array(assetSchema), 'mlx-8bit': z.array(assetSchema) }) })
 const assets = manifestSchema.parse(JSON.parse(readFileSync(new URL('../runtime/assets.json', import.meta.url), 'utf8')))
 const requirements = readFileSync(new URL('../runtime/requirements.txt', import.meta.url), 'utf8')
+const workerSource = readFileSync(new URL('../runtime/worker.py', import.meta.url))
 const runtimeVersion = createHash('sha256').update(requirements).digest('hex')
+const resourceVersion = createHash('sha256').update(requirements).update(workerSource).digest('hex')
 
 /** Managed runtime and checkpoint locations. */
-export interface RuntimePaths { readonly python: string; readonly model: string }
+export interface RuntimePaths { readonly python: string; readonly model: string; readonly worker: string }
+
+/** Preparation operation that failed before any conversation started. */
+export class RuntimePreparationError extends Error {
+  constructor(readonly step: 'assets' | 'python' | 'dependencies' | 'model', cause: unknown) {
+    super(`Local voice preparation failed during ${step}`, { cause })
+  }
+}
+
+/**
+ * Copy immutable Python inputs out of packaged resources before an external executable reads them.
+ * @param dataRoot - absolute Host-owned cache, outside app.asar.
+ * @param signal - preparation lifetime.
+ * @returns materialized script and dependency paths; failures leave no partial file.
+ */
+export async function materializeRuntime(dataRoot: string, signal: AbortSignal): Promise<{ worker: string; requirements: string }> {
+  signal.throwIfAborted()
+  const root = join(dataRoot, 'runtime', resourceVersion)
+  const files = [['worker.py', workerSource], ['requirements.txt', Buffer.from(requirements)]] as const
+  await mkdir(root, { recursive: true })
+  for (const [name, source] of files) {
+    signal.throwIfAborted()
+    const destination = join(root, name), partial = `${destination}.${randomUUID()}.part`
+    try {
+      await writeFile(partial, source, { flag: 'wx', mode: 0o600 })
+      signal.throwIfAborted()
+      await rename(partial, destination)
+    } finally { await rm(partial, { force: true }) }
+  }
+  return { worker: join(root, 'worker.py'), requirements: join(root, 'requirements.txt') }
+}
 
 /** Bounded parallel HTTP ranges used only when the origin advertises byte-range support. */
 export interface DownloadOptions { readonly connections: number; readonly chunkBytes: number }
@@ -124,7 +155,8 @@ export async function downloadAsset(asset: z.infer<typeof assetSchema>, path: st
 }
 
 function paths(root: string, model: VoiceModel): RuntimePaths {
-  return { python: join(root, 'venv', 'bin', 'python'), model: join(root, 'models', model) }
+  return { python: join(root, 'venv', 'bin', 'python'), model: join(root, 'models', model),
+    worker: join(root, 'runtime', resourceVersion, 'worker.py') }
 }
 
 /**
@@ -139,6 +171,7 @@ export async function inspectRuntime(config: Config, model: VoiceModel, signal: 
   try {
     if (await readFile(join(config.dataRoot, 'runtime-version'), 'utf8') !== runtimeVersion) return undefined
     await access(runtime.python)
+    if (!(await readFile(runtime.worker)).equals(workerSource)) return undefined
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
     throw error
@@ -157,46 +190,57 @@ export async function inspectRuntime(config: Config, model: VoiceModel, signal: 
  * @returns ready-to-load runtime and checkpoint paths.
  */
 export async function prepareRuntime(ctx: Context, config: Config, model: VoiceModel, signal: AbortSignal,
-  report: (operation: 'runtime' | 'model', completedBytes: number) => void): Promise<RuntimePaths> {
+  report: (operation: 'runtime' | 'python' | 'dependencies' | 'model', completedBytes: number) => void): Promise<RuntimePaths> {
   const runtime = paths(config.dataRoot, model)
   const downloadOptions = { connections: config.downloadConnections, chunkBytes: config.downloadChunkBytes }
-  await mkdir(config.dataRoot, { recursive: true })
-  const run = async (argv: readonly string[]): Promise<void> => {
-    const child = ctx.subprocess.spawn({ argv, cwd: config.dataRoot, graceMs: config.graceMs, signal,
-      env: { UV_PYTHON_INSTALL_DIR: join(config.dataRoot, 'python'), UV_CACHE_DIR: join(config.dataRoot, 'cache'),
-        UV_PYTHON_PREFERENCE: 'only-managed', UV_NO_PROGRESS: '1' },
-      stdio: { stdin: 'ignore', stdout: { maxBytes: config.maxLogBytes }, stderr: { maxBytes: config.maxLogBytes } } })
-    let result: SubprocessOutcome
-    try { result = await child.done } finally { await child.waitForExit() }
+  let step: RuntimePreparationError['step'] = 'assets'
+  try {
+    await mkdir(config.dataRoot, { recursive: true })
+    const resources = await materializeRuntime(config.dataRoot, signal)
+    const run = async (argv: readonly string[]): Promise<void> => {
+      const child = ctx.subprocess.spawn({ argv, cwd: config.dataRoot, graceMs: config.graceMs, signal,
+        env: { UV_PYTHON_INSTALL_DIR: join(config.dataRoot, 'python'), UV_CACHE_DIR: join(config.dataRoot, 'cache'),
+          UV_PYTHON_PREFERENCE: 'only-managed', UV_NO_PROGRESS: '1' },
+        stdio: { stdin: 'ignore', stdout: { maxBytes: config.maxLogBytes }, stderr: { maxBytes: config.maxLogBytes } } })
+      let result: SubprocessOutcome
+      try { result = await child.done } finally { await child.waitForExit() }
+      signal.throwIfAborted()
+      if (result.exitCode !== 0 || result.signal !== null) throw new Error(`Voice runtime installation failed: ${child.collected.stderr?.readFrom(0).text}`)
+    }
+    report('runtime', 0)
+    let installed = false
+    try { await access(runtime.python); installed = await readFile(join(config.dataRoot, 'runtime-version'), 'utf8') === runtimeVersion }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
+    if (!installed) {
+      const archive = join(config.dataRoot, assets.uv.name)
+      await downloadAsset(assets.uv, archive, signal, () => {}, downloadOptions)
+      await run(['/usr/bin/tar', '-xzf', archive, '-C', config.dataRoot])
+      const uv = join(config.dataRoot, 'uv-aarch64-apple-darwin', 'uv')
+      step = 'python'
+      report('python', 0)
+      await run([uv, 'venv', '--allow-existing', '--python', '3.12.11', '--python-preference', 'only-managed', join(config.dataRoot, 'venv')])
+      step = 'dependencies'
+      report('dependencies', 0)
+      await run([uv, 'pip', 'install', '--python', runtime.python, '--requirement', resources.requirements])
+      await run([runtime.python, '-c', 'from mlx_audio.tts import load; import mlx.core'])
+      signal.throwIfAborted()
+      await writeFile(join(config.dataRoot, 'runtime-version'), runtimeVersion)
+    }
+    let completed = 0
+    step = 'model'
+    report('model', completed)
+    for (const asset of assets.models[model]) {
+      const url = new URL(asset.url)
+      const origin = new URL(config.modelOrigin)
+      url.protocol = origin.protocol; url.host = origin.host
+      await downloadAsset({ ...asset, url: url.href }, join(runtime.model, asset.name), signal,
+        (bytes) => { report('model', completed + bytes) }, downloadOptions)
+      completed += asset.bytes
+    }
     signal.throwIfAborted()
-    if (result.exitCode !== 0 || result.signal !== null) throw new Error(`Voice runtime installation failed: ${child.collected.stderr?.readFrom(0).text}`)
-  }
-  report('runtime', 0)
-  let installed = false
-  try { await access(runtime.python); installed = await readFile(join(config.dataRoot, 'runtime-version'), 'utf8') === runtimeVersion }
-  catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
-  if (!installed) {
-    const archive = join(config.dataRoot, assets.uv.name)
-    await downloadAsset(assets.uv, archive, signal, () => {}, downloadOptions)
-    await run(['/usr/bin/tar', '-xzf', archive, '-C', config.dataRoot])
-    const uv = join(config.dataRoot, 'uv-aarch64-apple-darwin', 'uv')
-    await run([uv, 'venv', '--allow-existing', '--python', '3.12.11', '--python-preference', 'only-managed', join(config.dataRoot, 'venv')])
-    await run([uv, 'pip', 'install', '--python', runtime.python, '--requirement',
-      fileURLToPath(new URL('../runtime/requirements.txt', import.meta.url))])
-    await run([runtime.python, '-c', 'from mlx_audio.tts import load; import mlx.core'])
+    return runtime
+  } catch (error) {
     signal.throwIfAborted()
-    await writeFile(join(config.dataRoot, 'runtime-version'), runtimeVersion)
+    throw new RuntimePreparationError(step, error)
   }
-  let completed = 0
-  report('model', completed)
-  for (const asset of assets.models[model]) {
-    const url = new URL(asset.url)
-    const origin = new URL(config.modelOrigin)
-    url.protocol = origin.protocol; url.host = origin.host
-    await downloadAsset({ ...asset, url: url.href }, join(runtime.model, asset.name), signal,
-      (bytes) => { report('model', completed + bytes) }, downloadOptions)
-    completed += asset.bytes
-  }
-  signal.throwIfAborted()
-  return runtime
 }

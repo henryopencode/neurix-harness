@@ -2,7 +2,7 @@
 
 English | [中文](computer-control.zh.md)
 
-Two optional plugins separate independent web sessions from visible desktop input. Enable either or both from **Plugins → Extension tools**.
+Two optional plugins separate independent web sessions from visible desktop input. Enable either or both from **Plugins → Custom plugins**.
 
 ## Choose a plugin
 

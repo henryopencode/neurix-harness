@@ -39,6 +39,7 @@ export const HIDDEN_BUNDLES: ReadonlySet<string> = new Set([
  */
 export const EXTENSION_BUNDLES: readonly string[] = [
   '@deepseek-ai/dsh-experimental-voice-input-bundle',
+  '@deepseek-ai/dsh-voice-chat-bundle',
   '@deepseek-ai/dsh-experimental-plugin-market-bundle',
   '@deepseek-ai/dsh-experimental-auto-review',
 ]
@@ -62,9 +63,11 @@ export const MORE_BUNDLES: readonly string[] = [
 
 /** Official bundles the plugin manager marks with the Experimental badge. */
 export const EXPERIMENTAL_BUNDLES: ReadonlySet<string> = new Set([
+  '@deepseek-ai/dsh-experimental-agent-team-profile',
   '@deepseek-ai/dsh-personalized-recommendations',
   '@deepseek-ai/dsh-cua-bundle',
   '@deepseek-ai/dsh-experimental-voice-input-bundle',
+  '@deepseek-ai/dsh-voice-chat-bundle',
   '@deepseek-ai/dsh-experimental-auto-review',
   '@deepseek-ai/dsh-experimental-inspector-profile',
   '@deepseek-ai/dsh-experimental-forge-bundle',

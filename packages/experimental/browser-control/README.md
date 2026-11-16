@@ -25,7 +25,7 @@ Complete web tasks in an independent hidden browser on Windows, macOS, and Linux
 <a id="use-this-package"></a>
 ## Use this package
 
-Open **Plugins → Extension tools → Browser control** and enable it. Select an installed Chrome, Chromium, or Edge distribution; Chrome is the default. The browser always runs hidden in an independent session without importing regular tabs, cookies, or sign-ins. Session isolation is not an operating-system security sandbox.
+Open **Plugins → Custom plugins → Browser control** and enable it. Select an installed Chrome, Chromium, or Edge distribution; Chrome is the default. The browser always runs hidden in an independent session without importing regular tabs, cookies, or sign-ins. Session isolation is not an operating-system security sandbox.
 
 The `browser` tool operates only its owned tabs. Application control can run alongside it with its own `application` tool, approval, and preview. Browser control never invokes native application input. Disabling the plugin or calling `reset` closes its Session-owned browser.
 

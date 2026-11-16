@@ -25,7 +25,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-需要可编辑的 Web 配置时，可从“插件 → 扩展工具”启用[应用操作插件](../computer-control/README.zh.md)或[浏览器操作插件](../browser-control/README.zh.md)。源码仓库的配置和完整操作流程见[电脑控制指南](../../../docs/user/guide/computer-control.zh.md)。在已提供 Agent、工具、系统提示词和附件存储的组合中挂载以下条目。
+需要可编辑的 Web 配置时，可从“插件 → 自定义插件”启用[应用操作插件](../computer-control/README.zh.md)或[浏览器操作插件](../browser-control/README.zh.md)。源码仓库的配置和完整操作流程见[电脑控制指南](../../../docs/user/guide/computer-control.zh.md)。在已提供 Agent、工具、系统提示词和附件存储的组合中挂载以下条目。
 
 ```yaml
 - name: '@deepseek-ai/dsh-computer-use'

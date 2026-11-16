@@ -5,7 +5,6 @@ import type {} from '@deepseek-ai/dsh-experimental-api-speech-to-text/remote'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type { TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { VoiceInput, type VoiceInputInjected } from './VoiceInput.tsx'
 import { Recording } from './audio.ts'
@@ -16,7 +15,7 @@ import { observeReadiness } from './readiness.ts'
 import { VoicePreparation } from './PreparationCard.tsx'
 import { VoiceSetupPrompt } from './VoiceSetupPrompt.tsx'
 
-export const inject = ['remote', 'slots', 'locale']
+export const inject = ['remote', 'remote.speech', 'slots', 'locale']
 
 function registerUi(ctx: Context): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }))
@@ -64,14 +63,12 @@ function registerUi(ctx: Context): void {
 }
 
 /**
- * Mount this experimental namespace without adding it to stable API Remotes.
- * @param ctx - Client runtime owning the Remote, dictionaries and slots.
- * @param contribution - generated speech Remote definitions.
- * @returns disposer joining UI and Remote withdrawal.
+ * Mount dictation while borrowing the shared transcription API.
+ * @param ctx - Client runtime owning dictionaries, recording and slots.
+ * @returns disposer joining microphone and UI withdrawal.
  */
-export async function mountVoiceInput(ctx: Context, contribution: TypertRemoteContribution): Promise<() => Promise<void>> {
-  const disposeRemote = await ctx.remote.$mount(contribution)
+export async function mountVoiceInput(ctx: Context): Promise<() => Promise<void>> {
   const ui = ctx.inject(['remote.speech', 'slots', 'locale'], registerUi)
-  try { await ui } catch (error) { await ui.dispose(); await disposeRemote(); throw error }
-  return async () => { await ui.dispose(); await disposeRemote() }
+  try { await ui } catch (error) { await ui.dispose(); throw error }
+  return async () => { await ui.dispose() }
 }

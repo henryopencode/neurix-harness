@@ -10504,7 +10504,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'VoiceStatus',
-    declaration: 'export interface VoiceStatus {\n    readonly phase: \'unprepared\' | \'preparing\' | \'ready\' | \'unsupported\' | \'failed\';\n    readonly model: VoiceModel | null;\n    readonly hardware: VoiceHardware;\n    readonly downloadBytes: number;\n    readonly completedBytes: number;\n    readonly operation: \'runtime\' | \'model\' | \'loading\' | null;\n    readonly error?: \'download\' | \'runtime\' | undefined;\n}',
+    declaration: 'export interface VoiceStatus {\n    readonly phase: \'unprepared\' | \'preparing\' | \'ready\' | \'unsupported\' | \'failed\';\n    readonly model: VoiceModel | null;\n    readonly hardware: VoiceHardware;\n    readonly downloadBytes: number;\n    readonly completedBytes: number;\n    readonly operation: \'runtime\' | \'python\' | \'dependencies\' | \'model\' | \'loading\' | null;\n    readonly error?: \'download\' | \'runtime\' | undefined;\n    readonly failedStep?: \'assets\' | \'python\' | \'dependencies\' | \'model\' | \'loading\' | undefined;\n}',
   },
   {
     name: 'WebBootBatch',

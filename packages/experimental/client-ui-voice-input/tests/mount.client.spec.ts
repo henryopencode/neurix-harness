@@ -1,4 +1,4 @@
-/** The optional namespace and microphone ownership follow Client plugin disposal. */
+/** Dictation releases microphone ownership without withdrawing the shared speech API. */
 import assert from 'node:assert/strict'
 import { Recording } from '../src/client/audio.ts'
 import { Context, Service } from '@deepseek-ai/cordis'
@@ -67,7 +67,7 @@ it('starts without the Plugins page navigation and follows its presence', async 
   hostApply()
   const b = await fixture(false, false)
   try {
-    await b.ctx.plugin({ inject: [...inject], apply: ctx => mountVoiceInput(ctx, REMOTE) })
+    await b.ctx.plugin({ inject: [...inject], apply: ctx => mountVoiceInput(ctx) })
     const entry = b.ctx.slots.entries('conversation.input.activity').find(item => item.component === VoiceInput)
     const actions = entry!.inject!()
     assertVoiceActions(actions)
@@ -85,11 +85,11 @@ it('starts without the Plugins page navigation and follows its presence', async 
   }
 })
 
-it('withdraws its Remote, localized slot and microphone captures on disposal', async () => {
+it('withdraws its localized slot and microphone captures while preserving the shared API', async () => {
   hostApply()
   const b = await fixture()
   try {
-    const fiber = b.ctx.plugin({ inject: [...inject], apply: ctx => mountVoiceInput(ctx, REMOTE) })
+    const fiber = b.ctx.plugin({ inject: [...inject], apply: ctx => mountVoiceInput(ctx) })
     await fiber
     const entry = b.ctx.slots.entries('conversation.input.activity').find(item => item.component === VoiceInput)
     expect(entry).toMatchObject({ locale: 'voice-input' })
@@ -129,15 +129,15 @@ it('withdraws its Remote, localized slot and microphone captures on disposal', a
     expect(dispose).toHaveBeenCalledOnce()
     expect(b.ctx.slots.entries('conversation.input.activity')).toHaveLength(0)
     expect(b.ctx.slots.entries('plugins.bundle.activation')).toHaveLength(0)
-    expect(b.unmount).toHaveBeenCalledOnce()
+    expect(b.unmount).not.toHaveBeenCalled()
   } finally { await b.ctx.fiber.dispose() }
 })
 
-it('rolls back the Remote contribution when the slot registration fails', async () => {
+it('rolls back failed UI registration without withdrawing the shared API', async () => {
   const b = await fixture(true)
   try {
-    await expect(mountVoiceInput(b.ctx, REMOTE)).rejects.toThrow('slot failed')
-    expect(b.unmount).toHaveBeenCalledOnce()
+    await expect(mountVoiceInput(b.ctx)).rejects.toThrow('slot failed')
+    expect(b.unmount).not.toHaveBeenCalled()
   } finally { await b.ctx.fiber.dispose() }
 })
 
@@ -146,7 +146,7 @@ it('joins the same audio closure when cancellation overlaps Client plugin withdr
   audio.close.mockReturnValueOnce(closing.promise)
   let cancelled: Promise<void> | undefined, removed: Promise<void> | undefined
   try {
-    const fiber = b.ctx.plugin({ inject: [...inject], apply: ctx => mountVoiceInput(ctx, REMOTE) })
+    const fiber = b.ctx.plugin({ inject: [...inject], apply: ctx => mountVoiceInput(ctx) })
     await fiber
     const entry = b.ctx.slots.entries('conversation.input.activity').find(item => item.component === VoiceInput)!
     const actions = entry.inject!()
@@ -171,7 +171,7 @@ it('joins the same audio closure when cancellation overlaps Client plugin withdr
     closing.resolve(undefined)
     await cancelled; await removed
     expect(audio.close).toHaveBeenCalledOnce()
-    expect(b.unmount).toHaveBeenCalledOnce()
+    expect(b.unmount).not.toHaveBeenCalled()
   } finally {
     closing.resolve(undefined)
     try { await cancelled; await removed } finally {

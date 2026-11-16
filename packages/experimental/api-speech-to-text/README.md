@@ -25,7 +25,7 @@ The `speech` Remote connects browser recordings to `ctx.speechToText`. It expose
 <a id="use-this-package"></a>
 ## Use this package
 
-Compose with the speech Service Definition and Typert. `maxAudioBytes` and `maxDurationSeconds` limit accepted recordings. The browser UI mounts this package’s generated `/remote` contribution when enabled.
+Compose with the speech Service Definition and Typert. `maxAudioBytes` and `maxDurationSeconds` limit accepted recordings. This package’s browser entry owns the generated `/remote` contribution once; dictation and realtime voice controls borrow it independently.
 
 `prepare(providerId, { downloadSource })` forwards one advertised source to the provider; omission keeps its configured policy. The catalog carries `downloadSources` for the picker. The provider rejects unavailable choices and changes to an active task’s source.
 

@@ -25,7 +25,7 @@ Start a continuous voice conversation beside the existing composer. Pauses submi
 <a id="use-this-package"></a>
 ## Use this package
 
-Enable the [voice input bundle](../voice-input-bundle/README.md), then open **Voice chat** beside Send. **Download and prepare** prepares recognition and Breeze. **Start conversation** acquires the microphone; **End conversation** or closing the panel releases capture and playback. Switching Sessions, hiding the page, disconnecting, and disabling the plugin also stop capture. Ending voice mode leaves an already submitted text task running.
+Enable the [Voice chat bundle](../voice-chat-bundle/README.md), then open **Voice chat** beside Send. **Download and prepare** prepares recognition and Breeze. **Start conversation** acquires the microphone; **End conversation** or closing the panel releases capture and playback. Switching Sessions, hiding the page, disconnecting, and disabling the plugin also stop capture. Ending voice mode leaves an already submitted text task running.
 
 Automatic selection uses MLX 4-bit below 32 GB and MLX 8-bit at 32 GB or more. The checkpoints occupy about 3.0 GB and 4.6 GB respectively, plus the managed Python runtime, dependencies, and recognition models. Explicit `model: mlx-8bit` requires at least 24 GB. Unsupported hardware is reported before downloading; the plugin never switches to a cloud service. [Breeze's model license](https://huggingface.co/BreezeBlue/Breeze-TTS-2/blob/main/LICENSE) limits weights and self-hosted outputs to research and non-commercial use.
 
@@ -42,6 +42,8 @@ The bundle supplies an absolute `dataRoot` under the Harness home. `modelOrigin`
 The browser owns one echo-cancelled AudioWorklet capture and Web Audio playback lifetime. Sample-clock detection keeps bounded onset audio and suppresses brief noise. Recognition uses the existing speech Remote; ordinary Session submission logs the resulting text. Chat's published snapshots supply only visible assistant text to a monotonic sentence cursor, so history, repeated snapshots, reasoning, and tool calls are not read aloud. Playback and synthesis queues are bounded. A recognized message with uncertain delivery is preserved for manual insertion; the plugin never retries it automatically.
 
 The Host checks pinned sizes and SHA-256 hashes before accepting model caches. Explicit preparation installs a release-pinned uv, private Python, and MLX Audio without changing system Python. One authenticated loopback worker produces mono 24 kHz PCM16; cancelled or failed inference joins worker termination before subsequent synthesis. HTTP chunk framing distinguishes a completed response from a truncated stream. Downloads publish atomically, and verified completed files survive retries. The shipped configuration adds no model tool or agent-loop branch.
+
+Python scripts and the pinned dependency list are materialized as owner-only files under the user cache before external executables read them. Their content-addressed directory supports packaged Electron archives without changing the installed application. Preparation reports the failing stage with recovery guidance; retries reuse the existing private Python and verified model files.
 
 </details>
 

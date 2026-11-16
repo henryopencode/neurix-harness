@@ -32,6 +32,8 @@ The optional [voice chat plugin](../../packages/experimental/voice-chat/README.m
 
 `VoiceStatus` reports the hardware-selected `VoiceModel`, preparation operation, checkpoint byte progress, and classified failure. `VoiceHardware` records native architecture and physical memory, including Apple Silicon detected through Rosetta. `VoiceOptions` supplies bounded sample-clock detection and speech queue settings. `VoiceAudio` carries mono 24 kHz PCM16 fragments as canonical base64; cancellation discards queued audio and joins worker termination. Preparation observers do not own or cancel the Host's download task.
 
+Voice input and Voice chat have independent bundle switches. Their matching speech rows compose once, and the transcription API owns the shared browser namespace. `VoiceStatus.failedStep` distinguishes resource copying, private Python, dependency installation, model transfer, and loading failures, so the UI offers a stage-specific retry action.
+
 ## Design rationale
 
 The [voice input decision](../../.agents/notes/implemented/architecture/2026-09-16-experimental-voice-input.md) explains transient audio, explicit provider selection and lazy local preparation.

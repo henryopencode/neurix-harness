@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v1.1.10/voice-chat-switch/guide.md
+/:
+  en: 0d427449f926e336
+  zh: dd474c4d39edacaa
+/independent-voice-chat-switch:
+  en: 4bb8b556b3c45c2e
+  zh: 1068e11d0ba9b177
+/independent-voice-chat-switch/change:
+  en: 31464371b42838c1
+  zh: 9861e66520d11084
+/independent-voice-chat-switch/migration:
+  en: 952b76dff69d8f2f
+  zh: 4fd09ec6a762f1ca
