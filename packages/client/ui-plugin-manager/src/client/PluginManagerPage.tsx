@@ -1,6 +1,6 @@
 /**
- * Global plugin management: grouped cards for official configuration and
- * optional bundles, the Installed group's cards for the profile's bundles,
+ * Global plugin management: grouped cards for built-in configuration,
+ * custom plugins and experimental bundles,
  * their row switches, the install dialog with its guide and folded pnpm
  * output, the uninstall confirmation, and the toasts an action's outcome
  * becomes. A bundle's page lists the rows it contributes as the Host runs
@@ -99,11 +99,12 @@ function AddPluginMenu({ t, disabled, openInstall, renderSlot }: {
 /** How long the list marks a package an install just enabled. */
 const HIGHLIGHT_MS = 2_400
 
-/** Optional tools with dedicated configuration cards on the main Plugins page. */
-const TOOL_BUNDLES = new Set([
+/** Neurix capabilities kept with the profile's custom plugins on the main page. */
+const CUSTOM_BUNDLES = new Set([
   '@deepseek-ai/dsh-image-generation-bundle',
   '@deepseek-ai/dsh-experimental-computer-control', '@deepseek-ai/dsh-experimental-browser-control',
   '@deepseek-ai/dsh-experimental-mobile-access',
+  '@deepseek-ai/dsh-voice-chat-bundle',
 ])
 
 /**
@@ -561,7 +562,7 @@ function PackageCard({ pkg, t, resolveText, busy, highlighted, newer, configurat
         tags={(
           <>
             {configurationStatus}
-            {beta && !TOOL_BUNDLES.has(pkg.name) ? <Tag className={css.statusTag} tone="info">{t('statusBeta')}</Tag> : null}
+            {beta ? <Tag className={css.statusTag} tone="info">{t('statusBeta')}</Tag> : null}
             {status === 'problem' ? <Tag className={css.statusTag} tone="danger">{t('statusProblem')}</Tag> : null}
             {pkg.availability === 'missing' ? <Tag className={css.statusTag}>{t(pkg.installed ? 'statusMissingFiles' : 'statusNotInstalled')}</Tag> : null}
             {updateAvailable(pkg) || newer !== undefined ? <Tag className={css.statusTag} tone="info">{t('statusUpdateAvailable')}</Tag> : null}
@@ -782,7 +783,7 @@ function PackageDetail({
         <div className={css.titleRow}>
           <h3 className={css.detailTitle}>{title}</h3>
           {pkg.version === undefined ? null : <Tag className={css.versionTag} tone="neutral">{t('versionTag', { version: pkg.version })}</Tag>}
-          {beta && !TOOL_BUNDLES.has(pkg.name) ? <Tag className={css.statusTag} tone="info">{t('statusBeta')}</Tag> : null}
+          {beta ? <Tag className={css.statusTag} tone="info">{t('statusBeta')}</Tag> : null}
           {status === 'problem' ? <Tag className={css.statusTag} tone="danger">{t('statusProblem')}</Tag> : null}
           {pkg.availability === 'missing' ? <Tag className={css.statusTag}>{t(pkg.installed ? 'statusMissingFiles' : 'statusNotInstalled')}</Tag> : null}
           {updateAvailable(pkg) || newer !== undefined ? <Tag className={css.statusTag} tone="info">{t('statusUpdateAvailable')}</Tag> : null}
@@ -1583,11 +1584,11 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
   // to the main list without moving it among its neighbours there.
   const ordered = orderOptionalBundles(official)
   const pinned = new Set(official.filter(pinnedToMainList).map(pkg => pkg.name))
-  const isTool = (pkg: PackageView): boolean => TOOL_BUNDLES.has(pkg.name)
+  const isCustom = (pkg: PackageView): boolean => CUSTOM_BUNDLES.has(pkg.name)
     || (pkg.listedByDefault !== false && !MORE_BUNDLES.includes(pkg.name) && !packageText(pkg, resolveText).beta)
-  const tools = ordered.filter(isTool)
-  const extensions = ordered.filter(pkg => pinned.has(pkg.name) && !isTool(pkg))
-  const more = ordered.filter(pkg => !isTool(pkg))
+  const custom = [...ordered.filter(isCustom), ...mine]
+  const extensions = ordered.filter(pkg => pinned.has(pkg.name) && !isCustom(pkg))
+  const more = ordered.filter(pkg => !isCustom(pkg))
   const loaded = state.status === 'ready' || state.status === 'error'
   const refreshing = state.refreshStatus === 'refreshing'
   const openPkg = view.kind === 'package' || view.kind === 'row'
@@ -1643,7 +1644,7 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
   const basicCards = ledger.items.map(item => (
     <ItemCard key={`item:${item.id}`} item={item} t={t} renderSlot={renderSlot} onOpen={() => { setView({ kind: 'item', id: item.id }) }} />
   ))
-  const renderGroup = (id: 'basic' | 'tools' | 'extensions' | 'bundles', heading: string, cards: readonly ReactNode[]): ReactNode => {
+  const renderGroup = (id: 'basic' | 'custom' | 'extensions', heading: string, cards: readonly ReactNode[]): ReactNode => {
     const offersMore = id === 'extensions' && more.length > 0
     if (cards.length === 0 && !offersMore) return null
     return (
@@ -1788,7 +1789,7 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
               configure={configure(openPkg)}
               renderSlot={renderSlot}
               inMore={backToMore}
-              detail={TOOL_BUNDLES.has(openPkg.name) ? null : (
+              detail={CUSTOM_BUNDLES.has(openPkg.name) ? null : (
                 <BundleDetailSection name={openPkg.name} version={openPkg.version} fromNpm={openPkg.availability === 'missing'}
                   language={language} details={bundleDetails} t={t}
                   load={props.loadDetail} retry={props.retryDetail} image={props.detailImage} />
@@ -1823,9 +1824,8 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
                 ) : (
                   <>
                     {renderGroup('basic', t('basicTitle'), basicCards)}
-                    {renderGroup('tools', t('toolsTitle'), tools.map(packageCard))}
+                    {renderGroup('custom', t('customTitle'), custom.map(packageCard))}
                     {renderGroup('extensions', t('extensionsTitle'), extensions.map(packageCard))}
-                    {renderGroup('bundles', t('bundlesTitle'), mine.map(packageCard))}
                   </>
                 )}
                 {/* A failed package read trails the groups it left incomplete: right under the groups on a

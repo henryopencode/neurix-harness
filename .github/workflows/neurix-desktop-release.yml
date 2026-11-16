@@ -54,6 +54,8 @@ jobs:
           node-version: '24'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Verify offered bundles are runtime dependencies
+        run: pnpm run verify-default-product-isolation
       - name: Reserve stable version and immutable tags
         if: (github.event_name != 'workflow_dispatch' || !inputs.validation_only) && (github.event_name != 'workflow_dispatch' || inputs.existing_tag == '')
         id: release

@@ -30,9 +30,8 @@ export const zh = {
   restartReasonUnmanagedPlugin: '更改涉及一个不受插件列表管理的插件。',
   restartReasonModuleComparison: 'DSH 无法将已加载的插件与磁盘上的文件进行比较。',
   overriddenNotice: '{name} 已保存，但被更高优先级的配置覆盖，当前未生效',
-  bundlesTitle: '已安装插件',
   basicTitle: '内置插件配置',
-  toolsTitle: '扩展工具',
+  customTitle: '自定义插件',
   extensionsTitle: '实验性插件',
   moreTitle: '实验性插件',
   moreAction: '更多',
@@ -329,9 +328,8 @@ export const en = {
   restartReasonUnmanagedPlugin: 'The change reaches a plugin running outside the plugin list.',
   restartReasonModuleComparison: 'DSH could not compare the loaded plugins with their files.',
   overriddenNotice: '{name} was saved, but a higher-priority configuration overrides it, so it is not in effect',
-  bundlesTitle: 'Installed plugins',
   basicTitle: 'Built-in plugin settings',
-  toolsTitle: 'Extension tools',
+  customTitle: 'Custom plugins',
   extensionsTitle: 'Experimental plugins',
   moreTitle: 'Experimental plugins',
   moreAction: 'More',
@@ -602,7 +600,7 @@ export const en = {
 
 /** Japanese copy, checked against the English keys. */
 export const ja = {
-  toolsTitle: '拡張ツール',
+  customTitle: 'カスタムプラグイン',
   'reasonUnsupportedPlatform': 'このプラグインはDSHを実行しているホストOSに対応していません。',
   'panel': 'プラグイン',
   'title': 'プラグイン',
@@ -627,7 +625,6 @@ export const ja = {
   'restartReasonUnmanagedPlugin': '変更はプラグイン一覧外で動作しているプラグインにも及びます。',
   'restartReasonModuleComparison': 'DSHは読み込まれたプラグインとそのファイルを比較できませんでした。',
   'overriddenNotice': '{name}は保存されましたが、優先度の高い設定が上書きしているため有効になっていません',
-  'bundlesTitle': 'インストール済みプラグイン',
   'basicTitle': '組み込みプラグイン設定',
   'extensionsTitle': '実験的プラグイン',
   'moreTitle': '実験的プラグイン',
@@ -898,7 +895,7 @@ export const ja = {
 
 /** Spanish dictionary, checked against the English keys. */
 export const es = {
-  toolsTitle: 'Herramientas adicionales',
+  customTitle: 'Complementos personalizados',
   reasonUnsupportedPlatform: 'Este complemento no es compatible con el sistema operativo que ejecuta DSH.',
   panel: 'Complementos',
   title: 'Complementos',
@@ -923,7 +920,6 @@ export const es = {
   restartReasonUnmanagedPlugin: 'El cambio afecta a un complemento que se ejecuta fuera de la lista de complementos.',
   restartReasonModuleComparison: 'DSH no pudo comparar los complementos cargados con sus archivos.',
   overriddenNotice: '{name} se guardó, pero una configuración de mayor prioridad lo anula, por lo que no está vigente',
-  bundlesTitle: 'Complementos instalados',
   basicTitle: 'Configuración del complemento incorporado',
   extensionsTitle: 'Complementos experimentales',
   moreTitle: 'Complementos experimentales',
@@ -1194,7 +1190,7 @@ export const es = {
 
 /** French dictionary, checked against the English keys. */
 export const fr = {
-  toolsTitle: 'Outils supplémentaires',
+  customTitle: 'Plugins personnalisés',
   reasonUnsupportedPlatform: 'Ce plugin ne prend pas en charge le système d’exploitation sur lequel DSH s’exécute.',
   panel: 'Plugins',
   title: 'Plugins',
@@ -1219,7 +1215,6 @@ export const fr = {
   restartReasonUnmanagedPlugin: 'La modification atteint un plugin exécuté en dehors de la liste des plugins.',
   restartReasonModuleComparison: "DSH n'a pas pu comparer les plugins chargés avec leurs fichiers.",
   overriddenNotice: "{name} a été enregistré, mais une configuration de priorité plus élevée l'écrase, elle n'est donc pas effective",
-  bundlesTitle: 'Plugins installés',
   basicTitle: 'Paramètres du plugin intégré',
   extensionsTitle: 'Plugins expérimentaux',
   moreTitle: 'Plugins expérimentaux',
@@ -1490,7 +1485,7 @@ export const fr = {
 
 /** German dictionary, checked against the English keys. */
 export const de = {
-  toolsTitle: 'Zusätzliche Werkzeuge',
+  customTitle: 'Eigene Plugins',
   reasonUnsupportedPlatform: 'Dieses Plugin unterstützt das Betriebssystem, auf dem DSH läuft, nicht.',
   panel: 'Plugins',
   title: 'Plugins',
@@ -1515,7 +1510,6 @@ export const de = {
   restartReasonUnmanagedPlugin: 'Die Änderung betrifft ein Plugin, das außerhalb der Plugin-Liste ausgeführt wird.',
   restartReasonModuleComparison: 'DSH konnte die geladenen Plugins nicht mit ihren Dateien vergleichen.',
   overriddenNotice: '{name} wurde gespeichert, aber eine Konfiguration mit höherer Priorität überschreibt es, sodass es nicht wirksam ist',
-  bundlesTitle: 'Installierte Plugins',
   basicTitle: 'Integrierte Plugin-Einstellungen',
   extensionsTitle: 'Experimentelle Plugins',
   moreTitle: 'Experimentelle Plugins',
@@ -1786,7 +1780,7 @@ export const de = {
 
 /** Russian dictionary, checked against the English keys. */
 export const ru = {
-  toolsTitle: 'Дополнительные инструменты',
+  customTitle: 'Пользовательские плагины',
   reasonUnsupportedPlatform: 'Этот плагин не поддерживает операционную систему, в которой работает DSH.',
   panel: 'Плагины',
   title: 'Плагины',
@@ -1811,7 +1805,6 @@ export const ru = {
   restartReasonUnmanagedPlugin: 'Изменение достигает плагина, работающего за пределами списка плагинов.',
   restartReasonModuleComparison: 'DSH не смог сравнить загруженные плагины с их файлами.',
   overriddenNotice: '{name} был сохранен, но конфигурация с более высоким приоритетом переопределяет его, поэтому он не действует.',
-  bundlesTitle: 'Установленные плагины',
   basicTitle: 'Встроенные настройки плагина',
   extensionsTitle: 'Экспериментальные плагины',
   moreTitle: 'Экспериментальные плагины',
@@ -2082,7 +2075,7 @@ export const ru = {
 
 /** Portuguese dictionary, checked against the English keys. */
 export const pt = {
-  toolsTitle: 'Ferramentas adicionais',
+  customTitle: 'Plug-ins personalizados',
   reasonUnsupportedPlatform: 'Este plugin não oferece suporte ao sistema operacional em que o DSH está sendo executado.',
   panel: 'Plug-ins',
   title: 'Plug-ins',
@@ -2107,7 +2100,6 @@ export const pt = {
   restartReasonUnmanagedPlugin: 'A mudança atinge um plugin rodando fora da lista de plugins.',
   restartReasonModuleComparison: 'DSH não conseguiu comparar os plug-ins carregados com seus arquivos.',
   overriddenNotice: '{name} foi salvo, mas uma configuração de prioridade mais alta o substitui, portanto não está em vigor',
-  bundlesTitle: 'Plug-ins instalados',
   basicTitle: 'Configurações de plug-in integradas',
   extensionsTitle: 'Plug-ins experimentais',
   moreTitle: 'Plug-ins experimentais',

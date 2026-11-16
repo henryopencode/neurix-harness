@@ -35,6 +35,8 @@ import {
 import { desktopTargetPlatform, resolveDesktopBuildTarget, resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 import { desktopRuntimeFileExclusion } from './runtime-file-policy.ts'
 import { selectOfficeEngine } from '../../../scripts/libreoffice-packages.mjs'
+import { OPTIONAL_BUNDLES } from '../../../packages/util/official-bundles/src/bundles.ts'
+import { verifyInstalledProductIsolation } from '../../../scripts/release/installed-product-isolation.ts'
 
 const APP_ROOT = resolve(import.meta.dirname, '..')
 const BUILD_PATHS = resolveDesktopTargetBuildPaths()
@@ -150,6 +152,14 @@ async function main(): Promise<void> {
         recursive: true, dereference: true,
         filter: source => desktopRuntimeFileExclusion(relative(modules, source), target, officeEngine) === undefined,
       })
+    })
+    await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:optional-bundles', async () => {
+      for (const name of OPTIONAL_BUNDLES) {
+        if (!existsSync(join(DSH_OUTPUT_ROOT, 'node_modules', name, 'package.json'))) {
+          throw new Error(`desktop runtime: missing offered bundle ${name}`)
+        }
+      }
+      verifyInstalledProductIsolation(join(DSH_OUTPUT_ROOT, 'node_modules', '@deepseek-ai/dsh'))
     })
     writeFileSync(join(DSH_OUTPUT_ROOT, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh-desktop-runtime', private: true, version: release.version, type: 'module',

@@ -467,7 +467,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: var(--dsw-radius-xl);
+  border-radius: var(--dsw-radius-md);
 }
 
 .cardOpen:focus-visible {
