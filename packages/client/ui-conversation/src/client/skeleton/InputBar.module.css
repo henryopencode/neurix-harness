@@ -424,8 +424,7 @@
 .primary:disabled {
   opacity: 1;
   cursor: default;
-  background: var(--dsw-alias-interactive-bg-hover-solid);
-  color: var(--dsw-alias-label-caption);
+  background: var(--dsw-alias-composer-action-disabled-fill);
 }
 
 /* Sending: the message waits for the Host to accept it. The circle keeps its
