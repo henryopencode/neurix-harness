@@ -25,7 +25,7 @@ Operate macOS applications in the foreground with visible mouse and keyboard inp
 <a id="use-this-package"></a>
 ## Use this package
 
-Open Plugins → **Extension tools → Application control**. Enable the plugin to add the `application` tool. It supports macOS applications, including Chrome and Safari as native application windows. Actions activate the exact window and use the system mouse and keyboard. **Stop generating** cancels subsequent input; delivered input remains. Windows and Linux users can enable the separate [Browser control](../browser-control/README.md) plugin.
+Open Plugins → **Custom plugins → Application control**. Enable the plugin to add the `application` tool. It supports macOS applications, including Chrome and Safari as native application windows. Actions activate the exact window and use the system mouse and keyboard. **Stop generating** cancels subsequent input; delivered input remains. Windows and Linux users can enable the separate [Browser control](../browser-control/README.md) plugin.
 
 Grant Accessibility to the app that launches Harness. Screenshots and picture-in-picture also require Screen & System Audio Recording. Enable screenshots only for an image-capable model; display-only preview stays available with model screenshots disabled. Saved runtime defaults apply in a new conversation. Approval and preview pacing apply immediately.
 

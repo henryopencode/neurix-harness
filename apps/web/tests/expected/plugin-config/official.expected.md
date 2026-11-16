@@ -19,6 +19,41 @@
   - listitem:
     - button "查看 终端": 终端
     - text: 限制每条命令最多能跑多久、最多输出多少内容。
+- heading "自定义插件" [level=3]
+- list:
+  - listitem:
+    - button "查看 实时语音": 实时语音
+    - text: 实验性 按本机硬件选择 Breeze TTS 2 权重，连续收音、自动发送并播报回复。
+    - status
+    - switch "启用 实时语音"
+  - listitem:
+    - button "查看 浏览器操作": 浏览器操作
+    - text: 在 Windows、macOS 和 Linux 上操作独立的隐藏浏览器，通过画中画查看页面
+    - status
+    - switch "启用 浏览器操作"
+  - listitem:
+    - button "查看 应用操作": 应用操作
+    - text: 仅支持 macOS；在前台使用系统鼠标和键盘操作应用，也支持 Chrome、Safari 等浏览器应用
+    - status
+    - switch "启用 应用操作"
+  - listitem:
+    - button "查看 手机连接": 手机连接
+    - text: 通过专属链接或二维码连接手机。
+    - status
+    - switch "启用 手机连接"
+  - listitem:
+    - button "查看 图像生成": 图像生成
+    - text: 已停用 配置生图接口，在对话中生成并保存图片
+    - status
+    - switch "启用 图像生成"
+  - listitem:
+    - button "查看 @fixture/live-client": "@fixture/live-client"
+    - status
+    - switch "启用 @fixture/live-client"
+  - listitem:
+    - button "查看 dsh-web-scaffold-defaults": dsh-web-scaffold-defaults
+    - status
+    - switch "启用 dsh-web-scaffold-defaults" [checked]
 - heading "实验性插件" [level=3]
 - button "更多"
 - list:
@@ -38,17 +73,12 @@
     - status
     - switch "启用 自动授权审查"
   - listitem:
+    - button "查看 智能体团队": 智能体团队
+    - text: 实验性 启用团队协作、团队工具、成员列表和共享任务看板。
+    - status
+    - switch "启用 智能体团队"
+  - listitem:
     - button "查看 变更请求与工作树": 变更请求与工作树
     - text: 实验性 在会话侧栏集中跟踪关联的 GitHub PR：查看检查状态、评审意见与代码差异，并把修改建议交给智能体继续处理。也可查看本地改动，用独立工作树隔离任务。GitHub 功能需要本机安装 gh 并登录。
     - status
     - switch "启用 变更请求与工作树"
-- heading "已安装插件" [level=3]
-- list:
-  - listitem:
-    - button "查看 @fixture/live-client": "@fixture/live-client"
-    - status
-    - switch "启用 @fixture/live-client"
-  - listitem:
-    - button "查看 dsh-web-scaffold-defaults": dsh-web-scaffold-defaults
-    - status
-    - switch "启用 dsh-web-scaffold-defaults" [checked]
