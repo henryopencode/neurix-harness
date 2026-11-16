@@ -724,6 +724,9 @@ importers:
       '@deepseek-ai/dsh-user-approval':
         specifier: workspace:*
         version: link:../../packages/interaction/user-approval
+      '@deepseek-ai/dsh-voice-chat-bundle':
+        specifier: workspace:*
+        version: link:../../packages/experimental/voice-chat-bundle
       '@deepseek-ai/dsh-webhook':
         specifier: workspace:*
         version: link:../../packages/experimental/webhook
@@ -1097,6 +1100,9 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:*
         version: link:../../packages/util/values
+      '@deepseek-ai/dsh-voice-chat-bundle':
+        specifier: workspace:*
+        version: link:../../packages/experimental/voice-chat-bundle
       '@deepseek-ai/dsh-workspace-changes':
         specifier: workspace:*
         version: link:../../packages/deliverables/workspace-changes
@@ -8910,6 +8916,9 @@ importers:
 
   packages/experimental/api-speech-to-text:
     dependencies:
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: workspace:*
+        version: link:../../typert/protocol
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -8920,12 +8929,12 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-api-remotes':
+        specifier: workspace:*
+        version: link:../../api/remotes
       '@deepseek-ai/dsh-experimental-speech-to-text':
         specifier: workspace:*
         version: link:../speech-to-text
-      '@deepseek-ai/dsh-typert-protocol':
-        specifier: workspace:*
-        version: link:../../typert/protocol
 
   packages/experimental/auto-review:
     dependencies:
@@ -12867,9 +12876,6 @@ importers:
       '@deepseek-ai/dsh-experimental-api-speech-to-text':
         specifier: workspace:*
         version: link:../api-speech-to-text
-      '@deepseek-ai/dsh-experimental-client-ui-voice-input':
-        specifier: workspace:*
-        version: link:../client-ui-voice-input
       '@deepseek-ai/dsh-experimental-speech-to-text':
         specifier: workspace:*
         version: link:../speech-to-text
@@ -12892,6 +12898,34 @@ importers:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
 
+  packages/experimental/voice-chat-bundle:
+    dependencies:
+      '@deepseek-ai/dsh-experimental-api-speech-to-text':
+        specifier: workspace:*
+        version: link:../api-speech-to-text
+      '@deepseek-ai/dsh-experimental-speech-to-text':
+        specifier: workspace:*
+        version: link:../speech-to-text
+      '@deepseek-ai/dsh-experimental-speech-to-text-sensevoice':
+        specifier: workspace:*
+        version: link:../speech-to-text-sensevoice
+      '@deepseek-ai/dsh-voice-chat':
+        specifier: workspace:*
+        version: link:../voice-chat
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:~
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/cordis-plugin-include':
+        specifier: workspace:~
+        version: link:../../../vendor/include
+      '@deepseek-ai/dsh-app-boot':
+        specifier: workspace:*
+        version: link:../../boot/app-boot
+      js-yaml:
+        specifier: ^4.3.2
+        version: 4.3.2
+
   packages/experimental/voice-input-bundle:
     dependencies:
       '@deepseek-ai/dsh-experimental-api-speech-to-text':
@@ -12906,9 +12940,6 @@ importers:
       '@deepseek-ai/dsh-experimental-speech-to-text-sensevoice':
         specifier: workspace:*
         version: link:../speech-to-text-sensevoice
-      '@deepseek-ai/dsh-voice-chat':
-        specifier: workspace:*
-        version: link:../voice-chat
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~

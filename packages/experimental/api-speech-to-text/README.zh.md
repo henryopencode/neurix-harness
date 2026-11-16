@@ -25,7 +25,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用此包
 
-与语音服务定义和 Typert 组合。`maxAudioBytes` 与 `maxDurationSeconds` 限制接收的录音。浏览器 UI 启用时挂载本包生成的 `/remote` 贡献。
+与语音服务定义和 Typert 组合。`maxAudioBytes` 与 `maxDurationSeconds` 限制接收的录音。本包的浏览器入口只挂载一次生成的 `/remote` 贡献；听写与实时语音控件各自使用该共享接口。
 
 `prepare(providerId, { downloadSource })` 将公布的一个下载源转发给提供方，省略时保留其配置策略。目录通过 `downloadSources` 提供选择器选项。提供方拒绝不可用的源，以及对进行中任务的源变更。
 

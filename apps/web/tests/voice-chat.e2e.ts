@@ -11,7 +11,7 @@ import { fixtureUserPrompts, launchWebScaffold, webSnapshotMode, watchConsole, t
 import { connectFreshWorkspace, newEnglishPage } from './support.ts'
 
 const fixture = fileURLToPath(new URL('../../../snapshots/web/voice-chat/session.v4.jsonl', import.meta.url))
-const bundle = fileURLToPath(new URL('../../../packages/experimental/voice-input-bundle', import.meta.url))
+const bundle = fileURLToPath(new URL('../../../packages/experimental/voice-chat-bundle', import.meta.url))
 const cachedModel = process.env.DSH_VOICE_MODEL_CACHE
 
 it.skipIf(webSnapshotMode() === 'record')('opens local voice setup without recording or downloading and retains ordinary recorded chat', async () => {

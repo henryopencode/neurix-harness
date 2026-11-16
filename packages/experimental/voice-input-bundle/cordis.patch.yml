@@ -11,7 +11,3 @@
       name: '@deepseek-ai/dsh-experimental-api-speech-to-text'
     - id: ui-voice-input
       name: '@deepseek-ai/dsh-experimental-client-ui-voice-input'
-    - id: voice-chat
-      name: '@deepseek-ai/dsh-voice-chat'
-      config:
-        dataRoot: !!js dshHomePath('voice-chat', 'breeze')
