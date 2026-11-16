@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createAssistantMessage } from '@deepseek-ai/dsh-llm'
 import { initialShortcutConfig } from '@deepseek-ai/dsh-client-shortcuts/protocol'
 import {
   INTERACTIVE_SELECTOR, RECALL_MARK, isDraggableAt, type RegionRect,
@@ -230,6 +231,53 @@ describe('web e2e: macOS window drag coverage', () => {
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     return { page, tripwire }
   }
+
+  it('keeps clipped conversation links out of the native titlebar regions', async () => {
+    const { page, tripwire } = await desktopPage()
+    try {
+      await connectFreshWorkspace(page, scaffold.workspaceCwd)
+      const agent = scaffold.ctx.agents.list()[0]
+      if (agent === undefined) throw new Error('connected workspace did not create an Agent')
+      agent.session.append('turn/start', { turn: 1 })
+      agent.session.append('step/start', { turn: 1, step: 1 })
+      agent.session.append('assistant/message', {
+        turn: 1, step: 1, stream: [],
+        message: createAssistantMessage({
+          content: [{ type: 'text', text: [
+            'Scrollback paragraph.\n\n'.repeat(60),
+            `[${'Clipped conversation link '.repeat(12)}](https://example.invalid/window-drag)`,
+            'Following paragraph.\n\n'.repeat(60),
+          ].join('\n\n') }],
+          source: { provider: 'fixture', model: 'fixture' },
+        }),
+      }, { surfaceOp: 'append' })
+      agent.session.append('step/end', { turn: 1, step: 1 })
+      agent.session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+      const link = page.locator('a[href="https://example.invalid/window-drag"]')
+      await link.waitFor({ state: 'attached' })
+      await settled(page)
+      const point = await link.evaluate((element) => {
+        const scroll = element.closest<HTMLElement>('[data-conversation-scroll]')!
+        const header = document.querySelector('[data-slot="conversation.header"] > header')!
+        const chrome = header.getBoundingClientRect()
+        const before = element.getBoundingClientRect()
+        scroll.scrollTop += before.top + before.height / 2 - (chrome.top + chrome.height / 2)
+        const rect = element.getBoundingClientRect()
+        const x = rect.left + rect.width / 2
+        const y = rect.top + rect.height / 2
+        const hit = document.elementFromPoint(x, y)
+        return { x, y, clipped: !element.contains(hit), overHeader: hit?.closest('header[data-window-drag]') === header }
+      })
+      expect(point.clipped, 'the conversation viewport clips the link behind the header').toBe(true)
+      expect(point.overHeader, 'the clipped link geometrically overlaps the visible header').toBe(true)
+      const regions = await collectedRegions(page, INTERACTIVE_SELECTOR)
+      expect(isDraggableAt(regions, point.x, point.y), 'clipped content must not subtract native titlebar pixels').toBe(true)
+      expect(swallowedBoxes(regions)).toEqual([])
+      expect(tripwire.pageErrors).toEqual([])
+    } finally {
+      await page.close()
+    }
+  })
 
   it('keeps the macOS sidebar toggle stationary as its expanded content starts fading', async () => {
     const { page, tripwire } = await desktopPage()
