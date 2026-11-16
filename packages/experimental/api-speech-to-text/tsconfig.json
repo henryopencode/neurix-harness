@@ -1,24 +1,11 @@
 {
-  "extends": "../../../tsconfig.base.json",
-  "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "lib/types"
-  },
-  "include": [
-    "src"
-  ],
+  "files": [],
   "references": [
     {
-      "path": "../../../vendor/schemastery"
+      "path": "./tsconfig.host.json"
     },
     {
-      "path": "../../../vendor/cordis"
-    },
-    {
-      "path": "../speech-to-text"
-    },
-    {
-      "path": "../../typert/protocol"
+      "path": "./tsconfig.client.json"
     }
   ]
 }

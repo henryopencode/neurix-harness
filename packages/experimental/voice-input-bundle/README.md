@@ -27,7 +27,6 @@ This optional bundle composes a speech Service Definition, local SenseVoice prov
 
 Open Plugins in the Web sidebar and enable Voice Input, marked by a blue waveform icon. If models need preparation, a dialog offers Go to setup or Later; Go to setup opens the bundle details. Complete caches need no setup prompt. In the details, choose Download and prepare; the collapsed current-step summary expands to the complete step list. Downloads report actual bytes; verification and loading show elapsed time. Once ready, click the microphone between the model selector and Send, then Stop to insert a transcript. Bundle details store the recognizer and language through the Settings service. Disabling the bundle cancels active work; cached assets remain on disk.
 
-Open **Voice chat** beside Send for continuous conversation with [Breeze TTS 2](../voice-chat/README.md). Its panel prepares recognition and synthesis on demand, selects a local MLX weight variant for supported hardware, and starts the microphone only after Start conversation. Ordinary dictation remains available independently.
 
 -----
 
@@ -37,7 +36,7 @@ Open **Voice chat** beside Send for continuous conversation with [Breeze TTS 2](
 <details>
 <summary>Maintainer details — click to expand</summary>
 
-The static `cordis.patch.yml` adds the voice input and conversation rows, selects `sensevoice-local` as the default recognizer and supplies the provider cache directory with `dshHomePath`. Optional-bundle installation makes the package available to management without selecting it in default profiles. The browser contribution owns its generated Remote mount; stable API Remotes do not import experimental code.
+The static `cordis.patch.yml` adds the four voice input rows, selects `sensevoice-local` as the default recognizer and supplies the provider cache directory with `dshHomePath`. Optional-bundle installation makes the package available to management without selecting it in default profiles. The browser contribution owns its generated Remote mount; stable API Remotes do not import experimental code.
 
 </details>
 

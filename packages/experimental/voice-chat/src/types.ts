@@ -18,8 +18,9 @@ export interface VoiceStatus {
   readonly hardware: VoiceHardware
   readonly downloadBytes: number
   readonly completedBytes: number
-  readonly operation: 'runtime' | 'model' | 'loading' | null
+  readonly operation: 'runtime' | 'python' | 'dependencies' | 'model' | 'loading' | null
   readonly error?: 'download' | 'runtime' | undefined
+  readonly failedStep?: 'assets' | 'python' | 'dependencies' | 'model' | 'loading' | undefined
 }
 
 /** Detection and playback limits selected by the Host composition. */

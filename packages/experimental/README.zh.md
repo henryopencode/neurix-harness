@@ -36,6 +36,7 @@ kind: "package-group"
 
 | 包 | 职责 | ctx 键 |
 |---|---|---|
+| [`voice-chat-bundle`](voice-chat-bundle/README.zh.md) | 独立的实时语音开关、共享本地识别与 Breeze 合成 | — |
 | [`voice-chat`](voice-chat/README.zh.md) | 按需下载 Breeze TTS 2 的可选本地语音对话 | `ctx.voiceChat` |
 | [`action-cards`](action-cards/README.zh.md) | 回答下方的可选操作卡片：提议工具、卡片状态、用户操作与状态通知 | `ctx.actionCards` |
 | [`client-ui-action-cards`](client-ui-action-cards/README.zh.md) | 已完成回答下方的卡片框架、种类正文与提议过程行 | — |

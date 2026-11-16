@@ -75,6 +75,8 @@ const SAFE_HOST_DEPENDENCY_EXPORTS = {
 
 /** Runtime exports that require every consumer to resolve the provider's shared peer instance. */
 const PEER_REQUIRED_HOST_EXPORTS = {
+  // The transcription API uses the recording validator from its installed recognition provider interface.
+  '@deepseek-ai/dsh-experimental-speech-to-text/wave': ['validateWave'],
   // The control bundles mount providers against the same Cordis service registrations.
   '@deepseek-ai/dsh-experimental-computer-use-unified': ['Config', 'mountComputerControl'],
   '@deepseek-ai/dsh-client-ui-computer-preview': ['ComputerPreviewSources'],

@@ -70,8 +70,9 @@ export function VoiceChatPanel({ sessionId, useVoicePanel, useVoiceState, useVoi
       text: node.blocks.flatMap(block => block.kind === 'text' ? [block.text] : []).join(''), final: true }] : [])
   const progress = !setup.connected ? t('connecting') : status?.phase === 'unsupported' ? t('unsupported')
     : status?.operation === 'runtime' ? t('runtime') : status?.operation === 'loading' ? t('loading')
-      : status?.operation === 'model' ? t('downloading', { completed: (status.completedBytes / 1e9).toFixed(2), total: (status.downloadBytes / 1e9).toFixed(2) })
-        : setup.recognitionPreparing ? t('preparingRecognition') : t(`phase.${active ? state.phase : 'idle'}`)
+      : status?.operation === 'python' ? t('python') : status?.operation === 'dependencies' ? t('dependencies')
+        : status?.operation === 'model' ? t('downloading', { completed: (status.completedBytes / 1e9).toFixed(2), total: (status.downloadBytes / 1e9).toFixed(2) })
+          : setup.recognitionPreparing ? t('preparingRecognition') : t(`phase.${active ? state.phase : 'idle'}`)
   return <section className={css.panel} data-voice-chat={active ? state.phase : status?.phase ?? 'connecting'} aria-label={t('open')}>
     <div className={css.row}>
       <span className={css.status} role="status">{(active || preparing) && <StateDot state="ongoing" />}{progress}</span>
@@ -88,7 +89,7 @@ export function VoiceChatPanel({ sessionId, useVoicePanel, useVoiceState, useVoi
     </>}
     {status?.operation === 'model' && <progress className={css.progress} value={status.completedBytes} max={status.downloadBytes} aria-label={t('synthesis')} />}
     {(state.error || status?.error) && <div className={css.error} role="alert">{state.error ? t(`error.${state.error}`)
-      : status?.error === 'download' ? t('error.download') : t('error.runtime')}</div>}
+      : status?.failedStep ? t(`error.${status.failedStep}`) : status?.error === 'download' ? t('error.download') : t('error.runtime')}</div>}
     {state.transcript && <div className={css.transcript} aria-label={t('transcript')}>
       <span>{state.transcript}</span>
       {state.error === 'send' && <Button size="sm" onClick={() => { inputActions.insertText(state.transcript, inputActions.captureInsertion()) }}>{t('insert')}</Button>}

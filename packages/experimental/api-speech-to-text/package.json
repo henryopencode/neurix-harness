@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-experimental-api-speech-to-text",
   "description": "Authenticated experimental speech transcription for browser clients",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "dshApiVersion": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
@@ -33,11 +33,16 @@
     "./remote": {
       "types": "./lib/typert.remote-client.d.ts",
       "default": "./lib/typert.remote-client.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
     }
   },
   "files": [
     "locale/*.json",
     "lib/index.js",
+    "lib/client.js",
     "lib/types/**/*.js",
     "lib/types/**/*.d.ts",
     "lib/typert.host.js",
@@ -48,16 +53,28 @@
   "license": "MIT",
   "dependencies": {
     "@deepseek-ai/schemastery": "workspace:~",
-    "zod": "4.4.3"
+    "zod": "4.4.3",
+    "@deepseek-ai/dsh-typert-protocol": "workspace:*"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-experimental-speech-to-text": "workspace:*",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:*"
+    "@deepseek-ai/dsh-experimental-speech-to-text": "workspace:*"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/dsh-experimental-speech-to-text": "workspace:*",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:*"
+    "@deepseek-ai/dsh-api-remotes": "workspace:*"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-api-remotes"
+      ],
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "bundle": "tsdown",
+    "watch": "tsdown --watch"
   }
 }
