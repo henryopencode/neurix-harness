@@ -7,7 +7,7 @@ import { SubprocessRuntime, type SubprocessHandle, type SubprocessSpawnSpec } fr
 import type { VoiceStatus } from '../src/types.ts'
 
 const runtime = vi.hoisted(() => ({ inspect: vi.fn(), prepare: vi.fn() }))
-vi.mock('../src/runtime.ts', () => ({ inspectRuntime: runtime.inspect, prepareRuntime: runtime.prepare, modelDownloadBytes: () => 3_000_000_000 }))
+vi.mock('../src/runtime.ts', () => ({ inspectRuntime: runtime.inspect, prepareRuntime: runtime.prepare, modelDownloadBytes: () => 3_000_000_000, RuntimePreparationError: class extends Error {} }))
 vi.mock('../src/hardware.ts', async importOriginal => ({
   ...await importOriginal<typeof import('../src/hardware.ts')>(),
   localHardware: () => ({ platform: 'darwin', architecture: 'arm64', memoryBytes: 16 * 1024 ** 3 }),
@@ -46,8 +46,8 @@ async function fixture(body = Buffer.from([0, 0, 1, 0]), startup: Promise<unknow
   }
   new ModelProcesses(ctx)
   onTestFinished(async () => { await ctx.fiber.dispose() })
-  runtime.inspect.mockResolvedValue({ python: '/private/managed/python', model: '/private/managed/model' })
-  runtime.prepare.mockResolvedValue({ python: '/private/managed/python', model: '/private/managed/model' })
+  runtime.inspect.mockResolvedValue({ python: '/private/managed/python', model: '/private/managed/model', worker: '/private/managed/worker.py' })
+  runtime.prepare.mockResolvedValue({ python: '/private/managed/python', model: '/private/managed/model', worker: '/private/managed/worker.py' })
   const api = new VoiceChat(ctx, VoiceChat.Config({ dataRoot: '/private/voice-cache', idleTimeoutMs: 0 }))
   const observer = new AbortController()
   let state: VoiceStatus | undefined

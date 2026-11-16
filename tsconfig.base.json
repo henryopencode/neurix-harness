@@ -645,6 +645,7 @@
       "@deepseek-ai/dsh-tools": ["./packages/core/tools/src"],
       "@deepseek-ai/dsh-user-approval": ["./packages/interaction/user-approval/src"],
       "@deepseek-ai/dsh-user-questions": ["./packages/interaction/user-questions/src"],
+      "@deepseek-ai/dsh-voice-chat-bundle": ["./packages/experimental/voice-chat-bundle/src"],
       "@deepseek-ai/dsh-web": ["./packages/web/web/src"],
       "@deepseek-ai/dsh-web-app": ["./packages/bundle/web-app/src"],
       "@deepseek-ai/dsh-web-deepseek-api": ["./packages/web/web-deepseek-api/src"],

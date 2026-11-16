@@ -27,6 +27,13 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
+it.each(['absent', 'development'])('requires every offered bundle as a runtime dependency: %s declaration', (declaration) => {
+  const root = fixture(), voice = '@deepseek-ai/dsh-voice-chat-bundle'
+  const entry = writePackage(root, '@deepseek-ai/dsh', declaration === 'development' ? { devDependencies: { [voice]: '1.0.0' } } : {})
+  writePackage(root, voice, {})
+  expect(() => verifyInstalledProductIsolation(entry, [voice])).toThrow('optional bundle must be a runtime dependency')
+})
+
 describe.each([experimental, ...Object.values(EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS)])('installed default-product isolation: %s', (experimental) => {
   it('ignores development dependencies and unrelated installed experimental packages', () => {
     const root = fixture()
@@ -37,7 +44,7 @@ describe.each([experimental, ...Object.values(EXPERIMENTAL_PACKAGE_NAME_EXCEPTIO
     writePackage(root, 'core', { peerDependencies: { '@deepseek-ai/dsh': '1.0.0' } })
     writePackage(root, experimental, {})
 
-    expect(verifyInstalledProductIsolation(entry)).toBe(2)
+    expect(verifyInstalledProductIsolation(entry, [])).toBe(2)
   })
 
   it.each(['dependencies', 'optionalDependencies', 'peerDependencies'])(
@@ -47,7 +54,7 @@ describe.each([experimental, ...Object.values(EXPERIMENTAL_PACKAGE_NAME_EXCEPTIO
       const entry = writePackage(root, '@deepseek-ai/dsh', { dependencies: { thirdParty: '1.0.0' } })
       writePackage(root, 'thirdParty', { [section]: { [experimental]: '1.0.0' } })
 
-      expect(() => verifyInstalledProductIsolation(entry)).toThrow(
+      expect(() => verifyInstalledProductIsolation(entry, [])).toThrow(
         `@deepseek-ai/dsh -> thirdParty -> ${experimental}`,
       )
     },
@@ -72,7 +79,7 @@ describe.each([experimental, ...Object.values(EXPERIMENTAL_PACKAGE_NAME_EXCEPTIO
     const entry = writePackage(root, '@deepseek-ai/dsh', { dependencies: { safeName: 'file:../prototype' } })
     writePackage(root, 'safeName', { name: experimental })
 
-    expect(() => verifyInstalledProductIsolation(entry)).toThrow(experimental)
+    expect(() => verifyInstalledProductIsolation(entry, [])).toThrow(experimental)
   })
 
   it('rejects experimental npm aliases even when an optional package is omitted', () => {
@@ -81,7 +88,7 @@ describe.each([experimental, ...Object.values(EXPERIMENTAL_PACKAGE_NAME_EXCEPTIO
       optionalDependencies: { safeName: `npm:${experimental}@1.0.0` },
     })
 
-    expect(() => verifyInstalledProductIsolation(entry)).toThrow(experimental)
+    expect(() => verifyInstalledProductIsolation(entry, [])).toThrow(experimental)
   })
 
   it('follows nested installations rather than an unrelated hoisted package', () => {
@@ -90,7 +97,7 @@ describe.each([experimental, ...Object.values(EXPERIMENTAL_PACKAGE_NAME_EXCEPTIO
     writePackage(root, 'core', {})
     writePackage(entry, 'core', { dependencies: { [experimental]: '1.0.0' } })
 
-    expect(() => verifyInstalledProductIsolation(entry)).toThrow(experimental)
+    expect(() => verifyInstalledProductIsolation(entry, [])).toThrow(experimental)
   })
 
   it('permits missing optional packages and optional peers but rejects missing dependencies', () => {
@@ -101,8 +108,8 @@ describe.each([experimental, ...Object.values(EXPERIMENTAL_PACKAGE_NAME_EXCEPTIO
       peerDependencies: { peer: '1.0.0' },
       peerDependenciesMeta: { peer: { optional: true } },
     })
-    expect(verifyInstalledProductIsolation(entry)).toBe(1)
+    expect(verifyInstalledProductIsolation(entry, [])).toBe(1)
     writePackage(root, '@deepseek-ai/dsh', { dependencies: { missing: '1.0.0' } })
-    expect(() => verifyInstalledProductIsolation(entry)).toThrow('dependency is missing')
+    expect(() => verifyInstalledProductIsolation(entry, [])).toThrow('dependency is missing')
   })
 })

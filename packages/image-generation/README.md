@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Generate images from text in a conversation and keep the results available in its history. Choose an OpenAI-compatible Images API or MiniMax and configure its endpoint, model, and API key. Plugins → Extension tools → Image Generation exposes this setup; the optional tool saves images through the existing attachment store. Generation uses your configured provider and may incur its charges.
+Generate images from text in a conversation and keep the results available in its history. Choose an OpenAI-compatible Images API or MiniMax and configure its endpoint, model, and API key. Plugins → Custom plugins → Image Generation exposes this setup; the optional tool saves images through the existing attachment store. Generation uses your configured provider and may incur its charges.
 
 ## Table of Contents
 

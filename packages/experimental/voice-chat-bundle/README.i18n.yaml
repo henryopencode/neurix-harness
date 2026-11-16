@@ -1,0 +1,37 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/voice-chat-bundle/README.md
+/:
+  en: 84e2f67dc4011445
+  zh: b39bb9524f52872b
+/deepseek-ai-dsh-voice-chat-bundle:
+  en: a0f767dca469adfa
+  zh: d4d7e65f52aa157e
+/deepseek-ai-dsh-voice-chat-bundle/summary:
+  en: f57ce68682ac02a0
+  zh: ad40807288ad2fc0
+/deepseek-ai-dsh-voice-chat-bundle/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 364c80ee00a374ff
+/deepseek-ai-dsh-voice-chat-bundle/use-this-package:
+  en: 5f1488425515a904
+  zh: f482c17c8941e47d
+/deepseek-ai-dsh-voice-chat-bundle/understand-the-implementation:
+  en: 7f06c777e3b6cf6a
+  zh: 3fef4a62d59bbc8d
+/deepseek-ai-dsh-voice-chat-bundle/further-exploration:
+  en: 5c64426add9d79d6
+  zh: 4e06aa2ead8d2ccd
+/deepseek-ai-dsh-voice-chat-bundle/model-experience:
+  en: 48b4a0bb61703ca3
+  zh: f2d62c956956914f
+/deepseek-ai-dsh-voice-chat-bundle/model-experience/kv-cache-effect:
+  en: b5ec79db2e1d0dbc
+  zh: e5aff567ae5ee6fc
+/deepseek-ai-dsh-voice-chat-bundle/known-limitations-and-deferred-work:
+  en: a9aa65970f9da0f4
+  zh: a478b510f584f1bc
+/deepseek-ai-dsh-voice-chat-bundle/known-limitations-and-deferred-work/dev-note:
+  en: 0225ba087c5266f3
+  zh: 4e706f1b2b984e63

@@ -1,7 +1,6 @@
 /** Optional local speech synthesis with explicit preparation and cancellable streaming. */
 import { randomBytes } from 'node:crypto'
 import { isAbsolute } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from '@deepseek-ai/dsh-subprocess'
@@ -10,7 +9,7 @@ import { deadline } from '@deepseek-ai/dsh-timeout'
 import { z } from 'zod'
 import { Config } from './config.ts'
 import { localHardware, nativeHardware, selectModel } from './hardware.ts'
-import { inspectRuntime, modelDownloadBytes, prepareRuntime, type RuntimePaths } from './runtime.ts'
+import { inspectRuntime, modelDownloadBytes, prepareRuntime, RuntimePreparationError, type RuntimePaths } from './runtime.ts'
 import type { VoiceAudio, VoiceOptions, VoiceStatus } from './types.ts'
 
 export { Config } from './config.ts'
@@ -205,7 +204,7 @@ export default class VoiceChat extends TypertRemoteService {
       using work = deadline(AbortSignal.any([abort.signal, this.lifetime.signal]), this.config.prepareTimeoutMs, 'VOICE_PREPARE_TIMEOUT')
       const model = this.owned.status.model
       if (model === null) return
-      if (download) this.publish({ phase: 'preparing', operation: 'runtime', error: undefined })
+      if (download) this.publish({ phase: 'preparing', operation: 'runtime', error: undefined, failedStep: undefined })
       try {
         const paths = download ? await prepareRuntime(this.ctx, this.config, model, work.signal, (operation, completedBytes) => {
           this.publish({ operation, completedBytes })
@@ -219,7 +218,8 @@ export default class VoiceChat extends TypertRemoteService {
         await this.stopWorker()
         if (!work.signal.aborted) this.ctx.logger.warn('Local voice preparation failed', error)
         this.publish({ phase: abort.signal.aborted ? 'unprepared' : 'failed', operation: null,
-          error: abort.signal.aborted ? undefined : this.owned.status.operation === 'model' ? 'download' : 'runtime' })
+          error: abort.signal.aborted ? undefined : this.owned.status.operation === 'model' ? 'download' : 'runtime',
+          failedStep: abort.signal.aborted ? undefined : error instanceof RuntimePreparationError ? error.step : 'loading' })
       } finally {
         if (this.owned.preparation === task) delete this.owned.preparation
         done.resolve()
@@ -245,7 +245,7 @@ export default class VoiceChat extends TypertRemoteService {
     if (!runtime) throw this.failure('not-ready')
     const token = randomBytes(32).toString('hex')
     const child = this.ctx.subprocess.spawn({
-      argv: [runtime.python, '-u', fileURLToPath(new URL('../runtime/worker.py', import.meta.url)),
+      argv: [runtime.python, '-u', runtime.worker,
         JSON.stringify({ ...this.config, model: runtime.model })],
       cwd: this.config.dataRoot, graceMs: this.config.graceMs,
       env: { DSH_VOICE_TOKEN: token, HF_HUB_OFFLINE: '1', TOKENIZERS_PARALLELISM: 'false' },

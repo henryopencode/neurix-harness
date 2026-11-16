@@ -32,6 +32,8 @@ Host Provider 在页面和 Session 变化期间拥有同一个准备任务。Cli
 
 `VoiceStatus` 报告按硬件选择的 `VoiceModel`、准备操作、模型字节进度和分类错误。`VoiceHardware` 记录原生架构与物理内存，包括通过 Rosetta 检测到的 Apple Silicon。`VoiceOptions` 提供有界的采样时钟检测和语音队列设置。`VoiceAudio` 通过规范 base64 携带单声道 24 kHz PCM16 分片；取消会丢弃排队音频并等待工作进程终止。准备状态观察者不拥有或取消 Host 的下载任务。
 
+“语音输入”与“实时语音”使用独立的 Bundle 开关。相同的语音条目仅组合一次，转写 API 拥有共享浏览器命名空间。`VoiceStatus.failedStep` 区分资源复制、独立 Python、依赖安装、模型下载和加载失败，界面据此给出对应的重试建议。
+
 ## 设计依据
 
 [语音输入决策](../../.agents/notes/implemented/architecture/2026-09-16-experimental-voice-input.zh.md)解释临时音频、显式 Provider 选择和延迟准备本地运行时。

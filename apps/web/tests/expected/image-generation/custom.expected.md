@@ -1,5 +1,10 @@
-- heading "扩展工具" [level=3]
+- heading "自定义插件" [level=3]
 - list:
+  - listitem:
+    - button "查看 实时语音": 实时语音
+    - text: 实验性 按本机硬件选择 Breeze TTS 2 权重，连续收音、自动发送并播报回复。
+    - status
+    - switch "启用 实时语音"
   - listitem:
     - button "查看 浏览器操作": 浏览器操作
     - text: 在 Windows、macOS 和 Linux 上操作独立的隐藏浏览器，通过画中画查看页面
@@ -20,3 +25,7 @@
     - text: 已停用 配置生图接口，在对话中生成并保存图片
     - status
     - switch "启用 图像生成"
+  - listitem:
+    - button "查看 dsh-web-scaffold-defaults": dsh-web-scaffold-defaults
+    - status
+    - switch "启用 dsh-web-scaffold-defaults" [checked]

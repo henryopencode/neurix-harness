@@ -13,15 +13,6 @@
 - textbox "API Key"
 - paragraph: 保存在当前主机，留空会保留已保存的密钥
 - text: 默认图片比例
-- combobox "默认图片比例":
-  - option "不指定"
-  - option "方形（1:1）"
-  - option "横图（16:9）" [selected]
-  - option "竖图（9:16）"
-  - option "横图（4:3）"
-  - option "竖图（3:4）"
-  - option "横图（3:2）"
-  - option "竖图（2:3）"
-  - option "超宽横图（21:9）"
+- combobox "默认图片比例": 横图（16:9）
 - paragraph: 对话未指定比例时使用；选“不指定”时由生图服务决定
 - button "保存" [disabled]

@@ -15,9 +15,10 @@ interface InstalledManifest {
 }
 
 /**
- * Reject experimental dependencies reachable from one installed product entry.
+ * Require the offered bundles and reject experimental dependencies in the default product graph.
  * Other packages installed beside the entry and development dependencies do not join its graph.
  * @param directory - installed entry package directory.
+ * @param optionalBundles - bundles shipped as disabled runtime dependencies of the entry.
  * @returns number of distinct installed packages visited.
  */
 export function verifyInstalledProductIsolation(directory: string, optionalBundles: readonly string[] = OPTIONAL_BUNDLES): number {
@@ -32,12 +33,15 @@ export function verifyInstalledProductIsolation(directory: string, optionalBundl
     rejectExperimental(manifest.name, chain)
     // The bundles the entry package ships switched off are installed beside the product, not required by it.
     const offered = item.chain.length === 0 ? new Set(optionalBundles) : new Set<string>()
+    for (const name of offered) {
+      if (!Object.hasOwn(manifest.dependencies ?? {}, name)) {
+        throw new Error(`optional bundle must be a runtime dependency: ${[...chain, name].join(' -> ')}`)
+      }
+      if (installedPackage(canonical, name) === undefined) throw new Error(`optional bundle is missing: ${[...chain, name].join(' -> ')}`)
+    }
     for (const section of ['dependencies', 'optionalDependencies', 'peerDependencies'] as const) {
       for (const [name, range] of Object.entries(manifest[section] ?? {})) {
-        if (section === 'dependencies' && offered.has(name)) {
-          if (installedPackage(canonical, name) === undefined) throw new Error(`optional bundle is missing: ${[...chain, name].join(' -> ')}`)
-          continue
-        }
+        if (section === 'dependencies' && offered.has(name)) continue
         rejectExperimental(name, [...chain, name])
         if (range.startsWith('npm:')) {
           rejectExperimental(range.slice(4), [...chain, `${name} (${range})`])
