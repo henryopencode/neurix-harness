@@ -9,7 +9,6 @@ import type { Browser, Locator, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { FiberState } from '@deepseek-ai/cordis'
 import { readProfileManifest } from '@deepseek-ai/dsh-app-boot'
-import { HIDDEN_BUNDLES } from '@deepseek-ai/dsh-official-bundles'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed, onTestFinished, vi } from 'vitest'
 import { join } from 'node:path'
 import {
@@ -823,7 +822,7 @@ describe('web e2e: plugin manager', () => {
       const style = getComputedStyle(element, '::after')
       return {
         radius: style.borderRadius,
-        cardRadius: style.getPropertyValue('--dsw-radius-xl').trim(),
+        cardRadius: style.getPropertyValue('--dsw-radius-md').trim(),
         outlineStyle: style.outlineStyle,
         outlineWidth: Number.parseFloat(style.outlineWidth),
       }
@@ -832,12 +831,15 @@ describe('web e2e: plugin manager', () => {
     expect(focusRing.radius).toBe(focusRing.cardRadius)
     expect(focusRing.outlineStyle).toBe('solid')
     expect(focusRing.outlineWidth).toBeGreaterThan(0)
-    // Profile bundles stay in Installed; configuration pages and offered bundles have their own groups.
-    expect(await panel.locator('[data-plugin-group="bundles"] [data-plugin-package]').count()).toBe(2)
+    expect(await panel.locator('[data-plugin-group="bundles"]').count()).toBe(0)
+    expect(await panel.locator('[data-plugin-group="custom"] [data-plugin-package="@fixture/bundle"]').count()).toBe(1)
+    expect(await panel.locator(`[data-plugin-group="custom"] [data-plugin-package="${SCAFFOLD_DEFAULTS_BUNDLE}"]`).count()).toBe(1)
     expect(await panel.locator('[data-plugin-group="basic"] [data-plugin-item]').count()).toBe(4)
-    const tools = panel.locator('[data-plugin-group="tools"]')
-    expect(await tools.getByRole('heading', { name: '扩展工具', exact: true }).count()).toBe(1)
-    expect(await tools.getByRole('button', { name: '查看 图像生成', exact: true }).count()).toBe(1)
+    const custom = panel.locator('[data-plugin-group="custom"]')
+    expect(await custom.getByRole('heading', { name: '自定义插件', exact: true }).count()).toBe(1)
+    expect(await custom.getByRole('button', { name: '查看 图像生成', exact: true }).count()).toBe(1)
+    expect(await custom.locator('[data-plugin-package="@deepseek-ai/dsh-voice-chat-bundle"] [role="switch"]').count()).toBe(1)
+    expect(await panel.locator('[data-plugin-group="extensions"] [data-plugin-package="@deepseek-ai/dsh-experimental-agent-team-profile"]').count()).toBe(1)
     expect(await panel.locator('[data-plugin-package="@deepseek-ai/dsh-experimental-inspector"]').count()).toBe(0)
     expect(await panel.getByRole('switch', { name: '启用 语音输入', exact: true }).getAttribute('aria-checked')).toBe('false')
     expect(await panel.getByRole('switch', { name: '启用 自定义插件索引', exact: true }).getAttribute('aria-checked')).toBe('false')
@@ -852,13 +854,7 @@ describe('web e2e: plugin manager', () => {
     const bundles = await scaffold.ctx.pluginManager.listBundles()
     expect(bundles.some(bundle => bundle.name === '@deepseek-ai/dsh-experimental-terminal-bundle')).toBe(true)
     expect(await panel.getByRole('switch', { name: '启用 持久终端', exact: true }).count()).toBe(0)
-    // The More list also omits LiveShare until its rows run, so the offered count is one lower than
-    // the eligible installed optional-bundle list.
     expect(await panel.locator('[data-plugin-group="more"] [data-plugin-package="@deepseek-ai/dsh-experimental-liveshare"]').count()).toBe(0)
-    expect(await panel.locator('[data-plugin-group="more"] [data-plugin-package]').count())
-      .toBe(bundles.filter(bundle => !HIDDEN_BUNDLES.has(bundle.name)
-        && bundle.name !== '@deepseek-ai/dsh-experimental-liveshare'
-        && bundle.official && (bundle.listedByDefault !== false || bundle.enabled || bundle.installed)).length)
     // Computer Use ships with the installation and is listed only on the macOS Hosts it supports.
     const cuaSupported = process.platform === 'darwin'
     expect(bundles.find(bundle => bundle.name === '@deepseek-ai/dsh-cua-bundle'))
@@ -878,6 +874,7 @@ describe('web e2e: plugin manager', () => {
       ['@deepseek-ai/dsh-experimental-voice-input-bundle', 1],
       ['@deepseek-ai/dsh-experimental-plugin-market-bundle', 1],
       ['@deepseek-ai/dsh-experimental-auto-review', 1],
+      ['@deepseek-ai/dsh-experimental-agent-team-profile', 1],
       ['@deepseek-ai/dsh-experimental-forge-bundle', 1],
       ['@deepseek-ai/dsh-personalized-recommendations', 1],
       ['@deepseek-ai/dsh-experimental-inspector-profile', 1],
@@ -888,9 +885,10 @@ describe('web e2e: plugin manager', () => {
       ['@deepseek-ai/dsh-subagent-codex', 0],
       ['@deepseek-ai/dsh-subagent-claude-code', 0],
     ])
-    expect(await panel.locator('[data-plugin-group="bundles"]').count()).toBe(0)
+    expect(await panel.locator('[data-plugin-group="custom"]').count()).toBe(0)
     await panel.getByRole('button', { name: '返回插件', exact: true }).click()
-    expect(await panel.locator('[data-plugin-group="bundles"] [data-plugin-package]').count()).toBe(2)
+    expect(await panel.locator('[data-plugin-group="custom"] [data-plugin-package="@fixture/bundle"]').count()).toBe(1)
+    expect(await panel.locator(`[data-plugin-group="custom"] [data-plugin-package="${SCAFFOLD_DEFAULTS_BUNDLE}"]`).count()).toBe(1)
     // A bundle that is off still shows the rows its patch declares, without switches.
     await panel.getByRole('button', { name: '查看 @fixture/bundle' }).click()
     await panel.locator('[data-plugin-row]', { hasText: 'fixture-row' }).waitFor({ timeout: 10_000 })
@@ -1179,12 +1177,13 @@ describe('web e2e: plugin manager', () => {
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
 
-  it('provides Team mode per Session without an experimental plugin switch', async () => {
+  it('keeps per-Session Team mode independent of the experimental Agent teams bundle', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-plugin-manager-team'))
     onTestFinished(closeSettings)
     const panel = await openPluginsPanel()
-    expect(await panel.getByRole('switch', { name: '启用 智能体团队', exact: true }).count()).toBe(0)
-    expect(await panel.locator('[data-plugin-package="@deepseek-ai/dsh-experimental-agent-team-profile"]').count()).toBe(0)
+    const experimental = panel.locator('[data-plugin-group="extensions"]')
+    expect(await experimental.getByRole('switch', { name: '启用 智能体团队', exact: true }).getAttribute('aria-checked')).toBe('false')
+    expect(await experimental.locator('[data-plugin-package="@deepseek-ai/dsh-experimental-agent-team-profile"]').count()).toBe(1)
     expect([...scaffold.ctx.loader.entries()].filter(entry =>
       ['agent-team', 'tool-agent-team', 'ui-agent-team'].includes(entry.options.id)
         && entry.fiber?.state === FiberState.ACTIVE)).toHaveLength(3)

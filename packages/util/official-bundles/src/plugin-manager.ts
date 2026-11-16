@@ -63,6 +63,7 @@ export const MORE_BUNDLES: readonly string[] = [
 
 /** Official bundles the plugin manager marks with the Experimental badge. */
 export const EXPERIMENTAL_BUNDLES: ReadonlySet<string> = new Set([
+  '@deepseek-ai/dsh-experimental-agent-team-profile',
   '@deepseek-ai/dsh-personalized-recommendations',
   '@deepseek-ai/dsh-cua-bundle',
   '@deepseek-ai/dsh-experimental-voice-input-bundle',
