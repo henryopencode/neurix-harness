@@ -75,6 +75,8 @@ In pointer modality, `html[data-input-modality='pointer'] body :focus-visible:no
 
 Menu icons use `--dsw-alias-menu-icon`: neutral-bluish 800 in light mode and `label-primary-dimmed` in dark mode.
 
+The `--dsw-alias-composer-action-*` tokens give enabled composer actions a near-black fill with white artwork in light mode and a light-gray fill with dark artwork in dark mode, with separate hover fills. Disabled actions use a medium-gray fill and retain the same artwork color, so an empty draft becomes gray and a sendable draft uses the enabled fill.
+
 The `--dsw-alias-illustration-*` tokens separate layered decorative artwork backgrounds, foreground surfaces, backing layers, shadows, inset fills, and details. Clock faces use the inset fill. The dark palette keeps foreground surfaces brighter than backing layers and backgrounds; inset fills and shadows share the backing tone.
 
 `base.css` suppresses only the outline of focused elements marked `data-dsh-automatic-focus` by the [primitive focus helper](../ui-primitives/README.md); ordinary keyboard focus styling, borders, shadows, and error states remain intact.
