@@ -25,7 +25,7 @@ Enable Voice chat in Plugins for continuous local conversations with SenseVoice 
 <a id="use-this-package"></a>
 ## Use this package
 
-Open Plugins and enable **Voice chat**. Open **Voice chat** beside Send, choose **Download and prepare**, then **Start conversation**. Switching off this bundle ends recording and playback while leaving ordinary dictation available when Voice input is enabled. Apple Silicon Macs with at least 12 GB of memory can prepare local Breeze weights; unsupported Hosts show the hardware requirement before downloading.
+Open Plugins and enable **Voice chat**. Open its plugin details to choose input and recognition settings, then use **Download and prepare**. The empty composer shows the voice waveform; typing restores Send. Desktop minimization keeps voice controls in a compact native window. Switching off this bundle ends recording and playback while leaving ordinary dictation available when Voice input is enabled. Apple Silicon Macs with at least 12 GB of memory can prepare local Breeze weights; unsupported Hosts show the hardware requirement before downloading.
 
 -----
 

@@ -46,6 +46,9 @@
     },
     {
       "path": "../../packages/client/ui-file-actions"
+    },
+    {
+      "path": "../../packages/experimental/voice-chat/tsconfig.host.json"
     }
   ],
   "exclude": [

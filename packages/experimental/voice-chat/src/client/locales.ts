@@ -1,11 +1,33 @@
 /** Locale-owned controls and recovery messages for live voice conversations. */
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 
-/** Locale namespace used by the two voice entries. */
+/** Locale namespace for voice controls and plugin settings. */
 export const NS = 'voiceChat'
 
 /** Chinese copy and typed key owner. */
 export const zh = {
+  muteMicrophone: '关闭麦克风', unmuteMicrophone: '开启麦克风', microphoneMuted: '麦克风已关闭',
+  muteSpeaker: '关闭扬声器', unmuteSpeaker: '开启扬声器', minimize: '最小化语音窗口', restore: '还原窗口', minimizePanel: '最小化语音面板', restorePanel: '展开语音面板',
+  'phase.stopping': '正在结束语音…', 'error.cleanup': '音频设备未能完全释放，请重新打开此页面',
+  'error.controls': '悬浮语音控件不可用，请重新打开页面后再试',
+  configure: '配置实时语音', setupRequired: '请先在插件页准备实时语音', preparingSettings: '正在准备语音资源…',
+  settingsUnavailable: '当前连接无法打开插件配置',
+  recognitionLocal: '录音在运行 DSH 的机器上识别，语音模型也下载到该机器',
+  recognitionCloud: '录音会发送至所选云端识别服务，语音合成仍在运行 DSH 的机器上完成',
+  inputDevice: '输入设备', defaultInput: '系统默认', detectInput: '检测麦克风', savedInput: '已保存的麦克风',
+  inputNumber: '麦克风 {number}', inputNotDetected: '{name}（未检测到）', recognitionService: '识别服务',
+  recognitionLanguage: '识别语言', voiceModel: '适配模型', unavailableModel: '无可用模型',
+  modelSize: '运行 DSH 的机器有 {memory} GB 内存 · 模型约 {gb} GB', resourcesReady: '本地资源已准备，对话时自动唤醒',
+  recognizerMissing: '未检测到识别服务，请检查插件运行状态', preparationFailed: '准备失败，请重试',
+  configurationFailed: '设置未能保存，请重试', recognitionPreparationFailed: '识别资源准备失败：{message}',
+  'recognitionPhase.unprepared': '需要准备识别资源', 'recognitionPhase.ready': '识别资源已准备',
+  'recognitionPhase.standby': '识别资源已准备，对话时自动唤醒', 'recognitionPhase.cancelled': '已取消准备',
+  'recognitionPhase.downloading': '正在下载识别资源…', 'recognitionPhase.checking': '正在检查识别资源…',
+  'recognitionPhase.loading': '正在加载识别模型…', 'recognitionPhase.waking': '正在唤醒识别服务…',
+  'recognitionPhase.cancelling': '正在取消准备…', 'recognitionPhase.failed': '识别资源准备失败',
+  'language.auto': '自动识别', 'language.zh': '中文', 'language.en': '英语', 'language.yue': '粤语',
+  'language.ja': '日语', 'language.es': '西班牙语', 'language.fr': '法语', 'language.de': '德语',
+  'language.ru': '俄语', 'language.pt': '葡萄牙语', 'language.ko': '韩语',
   open: '实时语音', close: '关闭实时语音', start: '开始对话', end: '结束对话',
   prepare: '下载并准备', cancelPrepare: '取消准备', retry: '重新准备',
   recognition: '语音识别', synthesis: '语音合成', ready: '已就绪', unprepared: '需要准备',
@@ -43,6 +65,28 @@ export type VoiceChatKey = keyof typeof zh
 
 /** English fallback with the same keys. */
 export const en: Record<VoiceChatKey, string> = {
+  muteMicrophone: 'Mute microphone', unmuteMicrophone: 'Unmute microphone', microphoneMuted: 'Microphone muted',
+  muteSpeaker: 'Mute speaker', unmuteSpeaker: 'Unmute speaker', minimize: 'Minimize voice window', restore: 'Restore window', minimizePanel: 'Minimize voice panel', restorePanel: 'Expand voice panel',
+  'phase.stopping': 'Ending voice…', 'error.cleanup': 'The audio device could not be fully released. Reopen this page.',
+  'error.controls': 'Desktop voice controls are unavailable. Reopen this page, then try again.',
+  configure: 'Configure voice chat', setupRequired: 'Prepare voice chat on the plugin page', preparingSettings: 'Preparing voice resources…',
+  settingsUnavailable: 'Plugin settings are unavailable on this connection',
+  recognitionLocal: 'Recordings are recognized on the machine running DSH. Speech models download to that machine.',
+  recognitionCloud: 'Recordings go to the selected cloud recognizer. Speech synthesis still runs on the DSH machine.',
+  inputDevice: 'Input device', defaultInput: 'System default', detectInput: 'Check microphone', savedInput: 'Saved microphone',
+  inputNumber: 'Microphone {number}', inputNotDetected: '{name} (not detected)', recognitionService: 'Recognition service',
+  recognitionLanguage: 'Recognition language', voiceModel: 'Selected model', unavailableModel: 'No available model',
+  modelSize: '{memory} GB of memory on the DSH machine · About {gb} GB of model files', resourcesReady: 'Local resources are ready and wake when a conversation starts',
+  recognizerMissing: 'No recognition service was found. Check the plugin runtime status.', preparationFailed: 'Preparation failed. Retry setup.',
+  configurationFailed: 'Settings could not be saved. Try again.', recognitionPreparationFailed: 'Recognition setup failed: {message}',
+  'recognitionPhase.unprepared': 'Recognition setup required', 'recognitionPhase.ready': 'Recognition resources are ready',
+  'recognitionPhase.standby': 'Recognition resources are ready and wake when needed', 'recognitionPhase.cancelled': 'Preparation cancelled',
+  'recognitionPhase.downloading': 'Downloading recognition resources…', 'recognitionPhase.checking': 'Checking recognition resources…',
+  'recognitionPhase.loading': 'Loading the recognition model…', 'recognitionPhase.waking': 'Waking recognition…',
+  'recognitionPhase.cancelling': 'Cancelling preparation…', 'recognitionPhase.failed': 'Recognition setup failed',
+  'language.auto': 'Automatic', 'language.zh': 'Chinese', 'language.en': 'English', 'language.yue': 'Cantonese',
+  'language.ja': 'Japanese', 'language.es': 'Spanish', 'language.fr': 'French', 'language.de': 'German',
+  'language.ru': 'Russian', 'language.pt': 'Portuguese', 'language.ko': 'Korean',
   open: 'Voice chat', close: 'Close voice chat', start: 'Start conversation', end: 'End conversation',
   prepare: 'Download and prepare', cancelPrepare: 'Cancel preparation', retry: 'Prepare again',
   recognition: 'Speech recognition', synthesis: 'Speech synthesis', ready: 'Ready', unprepared: 'Setup required',

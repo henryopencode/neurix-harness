@@ -260,7 +260,8 @@
     "tests/open-in-app-menus.e2e.ts",
     "tests/prompt-admission.e2e.ts",
     "tests/schedule-manual.e2e.ts",
-    "tests/client-ui-stats-panel.e2e.ts"
+    "tests/client-ui-stats-panel.e2e.ts",
+    "tests/voice-settings.e2e.ts"
   ],
   "references": [
     {

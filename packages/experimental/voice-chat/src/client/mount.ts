@@ -6,14 +6,17 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-voice-chat/remote'
 import type {} from '@deepseek-ai/dsh-experimental-api-speech-to-text/remote'
+import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
 import type { RemoteResult, TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
 import type { SpeechCatalog } from '@deepseek-ai/dsh-experimental-api-speech-to-text/types'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { VoiceAudio, VoiceStatus } from '../types.ts'
 import { VoiceConversation } from './controller.ts'
-import { LiveAudio } from './audio.ts'
-import { VoiceChatPanel, VoiceChatTrigger, type VoiceChatInjected, type VoiceSetup } from './VoiceChat.tsx'
+import { LiveAudio, VoiceAudioError } from './audio.ts'
+import { createVoiceInputDevice, discoverVoiceInputs, type VoiceDevices } from './devices.ts'
+import { VoiceChatSettings } from './VoiceChatSettings.tsx'
+import { connectDesktopVoice } from './desktop.ts'
+import { VoiceChatPanel, VoiceChatTrigger, VoiceChatSessionTrigger, type VoiceChatInjected, type VoiceSetup, type VoicePanelView } from './VoiceChat.tsx'
 import { NS, en, zh } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-api-session-controller/client' {
@@ -27,8 +30,35 @@ async function registerUi(ctx: Context): Promise<void> {
   const options = await ctx.remote.voiceChat.options()
   if (!options.ok) throw options.error
   const setup = createSnapshotStore<VoiceSetup>({ voice: null, options: options.value,
-    recognitionReady: false, recognitionPreparing: false, connected: false })
-  const panel = createSnapshotStore<SessionId | null>(null)
+    recognitionReady: false, recognitionPreparing: false, connected: false, recognition: null, preparationError: false })
+  const panel = createSnapshotStore<VoicePanelView>({ sessionId: null, compact: false })
+  const inputDevice = createVoiceInputDevice()
+  const inputDevices = createSnapshotStore<VoiceDevices>({ devices: [], pending: false, error: null })
+  const settingsAvailable = createSnapshotStore(false)
+  const deviceLifetime = new AbortController()
+  let deviceRequest = 0
+  ctx.effect(() => () => { deviceLifetime.abort() })
+  ctx.inject(['pluginNavigation'], (scope: Context) => {
+    scope.effect(() => { settingsAvailable.set(true); return () => { settingsAvailable.set(false) } })
+  })
+  const refreshDevices = (requestAccess: boolean): void => {
+    const request = ++deviceRequest
+    inputDevices.set({ ...inputDevices.getSnapshot(), pending: true, error: null })
+    void discoverVoiceInputs(requestAccess, inputDevice.getSnapshot().id, deviceLifetime.signal).then((devices) => {
+      if (!deviceLifetime.signal.aborted && request === deviceRequest) inputDevices.set({ devices, pending: false, error: null })
+    }).catch((error: unknown) => {
+      if (deviceLifetime.signal.aborted || request !== deviceRequest) return
+      inputDevices.set({ ...inputDevices.getSnapshot(), pending: false,
+        error: error instanceof VoiceAudioError && error.kind === 'permission' ? 'permission'
+          : error instanceof VoiceAudioError && error.kind === 'unsupported' ? 'unsupported' : 'device' })
+    })
+  }
+  ctx.effect(() => {
+    const media = (navigator as Partial<Navigator>).mediaDevices
+    const changed = (): void => { refreshDevices(false) }
+    media?.addEventListener('devicechange', changed)
+    return () => { media?.removeEventListener('devicechange', changed) }
+  })
   let catalog: SpeechCatalog | null = null, speechConnected = false, voiceConnected = false
   const synthesize = async (text: string, signal: AbortSignal, accept: (audio: VoiceAudio) => void): Promise<void> => {
     const stream = ctx.remote.voiceChat.synthesize(text, signal)
@@ -38,13 +68,14 @@ async function registerUi(ctx: Context): Promise<void> {
     } finally { stream.dispose() }
   }
   const conversation = new VoiceConversation({
-    createAudio: () => new LiveAudio(),
+    createAudio: () => new LiveAudio(inputDevice.getSnapshot().id),
     warm: async (signal) => { if (options.value.warmupText !== '') await synthesize(options.value.warmupText, signal, () => {}) },
     retain: (sessionId, signal) => ctx.sessions.retain(sessionId, { source: 'voiceChat', signal }),
     catalog: () => catalog,
     transcribe: (audioBase64, signal) => ctx.remote.speech.transcribe({ audioBase64, ...catalog?.selection }, signal),
     synthesize,
   })
+  const desktop = connectDesktopVoice(ctx, conversation)
   const disconnect = (): void => {
     setup.set({ ...setup.getSnapshot(), connected: false })
     if (conversation.state.getSnapshot().phase !== 'idle') {
@@ -67,7 +98,7 @@ async function registerUi(ctx: Context): Promise<void> {
       for await (const item of recognition) {
         catalog = item.value; speechConnected = true
         const phase = catalog.providers.find(provider => provider.id === catalog?.selection.providerId)?.preparation.phase
-        setup.set({ ...setup.getSnapshot(), connected: voiceConnected,
+        setup.set({ ...setup.getSnapshot(), connected: voiceConnected, recognition: catalog,
           recognitionReady: phase === 'ready' || phase === 'standby' || phase === 'waking',
           recognitionPreparing: phase === 'checking' || phase === 'downloading' || phase === 'loading' })
         item.accept()
@@ -91,25 +122,43 @@ async function registerUi(ctx: Context): Promise<void> {
   })
   ctx.effect(() => ctx.locale.register(NS, { en, zh }))
   const stop = (): void => { void conversation.stop().catch((error: unknown) => { ctx.logger.warn('Voice audio cleanup failed', error) }) }
-  const hidden = (): void => { if (document.hidden) stop() }
+  const hidden = (): void => { if (document.hidden && !desktop.available.getSnapshot()) stop() }
   ctx.effect(() => {
     document.addEventListener('visibilitychange', hidden)
     return () => { document.removeEventListener('visibilitychange', hidden) }
   })
   const preparationFailed = (error: unknown): void => {
     ctx.logger.warn('Voice preparation request failed', error)
-    conversation.state.set({ ...conversation.state.getSnapshot(), error: 'connection' })
+    setup.set({ ...setup.getSnapshot(), preparationError: true })
   }
   const checked = (result: RemoteResult<void>): void => { if (!result.ok) throw result.error }
   const actions: VoiceChatInjected = {
-    hooks: { voiceState: conversation.state, voiceSetup: setup, voicePanel: panel },
+    hooks: { voiceState: conversation.state, voiceSetup: setup, voicePanel: panel,
+      voiceInputDevice: inputDevice, voiceDevices: inputDevices, voiceSettingsAvailable: settingsAvailable,
+      voiceDesktopAvailable: desktop.available },
+    minimize: () => {
+      if (desktop.available.getSnapshot()) desktop.minimize()
+      else panel.set({ ...panel.getSnapshot(), compact: true })
+    },
+    restorePanel: () => { panel.set({ ...panel.getSnapshot(), compact: false }) },
+    toggleMicrophone: () => { conversation.toggleMicrophone() },
+    toggleSpeaker: () => { conversation.toggleSpeaker() },
+    openSettings: () => { ctx.get('pluginNavigation')?.openBundle('@deepseek-ai/dsh-voice-chat-bundle') },
+    refreshInputDevices: refreshDevices,
+    selectInputDevice: (device) => { inputDevice.set(device) },
+    configureRecognition: async (patch) => {
+      const result = await ctx.remote.speech.configure(patch)
+      if (!result.ok) { ctx.logger.warn('Voice recognition configuration failed', result.error); throw result.error }
+    },
     open: (sessionId) => {
       const previous = conversation.state.getSnapshot()
       if (previous.phase === 'idle' && previous.sessionId !== sessionId) {
         conversation.state.set({ ...previous, sessionId, transcript: '', error: null })
       }
-      panel.set(sessionId)
-    }, close: () => { stop(); panel.set(null) },
+      panel.set({ sessionId, compact: false })
+    }, close: () => {
+      void conversation.stop().then(() => { panel.set({ sessionId: null, compact: false }) }).catch((error: unknown) => { ctx.logger.warn('Voice audio cleanup failed', error) })
+    },
     stop: (sessionId) => { if (conversation.state.getSnapshot().sessionId === sessionId) stop() },
     start: (sessionId, replies, turn) => {
       if (setup.getSnapshot().connected && setup.getSnapshot().recognitionReady && setup.getSnapshot().voice?.phase === 'ready') {
@@ -118,6 +167,7 @@ async function registerUi(ctx: Context): Promise<void> {
     },
     observe: (sessionId, replies, turn) => { conversation.observe(sessionId, replies, turn) },
     prepare: () => {
+      setup.set({ ...setup.getSnapshot(), preparationError: false })
       const providerId = catalog?.selection.providerId
       if (providerId && !setup.getSnapshot().recognitionReady) {
         void ctx.remote.speech.prepare(providerId).then(checked).catch(preparationFailed)
@@ -125,6 +175,7 @@ async function registerUi(ctx: Context): Promise<void> {
       if (setup.getSnapshot().voice?.phase !== 'ready') void ctx.remote.voiceChat.prepare().then(checked).catch(preparationFailed)
     },
     cancelPreparation: () => {
+      setup.set({ ...setup.getSnapshot(), preparationError: false })
       const providerId = catalog?.selection.providerId
       if (providerId && setup.getSnapshot().recognitionPreparing) {
         void ctx.remote.speech.cancelPreparation(providerId).then(checked).catch(preparationFailed)
@@ -132,10 +183,16 @@ async function registerUi(ctx: Context): Promise<void> {
       void ctx.remote.voiceChat.cancelPreparation().then(checked).catch(preparationFailed)
     },
   }
-  ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
-    name: 'conversation.input.right', id: 'voice-chat', locale: NS, inject: () => actions }, VoiceChatTrigger))
+  ctx.slots.inject('conversation.input.primary', function* () {
+    yield ctx.slots.register({ name: 'conversation.input.primary', select: owner => owner.idle ? true : null,
+      children: { 'voiceChat.primary': { kind: 'single', scope: 'session' } }, locale: NS }, VoiceChatTrigger)
+    yield ctx.slots.register({ name: 'voiceChat.primary', locale: NS, inject: () => actions }, VoiceChatSessionTrigger)
+  })
   ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
     name: 'conversation.input.dock', id: 'voice-chat', locale: NS, inject: () => actions }, VoiceChatPanel))
+  ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({
+    name: 'plugins.bundle.config', key: '@deepseek-ai/dsh-voice-chat-bundle', locale: NS, inject: () => actions }, VoiceChatSettings))
+
 }
 
 /**

@@ -323,6 +323,8 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * document body because the docked composer contains them.
      */
     'conversation.input.right': { kind: 'list'; scope: 'session' }
+    /** Primary composer action; consumers may replace the empty idle action and otherwise retain the owner's Send/Stop fallback. */
+    'conversation.input.primary': { kind: 'chain'; scope: 'session-maybe'; owner: ComposerPrimaryOwnerProps }
     /**
      * Compact action after the model selector; it can expand across the toolbar while retaining the
      * editor and submit action, and fixed overlays must portal to the document body because the
@@ -610,6 +612,16 @@ export interface InputActivityOwnerProps extends InputControlOwnerProps {
   onActiveChange: (active: boolean) => void
 }
 
+/** State needed to elect an alternative action without taking ownership of sending or stopping. */
+export interface ComposerPrimaryOwnerProps {
+  /** True only for an empty draft without attachments, busy work, retry, or another expanded activity. */
+  readonly idle: boolean
+  /** Whether the composer is locked by its owner. */
+  readonly locked: boolean
+  /** Open the existing workspace picker when no Session has been created yet. */
+  readonly requestWorkspace?: () => void
+}
+
 /** Full props of the resident composer bar. */
 export type ComposerBarProps =
   PropsRuntime<'conversation.composer.bar'>
@@ -618,6 +630,7 @@ export type ComposerBarProps =
     | 'conversation.input.permission'
     | 'conversation.input.left' | 'conversation.input.plan'
     | 'conversation.input.right' | 'conversation.input.model' | 'conversation.input.activity'
+    | 'conversation.input.primary'
     | 'conversation.composer.dock'
   >
   & InjectFace<ComposerBarInjected>

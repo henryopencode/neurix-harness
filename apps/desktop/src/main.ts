@@ -1,6 +1,7 @@
 /** Electron shell: desktop project ownership, custom protocol, windows, and lifecycle. */
 
 import { installFileActions } from './file-actions.ts'
+import { DesktopVoiceWindow } from './voice-window.ts'
 import { configurationFailure, channelSaveFailure, configurationMessage } from './update-configuration.ts'
 import type { DesktopChannelState, DesktopChannelChangeResult } from '@deepseek-ai/dsh-client-ui-settings-general/types'
 import { DesktopUpdateSettings } from './update-settings.ts'
@@ -819,6 +820,7 @@ async function main(): Promise<void> {
   protocol.handle(SCHEME, (request) => {
     const url = new URL(request.url)
     // Shell-owned documents live in the application bundle and never pass through the Host.
+    if (url.hostname === 'voice') return serveWebDocument(request, join(app.getAppPath(), 'lib/voice-window'))
     if (url.hostname === 'shell') return serveWebDocument(request, join(app.getAppPath(),
       url.pathname === '/design-platform.css' ? 'lib/welcome' : 'renderer'))
     if (url.hostname === 'app') {
@@ -885,6 +887,11 @@ async function main(): Promise<void> {
     return owner
   }
   installFileActions(assertMainApplication, () => hostUrl)
+  const voiceControls = new DesktopVoiceWindow({
+    preload: fileURLToPath(new URL('./preload-voice-window.cjs', import.meta.url)),
+    mainWindow: () => mainWindow, assertApplication: assertMainApplication,
+    report: (error) => { console.error('Desktop voice window failed', error) },
+  })
   ipcMain.on(PLATFORM_IPC.bootstrap, (event) => {
     try { event.returnValue = platformView.bootstrap(event) }
     catch { event.returnValue = null }
@@ -1334,6 +1341,7 @@ async function main(): Promise<void> {
   const createMainWindow = (): BrowserWindow => {
     const window = createWindow(appPreload, false, true)
     mainWindow = window
+    voiceControls.attach(window)
     browserGuests.bind(window, (guest, name) => shortcuts.attachGuest(window, guest, name))
     shortcuts.attach(window)
     window.on('focus', automaticCheck)

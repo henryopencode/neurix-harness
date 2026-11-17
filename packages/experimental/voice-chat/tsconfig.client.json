@@ -50,6 +50,9 @@
     },
     {
       "path": "../../core/session"
+    },
+    {
+      "path": "../../client/ui-plugin-manager/tsconfig.client.json"
     }
   ],
   "include": [

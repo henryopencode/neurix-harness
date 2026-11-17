@@ -41,6 +41,44 @@ export interface VoiceAudio {
   readonly sampleRate: number
 }
 
+/** Browser conversation state displayed by both the main window and desktop controls. */
+export type VoiceConversationPhase = 'idle' | 'requesting' | 'warming' | 'listening' | 'recording' | 'transcribing' | 'thinking' | 'speaking' | 'stopping'
+
+/** Commands accepted from the owned desktop voice window. */
+export type DesktopVoiceCommand = 'microphone' | 'speaker' | 'end' | 'restore'
+
+/** Shell control actions and a failure that requires ending hidden audio. */
+export type DesktopVoiceEvent = DesktopVoiceCommand | 'unavailable'
+
+/** Localized desktop control labels, supplied by the voice plugin's active locale. */
+export interface DesktopVoiceLabels {
+  readonly status: string
+  readonly muteMicrophone: string
+  readonly unmuteMicrophone: string
+  readonly muteSpeaker: string
+  readonly unmuteSpeaker: string
+  readonly end: string
+  readonly restore: string
+}
+
+/** Compact audio state; it contains no conversation titles, transcripts, or task inventory. */
+export interface DesktopVoiceState {
+  readonly phase: Exclude<VoiceConversationPhase, 'idle'>
+  readonly microphoneMuted: boolean
+  readonly speakerMuted: boolean
+  readonly labels: DesktopVoiceLabels
+}
+
+/** Optional desktop-owned controls; browser-only clients retain their foreground audio lifetime. */
+export interface DesktopVoiceBridge {
+  /** @param state - current audio state; null withdraws the controls after audio release. @returns after the shell accepts the state. */
+  publish(state: DesktopVoiceState | null): Promise<void>
+  /** @returns after the main window is minimized and the compact controls are requested. */
+  minimize(): Promise<void>
+  /** @param listener - receiver for owned audio-control actions. @returns the listener disposer. */
+  subscribe(listener: (command: DesktopVoiceEvent) => void): () => void
+}
+
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
     /** Local synthesis failed; callers stop playback and offer a fresh attempt. */

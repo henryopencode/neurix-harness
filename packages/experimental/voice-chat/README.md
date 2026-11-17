@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Start a continuous voice conversation beside the existing composer. Pauses submit recognized text through normal Session admission; visible assistant answers play as speech, and speaking interrupts playback. Models download only after Download and prepare. Local Breeze currently requires an Apple Silicon Mac with at least 12 GB of memory.
+Prepare local voice models on the plugin page, then start a continuous voice conversation from the empty composer. Pauses submit recognized text through normal Session admission; visible assistant answers play as speech, and speaking interrupts playback. Models download only after Download and prepare. Local Breeze currently requires an Apple Silicon Mac with at least 12 GB of memory.
 
 ## Table of Contents
 
@@ -25,7 +25,11 @@ Start a continuous voice conversation beside the existing composer. Pauses submi
 <a id="use-this-package"></a>
 ## Use this package
 
-Enable the [Voice chat bundle](../voice-chat-bundle/README.md), then open **Voice chat** beside Send. **Download and prepare** prepares recognition and Breeze. **Start conversation** acquires the microphone; **End conversation** or closing the panel releases capture and playback. Switching Sessions, hiding the page, disconnecting, and disabling the plugin also stop capture. Ending voice mode leaves an already submitted text task running.
+Enable the [Voice chat bundle](../voice-chat-bundle/README.md), then open **Plugins → Custom plugins → Voice chat**. Select a microphone, recognition service, and language; the page shows the hardware-selected Breeze model and each service's preparation state. **Download and prepare** explicitly prepares recognition and Breeze. Opening settings does not acquire the microphone; **Check microphone** requests permission, lists inputs, and releases its check capture. Input preferences stay in this browser, independently of dictation preferences.
+
+An empty composer shows the waveform action. Text or attachments restore Send; running-task Stop and retry actions keep their existing behavior. Click the waveform to start prepared voice capture; an unprepared service opens plugin settings. **End conversation** releases capture and playback without cancelling an already submitted text task. Microphone mute discards an unfinished utterance; speaker mute preserves synthesis and the written reply.
+
+Desktop minimization keeps the same conversation active in a compact native window with microphone, speaker, End, and Restore controls. It contains no running-session list. A browser-only client can minimize the voice panel into a page-local floating control; it stops capture when its page is hidden. Switching Sessions, disconnecting, and disabling the plugin also stop capture. A native control-window failure restores the main window and ends voice mode.
 
 Automatic selection uses MLX 4-bit below 32 GB and MLX 8-bit at 32 GB or more. The checkpoints occupy about 3.0 GB and 4.6 GB respectively, plus the managed Python runtime, dependencies, and recognition models. Explicit `model: mlx-8bit` requires at least 24 GB. Unsupported hardware is reported before downloading; the plugin never switches to a cloud service. [Breeze's model license](https://huggingface.co/BreezeBlue/Breeze-TTS-2/blob/main/LICENSE) limits weights and self-hosted outputs to research and non-commercial use.
 
@@ -42,6 +46,8 @@ The bundle supplies an absolute `dataRoot` under the Harness home. `modelOrigin`
 The browser owns one echo-cancelled AudioWorklet capture and Web Audio playback lifetime. Sample-clock detection keeps bounded onset audio and suppresses brief noise. Recognition uses the existing speech Remote; ordinary Session submission logs the resulting text. Chat's published snapshots supply only visible assistant text to a monotonic sentence cursor, so history, repeated snapshots, reasoning, and tool calls are not read aloud. Playback and synthesis queues are bounded. A recognized message with uncertain delivery is preserved for manual insertion; the plugin never retries it automatically.
 
 The Host checks pinned sizes and SHA-256 hashes before accepting model caches. Explicit preparation installs a release-pinned uv, private Python, and MLX Audio without changing system Python. One authenticated loopback worker produces mono 24 kHz PCM16; cancelled or failed inference joins worker termination before subsequent synthesis. HTTP chunk framing distinguishes a completed response from a truncated stream. Downloads publish atomically, and verified completed files survive retries. The shipped configuration adds no model tool or agent-loop branch.
+
+The primary renderer owns audio and Session retention; the desktop window projects revisioned phase and mute state through origin-checked IPC. It never creates another recorder or Host. The shell disables background throttling only for that audio lifetime and restores its previous value after release. See the [desktop voice ownership decision](../../../.agents/notes/implemented/architecture/2026-11-16-desktop-voice-controls.md).
 
 Python scripts and the pinned dependency list are materialized as owner-only files under the user cache before external executables read them. Their content-addressed directory supports packaged Electron archives without changing the installed application. Preparation reports the failing stage with recovery guidance; retries reuse the existing private Python and verified model files.
 

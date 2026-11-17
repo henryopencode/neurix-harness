@@ -48,6 +48,12 @@ export class TurnDetector {
   constructor(private readonly rate: number, private readonly options: VoiceOptions,
     private readonly speechStarted: () => void, private readonly finished: (samples: Float32Array) => void) {}
 
+  /** Discard an unfinished utterance when input is muted. */
+  reset(): void {
+    this.preceding = []; this.utterance = []; this.retainedSamples = 0
+    this.elapsedMs = 0; this.lastSpeechMs = 0; this.voicedMs = 0; this.confirmed = false
+  }
+
   /**
    * Admit one ordered microphone frame; silence never creates a turn.
    * @param samples - owned mono frame at the detector's sample rate.
@@ -113,6 +119,12 @@ export class LiveAudio {
   private readonly playing = new Set<AudioBufferSourceNode>()
   private playbackUntil = 0
   private closing: Promise<void> | undefined
+  private detector: TurnDetector | undefined
+  private playback: GainNode | undefined
+  private inputMuted = false
+  private outputMuted = false
+
+  constructor(private readonly inputDeviceId = '') {}
 
   /**
    * Start echo-cancelled continuous capture and unlock browser audio in the user gesture.
@@ -129,11 +141,17 @@ export class LiveAudio {
     this.context = new AudioContext({ sampleRate: 16000 })
     const context = this.context
     await context.resume()
+    this.playback = context.createGain()
+    this.playback.gain.value = this.outputMuted ? 0 : 1
+    this.playback.connect(context.destination)
     try {
       const stream = await devices.getUserMedia({ audio: {
-        echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false })
+        echoCancellation: true, noiseSuppression: true, autoGainControl: true,
+        ...this.inputDeviceId === '' ? {} : { deviceId: { exact: this.inputDeviceId } },
+      }, video: false })
       if (this.lifetime.signal.aborted) { for (const track of stream.getTracks()) track.stop(); this.lifetime.signal.throwIfAborted() }
       this.stream = stream
+      for (const track of stream.getAudioTracks()) track.enabled = !this.inputMuted
       for (const track of stream.getTracks()) track.addEventListener('ended', () => { failed(new VoiceAudioError('device')) }, { signal: this.lifetime.signal })
       const url = URL.createObjectURL(new Blob([captureProcessor], { type: 'text/javascript' }))
       try { await context.audioWorklet.addModule(url) } finally { URL.revokeObjectURL(url) }
@@ -144,8 +162,11 @@ export class LiveAudio {
           if (!this.lifetime.signal.aborted) utterance(audio)
         }).catch(() => { if (!this.lifetime.signal.aborted) failed(new VoiceAudioError('device')) })
       })
+      this.detector = detector
       this.capture = new AudioWorkletNode(context, 'neurix-voice-capture', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] })
-      this.capture.port.onmessage = (event: MessageEvent<Float32Array>) => { if (!this.lifetime.signal.aborted) detector.push(event.data) }
+      this.capture.port.onmessage = (event: MessageEvent<Float32Array>) => {
+        if (!this.lifetime.signal.aborted && !this.inputMuted) detector.push(event.data)
+      }
       this.capture.onprocessorerror = () => { failed(new VoiceAudioError('device')) }
       context.createMediaStreamSource(stream).connect(this.capture)
       this.capture.connect(context.destination)
@@ -179,7 +200,7 @@ export class LiveAudio {
     const samples = buffer.getChannelData(0)
     for (let index = 0; index < samples.length; index++) samples[index] = view.getInt16(index * 2, true) / 32768
     const source = context.createBufferSource()
-    source.buffer = buffer; source.connect(context.destination)
+    source.buffer = buffer; source.connect(this.playback ?? context.destination)
     const finished = new Promise<void>((resolve) => {
       source.onended = () => { this.playing.delete(source); source.disconnect(); resolve() }
     })
@@ -196,6 +217,23 @@ export class LiveAudio {
     this.playbackUntil = 0
   }
 
+  /** Suppress microphone frames and discard an unfinished utterance.
+   * @param muted - whether input should remain muted.
+   */
+  setMicrophoneMuted(muted: boolean): void {
+    this.inputMuted = muted
+    if (muted) this.detector?.reset()
+    for (const track of this.stream?.getAudioTracks() ?? []) track.enabled = !muted
+  }
+
+  /** Mute current and queued playback without discarding the written response.
+   * @param muted - whether output should remain inaudible.
+   */
+  setSpeakerMuted(muted: boolean): void {
+    this.outputMuted = muted
+    if (this.playback) this.playback.gain.value = muted ? 0 : 1
+  }
+
   /**
    * Invalidate permission grants, stop all tracks and playback, and close Web Audio.
    * @returns the shared, joined release promise.
@@ -205,6 +243,7 @@ export class LiveAudio {
     this.lifetime.abort(); this.interrupt()
     for (const track of this.stream?.getTracks() ?? []) track.stop()
     this.capture?.port.close(); this.capture?.disconnect()
+    this.playback?.disconnect(); this.detector?.reset()
     const context = this.context
     this.context = undefined
     this.closing = context && context.state !== 'closed' ? context.close() : Promise.resolve()
