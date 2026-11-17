@@ -13,7 +13,7 @@ import { VoiceConversation, type VoiceConversationDependencies } from '../src/cl
 
 const sid = 'voice-session' as SessionId
 const options: VoiceOptions = { speechThreshold: 0.02, silenceMs: 300, minimumSpeechMs: 150,
-  preRollMs: 200, maxUtteranceSeconds: 2, maxSentenceCharacters: 100, maxPendingSentences: 32, warmupText: '你好。' }
+  preRollMs: 200, maxUtteranceSeconds: 2, maxSentenceCharacters: 100, maxPendingSentences: 32, warmupText: '你好。', voice: 'natural', playbackBufferMs: 320 }
 
 function fixture() {
   const audio = { start: vi.fn<LiveAudio['start']>(async () => {}), play: vi.fn(async () => {}), interrupt: vi.fn(), setMicrophoneMuted: vi.fn(), setSpeakerMuted: vi.fn(), dispose: vi.fn(async () => {}) }
@@ -32,7 +32,7 @@ function fixture() {
     catalog: () => ({ maxAudioBytes: 10000 } as SpeechCatalog),
     transcribe: vi.fn<VoiceConversationDependencies['transcribe']>(async () => ({
       ok: true, value: { text: '请检查代码', audioSeconds: 1, inferenceSeconds: 0.1 } })),
-    synthesize: vi.fn<VoiceConversationDependencies['synthesize']>(async (_text, _signal, accept) => {
+    synthesize: vi.fn<VoiceConversationDependencies['synthesize']>(async (_text, _voice, _signal, accept) => {
       accept({ pcmBase64: 'AAAAAA==', sampleRate: 24000 })
     }),
   }
@@ -56,6 +56,68 @@ it('routes microphone and speaker mute controls to the same audio owner without 
   expect(b.audio.setSpeakerMuted).toHaveBeenLastCalledWith(false)
   await b.conversation.stop()
   expect(b.release).toHaveBeenCalledOnce()
+})
+
+it('keeps capture muted until local warmup completes and ignores early microphone callbacks', async () => {
+  const b = fixture(), warm = Promise.withResolvers<undefined>()
+  vi.mocked(b.dependencies.warm).mockReturnValue(warm.promise)
+  const starting = b.conversation.start(sid, { ...options, voice: 'warm' }, [], 0)
+  await vi.waitFor(() => { expect(b.audio.start).toHaveBeenCalledOnce() })
+  expect(b.conversation.state.getSnapshot().phase).toBe('warming')
+  expect(b.audio.setMicrophoneMuted).toHaveBeenLastCalledWith(true)
+  b.speech(); b.utterance()
+  expect(b.dependencies.transcribe).not.toHaveBeenCalled()
+  expect(b.dependencies.warm).toHaveBeenCalledWith('warm', expect.any(AbortSignal))
+  warm.resolve(undefined); await starting
+  expect(b.conversation.state.getSnapshot().phase).toBe('listening')
+  expect(b.audio.setMicrophoneMuted).toHaveBeenLastCalledWith(false)
+  await b.conversation.stop()
+})
+
+it('shows thinking for a typed message and keeps the selected voice throughout queued playback', async () => {
+  const b = fixture(), first = Promise.withResolvers<undefined>(), second = Promise.withResolvers<undefined>()
+  b.audio.play.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
+  await b.conversation.start(sid, { ...options, voice: 'calm', maxSentenceCharacters: 20 }, [], 0)
+  b.conversation.observe(sid, [], 1, true)
+  expect(b.conversation.state.getSnapshot().phase).toBe('thinking')
+  const reply = { key: '1/1', turn: 1, text: `${'一'.repeat(19)}。${'二'.repeat(19)}。`, final: true }
+  b.conversation.observe(sid, [reply], 1, false)
+  await vi.waitFor(() => { expect(b.dependencies.synthesize).toHaveBeenCalledTimes(2) })
+  expect(vi.mocked(b.dependencies.synthesize).mock.calls.every(call => call[1] === 'calm')).toBe(true)
+  first.resolve(undefined)
+  await first.promise
+  expect(b.conversation.state.getSnapshot().phase).toBe('speaking')
+  second.resolve(undefined)
+  await vi.waitFor(() => { expect(b.conversation.state.getSnapshot().phase).toBe('listening') })
+  await b.conversation.stop()
+})
+
+it('joins cancelled inference before releasing the retained Session', async () => {
+  const b = fixture(), inference = Promise.withResolvers<undefined>()
+  vi.mocked(b.dependencies.synthesize).mockImplementation(async () => { await inference.promise })
+  await b.conversation.start(sid, options, [], 0)
+  b.conversation.observe(sid, [{ key: '1/1', turn: 1, text: '正在回复。', final: true }], 1)
+  await vi.waitFor(() => { expect(b.dependencies.synthesize).toHaveBeenCalledOnce() })
+  const stopping = b.conversation.stop()
+  expect(vi.mocked(b.dependencies.synthesize).mock.calls[0]![2].aborted).toBe(true)
+  expect(b.release).not.toHaveBeenCalled()
+  inference.resolve(undefined); await stopping
+  expect(b.release).toHaveBeenCalledOnce()
+})
+
+it('joins short queued sentences before starting another synthesis request', async () => {
+  const b = fixture(), inference = Promise.withResolvers<undefined>()
+  vi.mocked(b.dependencies.synthesize).mockImplementationOnce(async () => { await inference.promise })
+  await b.conversation.start(sid, options, [], 0)
+  const reply = { key: '1/1', turn: 1, text: '第一句。', final: false }
+  b.conversation.observe(sid, [reply], 1)
+  await vi.waitFor(() => { expect(b.dependencies.synthesize).toHaveBeenCalledOnce() })
+  b.conversation.observe(sid, [{ ...reply, text: '第一句。第二句。' }], 1)
+  b.conversation.observe(sid, [{ ...reply, text: '第一句。第二句。第三句。', final: true }], 1)
+  inference.resolve(undefined)
+  await vi.waitFor(() => { expect(b.dependencies.synthesize).toHaveBeenCalledTimes(2) })
+  expect(vi.mocked(b.dependencies.synthesize).mock.calls[1]![0]).toBe('第二句。第三句。')
+  await b.conversation.stop()
 })
 
 it('keeps controls in the stopping state until audio release settles', async () => {
@@ -131,15 +193,26 @@ it('invalidates a microphone permission grant when the conversation closes', asy
   expect(b.audio.dispose).toHaveBeenCalledTimes(1)
 })
 
-it('bounds queued speech and leaves long answers available as text', async () => {
+it('bounds queued speech and resumes a long answer as playback releases capacity', async () => {
   const b = fixture()
+  const playing: PromiseWithResolvers<undefined>[] = []
+  b.audio.play.mockImplementation(() => {
+    const playback = Promise.withResolvers<undefined>(); playing.push(playback); return playback.promise
+  })
+  b.audio.dispose.mockImplementation(async () => { for (const playback of playing) playback.resolve(undefined) })
   try {
-    await b.conversation.start(sid, { ...options, maxPendingSentences: 2 }, [], 0)
+    await b.conversation.start(sid, { ...options, maxSentenceCharacters: 20, maxPendingSentences: 2 }, [], 0)
     b.speech(); b.utterance()
     await vi.waitFor(() => { expect(b.prompt).toHaveBeenCalledTimes(1) })
-    b.conversation.observe(sid, [{ key: '1/1', turn: 1, text: '第一句。第二句。第三句。', final: true }], 1)
-    await b.conversation.stop()
-    expect(b.conversation.state.getSnapshot()).toMatchObject({ phase: 'idle', error: 'tooLong' })
-    expect(b.dependencies.synthesize).not.toHaveBeenCalled()
+    const text = `${'一'.repeat(19)}。`.repeat(10)
+    b.conversation.observe(sid, [{ key: '1/1', turn: 1, text, final: true }], 1)
+    await vi.waitFor(() => { expect(b.audio.play).toHaveBeenCalledTimes(2) })
+    expect(b.dependencies.synthesize).toHaveBeenCalledTimes(2)
+    for (let index = 0; index < 10; index++) {
+      await vi.waitFor(() => { expect(playing[index]).toBeDefined() })
+      playing[index]!.resolve(undefined)
+    }
+    await vi.waitFor(() => { expect(b.conversation.state.getSnapshot()).toMatchObject({ phase: 'listening', error: null }) })
+    expect(vi.mocked(b.dependencies.synthesize).mock.calls.map(call => call[0]).join('')).toBe(text)
   } finally { await b.conversation.stop() }
 })

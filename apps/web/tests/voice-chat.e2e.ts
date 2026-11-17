@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { chromium, type Browser } from 'playwright'
 import { expect, it, onTestFinished } from 'vitest'
 import type {} from '@deepseek-ai/dsh-experimental-speech-to-text'
+import type {} from '@deepseek-ai/dsh-voice-chat'
 import type { SpeechProviderId } from '@deepseek-ai/dsh-experimental-speech-to-text/types'
 import { fixtureUserPrompts, launchWebScaffold, webSnapshotMode, watchConsole, type WebScaffold } from './scaffold.ts'
 import { connectFreshWorkspace, newEnglishPage } from './support.ts'
@@ -27,7 +28,7 @@ it.skipIf(webSnapshotMode() === 'record')('opens local voice setup without recor
   const prompt = fixtureUserPrompts(await readFile(fixture, 'utf8'))[0]!
   await writeFile(overlay, `- id: speech-to-text-sensevoice\n  disabled: true\n- id: voice-chat\n  config:\n    dataRoot: ${JSON.stringify(dataRoot)}\n`)
   const scaffold = await launchWebScaffold({ profile: { packages: [{ dir: bundle, enabled: true }] },
-    extraOverlayPath: overlay, replayFixture: fixture })
+    extraOverlayPath: [fileURLToPath(new URL('./pin-browse-picker.overlay.yml', import.meta.url)), overlay], replayFixture: fixture })
   resources.scaffold = scaffold
   if (cachedModel) {
     await scaffold.ctx.plugin({ inject: ['speechToText'], apply(ctx) {
@@ -40,6 +41,7 @@ it.skipIf(webSnapshotMode() === 'record')('opens local voice setup without recor
         },
       }))
     } })
+    scaffold.ctx.voiceChat.prepare()
   }
   let prompts = 0
   scaffold.ctx.on('session/event', (_session, event) => { if (event.type === 'user/message' && event.data.source.kind === 'user') prompts++ })
@@ -52,11 +54,21 @@ it.skipIf(webSnapshotMode() === 'record')('opens local voice setup without recor
       navigator.mediaDevices.getUserMedia = async () => { throw new Error('Opening setup must not acquire a microphone') }
       return
     }
-    const holder = window as Window & { voiceTestSpeak?: () => void; voiceTestPlaybackCount?: number; voiceTestTracks?: MediaStreamTrack[] }
+    const holder = window as Window & {
+      voiceTestSpeak?: () => void
+      voiceTestPlaybackCount?: number
+      voiceTestTracks?: MediaStreamTrack[]
+      voiceTestPlayback?: { start: number; duration: number }[]
+    }
     holder.voiceTestPlaybackCount = 0
+    holder.voiceTestPlayback = []
     AudioContext.prototype.createBufferSource = function () {
       const source = BaseAudioContext.prototype.createBufferSource.call(this), start = source.start.bind(source)
-      source.start = (when, offset, duration) => { holder.voiceTestPlaybackCount!++; start(when, offset, duration) }
+      source.start = (when, offset, duration) => {
+        holder.voiceTestPlaybackCount!++
+        holder.voiceTestPlayback!.push({ start: when ?? this.currentTime, duration: source.buffer?.duration ?? 0 })
+        start(when, offset, duration)
+      }
       return source
     }
     const context = new AudioContext({ sampleRate: 16000 }), oscillator = context.createOscillator()
@@ -79,7 +91,7 @@ it.skipIf(webSnapshotMode() === 'record')('opens local voice setup without recor
   await panel.waitFor()
   expect(prompts).toBe(0)
   for (const [width, theme] of [[1280, 'light'], [420, 'dark']] as const) {
-    if (width === 420) await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click()
+    if (width === 420 && !cachedModel) await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click()
     await page.setViewportSize({ width, height: 900 })
     await page.emulateMedia({ colorScheme: theme })
     const rectangle = await panel.boundingBox()
@@ -88,8 +100,8 @@ it.skipIf(webSnapshotMode() === 'record')('opens local voice setup without recor
     expect(rectangle!.x + rectangle!.width).toBeLessThanOrEqual(width)
     if (cachedModel) {
       const composer = await page.locator('[data-composer-card]').boundingBox()
-      expect(Math.abs(rectangle!.x - composer!.x)).toBeLessThanOrEqual(1)
-      expect(Math.abs(rectangle!.width - composer!.width)).toBeLessThanOrEqual(1)
+      expect(composer).not.toBeNull()
+      await page.getByRole('dialog', { name: 'Voice chat', exact: true }).waitFor()
       expect(await panel.getByRole('button', { name: 'End conversation', exact: true }).isVisible()).toBe(true)
     } else await panel.getByRole('combobox', { name: 'Input device', exact: true }).waitFor()
     await page.screenshot({ path: join(review, `${width}-${theme}.png`) })
@@ -117,15 +129,18 @@ it.skipIf(webSnapshotMode() === 'record')('opens local voice setup without recor
     await page.waitForFunction(() => ((window as Window & { voiceTestPlaybackCount?: number }).voiceTestPlaybackCount ?? 0) > 0,
       undefined, { timeout: 90_000 })
     await page.screenshot({ path: join(review, 'playback.png') })
-    const voiceBox = await panel.boundingBox(), composerBox = await page.locator('[data-composer-card]').boundingBox()
-    expect(Math.abs(voiceBox!.x - composerBox!.x)).toBeLessThanOrEqual(1)
-    expect(Math.abs(voiceBox!.width - composerBox!.width)).toBeLessThanOrEqual(1)
+    await page.locator('[data-voice-chat="listening"]').waitFor({ timeout: 90_000 })
+    expect(await page.locator('[data-voice-orb]').count()).toBe(1)
+    const playback = await page.evaluate(() =>
+      (window as Window & { voiceTestPlayback?: { start: number; duration: number }[] }).voiceTestPlayback ?? [])
+    const gaps = playback.slice(1).map((fragment, index) =>
+      Math.max(0, fragment.start - playback[index]!.start - playback[index]!.duration))
+    process.stdout.write(`Real Breeze Web playback: ${JSON.stringify({ fragments: playback.length, largestScheduledGapMs: Math.max(0, ...gaps) * 1000 })}\n`)
     await panel.getByRole('button', { name: 'End conversation', exact: true }).click()
     expect(await page.evaluate(() => (window as Window & { voiceTestTracks?: MediaStreamTrack[] }).voiceTestTracks
       ?.every(track => track.readyState === 'ended'))).toBe(true)
   }
   if (cachedModel) {
-    await panel.getByRole('button', { name: 'Close voice chat', exact: true }).click()
     await expect.poll(() => panel.count()).toBe(0)
   }
   expect(console.pageErrors).toEqual([])

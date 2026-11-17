@@ -4,6 +4,7 @@ import { Button, Select, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
 import type { SpeechProviderId } from '@deepseek-ai/dsh-experimental-speech-to-text/types'
+import type { VoicePreset } from '../types.ts'
 import type { VoiceChatInjected } from './VoiceChat.tsx'
 import { NS } from './locales.ts'
 import css from './VoiceChatSettings.module.css'
@@ -11,9 +12,11 @@ import css from './VoiceChatSettings.module.css'
 type SettingsProps = PropsRuntime<'plugins.bundle.config'> & PropsLocale<typeof NS> & InjectFace<VoiceChatInjected>
 /** Configure realtime voice on its plugin page without starting a conversation or an automatic download. */
 export function VoiceChatSettings({ useVoiceSetup, useVoiceState, useVoiceDevices, useVoiceInputDevice,
-  refreshInputDevices, selectInputDevice, configureRecognition, prepare, cancelPreparation, t }: SettingsProps) {
+  useVoicePreference, refreshInputDevices, selectInputDevice, selectVoice, configureRecognition,
+  prepare, cancelPreparation, t }: SettingsProps) {
   const setup = useVoiceSetup(value => value), state = useVoiceState(value => value)
   const inputs = useVoiceDevices(value => value), input = useVoiceInputDevice(value => value)
+  const voicePreference = useVoicePreference(value => value)
   const [saving, setSaving] = useState(false), [saveError, setSaveError] = useState(false)
   useEffect(() => { refreshInputDevices(false) }, [refreshInputDevices])
   const catalog = setup.recognition, voice = setup.voice
@@ -67,6 +70,11 @@ export function VoiceChatSettings({ useVoiceSetup, useVoiceState, useVoiceDevice
         <span>{voice?.model ? t(`model.${voice.model}`) : t('unavailableModel')}</span>
         {voice?.model && <small>{t('modelSize', { gb: (voice.downloadBytes / 1e9).toFixed(1), memory: (voice.hardware.memoryBytes / 1024 ** 3).toFixed(0) })}</small>}
       </div></div>
+      <div className={css.field}><span>{t('voice')}</span>
+        <Select aria-label={t('voice')} value={voicePreference} disabled={unavailable}
+          options={(['natural', 'warm', 'calm'] satisfies VoicePreset[]).map(voice => ({ value: voice, label: t(`voice.${voice}`) }))}
+          onValueChange={(voice) => { selectVoice(voice as VoicePreset) }} />
+      </div>
       {saveError && <p className={css.error} role="alert">{t('configurationFailed')}</p>}
     </div>
     {provider && <p className={css.note}>{t(provider.location === 'cloud' ? 'recognitionCloud' : 'recognitionLocal')}</p>}

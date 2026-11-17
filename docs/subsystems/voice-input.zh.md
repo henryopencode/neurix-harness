@@ -30,7 +30,7 @@ Host Provider 在页面和 Session 变化期间拥有同一个准备任务。Cli
 
 可选的[实时语音插件](../../packages/experimental/voice-chat/README.zh.md)提供按静音分段自动提交和 Breeze TTS 2 流式播报。硬件选型与显式准备由 Host 拥有；录音与打断由浏览器拥有。助手语音派生自现有 Chat 快照，识别文字通过普通提交写入 Session 日志。切换 Session、隐藏页面、断开连接或插件卸载会停止语音模式。结束语音模式后，文字智能体继续运行。
 
-`VoiceStatus` 报告按硬件选择的 `VoiceModel`、准备操作、模型字节进度和分类错误。`VoiceHardware` 记录原生架构与物理内存，包括通过 Rosetta 检测到的 Apple Silicon。`VoiceOptions` 提供有界的采样时钟检测和语音队列设置。`VoiceAudio` 通过规范 base64 携带单声道 24 kHz PCM16 分片；取消会丢弃排队音频并等待工作进程终止。准备状态观察者不拥有或取消 Host 的下载任务。
+`VoiceStatus` 报告按硬件选择的 `VoiceModel`、准备操作、模型字节进度和分类错误。`VoiceHardware` 记录原生架构与物理内存，包括通过 Rosetta 检测到的 Apple Silicon。`VoiceOptions` 提供有界的采样时钟检测、播放缓冲、默认 `VoicePreset` 和语音队列设置。`VoiceSynthesisRequest` 为有界可见文字选择音色；仅传字符串的合成请求使用部署默认值。`VoiceAudio` 通过规范 base64 携带单声道 24 kHz PCM16 分片；取消会丢弃排队音频并等待工作进程终止。准备状态观察者不拥有或取消 Host 的下载任务。
 
 “语音输入”与“实时语音”使用独立的 Bundle 开关。相同的语音条目仅组合一次，转写 API 拥有共享浏览器命名空间。`VoiceStatus.failedStep` 区分资源复制、独立 Python、依赖安装、模型下载和加载失败，界面据此给出对应的重试建议。
 
@@ -201,11 +201,11 @@ Owns one model worker; downloads and Python installation require prepare().
 
 /**
  * Speak one bounded plain-text segment with the prepared local model.
- * @param text - one sentence or bounded fragment of the assistant's visible answer.
+ * @param request - bounded visible text with an explicit voice; a string uses the deployment's default voice.
  * @param signal - playback cancellation; stopping inference reclaims and joins the worker.
  * @returns mono 24 kHz PCM16 fragments. Partial failures reject and never report success.
  */
-@Remote({ mode: 'stream' }) async *synthesize(text: string, signal: AbortSignal): AsyncIterable<VoiceAudio>
+@Remote({ mode: 'stream' }) async *synthesize(request: string | VoiceSynthesisRequest, signal: AbortSignal): AsyncIterable<VoiceAudio>
 ```
 
 Source: [`packages/experimental/voice-chat/src/index.ts`](../../packages/experimental/voice-chat/src/index.ts)

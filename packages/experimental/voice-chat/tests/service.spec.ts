@@ -22,7 +22,16 @@ async function collect<T>(source: AsyncIterable<T>): Promise<T[]> {
 }
 
 async function fixture(body = Buffer.from([0, 0, 1, 0]), startup: Promise<unknown> = Promise.resolve()) {
-  const server = createServer((_request, response) => { response.writeHead(200, { 'Content-Type': 'application/octet-stream' }); response.end(body) })
+  const requests: unknown[] = []
+  const server = createServer((request, response) => {
+    const chunks: Buffer[] = []
+    request.on('data', (chunk: Buffer) => { chunks.push(chunk) })
+    request.on('error', () => { response.destroy() })
+    request.on('end', () => {
+      requests.push(JSON.parse(Buffer.concat(chunks).toString('utf8')))
+      response.writeHead(200, { 'Content-Type': 'application/octet-stream' }); response.end(body)
+    })
+  })
   onTestFinished(async () => { server.closeAllConnections(); await new Promise<void>((resolve) => { server.close(() => { resolve() }) }) })
   await new Promise<void>((resolve) => { server.listen(0, '127.0.0.1', resolve) })
   const address = server.address()
@@ -54,7 +63,7 @@ async function fixture(body = Buffer.from([0, 0, 1, 0]), startup: Promise<unknow
   const following = (async () => { for await (const value of api.follow(observer.signal)) state = value })()
   onTestFinished(async () => { observer.abort(); await following })
   await vi.waitFor(() => { expect(state?.phase).toBe('ready') })
-  return { api, ctx, spawn, children, state: () => state }
+  return { api, ctx, spawn, children, requests, state: () => state }
 }
 
 it('restores a verified cache without downloading or spawning and streams mono PCM', async () => {
@@ -64,8 +73,16 @@ it('restores a verified cache without downloading or spawning and streams mono P
   expect(Buffer.concat(audio.map(item => Buffer.from(item.pcmBase64, 'base64')))).toEqual(Buffer.from([0, 0, 1, 0]))
   expect(audio.every(item => item.sampleRate === 24000)).toBe(true)
   expect(b.spawn).toHaveBeenCalledTimes(1)
+  expect(b.requests[0]).toEqual({ text: '你好。', voice: 'natural' })
   await collect(b.api.synthesize('下一句。', new AbortController().signal))
   expect(b.spawn).toHaveBeenCalledTimes(1)
+})
+
+it('carries an explicit voice selection without changing string-only synthesis callers', async () => {
+  const b = await fixture()
+  await collect(b.api.synthesize({ text: '你好。', voice: 'calm' }, new AbortController().signal))
+  await collect(b.api.synthesize('下一句。', new AbortController().signal))
+  expect(b.requests).toEqual([{ text: '你好。', voice: 'calm' }, { text: '下一句。', voice: 'natural' }])
 })
 
 it('rejects truncated samples and joins worker termination before a retry', async () => {

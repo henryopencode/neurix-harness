@@ -30,7 +30,7 @@ The microphone occupies `conversation.input.activity`, between the model selecto
 
 The optional [voice chat plugin](../../packages/experimental/voice-chat/README.md) adds silence-delimited automatic submission and streamed Breeze TTS 2 playback. Hardware selection and explicit preparation belong to the Host; microphone capture and interruption belong to the browser. Assistant speech derives from the existing Chat snapshots, while recognized text enters the ordinary logged Session submission. Voice mode stops on Session changes, page hiding, connection loss, or plugin disposal. The text agent continues after voice mode ends.
 
-`VoiceStatus` reports the hardware-selected `VoiceModel`, preparation operation, checkpoint byte progress, and classified failure. `VoiceHardware` records native architecture and physical memory, including Apple Silicon detected through Rosetta. `VoiceOptions` supplies bounded sample-clock detection and speech queue settings. `VoiceAudio` carries mono 24 kHz PCM16 fragments as canonical base64; cancellation discards queued audio and joins worker termination. Preparation observers do not own or cancel the Host's download task.
+`VoiceStatus` reports the hardware-selected `VoiceModel`, preparation operation, checkpoint byte progress, and classified failure. `VoiceHardware` records native architecture and physical memory, including Apple Silicon detected through Rosetta. `VoiceOptions` supplies bounded sample-clock detection, playback buffering, default `VoicePreset`, and speech queue settings. `VoiceSynthesisRequest` selects a voice for bounded visible text; a string-only synthesis request uses the deployment's default. `VoiceAudio` carries mono 24 kHz PCM16 fragments as canonical base64; cancellation discards queued audio and joins worker termination. Preparation observers do not own or cancel the Host's download task.
 
 Voice input and Voice chat have independent bundle switches. Their matching speech rows compose once, and the transcription API owns the shared browser namespace. `VoiceStatus.failedStep` distinguishes resource copying, private Python, dependency installation, model transfer, and loading failures, so the UI offers a stage-specific retry action.
 
@@ -201,11 +201,11 @@ Owns one model worker; downloads and Python installation require prepare().
 
 /**
  * Speak one bounded plain-text segment with the prepared local model.
- * @param text - one sentence or bounded fragment of the assistant's visible answer.
+ * @param request - bounded visible text with an explicit voice; a string uses the deployment's default voice.
  * @param signal - playback cancellation; stopping inference reclaims and joins the worker.
  * @returns mono 24 kHz PCM16 fragments. Partial failures reject and never report success.
  */
-@Remote({ mode: 'stream' }) async *synthesize(text: string, signal: AbortSignal): AsyncIterable<VoiceAudio>
+@Remote({ mode: 'stream' }) async *synthesize(request: string | VoiceSynthesisRequest, signal: AbortSignal): AsyncIterable<VoiceAudio>
 ```
 
 Source: [`packages/experimental/voice-chat/src/index.ts`](../../packages/experimental/voice-chat/src/index.ts)

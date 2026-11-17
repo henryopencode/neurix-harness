@@ -33,7 +33,9 @@ const expected = fileURLToPath(new URL('./expected/voice-settings', import.meta.
 it.each([true, false])('configures voice and keeps one recording lifetime with native controls=%s', async (nativeControls) => {
   const scratch = await mkdtemp(join(tmpdir(), 'dsh-voice-settings-'))
   const resources: { scaffold?: WebScaffold; browser?: Browser } = {}
+  const warmed = Promise.withResolvers<undefined>()
   onTestFinished(async () => {
+    warmed.resolve(undefined)
     try { await resources.browser?.close() } finally {
       try { await resources.scaffold?.close() } finally { await rm(scratch, { recursive: true, force: true }) }
     }
@@ -67,6 +69,7 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
     }
   })
   const synthesize = vi.spyOn(scaffold.ctx.voiceChat, 'synthesize').mockImplementation(async function* () {
+    await warmed.promise
     yield { pcmBase64: 'AAAAAA==', sampleRate: 24000 }
   })
   onTestFinished(() => { prepare.mockRestore(); cancel.mockRestore(); follow.mockRestore(); synthesize.mockRestore() })
@@ -130,6 +133,8 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
   expect(prepare).not.toHaveBeenCalled()
   await selectField(settings.getByRole('combobox', { name: 'Input device', exact: true }), 'usb')
   await selectField(settings.getByRole('combobox', { name: 'Recognition language', exact: true }), 'zh')
+  await selectField(settings.getByRole('combobox', { name: 'Voice', exact: true }), 'calm')
+  expect(synthesize).not.toHaveBeenCalled()
   await settings.getByRole('button', { name: 'Check microphone', exact: true }).click()
   await expect.poll(() => page.evaluate(() => window.dshVoiceSettingsProof.captures.length)).toBe(1)
   await expect.poll(() => page.evaluate(() => window.dshVoiceSettingsProof.tracks.every(track => track.readyState === 'ended'))).toBe(true)
@@ -158,8 +163,31 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
   await settings.getByText('Local resources are ready and wake when a conversation starts', { exact: true }).waitFor()
   await compareOrRefreshGolden(join(expected, 'ready.expected.md'), await captureStableAria(page, '[data-voice-chat-settings]', scaffold.workspaceCwd), webSnapshotMode())
   await page.getByRole('button', { name: 'New session', exact: true }).filter({ hasText: 'New Session' }).click()
+  const beforeVoice = await page.locator('[data-composer-card]').boundingBox()
   await primary.click()
+  await page.locator('[data-voice-chat="warming"]').waitFor()
+  await page.locator('[data-voice-orb="warming"]').waitFor()
+  expect(await page.evaluate(() => window.dshVoiceSettingsProof.tracks.at(-1)?.enabled)).toBe(false)
+  expect(await page.locator('[data-composer-card]').boundingBox()).toEqual(beforeVoice)
+  expect(synthesize.mock.calls[0]?.[0]).toMatchObject({ voice: 'calm' })
+  await page.screenshot({ path: join(review, 'preparing-voice.png') })
+  warmed.resolve(undefined)
   await page.locator('[data-voice-chat="listening"]').waitFor()
+  const orb = page.locator('[data-voice-orb="listening"]')
+  const orbBounds = await orb.boundingBox()
+  await page.mouse.move(orbBounds!.x + orbBounds!.width * 0.8, orbBounds!.y + orbBounds!.height * 0.4)
+  expect(await orb.evaluate(element => Number.parseFloat(getComputedStyle(element).getPropertyValue('--voice-gaze-x')))).toBeGreaterThan(0)
+  expect(await page.locator('[data-voice-chat] [aria-label="Transcript"]').count()).toBe(0)
+  await compareOrRefreshGolden(join(expected, nativeControls ? 'listening-native.expected.md' : 'listening.expected.md'),
+    await captureStableAria(page, '[data-voice-chat]', scaffold.workspaceCwd), webSnapshotMode())
+  for (const [width, theme] of [[1280, 'light'], [390, 'dark']] as const) {
+    await page.setViewportSize({ width, height: 900 }); await page.emulateMedia({ colorScheme: theme })
+    const dialog = await page.getByRole('dialog', { name: 'Voice chat', exact: true }).boundingBox()
+    expect(dialog!.x).toBeGreaterThanOrEqual(0)
+    expect(dialog!.x + dialog!.width).toBeLessThanOrEqual(width)
+    await page.screenshot({ path: join(review, `companion-${width}-${theme}.png`) })
+  }
+  await page.setViewportSize({ width: 1280, height: 1000 })
   const minimized = page.getByRole('button', { name: nativeControls ? 'Minimize voice window' : 'Minimize voice panel', exact: true })
   await minimized.click()
   if (nativeControls) {

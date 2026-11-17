@@ -4,6 +4,12 @@ import type {} from '@deepseek-ai/dsh-typert-protocol'
 /** Locally executable Breeze weight variants. */
 export type VoiceModel = 'mlx-4bit' | 'mlx-8bit'
 
+/** Built-in voice designs; each uses one reusable local reference recording. */
+export type VoicePreset = 'natural' | 'warm' | 'calm'
+
+/** An explicit voice selection; string-only synthesis retains the deployment's default. */
+export interface VoiceSynthesisRequest { readonly text: string; readonly voice: VoicePreset }
+
 /** Hardware facts used before downloading weights. */
 export interface VoiceHardware {
   readonly platform: string
@@ -33,6 +39,8 @@ export interface VoiceOptions {
   readonly maxSentenceCharacters: number
   readonly maxPendingSentences: number
   readonly warmupText: string
+  readonly voice: VoicePreset
+  readonly playbackBufferMs: number
 }
 
 /** One mono signed PCM16 little-endian playback fragment. */

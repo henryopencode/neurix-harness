@@ -6,6 +6,7 @@ export const NS = 'voiceChat'
 
 /** Chinese copy and typed key owner. */
 export const zh = {
+  voice: '音色', 'voice.natural': '自然', 'voice.warm': '温柔女声', 'voice.calm': '沉稳男声',
   muteMicrophone: '关闭麦克风', unmuteMicrophone: '开启麦克风', microphoneMuted: '麦克风已关闭',
   muteSpeaker: '关闭扬声器', unmuteSpeaker: '开启扬声器', minimize: '最小化语音窗口', restore: '还原窗口', minimizePanel: '最小化语音面板', restorePanel: '展开语音面板',
   'phase.stopping': '正在结束语音…', 'error.cleanup': '音频设备未能完全释放，请重新打开此页面',
@@ -38,7 +39,7 @@ export const zh = {
   unsupported: '本地 Breeze 需要至少 12 GB 内存的 Apple Silicon Mac；其他平台暂未接入',
   connecting: '连接语音服务…', preparingRecognition: '准备识别模型…',
   'phase.idle': '说完后自动发送，回复会自动播报', 'phase.requesting': '请允许使用麦克风…',
-  'phase.warming': '正在准备本地语音…',
+  'phase.warming': '正在准备本地音色…',
   'phase.listening': '正在聆听', 'phase.recording': '正在听你说', 'phase.transcribing': '识别中…',
   'phase.thinking': '正在回复…', 'phase.speaking': '正在播报，可以开口打断',
   'error.permission': '请在浏览器和系统设置中允许麦克风访问，再开始对话',
@@ -56,7 +57,6 @@ export const zh = {
   'error.dependencies': '语音依赖安装失败，请检查网络和代理后重试',
   'error.model': '模型下载失败，请检查网络和磁盘空间后重试；已完成的文件会保留',
   'error.loading': '本地语音模型加载失败，请关闭占用内存较多的应用后重试准备',
-  'error.tooLong': '回复过长，已停止语音播报，请在聊天中查看文字',
   insert: '插入草稿', transcript: '识别文字',
 } as const
 
@@ -65,6 +65,7 @@ export type VoiceChatKey = keyof typeof zh
 
 /** English fallback with the same keys. */
 export const en: Record<VoiceChatKey, string> = {
+  voice: 'Voice', 'voice.natural': 'Natural', 'voice.warm': 'Warm female', 'voice.calm': 'Calm male',
   muteMicrophone: 'Mute microphone', unmuteMicrophone: 'Unmute microphone', microphoneMuted: 'Microphone muted',
   muteSpeaker: 'Mute speaker', unmuteSpeaker: 'Unmute speaker', minimize: 'Minimize voice window', restore: 'Restore window', minimizePanel: 'Minimize voice panel', restorePanel: 'Expand voice panel',
   'phase.stopping': 'Ending voice…', 'error.cleanup': 'The audio device could not be fully released. Reopen this page.',
@@ -97,7 +98,7 @@ export const en: Record<VoiceChatKey, string> = {
   unsupported: 'Local Breeze requires an Apple Silicon Mac with at least 12 GB of memory. Other platforms are not connected yet.',
   connecting: 'Connecting to voice services…', preparingRecognition: 'Preparing recognition models…',
   'phase.idle': 'Speech is sent automatically, and replies are read aloud', 'phase.requesting': 'Allow microphone access to continue…',
-  'phase.warming': 'Preparing local speech…',
+  'phase.warming': 'Preparing your local voice…',
   'phase.listening': 'Listening', 'phase.recording': 'Hearing you', 'phase.transcribing': 'Transcribing…',
   'phase.thinking': 'Preparing a reply…', 'phase.speaking': 'Speaking. Start talking to interrupt.',
   'error.permission': 'Allow microphone access in browser and system settings, then start again.',
@@ -115,7 +116,6 @@ export const en: Record<VoiceChatKey, string> = {
   'error.dependencies': 'Speech dependency installation failed. Check the network and proxy, then retry.',
   'error.model': 'Model download failed. Check the network and disk space, then retry. Completed files are retained.',
   'error.loading': 'The local voice model could not load. Close applications using substantial memory, then prepare again.',
-  'error.tooLong': 'This reply is too long for voice playback. Read the written response in the conversation.',
   insert: 'Insert into draft', transcript: 'Transcript',
 }
 
