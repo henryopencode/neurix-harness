@@ -148,6 +148,7 @@ jobs:
       - name: Verify update discovery, transfers and installation handoff
         run: >-
           pnpm exec vitest run
+          apps/desktop/tests/installer-packaging.spec.ts
           apps/desktop/tests/github-release-downloads.spec.ts
           apps/desktop/tests/github-release-installer.spec.ts
           apps/desktop/tests/github-release-replacement.spec.ts
