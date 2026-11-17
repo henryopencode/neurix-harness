@@ -88,6 +88,33 @@ async function loadComposition(): Promise<{ ctx: Context; settingsPath: string }
 }
 
 describe('llm-pi-ai real dormant composition', () => {
+  it('classifies a gateway concurrency rejection delivered over SSE without an HTTP error status', async () => {
+    const message = 'Concurrency limit exceeded for user, please retry later'
+    const server = await mockServer([{ events: [JSON.stringify({
+      type: 'response.failed',
+      response: { status: 'failed', error: { code: 'gateway_concurrency_limit', message } },
+    })] }])
+    const { ctx, settingsPath } = await loadComposition()
+    await writeFile(settingsPath, [
+      '- id: llm-pi-ai', '  config:', '    providers:', '      gateway:',
+      '        apiKeyEnv: PI_COMPOSITION_KEY',
+      '        api: openai-responses',
+      `        baseURL: ${server.url}`,
+      '        models:', '          - id: m', '',
+    ].join('\n'))
+    await vi.waitFor(() => {
+      expect(ctx.llm.listProviders().map(provider => provider.id)).toEqual(['gateway'])
+    }, { timeout: 5000 })
+
+    const result = await assemble(ctx, { provider: 'gateway', model: 'm', messages: [] })
+    expect(result.finish).toEqual({
+      kind: 'error',
+      failure: { code: 'RATE_LIMIT', message: `gateway_concurrency_limit: ${message}` },
+    })
+    expect(result.message.content).toEqual([])
+    expect(server.paths).toEqual(['/responses'])
+  })
+
   it('dispatches header contributors through the Loader-mounted adapter', async () => {
     const server = await mockServer([{ events: textEvents }])
     const { ctx, settingsPath } = await loadComposition()

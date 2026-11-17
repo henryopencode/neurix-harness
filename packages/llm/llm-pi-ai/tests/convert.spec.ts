@@ -939,6 +939,15 @@ describe('mapStopReason / mapUsage', () => {
   })
 
   it.each([
+    'gateway_concurrency_limit: Concurrency limit exceeded for user, please retry later',
+    'gateway_concurrency_limit',
+    'Concurrency limit exceeded for user, please retry later',
+  ])('maps pi-ai concurrency throttling %j to RATE_LIMIT', (errorMessage) => {
+    expect(mapStopReason(assistant({ stopReason: 'error', errorMessage })))
+      .toEqual({ kind: 'error', failure: { message: errorMessage, code: 'RATE_LIMIT' } })
+  })
+
+  it.each([
     'other side closed',
     'HTTP2 request did not get a response',
     'WebSocket closed unexpectedly',
