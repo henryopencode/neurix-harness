@@ -11,12 +11,12 @@
 // are host RPCs with no model involvement, and the one session row the
 // flat/hover/menu/archive scenarios need comes from a seeded fixture (the
 // seeded-history seed reused verbatim — no new recording).
-import { appendFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, readFile, rename, stat, symlink, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join, sep } from 'node:path'
 import type { Browser, Locator, Page } from 'playwright'
 import { chromium } from 'playwright'
-import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, onTestFailed, onTestFinished } from 'vitest'
 import { SESSION_FORMAT_VERSION, SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionHeader } from '@deepseek-ai/dsh-session'
 import { logPath } from '../../../packages/session/session-persistence-jsonl/src/format.ts'
@@ -25,7 +25,7 @@ import {
   acknowledgeReloadConnectionLoss, assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
   launchWebScaffold, readPersistedEvents, seedSession, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, pinBrowserClock, pinHostClock, saveFailureShot, WEB_FIXTURE_TIME } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('../../../snapshots/web/workspace-management', import.meta.url))
 // The seed is another scenario's committed fixture, reused read-only: this
@@ -1012,8 +1012,74 @@ describe('web e2e: workspace management (create / rename / grouping / hover affo
   it.skipIf(MODE === 'record')('issued zero model calls and stayed clean', async () => {
     expect(tripwire.warnings).toEqual([])
     await assertFixtureInventory(SNAPSHOT_DIR, [
-      '.gitkeep', 'directory-browser.expected.md', 'new-session.expected.md',
+      '.gitkeep', 'directory-browser.expected.md', 'new-session.expected.md', 'relocated-workspace.expected.md',
     ])
+  })
+})
+
+describe('web e2e: relocated workspace', () => {
+  it('creates a session after the project moves behind a symlink and keeps the recorded history grouped', async () => {
+    const clock = pinHostClock()
+    onTestFinished(() => { clock.mockRestore() })
+    const scaffold = await launchWebScaffold({})
+    let browser: Browser | undefined
+    try {
+      const project = join(scaffold.workspaceCwd, 'relocated-project')
+      const target = join(scaffold.workspaceCwd, 'external disk project')
+      await mkdir(project)
+      const workspace = await scaffold.ctx.workspaceRegistry.create(project, 'Relocated project')
+      // A timestamp inside the previous fixture day keeps the sidebar age stable during the scenario.
+      const id = await seedSession({ ...scaffold, workspaceCwd: project },
+        await readFile(SEED, 'utf8'), 'relocated-workspace-history', undefined,
+        { createdAt: WEB_FIXTURE_TIME - 30 * 60 * 60 * 1_000 })
+      await workspace.attachSession(id)
+      await scaffold.ctx.sessionController.rename({ sessionId: id, title: 'Recorded history' })
+      browser = await chromium.launch()
+      const page = await newEnglishPage(browser)
+      await pinBrowserClock(page)
+      const tripwire = watchConsole(page)
+      onTestFailed(() => saveFailureShot(page, 'web-e2e-relocated-workspace'))
+      await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
+      const group = page.locator('[aria-label="Workspace actions for Relocated project"]')
+        .locator('xpath=ancestor::*[@role="treeitem"][1]')
+      await group.waitFor()
+      await expect.poll(async () => {
+        if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+        return await group.getAttribute('aria-expanded')
+      }).toBe('true')
+      await page.locator(`[data-row-key="session:${id}"]`).click()
+      await page.getByRole('tab', { name: 'Chat', exact: true }).waitFor()
+      for (const member of workspace.sessionIds) {
+        if (member !== id) await scaffold.ctx.workspaceRegistry.archiveSession(member)
+      }
+      const previousMembers = [...workspace.sessionIds]
+
+      await rename(project, target)
+      await symlink(target, project, 'junction')
+      await group.getByText('Relocated project', { exact: true }).hover()
+      const creation = page.waitForResponse('**/api/session/create')
+      await group.getByRole('button', { name: 'New session in Relocated project', exact: true }).click()
+      const response = await creation
+      const result = await response.json() as { result: { ok: boolean; value: { sessionId: string } } }
+      expect(result.result.ok).toBe(true)
+      const createdId = SessionId(result.result.value.sessionId)
+      expect(createdId).not.toBe(id)
+      expect(workspace.sessionIds).toEqual([createdId, ...previousMembers])
+      expect(workspace.path).toBe(project)
+      await page.locator(`[data-conversation-session="${createdId}"]`).waitFor()
+      const section = group.locator('xpath=ancestor::*[contains(@class, "groupSection")][1]')
+      await expect.poll(() => section.locator('[aria-selected="true"]').innerText()).toBe('New Session')
+      await section.getByText('Recorded history', { exact: true }).waitFor()
+      await compareOrRefreshGolden(join(SNAPSHOT_DIR, 'relocated-workspace.expected.md'),
+        await captureStableAria(page, '[aria-label="Workspace actions for Relocated project"] >> xpath=ancestor::*[contains(@class, "groupSection")][1]',
+          scaffold.workspaceCwd), MODE)
+      expect(tripwire.pageErrors).toEqual([])
+      expect(tripwire.warnings).toEqual([])
+    } finally {
+      await browser?.close()
+      await scaffold.close()
+      clock.mockRestore()
+    }
   })
 })
 

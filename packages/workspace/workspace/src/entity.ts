@@ -28,7 +28,7 @@ export class WorkspaceMoveInvalidError extends Error {
 
 /**
  * The registry-owned machinery an entity mutates through. Entities never see
- * the registry itself — only the open table, the canonical session-path
+ * the registry itself — only the open table, the validated session-directory
  * index backing the `sessionIds` projection, and attach-time header reads.
  */
 export interface WorkspaceEntityHost {
@@ -48,6 +48,13 @@ export interface WorkspaceEntityHost {
   candidateMatches(id: SessionId, path: string): boolean
 
   /**
+   * Resolve and index a workspace directory's current symlink target.
+   * @param path - Workspace's stored directory path.
+   * @returns the current canonical path; rejects when the directory path cannot resolve.
+   */
+  resolveWorkspacePath(path: string): Promise<string>
+
+  /**
    * Read one stored session header for attach validation.
    * @param id - The session whose header to read.
    * @returns the header; rejects when session persistence is absent or holds
@@ -56,9 +63,9 @@ export interface WorkspaceEntityHost {
   readSessionHeader(id: SessionId): Promise<SessionHeader>
 
   /**
-   * Publish a successfully validated canonical cwd to the projection index.
+   * Publish a successfully validated workspace path to the membership index.
    * @param id - Validated session id.
-   * @param path - Canonical existing directory from the immutable header cwd.
+   * @param path - Registered directory whose current target matches the immutable header cwd.
    */
   rememberSessionPath(id: SessionId, path: string): void
 }
@@ -120,8 +127,7 @@ export class WorkspaceEntity implements Workspace {
 
   async attachSession(sessionId: SessionId): Promise<void> {
     // Validation is skipped when the settled snapshot already accounts the
-    // id: the cwd fact was checked when it first attached and both inputs
-    // (stored header cwd, workspace path) are immutable. Membership itself is
+    // id: the cwd fact was checked when it first attached. Membership itself is
     // decided on the write chain inside `mutate`, never on this snapshot.
     if (!this.record.sessionIds.includes(sessionId)) {
       const header = await this.host.readSessionHeader(sessionId)
@@ -147,13 +153,13 @@ export class WorkspaceEntity implements Workspace {
           + `its cwd '${header.cwd}' is not a directory`,
         )
       }
-      if (cwd !== this.record.path) {
+      if (cwd !== await this.host.resolveWorkspacePath(this.record.path)) {
         throw new Error(
           `cannot attach session '${sessionId}' to workspace '${this.record.path}': `
           + `its cwd resolves to '${cwd}'`,
         )
       }
-      this.host.rememberSessionPath(sessionId, cwd)
+      this.host.rememberSessionPath(sessionId, this.record.path)
     }
     await this.mutate(record => record.sessionIds.includes(sessionId)
       ? record

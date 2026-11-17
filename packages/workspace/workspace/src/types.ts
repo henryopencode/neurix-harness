@@ -91,7 +91,8 @@ export interface Workspace {
    * prepended at attach, explicit reordering goes through
    * `insertSessionBefore`, and activity never reorders. The durable candidate
    * account is filtered synchronously: missing headers, invalid cwd values,
-   * and canonical cwd mismatches are never returned. A fully qualified cwd
+   * and cwd mismatches with the currently resolved workspace directory are
+   * never returned. A fully qualified cwd
    * whose realpath or directory stat fails with ENOENT preserves an existing
    * candidate, including a dangling symlink; other filesystem failures do not.
    * A subsequent mutation prunes filtered candidates, not missing-directory
@@ -111,7 +112,7 @@ export interface Workspace {
    * accounted id resolves without writing, aside from the durable
    * filtered-candidate prune every accepted mutation performs. A new id's
    * live or persisted
-   * header cwd must resolve to an existing directory equal to {@link path};
+   * header cwd and {@link path} must resolve to the same existing directory;
    * unknown ids, missing or invalid cwd values, and mismatches reject without
    * writing.
    * @param sessionId - The session to record.

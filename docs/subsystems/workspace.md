@@ -16,7 +16,7 @@ Source: [`packages/workspace/workspace/src/types.ts`](../../packages/workspace/w
 type WorkspaceId = Branded<'WorkspaceId'>
 ```
 
-`WorkspaceId` is a [branded id](core.md#branded-ids). Path identity is separate: `realpathNormalize` (`fs.realpath`; trailing slashes, `..`, and symlinks resolved) is the one uniqueness canon — workspace paths are stored canonicalized, uniqueness is string equality of canonical paths (a symlink to an owned directory collides), and attach-time session cwd checks go through the same canon.
+`WorkspaceId` is a [branded id](core.md#branded-ids). Path identity is separate: `realpathNormalize` (`fs.realpath`; trailing slashes, `..`, and symlinks resolved) is the one uniqueness canon — workspace paths are canonicalized at registration and retained afterwards. Startup, lookup, and attachment resolve registered paths again, so a directory moved behind a symlink keeps its Workspace identity; uniqueness and membership compare current canonical directories.
 
 ## The workspace entity
 
@@ -55,7 +55,8 @@ interface Workspace {
    * prepended at attach, explicit reordering goes through
    * `insertSessionBefore`, and activity never reorders. The durable candidate
    * account is filtered synchronously: missing headers, invalid cwd values,
-   * and canonical cwd mismatches are never returned. A fully qualified cwd
+   * and cwd mismatches with the currently resolved workspace directory are
+   * never returned. A fully qualified cwd
    * whose realpath or directory stat fails with ENOENT preserves an existing
    * candidate, including a dangling symlink; other filesystem failures do not.
    * A subsequent mutation prunes filtered candidates, not missing-directory
@@ -75,7 +76,7 @@ interface Workspace {
    * accounted id resolves without writing, aside from the durable
    * filtered-candidate prune every accepted mutation performs. A new id's
    * live or persisted
-   * header cwd must resolve to an existing directory equal to {@link path};
+   * header cwd and {@link path} must resolve to the same existing directory;
    * unknown ids, missing or invalid cwd values, and mismatches reject without
    * writing.
    * @param sessionId - The session to record.
