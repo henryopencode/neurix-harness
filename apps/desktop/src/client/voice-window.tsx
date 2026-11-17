@@ -2,12 +2,18 @@
 import '@deepseek-ai/dsh-client-ui-theme/src/styles/design-platform.css'
 import { useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Button, IconChevronUpOutlineRegular, IconCloseOutlineRegular, IconMicrophoneOutlineRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '@deepseek-ai/dsh-client-ui-primitives/src/Button.tsx'
+import { Tooltip } from '@deepseek-ai/dsh-client-ui-primitives/src/Tooltip.tsx'
+import { ICON_SYMBOLS, type IconSymbolId } from '@deepseek-ai/dsh-client-ui-primitives/src/icons/artwork.ts'
 import type { DesktopVoiceCommand } from '@deepseek-ai/dsh-voice-chat/types'
 import type { VoiceWindowApi, VoiceWindowSnapshot } from '../voice-window-protocol.ts'
 import './voice-window.css'
 
 declare global { interface Window { dshVoiceWindow: VoiceWindowApi } }
+
+function VoiceIcon({ id }: { id: IconSymbolId }) {
+  return <span className="voice-icon" aria-hidden dangerouslySetInnerHTML={{ __html: ICON_SYMBOLS[id] }} />
+}
 
 function VoiceWindow({ api }: { api: VoiceWindowApi }) {
   const [snapshot, setSnapshot] = useState<VoiceWindowSnapshot>({ revision: -1, state: null })
@@ -37,7 +43,7 @@ function VoiceWindow({ api }: { api: VoiceWindowApi }) {
       <Tooltip label={state.microphoneMuted ? labels.unmuteMicrophone : labels.muteMicrophone} side="top" portal>
         <Button className="voice-control" aria-label={state.microphoneMuted ? labels.unmuteMicrophone : labels.muteMicrophone}
           aria-pressed={state.microphoneMuted} disabled={stopping} onClick={() => { act('microphone') }}>
-          <span className={state.microphoneMuted ? 'voice-muted' : undefined}><IconMicrophoneOutlineRegular size={20} /></span>
+          <span className={state.microphoneMuted ? 'voice-muted' : undefined}><VoiceIcon id="dsw-icon-microphone-outline-regular" /></span>
         </Button>
       </Tooltip>
       <Tooltip label={state.speakerMuted ? labels.unmuteSpeaker : labels.muteSpeaker} side="top" portal>
@@ -47,9 +53,9 @@ function VoiceWindow({ api }: { api: VoiceWindowApi }) {
         </Button>
       </Tooltip>
       <Tooltip label={labels.end} side="top" portal><Button className="voice-control" aria-label={labels.end} disabled={stopping}
-        onClick={() => { act('end') }}><IconCloseOutlineRegular size={20} /></Button></Tooltip>
+        onClick={() => { act('end') }}><VoiceIcon id="dsw-icon-close-outline-regular" /></Button></Tooltip>
       <Tooltip label={labels.restore} side="top" portal><Button className="voice-control" aria-label={labels.restore}
-        onClick={() => { act('restore') }}><IconChevronUpOutlineRegular size={20} /></Button></Tooltip>
+        onClick={() => { act('restore') }}><VoiceIcon id="dsw-icon-chevron-up-outline-regular" /></Button></Tooltip>
     </div>
   </main>
 }
