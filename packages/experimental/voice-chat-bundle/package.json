@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-voice-chat-bundle",
   "description": "Optional local voice conversations with hardware-selected Breeze TTS 2",
-  "version": "1.1.14",
+  "version": "1.1.15",
   "dshApiVersion": "0.2.2-rc.1",
   "icon": "./icon.svg",
   "publishConfig": {

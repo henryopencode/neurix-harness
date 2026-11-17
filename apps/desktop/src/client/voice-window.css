@@ -12,6 +12,8 @@ body { box-sizing: border-box; padding: 8px; font-family: system-ui, sans-serif;
 .voice-status { box-sizing: border-box; max-width: 100%; min-height: 28px; max-height: 54px; overflow-y: auto; padding: 4px 10px; border-radius: 999px; background: var(--dsw-alias-bg-module-platform); font-size: 12px; line-height: 18px; text-align: center; overflow-wrap: anywhere; color: var(--dsw-alias-label-secondary); }
 .voice-controls { display: flex; gap: 10px; -webkit-app-region: no-drag; }
 .voice-control { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border-radius: 999px; corner-shape: round; background: var(--dsw-alias-bg-module-platform); border: 0.5px solid var(--dsw-alias-border-l1); }
+.voice-icon { display: inline-flex; }
+.voice-icon > svg { width: 20px; height: 20px; }
 .voice-speaker { display: inline-block; width: 20px; height: 20px; background: currentColor; mask: url('dsh-app://voice/speaker.svg') center / contain no-repeat; }
 .voice-muted { display: inline-flex; position: relative; }
 .voice-muted::after { content: ''; position: absolute; width: 24px; height: 1.5px; top: 50%; left: -2px; background: currentColor; transform: rotate(45deg); }
