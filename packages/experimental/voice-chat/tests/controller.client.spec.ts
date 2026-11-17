@@ -16,7 +16,7 @@ const options: VoiceOptions = { speechThreshold: 0.02, silenceMs: 300, minimumSp
   preRollMs: 200, maxUtteranceSeconds: 2, maxSentenceCharacters: 100, maxPendingSentences: 32, warmupText: '你好。' }
 
 function fixture() {
-  const audio = { start: vi.fn<LiveAudio['start']>(async () => {}), play: vi.fn(async () => {}), interrupt: vi.fn(), dispose: vi.fn(async () => {}) }
+  const audio = { start: vi.fn<LiveAudio['start']>(async () => {}), play: vi.fn(async () => {}), interrupt: vi.fn(), setMicrophoneMuted: vi.fn(), setSpeakerMuted: vi.fn(), dispose: vi.fn(async () => {}) }
   const prompt = vi.fn<SessionFace['prompt']>(async () => ({ ok: true, value: { accepted: true } }))
   const cancel = vi.fn<SessionFace['cancel']>(async () => ({ ok: true, value: { accepted: true } }))
   const root = new Context()
@@ -42,6 +42,33 @@ function fixture() {
     utterance: () => { audio.start.mock.calls[0]![2](new Uint8Array(100)) },
   }
 }
+
+it('routes microphone and speaker mute controls to the same audio owner without releasing the Session', async () => {
+  const b = fixture()
+  await b.conversation.start(sid, options, [], 0)
+  b.conversation.toggleMicrophone(); b.conversation.toggleSpeaker()
+  expect(b.audio.setMicrophoneMuted).toHaveBeenLastCalledWith(true)
+  expect(b.audio.setSpeakerMuted).toHaveBeenLastCalledWith(true)
+  expect(b.conversation.state.getSnapshot()).toMatchObject({ microphoneMuted: true, speakerMuted: true })
+  expect(b.release).not.toHaveBeenCalled()
+  b.conversation.toggleMicrophone(); b.conversation.toggleSpeaker()
+  expect(b.audio.setMicrophoneMuted).toHaveBeenLastCalledWith(false)
+  expect(b.audio.setSpeakerMuted).toHaveBeenLastCalledWith(false)
+  await b.conversation.stop()
+  expect(b.release).toHaveBeenCalledOnce()
+})
+
+it('keeps controls in the stopping state until audio release settles', async () => {
+  const b = fixture(), released = Promise.withResolvers<undefined>()
+  b.audio.dispose.mockReturnValue(released.promise)
+  await b.conversation.start(sid, options, [], 0)
+  const stopping = b.conversation.stop()
+  expect(b.conversation.state.getSnapshot().phase).toBe('stopping')
+  expect(b.release).not.toHaveBeenCalled()
+  released.resolve(undefined)
+  await stopping
+  expect(b.conversation.state.getSnapshot().phase).toBe('idle')
+})
 
 it('submits recognized text through Session admission and speaks each new visible sentence once', async () => {
   const b = fixture()
@@ -111,6 +138,7 @@ it('bounds queued speech and leaves long answers available as text', async () =>
     b.speech(); b.utterance()
     await vi.waitFor(() => { expect(b.prompt).toHaveBeenCalledTimes(1) })
     b.conversation.observe(sid, [{ key: '1/1', turn: 1, text: '第一句。第二句。第三句。', final: true }], 1)
+    await b.conversation.stop()
     expect(b.conversation.state.getSnapshot()).toMatchObject({ phase: 'idle', error: 'tooLong' })
     expect(b.dependencies.synthesize).not.toHaveBeenCalled()
   } finally { await b.conversation.stop() }

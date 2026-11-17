@@ -35,3 +35,11 @@ it('bounds an uninterrupted utterance using the sample clock', () => {
   expect(finished).toHaveBeenCalledTimes(1)
   expect(finished.mock.calls[0]![0]).toHaveLength(32000)
 })
+
+it('drops an unfinished utterance when the microphone is muted', () => {
+  const finished = vi.fn(), detector = new TurnDetector(16000, options, () => {}, finished)
+  for (let index = 0; index < 5; index++) detector.push(new Float32Array(800).fill(0.3))
+  detector.reset()
+  for (let index = 0; index < 10; index++) detector.push(new Float32Array(800))
+  expect(finished).not.toHaveBeenCalled()
+})

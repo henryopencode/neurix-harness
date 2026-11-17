@@ -1,0 +1,19 @@
+html, body, #root { margin: 0; width: 100%; height: 100%; background: transparent; }
+body { box-sizing: border-box; padding: 8px; font-family: system-ui, sans-serif; color: var(--dsw-alias-label-primary); }
+.voice-window { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  padding: 14px; border-radius: var(--dsw-radius-xl); background: transparent; }
+.voice-orb { width: 112px; height: 112px; flex: none; border-radius: 50%; corner-shape: round; -webkit-app-region: drag;
+  background: radial-gradient(ellipse at 28% 24%, color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, var(--dsw-alias-label-primary-foreground)), transparent 60%),
+    linear-gradient(145deg, var(--dsw-alias-state-business-primary), color-mix(in srgb, var(--dsw-alias-state-business-primary) 30%, var(--dsw-alias-label-primary-foreground)));
+  box-shadow: inset -10px -8px 24px color-mix(in srgb, var(--dsw-alias-state-business-primary) 35%, transparent);
+  animation: voice-breathe 3s ease-in-out infinite; }
+.voice-orb[data-phase='recording'], .voice-orb[data-phase='speaking'] { animation-duration: 1.2s; }
+.voice-orb[data-muted='true'], .voice-orb[data-phase='stopping'] { animation-play-state: paused; opacity: 0.6; }
+.voice-status { box-sizing: border-box; max-width: 100%; min-height: 28px; max-height: 54px; overflow-y: auto; padding: 4px 10px; border-radius: 999px; background: var(--dsw-alias-bg-module-platform); font-size: 12px; line-height: 18px; text-align: center; overflow-wrap: anywhere; color: var(--dsw-alias-label-secondary); }
+.voice-controls { display: flex; gap: 10px; -webkit-app-region: no-drag; }
+.voice-control { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border-radius: 999px; corner-shape: round; background: var(--dsw-alias-bg-module-platform); border: 0.5px solid var(--dsw-alias-border-l1); }
+.voice-speaker { display: inline-block; width: 20px; height: 20px; background: currentColor; mask: url('dsh-app://voice/speaker.svg') center / contain no-repeat; }
+.voice-muted { display: inline-flex; position: relative; }
+.voice-muted::after { content: ''; position: absolute; width: 24px; height: 1.5px; top: 50%; left: -2px; background: currentColor; transform: rotate(45deg); }
+@keyframes voice-breathe { 50% { transform: scale(0.94); filter: saturate(1.2); } }
+@media (prefers-reduced-motion: reduce) { .voice-orb { animation: none; } }

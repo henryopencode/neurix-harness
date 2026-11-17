@@ -12,9 +12,22 @@ import { syncWindowsAppearance } from './preload-windows.ts'
 import { installMandatoryUpdateOverlay } from './preload-mandatory-overlay.ts'
 import { createDesktopBrowserBridge } from './preload-browser.ts'
 import type { FileDragHandle } from '@deepseek-ai/dsh-util-file-drag'
+import { parseDesktopVoiceCommand, VOICE_WINDOW_IPC } from './voice-window-protocol.ts'
 
 function createProductApi(): DshDesktopProductApi {
   return {
+    voice: {
+      publish: state => ipcRenderer.invoke(VOICE_WINDOW_IPC.publish, state) as Promise<void>,
+      minimize: () => ipcRenderer.invoke(VOICE_WINDOW_IPC.minimize) as Promise<void>,
+      subscribe(listener) {
+        const receive = (_event: Electron.IpcRendererEvent, input: unknown): void => {
+          try { listener(input === 'unavailable' ? input : parseDesktopVoiceCommand(input)) }
+          catch (error) { console.error('Desktop voice action failed', error); listener('unavailable') }
+        }
+        ipcRenderer.on(VOICE_WINDOW_IPC.action, receive)
+        return () => { ipcRenderer.off(VOICE_WINDOW_IPC.action, receive) }
+      },
+    },
     protocolVersion: 1,
     fileActions: {
       save: request => ipcRenderer.invoke(DESKTOP_IPC.fileSave, request) as Promise<FileSaveResult>,

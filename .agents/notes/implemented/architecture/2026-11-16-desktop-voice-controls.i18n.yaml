@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-11-16-desktop-voice-controls.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-16-desktop-voice-controls.md
+/agent-note-desktop-voice-controls-retain-one-audio-owner:
+  en: 5ac8fbd6d2f5b0a3
+  zh: 560fcb9a25aec57c
+/agent-note-desktop-voice-controls-retain-one-audio-owner/problem:
+  en: b699043e4b607507
+  zh: 17cc7de4c98846ab
+/agent-note-desktop-voice-controls-retain-one-audio-owner/decision:
+  en: 0bb0e5115ea1f142
+  zh: ab70e6ef3a7cbbb8
+/agent-note-desktop-voice-controls-retain-one-audio-owner/alternatives-considered:
+  en: 3d4708838bb9ce22
+  zh: 244410aba46b4825
+/agent-note-desktop-voice-controls-retain-one-audio-owner/consequences:
+  en: 6ce69d57e111f465
+  zh: aadd9c68459cedbe

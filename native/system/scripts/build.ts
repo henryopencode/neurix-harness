@@ -73,6 +73,7 @@ for (const name of readdirSync(join(root, 'packages')).sort()) {
       throw new Error(`build: unsupported ${binary.tool}/${binary.kind} target on ${host}`)
     }
 
+    if (process.platform === 'darwin') flags.push('-arch', process.arch === 'arm64' ? 'arm64' : 'x86_64')
     mkdirSync(join(root, '.release'), { recursive: true })
     const temporary = mkdtempSync(join(root, '.release', 'native-build-'))
     try {
@@ -80,6 +81,11 @@ for (const name of readdirSync(join(root, 'packages')).sort()) {
       const result = spawnSync(compiler, [...flags, '-o', pending, join(root, source)], { stdio: 'inherit' })
       if (result.error) throw result.error
       if (result.status !== 0) throw new Error(`build: ${compiler} failed for ${binary.path}`)
+      if (process.platform === 'darwin' && binary.kind === 'node-api') {
+        const loaded = spawnSync(process.execPath, ['-e', 'require(process.argv[1])', pending], { stdio: 'inherit' })
+        if (loaded.error) throw loaded.error
+        if (loaded.status !== 0) throw new Error(`build: addon cannot load in the current Node runtime: ${binary.path}`)
+      }
       // Readers never see a truncated addon when source checks build concurrently.
       renameSync(pending, output)
     } finally {

@@ -1,0 +1,17 @@
+- text: Input device
+- combobox "Input device": USB microphone
+- button "Check microphone"
+- text: Recognition service
+- combobox "Recognition service": Fixture recognizer
+- text: Recognition language
+- combobox "Recognition language": Chinese
+- text: Selected model Breeze-TTS-2 · MLX 4-bit 16 GB of memory on the DSH machine · About 3.0 GB of model files
+- paragraph: Recordings are recognized on the machine running DSH. Speech models download to that machine.
+- region "Speech recognition":
+  - heading "Fixture recognizer" [level=4]
+  - status: Recognition setup required
+- region "Speech synthesis":
+  - heading "Breeze-TTS-2 · MLX 4-bit" [level=4]
+  - status: Setup required
+- button "Download and prepare"
+- paragraph: Breeze models and locally generated outputs are for research and non-commercial use

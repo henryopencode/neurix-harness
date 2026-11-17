@@ -47,7 +47,7 @@ export const InputBar = memo(function InputBar({
   useSession, useInput, inputActions, keyboard, addFiles, removeAttachment, resolveDraftAttachments,
   retryFileUpload,
   toggleCommandMenu, stop, retry, t,
-  renderSlot, useBusyEnter, useFileUploads, useNotices, useLexicon, useMenuLauncher, useStopShortcut, useStopActivity,
+  renderSlot, renderSlotChain, useBusyEnter, useFileUploads, useNotices, useLexicon, useMenuLauncher, useStopShortcut, useStopActivity,
   useAccess,
   useProjection, sessionId, variant, disabled: inert = false, blocked,
   workspacePickerOpen = false, onRequestWorkspace,
@@ -549,7 +549,10 @@ export const InputBar = memo(function InputBar({
                 </button>
               </Tooltip>
             )}
-            {(primaryStops ? cancelDenied : promptDenied) ? null : (
+            {(primaryStops ? cancelDenied : promptDenied) ? null : renderSlotChain('conversation.input.primary', {
+              idle: empty && !primaryStops && !primaryRetries && !machineBusy && !activity,
+              locked, ...onRequestWorkspace === undefined ? {} : { requestWorkspace: onRequestWorkspace },
+            }, { fallback: (
               <Tooltip label={primaryStops ? t('input.stop') : primaryLabel} shortcutKeys={primaryStops && running ? stopKeys : undefined} side="top" delayMs={500} disabled={primaryDisabled} portal>
                 <button
                   type="button"
@@ -579,7 +582,7 @@ export const InputBar = memo(function InputBar({
                   )}
                 </button>
               </Tooltip>
-            )}
+            ) })}
           </div>
         </div>
       </div>

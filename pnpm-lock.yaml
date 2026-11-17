@@ -812,6 +812,9 @@ importers:
       '@deepseek-ai/dsh-util-file-drag':
         specifier: workspace:*
         version: link:../../packages/util/file-drag
+      '@deepseek-ai/dsh-voice-chat':
+        specifier: workspace:*
+        version: link:../../packages/experimental/voice-chat
       '@deepseek-ai/node-addon-system':
         specifier: workspace:~
         version: link:../../native/system/packages/entry
@@ -12864,6 +12867,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-conversation':
         specifier: workspace:*
         version: link:../../client/ui-conversation
+      '@deepseek-ai/dsh-client-ui-plugin-manager':
+        specifier: workspace:*
+        version: link:../../client/ui-plugin-manager
       '@deepseek-ai/dsh-client-ui-primitives':
         specifier: workspace:*
         version: link:../../client/ui-primitives

@@ -72,8 +72,10 @@ it.skipIf(webSnapshotMode() === 'record')('opens local voice setup without recor
   }, cachedModel !== undefined)
   await page.goto(scaffold.authenticatedUrl)
   await connectFreshWorkspace(page, scaffold.workspaceCwd)
-  await page.getByRole('button', { name: 'Voice chat', exact: true }).click()
-  const panel = page.locator('[data-voice-chat]')
+  const voiceEntry = page.getByRole('button', { name: 'Voice chat', exact: true })
+  if (cachedModel) await page.locator('[data-voice-ready="true"]').waitFor({ timeout: 90_000 })
+  await voiceEntry.click()
+  const panel = page.locator(cachedModel ? '[data-voice-chat]' : '[data-voice-chat-settings]')
   await panel.waitFor()
   expect(prompts).toBe(0)
   for (const [width, theme] of [[1280, 'light'], [420, 'dark']] as const) {
@@ -84,17 +86,22 @@ it.skipIf(webSnapshotMode() === 'record')('opens local voice setup without recor
     expect(rectangle).not.toBeNull()
     expect(rectangle!.x).toBeGreaterThanOrEqual(0)
     expect(rectangle!.x + rectangle!.width).toBeLessThanOrEqual(width)
-    const composer = await page.locator('[data-composer-card]').boundingBox()
-    expect(Math.abs(rectangle!.x - composer!.x)).toBeLessThanOrEqual(1)
-    expect(Math.abs(rectangle!.width - composer!.width)).toBeLessThanOrEqual(1)
-    expect(await panel.getByRole('button', { name: 'Close voice chat', exact: true }).isVisible()).toBe(true)
+    if (cachedModel) {
+      const composer = await page.locator('[data-composer-card]').boundingBox()
+      expect(Math.abs(rectangle!.x - composer!.x)).toBeLessThanOrEqual(1)
+      expect(Math.abs(rectangle!.width - composer!.width)).toBeLessThanOrEqual(1)
+      expect(await panel.getByRole('button', { name: 'End conversation', exact: true }).isVisible()).toBe(true)
+    } else await panel.getByRole('combobox', { name: 'Input device', exact: true }).waitFor()
     await page.screenshot({ path: join(review, `${width}-${theme}.png`) })
   }
   await page.setViewportSize({ width: 1280, height: 900 })
+  if (!cachedModel) {
+    await page.getByRole('button', { name: 'Open sidebar', exact: true }).click()
+    await page.getByRole('button', { name: 'New session', exact: true }).filter({ hasText: 'New Session' }).click()
+  }
   const input = page.locator('[data-composer-input]')
   const settled = scaffold.whenTurnSettled(120_000)
   if (cachedModel) {
-    await panel.getByRole('button', { name: 'Start conversation', exact: true }).click()
     await page.locator('[data-voice-chat="listening"]').waitFor({ timeout: 90_000 })
     await page.screenshot({ path: join(review, 'ready.png') })
     await page.evaluate(() => { (window as Window & { voiceTestSpeak?: () => void }).voiceTestSpeak?.() })
@@ -117,8 +124,10 @@ it.skipIf(webSnapshotMode() === 'record')('opens local voice setup without recor
     expect(await page.evaluate(() => (window as Window & { voiceTestTracks?: MediaStreamTrack[] }).voiceTestTracks
       ?.every(track => track.readyState === 'ended'))).toBe(true)
   }
-  await panel.getByRole('button', { name: 'Close voice chat', exact: true }).click()
-  expect(await panel.count()).toBe(0)
+  if (cachedModel) {
+    await panel.getByRole('button', { name: 'Close voice chat', exact: true }).click()
+    await expect.poll(() => panel.count()).toBe(0)
+  }
   expect(console.pageErrors).toEqual([])
   process.stdout.write(`Voice chat UI evidence: ${review}\n`)
 })

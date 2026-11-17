@@ -5,24 +5,26 @@ import type { SessionFace, SessionReference } from '@deepseek-ai/dsh-api-session
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SpeechCatalog } from '@deepseek-ai/dsh-experimental-api-speech-to-text/types'
 import type { Transcript } from '@deepseek-ai/dsh-experimental-speech-to-text/types'
-import type { VoiceAudio, VoiceOptions } from '../types.ts'
+import type { VoiceAudio, VoiceOptions, VoiceConversationPhase } from '../types.ts'
 import { base64Audio, LiveAudio, VoiceAudioError } from './audio.ts'
 import { ReplySentences, type VoiceReply } from './replies.ts'
 
 /** Localized failure identities; raw transport or model errors never become UI copy. */
-export type VoiceFailure = 'permission' | 'device' | 'unsupported' | 'playback' | 'recognition' | 'send' | 'synthesis' | 'connection' | 'tooLong'
+export type VoiceFailure = 'permission' | 'device' | 'unsupported' | 'playback' | 'recognition' | 'send' | 'synthesis' | 'connection' | 'tooLong' | 'cleanup' | 'controls'
 /** Transient interaction state, independent of the durable Session. */
 export interface ConversationVoiceState {
   /** Session owning the active microphone or the retained transcript while idle. */
   readonly sessionId: SessionId | null
-  readonly phase: 'idle' | 'requesting' | 'warming' | 'listening' | 'recording' | 'transcribing' | 'thinking' | 'speaking'
+  readonly phase: VoiceConversationPhase
   readonly transcript: string
   readonly error: VoiceFailure | null
+  readonly microphoneMuted: boolean
+  readonly speakerMuted: boolean
 }
 
 /** Host and Session callbacks captured by the Client registration. */
 export interface VoiceConversationDependencies {
-  readonly createAudio: () => Pick<LiveAudio, 'start' | 'play' | 'interrupt' | 'dispose'>
+  readonly createAudio: () => Pick<LiveAudio, 'start' | 'play' | 'interrupt' | 'dispose' | 'setMicrophoneMuted' | 'setSpeakerMuted'>
   readonly warm: (signal: AbortSignal) => Promise<void>
   readonly retain: (sessionId: SessionId, signal: AbortSignal) => SessionReference
   readonly catalog: () => SpeechCatalog | null
@@ -33,7 +35,7 @@ export interface VoiceConversationDependencies {
 interface ActiveVoice {
   readonly sessionId: SessionId
   readonly abort: AbortController
-  readonly audio: Pick<LiveAudio, 'start' | 'play' | 'interrupt' | 'dispose'>
+  readonly audio: ReturnType<VoiceConversationDependencies['createAudio']>
   readonly reference: SessionReference
   readonly sentences: ReplySentences
   turn: AbortController
@@ -50,7 +52,8 @@ interface ActiveVoice {
 /** Owns one active voice conversation and releases it before another may start. */
 export class VoiceConversation {
   /** Transient microphone, playback, transcript, and recovery state for the registered UI. */
-  readonly state = createSnapshotStore<ConversationVoiceState>({ sessionId: null, phase: 'idle', transcript: '', error: null })
+  readonly state = createSnapshotStore<ConversationVoiceState>({ sessionId: null, phase: 'idle', transcript: '', error: null,
+    microphoneMuted: false, speakerMuted: false })
   private active: ActiveVoice | undefined
   private release: Promise<void> = Promise.resolve()
 
@@ -74,7 +77,7 @@ export class VoiceConversation {
       maxPendingSentences: options.maxPendingSentences, pendingSentences: 0 }
     for (const reply of replies) active.sentences.take(reply, true)
     this.active = active
-    this.update({ sessionId, phase: 'requesting', transcript: '', error: null })
+    this.update({ sessionId, phase: 'requesting', transcript: '', error: null, microphoneMuted: false, speakerMuted: false })
     try {
       await this.release
       abort.signal.throwIfAborted()
@@ -172,7 +175,7 @@ export class VoiceConversation {
   private fail(active: ActiveVoice, error: VoiceFailure): void {
     if (this.active !== active) return
     this.update({ error })
-    void this.stop().catch(() => { if (!this.active) this.update({ error: 'device' }) })
+    void this.stop().catch(() => { if (!this.active) this.update({ error: 'cleanup' }) })
   }
 
   /**
@@ -183,9 +186,35 @@ export class VoiceConversation {
     const active = this.active
     this.active = undefined
     if (!active) return this.release
-    active.abort.abort(); active.turn.abort(); active.reference.release()
-    this.update({ phase: 'idle' })
-    this.release = Promise.all([this.release, active.audio.dispose()]).then(() => undefined)
+    active.abort.abort(); active.turn.abort()
+    this.update({ phase: 'stopping' })
+    this.release = Promise.all([this.release, active.audio.dispose()]).then(() => {
+      active.reference.release()
+      if (!this.active) this.update({ phase: 'idle' })
+    }, (error: unknown) => {
+      active.reference.release()
+      if (!this.active) this.update({ error: 'cleanup' })
+      throw error
+    })
     return this.release
+  }
+
+  /** Toggle input capture without ending the retained conversation or replaying a partial utterance. */
+  toggleMicrophone(): void {
+    const active = this.active
+    if (!active) return
+    const muted = !this.state.getSnapshot().microphoneMuted
+    active.audio.setMicrophoneMuted(muted)
+    this.update({ microphoneMuted: muted,
+      ...muted && this.state.getSnapshot().phase === 'recording' ? { phase: 'listening' } : {} })
+  }
+
+  /** Toggle audible playback while retaining the written reply and synthesis ordering. */
+  toggleSpeaker(): void {
+    const active = this.active
+    if (!active) return
+    const muted = !this.state.getSnapshot().speakerMuted
+    active.audio.setSpeakerMuted(muted)
+    this.update({ speakerMuted: muted })
   }
 }

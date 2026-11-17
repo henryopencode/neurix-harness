@@ -36,6 +36,7 @@
     "apps/web/tests/clock.e2e.ts",
     "apps/web/tests/voice-input.e2e.ts",
     "apps/web/tests/voice-chat.e2e.ts",
+    "apps/web/tests/voice-settings.e2e.ts",
     "apps/web/tests/voice-toggles.e2e.ts",
     "apps/web/tests/cot-translation.e2e.ts",
     "apps/web/tests/cot-translation-paid.e2e.ts",
