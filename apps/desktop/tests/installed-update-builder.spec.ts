@@ -27,7 +27,7 @@ const { validateConfiguration } = require('app-builder-lib/out/util/config/confi
   validateConfiguration: (config: object, logger: { isEnabled: false }) => Promise<void>
 }
 
-async function fixture<T>(body: (manifest: string, source: string) => Promise<T>): Promise<T> {
+async function fixture<T>(body: (manifest: string, source: string) => Promise<T>, withVoice = true): Promise<T> {
   const root = await mkdtemp(join(tmpdir(), 'dsh-update-builder-'))
   try {
     const run = await createInstalledUpdateRun(root, versions, { version: '0.1.5-rc.2', commit: 'a'.repeat(40), dirtyFiles: [] })
@@ -37,6 +37,13 @@ async function fixture<T>(body: (manifest: string, source: string) => Promise<T>
     await mkdir(join(source, 'lib'), { recursive: true })
     await mkdir(join(source, 'lib/welcome'), { recursive: true })
     await writeFile(join(source, 'lib/welcome/design-platform.css'), 'body { --fixture-token: white; }\n')
+    if (withVoice) {
+      await mkdir(join(source, 'lib/voice-window'), { recursive: true })
+      for (const name of ['voice-window.html', 'voice-window.js', 'voice-window.css', 'speaker.svg']) {
+        await writeFile(join(source, 'lib/voice-window', name), `voice ${name}\n`)
+      }
+      await writeFile(join(source, 'lib/preload-voice-window.cjs'), '// inert fixture\n')
+    }
     await mkdir(join(source, 'renderer'))
     for (const file of ['main.js', 'preload-app.cjs', 'preload-mandatory.cjs', 'preload-update-dialog.cjs']) {
       await writeFile(join(source, 'lib', file), '// inert fixture\n')
@@ -60,6 +67,7 @@ describe('installed-update application inputs and builder configuration', () => 
       const directory = await verifyInstalledUpdateApplication(join(manifest, '..'))
       expect((await readdir(directory)).sort()).toEqual(['installed-update-identity.mjs', 'lib', 'qualification-bootstrap.mjs', 'renderer'])
       expect(await readFile(join(directory, 'lib/welcome/design-platform.css'), 'utf8')).toBe('body { --fixture-token: white; }\n')
+      expect(await readFile(join(directory, 'lib/voice-window/voice-window.html'), 'utf8')).toBe('voice voice-window.html\n')
       await writeFile(join(source, 'lib/main.js'), '// later checkout\n')
       expect(await readFile(join(directory, 'lib/main.js'), 'utf8')).toBe('// inert fixture\n')
       await expect(prepareInstalledUpdateApplication(manifest, source)).rejects.toMatchObject({ code: 'EEXIST' })
@@ -69,6 +77,7 @@ describe('installed-update application inputs and builder configuration', () => 
   it.each([
     ['modified', 'lib/main.js'], ['added', 'lib/unrecorded.js'], ['missing', 'lib/main.js'],
     ['modified', 'lib/welcome/design-platform.css'], ['missing', 'lib/welcome/design-platform.css'],
+    ['modified', 'lib/voice-window/voice-window.html'], ['missing', 'lib/voice-window/speaker.svg'],
   ] as const)('rejects %s frozen application bytes in %s', async (failure, file) => {
     await fixture(async (manifest, source) => {
       await prepareInstalledUpdateApplication(manifest, source)
@@ -77,6 +86,26 @@ describe('installed-update application inputs and builder configuration', () => 
       if (failure === 'missing') await rm(join(directory, file))
       else await writeFile(join(directory, file), '// invalid\n')
       await expect(verifyInstalledUpdateApplication(root)).rejects.toThrow()
+    })
+  })
+
+  it('verifies applications frozen before native voice controls were added', async () => {
+    await fixture(async (manifest, source) => {
+      await prepareInstalledUpdateApplication(manifest, source)
+      await expect(verifyInstalledUpdateApplication(join(manifest, '..'))).resolves.toMatch(/files$/u)
+    }, false)
+  })
+
+  it('rejects a frozen voice preload whose document was omitted from the inventory', async () => {
+    await fixture(async (manifest, source) => {
+      await prepareInstalledUpdateApplication(manifest, source)
+      const root = join(manifest, '..'), directory = await verifyInstalledUpdateApplication(root)
+      const inventory = join(root, 'application/result.json')
+      const record = JSON.parse(await readFile(inventory, 'utf8')) as { files: { path: string }[] }
+      record.files = record.files.filter(file => file.path !== 'lib/voice-window/voice-window.html')
+      await writeFile(inventory, `${JSON.stringify(record)}\n`)
+      await rm(join(directory, 'lib/voice-window/voice-window.html'))
+      await expect(verifyInstalledUpdateApplication(root)).rejects.toThrow('frozen voice controls are incomplete')
     })
   })
 

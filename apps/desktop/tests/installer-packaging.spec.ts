@@ -102,14 +102,15 @@ describe('installer preparation preserves application dependencies', () => {
     expect(config.artifactName).toBe('neurix-harness-${version}-${os}-${arch}-unsigned.${ext}')
   })
 
-  it('packages every preload and standalone update worker the shell loads', async () => {
+  it('packages every preload, worker, and document directory the shell loads', async () => {
     const { readdirSync, readFileSync } = await import('node:fs')
     const sourceDirectory = new URL('../src/', import.meta.url)
-    const referenced = new Set<string>()
+    const referenced = new Set<string>(), documents = new Set<string>()
     for (const entry of readdirSync(sourceDirectory, { withFileTypes: true })) {
       if (!entry.isFile()) continue
       const source = readFileSync(new URL(entry.name, sourceDirectory), 'utf8')
       for (const match of source.matchAll(/preload-[a-z-]+\.cjs|github-release-worker\.js/gu)) referenced.add(match[0])
+      for (const match of source.matchAll(/['"](lib\/[a-z-]+)['"]/gu)) documents.add(match[1]!)
     }
     expect(referenced.size).toBeGreaterThan(0)
     expect(referenced.has('github-release-worker.js')).toBe(true)
@@ -124,6 +125,7 @@ describe('installer preparation preserves application dependencies', () => {
       APPLE_KEYCHAIN_PROFILE: 'installer-test',
     }, 'darwin', 'arm64')
     const packaged = new Set(config.files.filter((entry): entry is string => typeof entry === 'string'))
-    for (const name of referenced) expect(packaged.has(`lib/${name}`)).toBe(true)
+    for (const name of referenced) expect(packaged.has(`lib/${name}`), `Missing shell module: ${name}`).toBe(true)
+    for (const directory of documents) expect(packaged.has(`${directory}/**/*`), `Missing shell documents: ${directory}`).toBe(true)
   })
 })
