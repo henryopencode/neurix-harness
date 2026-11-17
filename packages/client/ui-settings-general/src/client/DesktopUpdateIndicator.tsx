@@ -1,5 +1,5 @@
 /** Optional Electron status presentation; the native shell owns actions and Web owns visible copy. */
-import { IconDownloadOutlineRegular, IconLoadingOutlineRegular, IconRefreshOutlineRegular, IconStopFillRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconCheckCircleOutlineRegular, IconDownloadOutlineRegular, IconLoadingOutlineRegular, IconRefreshOutlineRegular, IconStopFillRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { HostObservable, InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import css from './DesktopUpdateIndicator.module.css'
 import type { DesktopUpdateFailureKind, DesktopUpdatePresentation, DesktopUpdateView } from '../types.ts'
@@ -92,7 +92,7 @@ export function DesktopUpdateIndicator({ hidden, t, view, onOpen, onStop }: {
         {canStop ? <IconStopFillRegular size={14} />
           : error ? <IconRefreshOutlineRegular size={18} />
             : busy ? <IconLoadingOutlineRegular className={css.spinner} size={18} />
-              : state?.phase === 'ready' && state.installMode !== 'installer' ? <IconRefreshOutlineRegular size={18} />
+              : state?.phase === 'ready' ? <IconCheckCircleOutlineRegular size={18} />
                 : <IconDownloadOutlineRegular size={18} />}
       </span>
     </button>
