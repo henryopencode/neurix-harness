@@ -30,6 +30,7 @@ export const Config = z.object({
   maxTokens: z.natural().min(1).max(1500).default(750),
   streamingIntervalSeconds: z.number().min(0.08).max(2).default(0.24),
   playbackBufferMs: z.natural().min(0).max(2000).default(320),
+  playbackResumeTimeoutMs: z.natural().min(1).max(MAX_TIMER_DELAY_MS).default(5000),
   speechThreshold: z.number().min(0.001).max(1).default(0.025),
   silenceMs: z.natural().min(100).max(5000).default(650),
   minimumSpeechMs: z.natural().min(50).max(2000).default(180),

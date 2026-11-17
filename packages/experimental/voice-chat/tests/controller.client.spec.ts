@@ -13,7 +13,7 @@ import { VoiceConversation, type VoiceConversationDependencies } from '../src/cl
 
 const sid = 'voice-session' as SessionId
 const options: VoiceOptions = { speechThreshold: 0.02, silenceMs: 300, minimumSpeechMs: 150,
-  preRollMs: 200, maxUtteranceSeconds: 2, maxSentenceCharacters: 100, maxPendingSentences: 32, warmupText: '你好。', voice: 'natural', playbackBufferMs: 320 }
+  preRollMs: 200, maxUtteranceSeconds: 2, maxSentenceCharacters: 100, maxPendingSentences: 32, warmupText: '你好。', voice: 'natural', playbackBufferMs: 320, playbackResumeTimeoutMs: 5000 }
 
 function fixture() {
   const audio = { start: vi.fn<LiveAudio['start']>(async () => {}), play: vi.fn(async () => {}), interrupt: vi.fn(), setMicrophoneMuted: vi.fn(), setSpeakerMuted: vi.fn(), dispose: vi.fn(async () => {}) }
@@ -80,7 +80,7 @@ it('shows thinking for a typed message and keeps the selected voice throughout q
   await b.conversation.start(sid, { ...options, voice: 'calm', maxSentenceCharacters: 20 }, [], 0)
   b.conversation.observe(sid, [], 1, true)
   expect(b.conversation.state.getSnapshot().phase).toBe('thinking')
-  const reply = { key: '1/1', turn: 1, text: `${'一'.repeat(19)}。${'二'.repeat(19)}。`, final: true }
+  const reply = { key: '1/1', turn: 1, step: 1, text: `${'一'.repeat(19)}。${'二'.repeat(19)}。`, final: true }
   b.conversation.observe(sid, [reply], 1, false)
   await vi.waitFor(() => { expect(b.dependencies.synthesize).toHaveBeenCalledTimes(2) })
   expect(vi.mocked(b.dependencies.synthesize).mock.calls.every(call => call[1] === 'calm')).toBe(true)
@@ -96,7 +96,7 @@ it('joins cancelled inference before releasing the retained Session', async () =
   const b = fixture(), inference = Promise.withResolvers<undefined>()
   vi.mocked(b.dependencies.synthesize).mockImplementation(async () => { await inference.promise })
   await b.conversation.start(sid, options, [], 0)
-  b.conversation.observe(sid, [{ key: '1/1', turn: 1, text: '正在回复。', final: true }], 1)
+  b.conversation.observe(sid, [{ key: '1/1', turn: 1, step: 1, text: '正在回复。', final: true }], 1)
   await vi.waitFor(() => { expect(b.dependencies.synthesize).toHaveBeenCalledOnce() })
   const stopping = b.conversation.stop()
   expect(vi.mocked(b.dependencies.synthesize).mock.calls[0]![2].aborted).toBe(true)
@@ -109,7 +109,7 @@ it('joins short queued sentences before starting another synthesis request', asy
   const b = fixture(), inference = Promise.withResolvers<undefined>()
   vi.mocked(b.dependencies.synthesize).mockImplementationOnce(async () => { await inference.promise })
   await b.conversation.start(sid, options, [], 0)
-  const reply = { key: '1/1', turn: 1, text: '第一句。', final: false }
+  const reply = { key: '1/1', turn: 1, step: 1, text: '第一句。', final: false }
   b.conversation.observe(sid, [reply], 1)
   await vi.waitFor(() => { expect(b.dependencies.synthesize).toHaveBeenCalledOnce() })
   b.conversation.observe(sid, [{ ...reply, text: '第一句。第二句。' }], 1)
@@ -134,7 +134,7 @@ it('keeps controls in the stopping state until audio release settles', async () 
 
 it('submits recognized text through Session admission and speaks each new visible sentence once', async () => {
   const b = fixture()
-  const old = { key: '1/1', turn: 1, text: 'Old response.', final: true }
+  const old = { key: '1/1', turn: 1, step: 1, text: 'Old response.', final: true }
   try {
     await b.conversation.start(sid, options, [old], 1)
     b.conversation.observe(sid, [old], 1)
@@ -143,15 +143,30 @@ it('submits recognized text through Session admission and speaks each new visibl
     await vi.waitFor(() => { expect(b.prompt).toHaveBeenCalledWith(
       [{ type: 'text', text: '请检查代码' }], 'steer', expect.any(AbortSignal), expect.any(String)) })
     expect(b.cancel).toHaveBeenCalledTimes(1)
-    const reply = { key: '2/1', turn: 2, text: '检查完成。', final: false }
+    const reply = { key: '2/1', turn: 2, step: 1, text: '检查完成。', final: false }
     b.conversation.observe(sid, [old, reply], 2)
     await vi.waitFor(() => { expect(b.audio.play).toHaveBeenCalledTimes(1) })
     b.conversation.observe(sid, [{ ...reply, final: true }], 2)
     expect(b.dependencies.synthesize).toHaveBeenCalledTimes(1)
   } finally { await b.conversation.stop() }
   expect(b.audio.dispose).toHaveBeenCalledTimes(1); expect(b.release).toHaveBeenCalledTimes(1)
-  b.conversation.observe(sid, [{ key: '3/1', turn: 3, text: 'Late.', final: true }], 3)
+  b.conversation.observe(sid, [{ key: '3/1', turn: 3, step: 1, text: 'Late.', final: true }], 3)
   expect(b.dependencies.synthesize).toHaveBeenCalledTimes(1)
+})
+
+it('speaks the next assistant step when a voice message steers the current turn', async () => {
+  const b = fixture()
+  const old = { key: '1/1', turn: 1, step: 1, text: '先前的回复。', final: true }
+  try {
+    await b.conversation.start(sid, options, [old], 1)
+    b.conversation.observe(sid, [old], 1)
+    b.speech(); b.utterance()
+    await vi.waitFor(() => { expect(b.prompt).toHaveBeenCalledOnce() })
+    const reply = { key: '1/2', turn: 1, step: 2, text: '这是新的语音回复。', final: true }
+    b.conversation.observe(sid, [old, reply], 1)
+    await vi.waitFor(() => { expect(b.dependencies.synthesize).toHaveBeenCalledOnce() })
+    expect(vi.mocked(b.dependencies.synthesize).mock.calls[0]![0]).toBe(reply.text)
+  } finally { await b.conversation.stop() }
 })
 
 it('aborts playback at speech onset and never submits a stale recognition result', async () => {
@@ -205,7 +220,7 @@ it('bounds queued speech and resumes a long answer as playback releases capacity
     b.speech(); b.utterance()
     await vi.waitFor(() => { expect(b.prompt).toHaveBeenCalledTimes(1) })
     const text = `${'一'.repeat(19)}。`.repeat(10)
-    b.conversation.observe(sid, [{ key: '1/1', turn: 1, text, final: true }], 1)
+    b.conversation.observe(sid, [{ key: '1/1', turn: 1, step: 1, text, final: true }], 1)
     await vi.waitFor(() => { expect(b.audio.play).toHaveBeenCalledTimes(2) })
     expect(b.dependencies.synthesize).toHaveBeenCalledTimes(2)
     for (let index = 0; index < 10; index++) {

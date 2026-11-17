@@ -4,13 +4,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium, type Browser } from 'playwright'
-import { expect, it, onTestFinished, vi } from 'vitest'
+import { expect, it, onTestFailed, onTestFinished, vi } from 'vitest'
 import type {} from '@deepseek-ai/dsh-voice-chat'
 import type { VoiceStatus } from '@deepseek-ai/dsh-voice-chat/types'
 import type {} from '@deepseek-ai/dsh-experimental-speech-to-text'
 import type { SpeechPreparationState, SpeechProviderId } from '@deepseek-ai/dsh-experimental-speech-to-text/types'
 import { captureStableAria, compareOrRefreshGolden, launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, selectField } from './support.ts'
+import { connectFreshWorkspace, newEnglishPage, saveFailureShot, selectField } from './support.ts'
 
 interface VoiceSettingsProof {
   captures: MediaStreamConstraints[]
@@ -85,6 +85,7 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
   } })
   const browser = await chromium.launch(); resources.browser = browser
   const page = await newEnglishPage(browser), consoleWatch = watchConsole(page)
+  onTestFailed(async () => { await saveFailureShot(page, `voice-settings-${nativeControls ? 'desktop' : 'web'}`) })
   const review = await mkdtemp(join(tmpdir(), 'dsh-voice-settings-review-'))
   await page.addInitScript((withNative: boolean) => {
     const proof: VoiceSettingsProof = { captures: [], tracks: [], states: [], minimize: 0, gains: [] }
@@ -124,7 +125,8 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
   await input.fill('draft')
   expect(await primary.count()).toBe(0)
   await page.getByRole('button', { name: 'Send message', exact: true }).waitFor()
-  await input.fill('')
+  await input.press('ControlOrMeta+A')
+  await input.press('Backspace')
   await primary.click()
   const settings = page.locator('[data-voice-chat-settings]')
   await settings.waitFor()
@@ -163,12 +165,18 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
   await settings.getByText('Local resources are ready and wake when a conversation starts', { exact: true }).waitFor()
   await compareOrRefreshGolden(join(expected, 'ready.expected.md'), await captureStableAria(page, '[data-voice-chat-settings]', scaffold.workspaceCwd), webSnapshotMode())
   await page.getByRole('button', { name: 'New session', exact: true }).filter({ hasText: 'New Session' }).click()
-  const beforeVoice = await page.locator('[data-composer-card]').boundingBox()
+  const composerBounds = () => page.locator('[data-composer-card]').evaluate((element) => {
+    const bounds = element.getBoundingClientRect()
+    return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
+  })
+  const beforeVoice = await composerBounds()
   await primary.click()
   await page.locator('[data-voice-chat="warming"]').waitFor()
   await page.locator('[data-voice-orb="warming"]').waitFor()
   expect(await page.evaluate(() => window.dshVoiceSettingsProof.tracks.at(-1)?.enabled)).toBe(false)
-  expect(await page.locator('[data-composer-card]').boundingBox()).toEqual(beforeVoice)
+  expect(await composerBounds()).toEqual(beforeVoice)
+  expect(await page.locator('[data-composer-card]').isVisible()).toBe(false)
+  expect(await page.getByRole('dialog', { name: 'Voice chat', exact: true }).count()).toBe(0)
   expect(synthesize.mock.calls[0]?.[0]).toMatchObject({ voice: 'calm' })
   await page.screenshot({ path: join(review, 'preparing-voice.png') })
   warmed.resolve(undefined)
@@ -181,10 +189,16 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
   await compareOrRefreshGolden(join(expected, nativeControls ? 'listening-native.expected.md' : 'listening.expected.md'),
     await captureStableAria(page, '[data-voice-chat]', scaffold.workspaceCwd), webSnapshotMode())
   for (const [width, theme] of [[1280, 'light'], [390, 'dark']] as const) {
-    await page.setViewportSize({ width, height: 900 }); await page.emulateMedia({ colorScheme: theme })
-    const dialog = await page.getByRole('dialog', { name: 'Voice chat', exact: true }).boundingBox()
-    expect(dialog!.x).toBeGreaterThanOrEqual(0)
-    expect(dialog!.x + dialog!.width).toBeLessThanOrEqual(width)
+    if (width === 390) await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click()
+    await page.setViewportSize({ width, height: 900 })
+    await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' })
+    const stage = await page.locator('[data-conversation-content-cover]').boundingBox()
+    const content = await page.locator('[data-conversation-content]').boundingBox()
+    const face = await orb.boundingBox()
+    expect(stage!.x).toBeGreaterThanOrEqual(0)
+    expect(stage!.x + stage!.width).toBeLessThanOrEqual(width)
+    expect(Math.abs(face!.x + face!.width / 2 - content!.x - content!.width / 2)).toBeLessThanOrEqual(1)
+    expect(Math.abs(face!.y + face!.height / 2 - content!.y - content!.height / 2)).toBeLessThanOrEqual(1)
     await page.screenshot({ path: join(review, `companion-${width}-${theme}.png`) })
   }
   await page.setViewportSize({ width: 1280, height: 1000 })
@@ -197,6 +211,10 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
   } else {
     const floating = page.locator('[data-voice-floating]')
     await floating.waitFor()
+    expect(await page.locator('[data-composer-card]').isVisible()).toBe(true)
+    const orb = await floating.locator('[data-voice-orb]').boundingBox(), floatingBox = await floating.boundingBox()
+    expect(orb!.x).toBeGreaterThanOrEqual(floatingBox!.x)
+    expect(orb!.y + orb!.height).toBeLessThanOrEqual(floatingBox!.y + floatingBox!.height)
     expect(await floating.getByText(/running sessions/i).count()).toBe(0)
     await floating.getByRole('button', { name: 'Mute microphone', exact: true }).click()
   }
@@ -214,7 +232,10 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
   } else {
     await page.getByRole('button', { name: 'Expand voice panel', exact: true }).click()
     expect(await page.locator('[data-voice-floating]').count()).toBe(0)
-    await minimized.click()
+    await page.keyboard.press('Escape')
+    await page.locator('[data-voice-floating]').waitFor()
+    expect(await page.getByRole('button', { name: 'Expand voice panel', exact: true })
+      .evaluate(element => element === document.activeElement)).toBe(true)
     await page.locator('[data-voice-floating]').getByRole('button', { name: 'End conversation', exact: true }).click()
   }
   await expect.poll(() => page.evaluate(() => window.dshVoiceSettingsProof.tracks.every(track => track.readyState === 'ended'))).toBe(true)

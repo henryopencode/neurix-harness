@@ -109,9 +109,9 @@ export default class VoiceChat extends TypertRemoteService {
   @Remote
   options(): VoiceOptions {
     const { speechThreshold, silenceMs, minimumSpeechMs, preRollMs, maxUtteranceSeconds,
-      maxSentenceCharacters, maxPendingSentences, warmupText, voice, playbackBufferMs } = this.config
+      maxSentenceCharacters, maxPendingSentences, warmupText, voice, playbackBufferMs, playbackResumeTimeoutMs } = this.config
     return { speechThreshold, silenceMs, minimumSpeechMs, preRollMs, maxUtteranceSeconds,
-      maxSentenceCharacters, maxPendingSentences, warmupText, voice, playbackBufferMs }
+      maxSentenceCharacters, maxPendingSentences, warmupText, voice, playbackBufferMs, playbackResumeTimeoutMs }
   }
 
   /** Start or join explicit local runtime and model preparation; failures appear in follow(). */

@@ -164,12 +164,12 @@ async function registerUi(ctx: Context): Promise<void> {
       void conversation.stop().then(() => { panel.set({ sessionId: null, compact: false }) }).catch((error: unknown) => { ctx.logger.warn('Voice audio cleanup failed', error) })
     },
     stop: (sessionId) => { if (conversation.state.getSnapshot().sessionId === sessionId) stop() },
-    start: (sessionId, replies, turn) => {
+    start: (sessionId, replies, turn, step) => {
       if (setup.getSnapshot().connected && setup.getSnapshot().recognitionReady && setup.getSnapshot().voice?.phase === 'ready') {
-        void conversation.start(sessionId, { ...options.value, voice: voicePreference.getSnapshot() }, replies, turn)
+        void conversation.start(sessionId, { ...options.value, voice: voicePreference.getSnapshot() }, replies, turn, step)
       }
     },
-    observe: (sessionId, replies, turn, running) => { conversation.observe(sessionId, replies, turn, running) },
+    observe: (sessionId, replies, turn, running, step) => { conversation.observe(sessionId, replies, turn, running, step) },
     prepare: () => {
       setup.set({ ...setup.getSnapshot(), preparationError: false })
       const providerId = catalog?.selection.providerId
@@ -192,8 +192,8 @@ async function registerUi(ctx: Context): Promise<void> {
       children: { 'voiceChat.primary': { kind: 'single', scope: 'session' } }, locale: NS }, VoiceChatTrigger)
     yield ctx.slots.register({ name: 'voiceChat.primary', locale: NS, inject: () => actions }, VoiceChatSessionTrigger)
   })
-  ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
-    name: 'conversation.input.dock', id: 'voice-chat', locale: NS, inject: () => actions }, VoiceChatPanel))
+  ctx.slots.inject('conversation.content.overlay', () => ctx.slots.register({
+    name: 'conversation.content.overlay', id: 'voice-chat', locale: NS, inject: () => actions }, VoiceChatPanel))
   ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({
     name: 'plugins.bundle.config', key: '@deepseek-ai/dsh-voice-chat-bundle', locale: NS, inject: () => actions }, VoiceChatSettings))
 

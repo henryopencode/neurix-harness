@@ -41,6 +41,7 @@ export interface VoiceOptions {
   readonly warmupText: string
   readonly voice: VoicePreset
   readonly playbackBufferMs: number
+  readonly playbackResumeTimeoutMs: number
 }
 
 /** One mono signed PCM16 little-endian playback fragment. */

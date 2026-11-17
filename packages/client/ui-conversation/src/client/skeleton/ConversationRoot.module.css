@@ -7,6 +7,21 @@
   background: var(--dsw-alias-bg-base);
 }
 
+.contentOverlays {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.body:has(> .contentOverlays :global([data-conversation-content-cover])) .scrollBody {
+  visibility: hidden;
+}
+
+.body:has(> .contentOverlays :global([data-conversation-content-cover])) .widthHandle {
+  display: none;
+}
+
 /* `conversation.hero.frame` contract on the home: layer decorations at negative z-index paint above this
    background and below all Conversation content. Other phases keep the root out of the stacking order, so
    unportaled Conversation popovers still rise above AppFrame chrome that floats over the column. */
