@@ -10,7 +10,7 @@ import { z } from 'zod'
 import { Config } from './config.ts'
 import { localHardware, nativeHardware, selectModel } from './hardware.ts'
 import { inspectRuntime, modelDownloadBytes, prepareRuntime, RuntimePreparationError, type RuntimePaths } from './runtime.ts'
-import type { VoiceAudio, VoiceOptions, VoiceStatus } from './types.ts'
+import type { VoiceAudio, VoiceOptions, VoiceStatus, VoiceSynthesisRequest } from './types.ts'
 
 export { Config } from './config.ts'
 export type * from './types.ts'
@@ -109,9 +109,9 @@ export default class VoiceChat extends TypertRemoteService {
   @Remote
   options(): VoiceOptions {
     const { speechThreshold, silenceMs, minimumSpeechMs, preRollMs, maxUtteranceSeconds,
-      maxSentenceCharacters, maxPendingSentences, warmupText } = this.config
+      maxSentenceCharacters, maxPendingSentences, warmupText, voice, playbackBufferMs } = this.config
     return { speechThreshold, silenceMs, minimumSpeechMs, preRollMs, maxUtteranceSeconds,
-      maxSentenceCharacters, maxPendingSentences, warmupText }
+      maxSentenceCharacters, maxPendingSentences, warmupText, voice, playbackBufferMs }
   }
 
   /** Start or join explicit local runtime and model preparation; failures appear in follow(). */
@@ -131,14 +131,15 @@ export default class VoiceChat extends TypertRemoteService {
 
   /**
    * Speak one bounded plain-text segment with the prepared local model.
-   * @param text - one sentence or bounded fragment of the assistant's visible answer.
+   * @param request - bounded visible text with an explicit voice; a string uses the deployment's default voice.
    * @param signal - playback cancellation; stopping inference reclaims and joins the worker.
    * @returns mono 24 kHz PCM16 fragments. Partial failures reject and never report success.
    */
   @Remote({ mode: 'stream' })
-  async *synthesize(text: string, signal: AbortSignal): AsyncIterable<VoiceAudio> {
+  async *synthesize(request: string | VoiceSynthesisRequest, signal: AbortSignal): AsyncIterable<VoiceAudio> {
     const caller = AbortSignal.any([signal, this.lifetime.signal])
     caller.throwIfAborted()
+    const { text, voice } = typeof request === 'string' ? { text: request, voice: this.config.voice } : request
     if (text.trim() === '' || text.length > this.config.maxSentenceCharacters) throw this.failure('invalid-text')
     if (this.owned.status.phase !== 'ready' || !this.owned.paths) throw this.failure('not-ready')
     if (this.owned.pending >= this.config.maxPendingSyntheses) throw this.failure('busy')
@@ -153,7 +154,7 @@ export default class VoiceChat extends TypertRemoteService {
       acquired = true
       const worker = await this.startWorker(work.signal)
       const response = await fetch(`${worker.url}/speech`, { method: 'POST', signal: work.signal,
-        headers: { Authorization: `Bearer ${worker.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) })
+        headers: { Authorization: `Bearer ${worker.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ text, voice }) })
       if (!response.ok || !response.body) { await response.body?.cancel(); throw this.failure('inference') }
       const reader = response.body.getReader()
       let bytes = 0, remainder = new Uint8Array(0)

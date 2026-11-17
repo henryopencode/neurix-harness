@@ -5,12 +5,12 @@ import type { SessionFace, SessionReference } from '@deepseek-ai/dsh-api-session
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SpeechCatalog } from '@deepseek-ai/dsh-experimental-api-speech-to-text/types'
 import type { Transcript } from '@deepseek-ai/dsh-experimental-speech-to-text/types'
-import type { VoiceAudio, VoiceOptions, VoiceConversationPhase } from '../types.ts'
+import type { VoiceAudio, VoiceOptions, VoiceConversationPhase, VoicePreset } from '../types.ts'
 import { base64Audio, LiveAudio, VoiceAudioError } from './audio.ts'
 import { ReplySentences, type VoiceReply } from './replies.ts'
 
 /** Localized failure identities; raw transport or model errors never become UI copy. */
-export type VoiceFailure = 'permission' | 'device' | 'unsupported' | 'playback' | 'recognition' | 'send' | 'synthesis' | 'connection' | 'tooLong' | 'cleanup' | 'controls'
+export type VoiceFailure = 'permission' | 'device' | 'unsupported' | 'playback' | 'recognition' | 'send' | 'synthesis' | 'connection' | 'cleanup' | 'controls'
 /** Transient interaction state, independent of the durable Session. */
 export interface ConversationVoiceState {
   /** Session owning the active microphone or the retained transcript while idle. */
@@ -25,11 +25,11 @@ export interface ConversationVoiceState {
 /** Host and Session callbacks captured by the Client registration. */
 export interface VoiceConversationDependencies {
   readonly createAudio: () => Pick<LiveAudio, 'start' | 'play' | 'interrupt' | 'dispose' | 'setMicrophoneMuted' | 'setSpeakerMuted'>
-  readonly warm: (signal: AbortSignal) => Promise<void>
+  readonly warm: (voice: VoicePreset, signal: AbortSignal) => Promise<void>
   readonly retain: (sessionId: SessionId, signal: AbortSignal) => SessionReference
   readonly catalog: () => SpeechCatalog | null
   readonly transcribe: (audioBase64: string, signal: AbortSignal) => Promise<RemoteResult<Transcript>>
-  readonly synthesize: (text: string, signal: AbortSignal, accept: (audio: VoiceAudio) => void) => Promise<void>
+  readonly synthesize: (text: string, voice: VoicePreset, signal: AbortSignal, accept: (audio: VoiceAudio) => void) => Promise<void>
 }
 
 interface ActiveVoice {
@@ -38,6 +38,8 @@ interface ActiveVoice {
   readonly audio: ReturnType<VoiceConversationDependencies['createAudio']>
   readonly reference: SessionReference
   readonly sentences: ReplySentences
+  readonly voice: VoicePreset
+  readonly syntheses: Set<Promise<void>>
   turn: AbortController
   session?: SessionFace
   afterTurn: number
@@ -45,8 +47,16 @@ interface ActiveVoice {
   admitting: boolean
   cancellation: Promise<void>
   speech: Promise<void>
+  playback: Promise<void>
+  capacity: Promise<void>
+  warming: Promise<void>
+  ready: boolean
+  running: boolean
+  replies: readonly VoiceReply[]
   readonly maxPendingSentences: number
   pendingSentences: number
+  readonly maxSentenceCharacters: number
+  queuedSegment?: { text: string; started: boolean }
 }
 
 /** Owns one active voice conversation and releases it before another may start. */
@@ -65,16 +75,18 @@ export class VoiceConversation {
    * @param options - Host-owned voice limits.
    * @param replies - existing text, remembered without playback.
    * @param latestTurn - current Session turn watermark, including an unfinished turn.
-   * @returns after capture and Session retention are ready; failures remain visible in state.
+   * @returns after capture, Session retention, and voice warmup are ready; failures remain visible in state.
    */
   async start(sessionId: SessionId, options: VoiceOptions, replies: readonly VoiceReply[], latestTurn: number): Promise<void> {
     if (this.active) return
     const abort = new AbortController(), audio = this.dependencies.createAudio()
     const reference = this.dependencies.retain(sessionId, abort.signal)
     const active: ActiveVoice = { sessionId, abort, audio, reference, sentences: new ReplySentences(options.maxSentenceCharacters),
+      voice: options.voice, syntheses: new Set(),
       turn: new AbortController(), afterTurn: latestTurn, latestTurn, admitting: false,
       cancellation: Promise.resolve(), speech: Promise.resolve(),
-      maxPendingSentences: options.maxPendingSentences, pendingSentences: 0 }
+      playback: Promise.resolve(), capacity: Promise.resolve(), warming: Promise.resolve(), ready: false, running: false, replies: [],
+      maxPendingSentences: options.maxPendingSentences, pendingSentences: 0, maxSentenceCharacters: options.maxSentenceCharacters }
     for (const reply of replies) active.sentences.take(reply, true)
     this.active = active
     this.update({ sessionId, phase: 'requesting', transcript: '', error: null, microphoneMuted: false, speakerMuted: false })
@@ -85,23 +97,28 @@ export class VoiceConversation {
         if (!abort.signal.aborted) active.session = value.session
         return value
       })
+      audio.setMicrophoneMuted(true)
       const capture = audio.start(options, () => { this.speechStarted(active) }, (bytes) => { void this.submit(active, bytes) },
-        (error) => { this.fail(active, error.kind) }).then(() => {
-        if (!abort.signal.aborted && this.state.getSnapshot().phase === 'requesting') this.update({ phase: 'warming' })
-      })
-      const warming = this.dependencies.warm(abort.signal).catch((error: unknown) => {
+        (error) => { this.fail(active, error.kind) })
+      this.update({ phase: 'warming' })
+      active.warming = this.dependencies.warm(active.voice, abort.signal).catch((error: unknown) => {
         if (!abort.signal.aborted) this.fail(active, 'synthesis')
         throw error
       })
-      await Promise.all([binding, capture, warming])
+      await Promise.all([binding, capture, active.warming])
       abort.signal.throwIfAborted()
-      if (this.state.getSnapshot().phase === 'warming') this.update({ phase: 'listening' })
+      active.ready = true
+      audio.setMicrophoneMuted(this.state.getSnapshot().microphoneMuted)
+      this.update({ phase: 'listening' })
     } catch (error) { if (!abort.signal.aborted) this.fail(active, error instanceof VoiceAudioError ? error.kind : 'device') }
   }
 
   private speechStarted(active: ActiveVoice): void {
-    if (this.active !== active) return
+    if (this.active !== active || !active.ready) return
     active.turn.abort(); active.audio.interrupt(); active.turn = new AbortController()
+    active.speech = Promise.resolve(); active.playback = Promise.resolve(); active.capacity = Promise.resolve()
+    active.pendingSentences = 0
+    delete active.queuedSegment
     active.afterTurn = active.latestTurn; active.admitting = false
     this.update({ phase: 'recording', error: null })
     const session = active.session
@@ -112,7 +129,7 @@ export class VoiceConversation {
   }
 
   private async submit(active: ActiveVoice, bytes: Uint8Array): Promise<void> {
-    if (this.active !== active) return
+    if (this.active !== active || !active.ready) return
     const signal = AbortSignal.any([active.abort.signal, active.turn.signal])
     const catalog = this.dependencies.catalog()
     if (!catalog || bytes.length > catalog.maxAudioBytes) { this.fail(active, 'recognition'); return }
@@ -145,28 +162,67 @@ export class VoiceConversation {
    * @param sessionId - Session whose rendered Chat snapshot produced the values.
    * @param replies - cumulative visible text; excludes tools, reasoning, and interrupted messages.
    * @param latestTurn - current Session turn watermark.
+   * @param running - whether the Session is still preparing or streaming its reply; omitted treats it as settled.
    */
-  observe(sessionId: SessionId, replies: readonly VoiceReply[], latestTurn: number): void {
+  observe(sessionId: SessionId, replies: readonly VoiceReply[], latestTurn: number, running = false): void {
     const active = this.active
     if (!active || active.sessionId !== sessionId) return
     active.latestTurn = Math.max(latestTurn, active.latestTurn)
+    active.running = running
+    active.replies = replies
+    if (active.ready && latestTurn > active.afterTurn) active.admitting = true
     const signal = AbortSignal.any([active.abort.signal, active.turn.signal])
     for (const reply of replies) {
-      for (const sentence of active.sentences.take(reply, !active.admitting || reply.turn <= active.afterTurn)) {
-        if (active.pendingSentences >= active.maxPendingSentences) { this.fail(active, 'tooLong'); return }
+      for (const sentence of active.sentences.take(reply, !active.admitting || reply.turn <= active.afterTurn,
+        active.maxPendingSentences - active.pendingSentences)) {
+        const queued = active.queuedSegment, separator = queued && /[。！？；]$/.test(queued.text) ? '' : ' '
+        if (queued && !queued.started && queued.text.length + separator.length + sentence.length <= active.maxSentenceCharacters) {
+          queued.text += separator + sentence
+          continue
+        }
+        const segment = { text: sentence, started: false }
+        active.queuedSegment = segment
         active.pendingSentences++
+        const capacity = active.capacity, previousPlayback = active.playback
+        const drained = Promise.withResolvers<void>()
+        const cancelled = (): void => { drained.resolve() }
+        signal.addEventListener('abort', cancelled, { once: true })
+        void drained.promise.then(() => { signal.removeEventListener('abort', cancelled) })
+        active.capacity = previousPlayback
+        active.playback = drained.promise
         active.speech = active.speech.then(async () => {
           if (signal.aborted) return
-          this.update({ phase: 'speaking' })
-          const playing: Promise<void>[] = []
-          await this.dependencies.synthesize(sentence, signal, (audio) => {
-            if (!signal.aborted) playing.push(active.audio.play(audio))
-          })
-          await Promise.all(playing)
+          await capacity
           signal.throwIfAborted()
-          this.update({ phase: 'listening' })
-        }).catch(() => { if (!signal.aborted) this.fail(active, 'synthesis') }).finally(() => { active.pendingSentences-- })
+          segment.started = true
+          if (this.state.getSnapshot().phase === 'listening') this.update({ phase: 'thinking' })
+          const playing: Promise<void>[] = []
+          await this.dependencies.synthesize(segment.text, active.voice, signal, (audio) => {
+            if (!signal.aborted) {
+              if (this.state.getSnapshot().phase !== 'speaking') this.update({ phase: 'speaking' })
+              playing.push(active.audio.play(audio))
+            }
+          })
+          void Promise.all(playing).then(() => {
+            if (!signal.aborted) {
+              active.pendingSentences--
+              if (active.pendingSentences === 0) this.update({ phase: active.running ? 'thinking' : 'listening' })
+              this.observe(active.sessionId, active.replies, active.latestTurn, active.running)
+            }
+          }).catch(() => { if (!signal.aborted) this.fail(active, 'playback') }).finally(() => { drained.resolve() })
+        }).catch(() => {
+          drained.resolve()
+          if (!signal.aborted) this.fail(active, 'synthesis')
+        }).then(() => { if (signal.aborted) drained.resolve() })
+        const task = active.speech
+        active.syntheses.add(task)
+        void task.finally(() => { active.syntheses.delete(task) })
       }
+    }
+    const phase = this.state.getSnapshot().phase
+    if (active.ready && active.pendingSentences === 0 && (phase === 'listening' || phase === 'thinking')) {
+      const next = running && active.admitting ? 'thinking' : 'listening'
+      if (phase !== next) this.update({ phase: next })
     }
   }
 
@@ -180,7 +236,8 @@ export class VoiceConversation {
 
   /**
    * End microphone and playback without cancelling an already submitted text task.
-   * @returns after Web Audio and any prior audio-release operation settle.
+   * @returns after Web Audio, cancelled synthesis, and prior audio release settle,
+   * and the Session reference is released.
    */
   stop(): Promise<void> {
     const active = this.active
@@ -188,7 +245,9 @@ export class VoiceConversation {
     if (!active) return this.release
     active.abort.abort(); active.turn.abort()
     this.update({ phase: 'stopping' })
-    this.release = Promise.all([this.release, active.audio.dispose()]).then(() => {
+    this.release = Promise.all([
+      this.release, active.audio.dispose(), Promise.allSettled([active.warming, ...active.syntheses]),
+    ]).then(() => {
       active.reference.release()
       if (!this.active) this.update({ phase: 'idle' })
     }, (error: unknown) => {
@@ -204,7 +263,7 @@ export class VoiceConversation {
     const active = this.active
     if (!active) return
     const muted = !this.state.getSnapshot().microphoneMuted
-    active.audio.setMicrophoneMuted(muted)
+    active.audio.setMicrophoneMuted(muted || !active.ready)
     this.update({ microphoneMuted: muted,
       ...muted && this.state.getSnapshot().phase === 'recording' ? { phase: 'listening' } : {} })
   }

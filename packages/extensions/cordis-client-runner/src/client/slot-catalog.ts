@@ -5887,7 +5887,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'voiceChat.primary\', () => ctx.slots.register(\n      { name: \'voiceChat.primary\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/experimental/voice-chat/src/client/VoiceChat.tsx:62',
+    source: 'packages/experimental/voice-chat/src/client/VoiceChat.tsx:66',
   },
   {
     key: 'workspace.toast',

@@ -814,6 +814,8 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   SpeechDownloadFailure: 'voice-input.md',
   VoiceStatus: 'voice-input.md',
   VoiceOptions: 'voice-input.md',
+  VoicePreset: 'voice-input.md',
+  VoiceSynthesisRequest: 'voice-input.md',
   VoiceAudio: 'voice-input.md',
   VoiceHardware: 'voice-input.md',
   VoiceModel: 'voice-input.md',

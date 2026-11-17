@@ -27,3 +27,12 @@ it('splits long unpunctuated speech into bounded fragments without dropping char
   const last = sentences.take({ key: 'long', turn: 1, text, final: true })
   expect([...first, ...last].join('')).toBe(text)
 })
+
+it('packs short sentences and preserves deferred text when playback capacity is full', () => {
+  const sentences = new ReplySentences(20), reply = { key: 'long', turn: 1, text: 'First. Second. Third. Fourth. Fifth.', final: true }
+  expect(sentences.take(reply, false, 0)).toEqual([])
+  expect(sentences.take(reply, false, 1)).toEqual(['First. Second.'])
+  expect(sentences.take(reply, false, 1)).toEqual(['Third. Fourth.'])
+  expect(sentences.take(reply, false, 1)).toEqual(['Fifth.'])
+  expect(sentences.take(reply)).toEqual([])
+})

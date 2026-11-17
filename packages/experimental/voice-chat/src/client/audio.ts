@@ -123,6 +123,7 @@ export class LiveAudio {
   private playback: GainNode | undefined
   private inputMuted = false
   private outputMuted = false
+  private playbackBufferSeconds = 0
 
   constructor(private readonly inputDeviceId = '') {}
 
@@ -138,6 +139,7 @@ export class LiveAudio {
     failed: (error: VoiceAudioError) => void): Promise<void> {
     const devices = (navigator as Partial<Navigator>).mediaDevices
     if (!devices || typeof AudioWorkletNode === 'undefined') throw new VoiceAudioError('unsupported')
+    this.playbackBufferSeconds = options.playbackBufferMs / 1000
     this.context = new AudioContext({ sampleRate: 16000 })
     const context = this.context
     await context.resume()
@@ -205,7 +207,7 @@ export class LiveAudio {
       source.onended = () => { this.playing.delete(source); source.disconnect(); resolve() }
     })
     this.playing.add(source)
-    const start = Math.max(context.currentTime, this.playbackUntil)
+    const start = this.playbackUntil > context.currentTime ? this.playbackUntil : context.currentTime + this.playbackBufferSeconds
     this.playbackUntil = start + buffer.duration
     source.start(start)
     return finished

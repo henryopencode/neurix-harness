@@ -4619,9 +4619,9 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'after the shared preparation settles.',
       },
       {
-        signature: '@Remote({ mode: \'stream\' }) async *synthesize(text: string, signal: AbortSignal): AsyncIterable<VoiceAudio>',
+        signature: '@Remote({ mode: \'stream\' }) async *synthesize(request: string | VoiceSynthesisRequest, signal: AbortSignal): AsyncIterable<VoiceAudio>',
         description: 'Speak one bounded plain-text segment with the prepared local model.',
-        parameters: [{ name: 'text', description: 'one sentence or bounded fragment of the assistant\'s visible answer.' }, { name: 'signal', description: 'playback cancellation; stopping inference reclaims and joins the worker.' }],
+        parameters: [{ name: 'request', description: 'bounded visible text with an explicit voice; a string uses the deployment\'s default voice.' }, { name: 'signal', description: 'playback cancellation; stopping inference reclaims and joins the worker.' }],
         returns: 'mono 24 kHz PCM16 fragments. Partial failures reject and never report success.',
       },
     ],
@@ -10500,11 +10500,19 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'VoiceOptions',
-    declaration: 'export interface VoiceOptions {\n    readonly speechThreshold: number;\n    readonly silenceMs: number;\n    readonly minimumSpeechMs: number;\n    readonly preRollMs: number;\n    readonly maxUtteranceSeconds: number;\n    readonly maxSentenceCharacters: number;\n    readonly maxPendingSentences: number;\n    readonly warmupText: string;\n}',
+    declaration: 'export interface VoiceOptions {\n    readonly speechThreshold: number;\n    readonly silenceMs: number;\n    readonly minimumSpeechMs: number;\n    readonly preRollMs: number;\n    readonly maxUtteranceSeconds: number;\n    readonly maxSentenceCharacters: number;\n    readonly maxPendingSentences: number;\n    readonly warmupText: string;\n    readonly voice: VoicePreset;\n    readonly playbackBufferMs: number;\n}',
+  },
+  {
+    name: 'VoicePreset',
+    declaration: 'export type VoicePreset = \'natural\' | \'warm\' | \'calm\';',
   },
   {
     name: 'VoiceStatus',
     declaration: 'export interface VoiceStatus {\n    readonly phase: \'unprepared\' | \'preparing\' | \'ready\' | \'unsupported\' | \'failed\';\n    readonly model: VoiceModel | null;\n    readonly hardware: VoiceHardware;\n    readonly downloadBytes: number;\n    readonly completedBytes: number;\n    readonly operation: \'runtime\' | \'python\' | \'dependencies\' | \'model\' | \'loading\' | null;\n    readonly error?: \'download\' | \'runtime\' | undefined;\n    readonly failedStep?: \'assets\' | \'python\' | \'dependencies\' | \'model\' | \'loading\' | undefined;\n}',
+  },
+  {
+    name: 'VoiceSynthesisRequest',
+    declaration: 'export interface VoiceSynthesisRequest {\n    readonly text: string;\n    readonly voice: VoicePreset;\n}',
   },
   {
     name: 'WebBootBatch',

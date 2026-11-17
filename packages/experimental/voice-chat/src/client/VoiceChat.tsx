@@ -1,16 +1,17 @@
-/** Compact composer controls keep tool approvals and the written conversation accessible. */
+/** Composer entry and independent voice views preserve the written conversation's layout. */
 import { useCallback, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { HostObservable, InjectFace, PropsLocale, PropsRuntime, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { VoiceOptions, VoiceStatus } from '../types.ts'
+import type { VoiceOptions, VoicePreset, VoiceStatus } from '../types.ts'
 import type { SpeechCatalog } from '@deepseek-ai/dsh-experimental-api-speech-to-text/types'
 import type { SpeechSelectionPatch } from '@deepseek-ai/dsh-experimental-speech-to-text/types'
 import type { VoiceDevices, VoiceInputDevice } from './devices.ts'
 import type { ConversationVoiceState } from './controller.ts'
 import type { VoiceReply } from './replies.ts'
-import { Button, IconChevronDownOutlineRegular, IconCloseOutlineRegular, IconMicrophoneOutlineRegular, StateDot, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconChevronDownOutlineRegular, IconCloseOutlineRegular, IconMicrophoneOutlineRegular, Modal, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { VoiceOrb } from './VoiceOrb.tsx'
 import { NS } from './locales.ts'
 import css from './VoiceChat.module.css'
 
@@ -24,6 +25,7 @@ export interface VoiceChatInjected {
     voiceDevices: HostObservable<VoiceDevices>
     voiceSettingsAvailable: HostObservable<boolean>
     voiceDesktopAvailable: HostObservable<boolean>
+    voicePreference: HostObservable<VoicePreset>
   }
   open: (sessionId: SessionId) => void
   close: () => void
@@ -33,13 +35,15 @@ export interface VoiceChatInjected {
   refreshInputDevices: (requestAccess: boolean) => void
   selectInputDevice: (device: VoiceInputDevice) => void
   configureRecognition: (patch: SpeechSelectionPatch) => Promise<void>
+  selectVoice: (voice: VoicePreset) => void
   toggleMicrophone: () => void
   toggleSpeaker: () => void
   minimize: () => void
   restorePanel: () => void
+  collapsePanel: () => void
   start: (sessionId: SessionId, replies: readonly VoiceReply[], turn: number) => void
   stop: (sessionId: SessionId) => void
-  observe: (sessionId: SessionId, replies: readonly VoiceReply[], turn: number) => void
+  observe: (sessionId: SessionId, replies: readonly VoiceReply[], turn: number, running: boolean) => void
 }
 
 /** Shared presentation choice; audio remains owned by the conversation controller. */
@@ -102,12 +106,14 @@ export function VoiceChatSessionTrigger({ sessionId, open, start, stop, openSett
   </Tooltip>
 }
 
-/** Render preparation and the active voice controls above the existing composer. */
+/** Keep voice observations session-bound while presenting focused or compact controls. */
 export function VoiceChatPanel({ sessionId, useVoicePanel, useVoiceState, useVoiceSetup, useChat,
-  useVoiceSettingsAvailable, useVoiceDesktopAvailable, inputActions, close, openSettings, start, stop, observe,
-  toggleMicrophone, toggleSpeaker, minimize, restorePanel, t }: PanelProps) {
+  useSession, useSessionStatus, useVoiceSettingsAvailable, useVoiceDesktopAvailable,
+  inputActions, close, openSettings, start, stop, observe,
+  toggleMicrophone, toggleSpeaker, minimize, restorePanel, collapsePanel, t }: PanelProps) {
   const view = useVoicePanel(value => value)
-  const opened = view.sessionId === sessionId, compact = opened && view.compact
+  const pendingInteraction = useSessionStatus(value => value.get(sessionId)?.pendingInteraction)
+  const opened = view.sessionId === sessionId, compact = opened && (view.compact || pendingInteraction !== undefined)
   const state = useVoiceState(value => value), setup = useVoiceSetup(value => value)
   const settingsAvailable = useVoiceSettingsAvailable(value => value)
   const desktopAvailable = useVoiceDesktopAvailable(value => value)
@@ -116,6 +122,7 @@ export function VoiceChatPanel({ sessionId, useVoicePanel, useVoiceState, useVoi
     if (button && moved.current) { button.focus({ preventScroll: true }); moved.current = false }
   }, [])
   const chat = useChat(value => value)
+  const running = useSession(value => value.running)
   const active = state.sessionId === sessionId && state.phase !== 'idle'
   useEffect(() => () => { stop(sessionId) }, [sessionId, stop])
   useEffect(() => {
@@ -126,8 +133,8 @@ export function VoiceChatPanel({ sessionId, useVoicePanel, useVoiceState, useVoi
     const partial = chat.legacy.partial
     if (partial) replies.push({ key: `${partial.turn}/${partial.step}`, turn: partial.turn,
       text: partial.blocks.flatMap(block => block.kind === 'text' ? [block.text] : []).join(''), final: false })
-    observe(sessionId, replies, Math.max(0, ...chat.timeline.turnOrder))
-  }, [chat, active, sessionId, observe])
+    observe(sessionId, replies, Math.max(0, ...chat.timeline.turnOrder), running)
+  }, [chat, active, sessionId, observe, running])
   if (!opened || (compact && !active && state.error === null)) return null
   const status = setup.voice
   const usable = setup.connected && setup.recognitionReady && status?.phase === 'ready'
@@ -137,11 +144,15 @@ export function VoiceChatPanel({ sessionId, useVoicePanel, useVoiceState, useVoi
       text: node.blocks.flatMap(block => block.kind === 'text' ? [block.text] : []).join(''), final: true }] : [])
   const progress = !setup.connected ? t('connecting') : !usable && !active ? t(preparing ? 'preparingSettings' : 'setupRequired')
     : active && state.microphoneMuted && state.phase === 'listening' ? t('microphoneMuted') : t(`phase.${active ? state.phase : 'idle'}`)
-  const content = <section className={compact ? css.floatingPanel : css.panel} data-voice-floating={compact ? '' : undefined}
+  const content = <section className={compact ? css.floatingPanel : active || state.error ? css.stage : css.panel} data-voice-floating={compact ? '' : undefined}
     data-voice-chat={active ? state.phase : status?.phase ?? 'connecting'} aria-label={t('open')}>
-    {active && <div className={css.orb} data-phase={state.phase} data-muted={state.microphoneMuted} aria-hidden />}
+    {(active || state.error) && <div className={compact ? css.miniOrb : css.orbSeat}>
+      <VoiceOrb phase={state.error ? 'error' : state.phase} muted={state.microphoneMuted} />
+    </div>}
+    {active && <span className={css.screenReaderStatus} role="status">{progress}</span>}
+    {active && (state.phase === 'warming' || state.phase === 'requesting') && <div className={css.preparing} aria-hidden="true">{progress}</div>}
     <div className={css.row}>
-      <span className={css.status} role="status">{(active || preparing) && <StateDot state="ongoing" />}{progress}</span>
+      {!active && !state.error && <span className={css.status} role="status">{progress}</span>}
       {active ? <>
         <Tooltip label={t(state.microphoneMuted ? 'unmuteMicrophone' : 'muteMicrophone')} side="top" delayMs={500} portal>
           <Button size="sm" className={css.iconControl} aria-label={t(state.microphoneMuted ? 'unmuteMicrophone' : 'muteMicrophone')}
@@ -158,12 +169,16 @@ export function VoiceChatPanel({ sessionId, useVoicePanel, useVoiceState, useVoi
         <Tooltip label={t(compact ? 'restorePanel' : desktopAvailable ? 'minimize' : 'minimizePanel')} side="top" delayMs={500} portal>
           <Button ref={focusControl} size="sm" className={css.iconControl}
             aria-label={t(compact ? 'restorePanel' : desktopAvailable ? 'minimize' : 'minimizePanel')}
+            disabled={pendingInteraction !== undefined}
             onClick={() => {
               if (!desktopAvailable) moved.current = true
               if (compact) restorePanel(); else minimize()
             }}><span className={compact ? css.restoreIcon : undefined}><IconChevronDownOutlineRegular size={18} /></span></Button>
         </Tooltip>
-        <Button size="sm" variant="outline" disabled={state.phase === 'stopping'} onClick={() => { stop(sessionId) }}>{t('end')}</Button>
+        <Tooltip label={t('end')} side="top" delayMs={500} portal>
+          <Button size="sm" className={`${css.iconControl} ${css.end}`} aria-label={t('end')}
+            disabled={state.phase === 'stopping'} onClick={close}><IconCloseOutlineRegular size={20} /></Button>
+        </Tooltip>
       </>
         : usable ? <Button size="sm" variant="primary" onClick={() => { start(sessionId, initialReplies, Math.max(0, ...chat.timeline.turnOrder)) }}>{t('start')}</Button>
           : settingsAvailable && <Button size="sm" variant="outline" onClick={openSettings}>{t('configure')}</Button>}
@@ -171,10 +186,13 @@ export function VoiceChatPanel({ sessionId, useVoicePanel, useVoiceState, useVoi
     </div>
     {!active && !usable && !settingsAvailable && <div className={css.details}>{t('settingsUnavailable')}</div>}
     {state.error && <div className={css.error} role="alert">{t(`error.${state.error}`)}</div>}
-    {state.transcript && <div className={css.transcript} aria-label={t('transcript')}>
+    {state.error === 'send' && state.transcript && <div className={css.transcript} aria-label={t('transcript')}>
       <span>{state.transcript}</span>
-      {state.error === 'send' && <Button size="sm" onClick={() => { inputActions.insertText(state.transcript, inputActions.captureInsertion()) }}>{t('insert')}</Button>}
+      <Button size="sm" onClick={() => { inputActions.insertText(state.transcript, inputActions.captureInsertion()) }}>{t('insert')}</Button>
     </div>}
   </section>
-  return compact ? createPortal(content, document.body) : content
+  if (compact) return createPortal(content, document.body)
+  if (active || state.error) return <Modal open headless title={t('open')} onClose={active ? collapsePanel : close}
+    className={css.voiceDialog ?? ''}>{content}</Modal>
+  return content
 }
