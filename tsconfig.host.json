@@ -5,6 +5,7 @@
     "rewriteRelativeImportExtensions": false
   },
   "include": [
+    "apps/web/tests/voice-response.e2e.ts",
     "apps/web/tests/git-branch.e2e.ts",
     "apps/web/tests/knowledge-base.e2e.ts",
     "apps/web/tests/mcp-management.e2e.ts",

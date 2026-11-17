@@ -284,6 +284,11 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     /** Registered Conversation target Views, rendered one at a time. */
     'conversation.view': { kind: 'list'; scope: 'session'; owner: ConvViewOwnerProps }
     /**
+     * Session-owned layers anchored to the Conversation body. A visible cover marks
+     * `data-conversation-content-cover` to hide the retained transcript and composer.
+     */
+    'conversation.content.overlay': { kind: 'list'; scope: 'session' }
+    /**
      * Selector-routed replacements for the current Session's resident composer; fixed overlays must
      * portal to the document body because the docked composer contains them.
      */
@@ -371,6 +376,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
       props: ConversationContentInputProps
       children: {
         'conversation.session': { kind: 'single'; scope: 'session' }
+        'conversation.content.overlay': { kind: 'list'; scope: 'session' }
         'conversation.composer': { kind: 'chain'; scope: 'session' }
         'conversation.composer.bar': { kind: 'single'; scope: 'session-maybe' }
         'conversation.input.dock': { kind: 'list'; scope: 'session' }

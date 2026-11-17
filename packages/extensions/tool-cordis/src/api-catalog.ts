@@ -10500,7 +10500,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'VoiceOptions',
-    declaration: 'export interface VoiceOptions {\n    readonly speechThreshold: number;\n    readonly silenceMs: number;\n    readonly minimumSpeechMs: number;\n    readonly preRollMs: number;\n    readonly maxUtteranceSeconds: number;\n    readonly maxSentenceCharacters: number;\n    readonly maxPendingSentences: number;\n    readonly warmupText: string;\n    readonly voice: VoicePreset;\n    readonly playbackBufferMs: number;\n}',
+    declaration: 'export interface VoiceOptions {\n    readonly speechThreshold: number;\n    readonly silenceMs: number;\n    readonly minimumSpeechMs: number;\n    readonly preRollMs: number;\n    readonly maxUtteranceSeconds: number;\n    readonly maxSentenceCharacters: number;\n    readonly maxPendingSentences: number;\n    readonly warmupText: string;\n    readonly voice: VoicePreset;\n    readonly playbackBufferMs: number;\n    readonly playbackResumeTimeoutMs: number;\n}',
   },
   {
     name: 'VoicePreset',

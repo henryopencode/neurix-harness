@@ -181,6 +181,7 @@ Factory: conversation.content [ConversationContent]
 │     │           └─ conversation.chat.assistant-actions
 │     └─ id=trajectory [TrajectoryView / TrajectoryTable]
 │        └─ conversation.trajectory.images [MessageImages]
+├─ conversation.content.overlay [list]
 ├─ conversation.composer
 │  ├─ conversation.approval.detail
 │  └─ conversation.plan-review.actions

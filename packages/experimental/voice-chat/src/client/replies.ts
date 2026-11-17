@@ -1,7 +1,13 @@
 /** Incremental speech segments derived exclusively from visible assistant text. */
 
 /** One cumulative assistant answer; identity stays stable when a stream settles. */
-export interface VoiceReply { readonly key: string; readonly turn: number; readonly text: string; readonly final: boolean }
+export interface VoiceReply {
+  readonly key: string
+  readonly turn: number
+  readonly step: number
+  readonly text: string
+  readonly final: boolean
+}
 
 function spokenText(markdown: string): string {
   return markdown.replace(/```[\s\S]*?(?:```|$)/g, ' ')

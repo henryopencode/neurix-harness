@@ -100,8 +100,8 @@ it.skipIf(webSnapshotMode() === 'record')('opens local voice setup without recor
     expect(rectangle!.x + rectangle!.width).toBeLessThanOrEqual(width)
     if (cachedModel) {
       const composer = await page.locator('[data-composer-card]').boundingBox()
-      expect(composer).not.toBeNull()
-      await page.getByRole('dialog', { name: 'Voice chat', exact: true }).waitFor()
+      expect(composer).toBeNull()
+      await page.locator('[data-conversation-content-cover]').waitFor()
       expect(await panel.getByRole('button', { name: 'End conversation', exact: true }).isVisible()).toBe(true)
     } else await panel.getByRole('combobox', { name: 'Input device', exact: true }).waitFor()
     await page.screenshot({ path: join(review, `${width}-${theme}.png`) })

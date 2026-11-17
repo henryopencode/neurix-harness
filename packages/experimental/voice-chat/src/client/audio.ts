@@ -124,6 +124,7 @@ export class LiveAudio {
   private inputMuted = false
   private outputMuted = false
   private playbackBufferSeconds = 0
+  private playbackResumeTimeoutMs = 0
 
   constructor(private readonly inputDeviceId = '') {}
 
@@ -140,6 +141,7 @@ export class LiveAudio {
     const devices = (navigator as Partial<Navigator>).mediaDevices
     if (!devices || typeof AudioWorkletNode === 'undefined') throw new VoiceAudioError('unsupported')
     this.playbackBufferSeconds = options.playbackBufferMs / 1000
+    this.playbackResumeTimeoutMs = options.playbackResumeTimeoutMs
     this.context = new AudioContext({ sampleRate: 16000 })
     const context = this.context
     await context.resume()
@@ -191,11 +193,22 @@ export class LiveAudio {
   /**
    * Schedule a streamed PCM fragment after previously accepted audio.
    * @param audio - decoded Remote audio fragment.
-   * @returns after the fragment is played, or immediately when playback is interrupted.
+   * @param signal - owning reply lifetime; cancellation prevents late output resumption and stops queued audio.
+   * @returns after playback or cancellation; rejects if output cannot resume within the configured deadline.
    */
-  play(audio: VoiceAudio): Promise<void> {
+  async play(audio: VoiceAudio, signal: AbortSignal): Promise<void> {
     const context = this.context
-    if (!context || this.lifetime.signal.aborted) return Promise.resolve()
+    const lifetime = AbortSignal.any([this.lifetime.signal, signal])
+    const isCancelled = (): boolean => lifetime.aborted
+    if (!context || isCancelled()) return
+    if (context.state !== 'running') {
+      try { await this.resumeOutput(context, lifetime) }
+      catch (_error) {
+        if (isCancelled()) return
+        throw new VoiceAudioError('playback')
+      }
+    }
+    if (isCancelled()) return
     const bytes = Uint8Array.from(atob(audio.pcmBase64), character => character.charCodeAt(0))
     if (bytes.length % 2 !== 0 || bytes.length === 0 || audio.sampleRate !== 24000) throw new VoiceAudioError('playback')
     const view = new DataView(bytes.buffer), buffer = context.createBuffer(1, bytes.length / 2, audio.sampleRate)
@@ -203,14 +216,33 @@ export class LiveAudio {
     for (let index = 0; index < samples.length; index++) samples[index] = view.getInt16(index * 2, true) / 32768
     const source = context.createBufferSource()
     source.buffer = buffer; source.connect(this.playback ?? context.destination)
+    const cancelled = (): void => { source.stop() }
     const finished = new Promise<void>((resolve) => {
-      source.onended = () => { this.playing.delete(source); source.disconnect(); resolve() }
+      source.onended = () => {
+        lifetime.removeEventListener('abort', cancelled)
+        this.playing.delete(source); source.disconnect(); resolve()
+      }
     })
     this.playing.add(source)
     const start = this.playbackUntil > context.currentTime ? this.playbackUntil : context.currentTime + this.playbackBufferSeconds
     this.playbackUntil = start + buffer.duration
     source.start(start)
+    lifetime.addEventListener('abort', cancelled, { once: true })
     return finished
+  }
+
+  private async resumeOutput(context: AudioContext, signal: AbortSignal): Promise<void> {
+    const ready = Promise.withResolvers<void>()
+    const isCancelled = (): boolean => signal.aborted
+    const cancelled = (): void => { ready.resolve() }
+    const timer = setTimeout(() => { ready.reject(new VoiceAudioError('playback')) }, this.playbackResumeTimeoutMs)
+    signal.addEventListener('abort', cancelled, { once: true })
+    try {
+      if (isCancelled()) return
+      void context.resume().then(() => { ready.resolve() }, ready.reject)
+      await ready.promise
+      if (!isCancelled() && context.state !== 'running') throw new VoiceAudioError('playback')
+    } finally { clearTimeout(timer); signal.removeEventListener('abort', cancelled) }
   }
 
   /** Stop audible and queued fragments immediately; capture remains active for the next utterance. */

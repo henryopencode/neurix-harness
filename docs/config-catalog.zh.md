@@ -5053,7 +5053,7 @@ export type ApprovalPolicy = 'ask' | 'never'
 ## `@deepseek-ai/dsh-voice-chat`
 
 - `inject`: `subprocess` · `typert`
-- `source`: [`packages/experimental/voice-chat/src/config.ts:44`](../packages/experimental/voice-chat/src/config.ts)
+- `source`: [`packages/experimental/voice-chat/src/config.ts:45`](../packages/experimental/voice-chat/src/config.ts)
 
 ```ts config-catalog
 /** Validated local speech configuration. */
