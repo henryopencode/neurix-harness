@@ -33,7 +33,7 @@ it('opens the existing shell and retains only the selected source reference', as
   const shell = c.ctx.slots.entries('sidebar.settings')[0]!
   const store = shell.store as ReturnType<typeof createSettingsShellStore>
   expect(store.create().getSnapshot()).toMatchObject({ open: true, activeId: 'session-diagnostics' })
-  expect(() => c.ctx.settingsNavigation.openSection('missing-section')).toThrow('Settings section is unavailable')
+  expect(() => { c.ctx.settingsNavigation.openSection('missing-section') }).toThrow('Settings section is unavailable')
   await c.unload('@deepseek-ai/dsh-client-ui-settings-general')
   await c.flush()
   expect(c.ctx.slots.entries('tool.call.action').some(entry => entry.options.id === 'session-diagnostics')).toBe(false)
