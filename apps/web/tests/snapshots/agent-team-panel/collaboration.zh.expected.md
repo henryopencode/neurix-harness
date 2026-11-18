@@ -2,6 +2,7 @@
 
 - menu "模型与推理等级":
   - menuitem "模型 DeepSeek-V4-Flash"
+  - button "重新加载"
   - text: 启用智能体团队协作
   - button "关于智能体团队协作"
   - switch "启用智能体团队协作" [checked]

@@ -1,0 +1,8 @@
+- menu "模型与推理等级":
+  - menuitem "模型 Acme Swift"
+  - menuitem "推理等级 High"
+  - button "重新加载"
+  - slider "推理等级": "2"
+  - text: 启用智能体团队协作
+  - button "关于智能体团队协作"
+  - switch "启用智能体团队协作"

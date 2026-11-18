@@ -1,10 +1,10 @@
 /**
  * ModelSelect: the composer's named model seat (`conversation.input.model`).
- * Two-level selection per figma 496:26454's MenuDropdown: the root menu is
- * the Model / Effort row pair (label + current value + a right chevron),
- * each drilling into its own list — the provider-grouped model list over
- * the shared directory, and the effort levels. The trigger (313:14108's
- * ToggleButton) shows both: model name + effort in the caption tone.
+ * The root popover centers the effort above the model entry and exposes a
+ * discrete effort slider. Both entries retain their keyboard-navigable lists.
+ * The slider previews pointer changes and submits on release; keyboard changes
+ * submit immediately through the same selection callback as the effort list.
+ * The trigger shows the model name and effort in the caption tone.
  * Model catalogs above four entries show search, which retains focus while
  * ↑/↓ cycle the highlighted result; Enter and Tab accept it. Smaller model
  * catalogs, root panes, and effort panes move focus between rows. Escape and Shift+Tab leave a drilled pane first and otherwise close
@@ -37,7 +37,8 @@ import clsx from 'clsx'
 import type { ModelReasoningEffort, ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
 import {
   IconCheckOutlineRegular, IconChevronDownOutlineRegular, IconChevronRightOutlineRegular, IconCloseFillRegular,
-  IconDataOutlineRegular, IconWarningOutlineRegular, Input, isMobileDevice, rankByName, StateDot, Tag, Toast,
+  IconDataOutlineRegular, IconRefreshOutlineRegular, IconWarningOutlineRegular,
+  Input, isMobileDevice, rankByName, StateDot, Tag, Toast, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ModelLabelOwner, ModelSelectInjected } from './slots.ts'
@@ -74,6 +75,8 @@ export function ModelSelect(
   const [query, setQuery] = useState('')
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null)
   const [selectionFocus, setSelectionFocus] = useState(false)
+  const [draftEffortIndex, setDraftEffortIndex] = useState<number | null>(null)
+  const draggingEffort = useRef(false)
   // The in-menu error strip serves catalog loads (its Retry re-runs the
   // load); a rejected SELECTION announces through the transient toast
   // instead, so the strip renders only while the latest failure-capable
@@ -150,6 +153,19 @@ export function ModelSelect(
     ], [reasoning, t])
   const { pending } = state
   const busy = pending !== null
+  const currentEffortIndex = effortChoices.findIndex(level => level.effort === effectiveEffort)
+  const sliderIndex = draftEffortIndex ?? Math.max(0, currentEffortIndex)
+  const sliderLabel = draftEffortIndex === null ? effortLabel : effortChoices[sliderIndex]?.label
+  const effortSliderStyle: CSSProperties & Record<'--effort-progress', string> = {
+    '--effort-progress': String(effortChoices.length < 2 ? 0 : sliderIndex / (effortChoices.length - 1)),
+  }
+
+  const cancelEffortDrag = (input?: HTMLInputElement): void => {
+    const wasDragging = draggingEffort.current
+    draggingEffort.current = false
+    setDraftEffortIndex(null)
+    if (wasDragging) input?.focus()
+  }
 
   const reload = (): void => {
     lastActionRef.current = 'load'
@@ -218,6 +234,7 @@ export function ModelSelect(
   if (!available) return null
 
   const show = (): void => {
+    cancelEffortDrag()
     setSelectionFocus(false)
     triggerRef.current?.focus()
     setQuery('')
@@ -234,6 +251,7 @@ export function ModelSelect(
   }
 
   const close = (restoreFocus = false): void => {
+    cancelEffortDrag()
     setOpen(false)
     setPane('root')
     if (restoreFocus) queueMicrotask(() => { triggerRef.current?.focus() })
@@ -258,8 +276,8 @@ export function ModelSelect(
   }
 
   const moveFocus = (offset: number): void => {
-    const items = Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>(
-      'button[role="menuitem"]:not([disabled]), button[role="menuitemradio"]:not([disabled]), button[role="switch"]:not([disabled])',
+    const items = Array.from(menuRef.current?.querySelectorAll<HTMLElement>(
+      'button[role="menuitem"]:not([disabled]), button[role="menuitemradio"]:not([disabled]), button[role="switch"]:not([disabled]), button[data-model-control]:not([disabled]), input[type="range"]:not([disabled])',
     ) ?? [])
     if (items.length === 0) return
     const active = items.findIndex(item => item === document.activeElement)
@@ -282,6 +300,8 @@ export function ModelSelect(
       return
     }
     if (!open) return
+    // Range inputs keep native arrow, Home/End and Tab behavior.
+    if (event.target instanceof HTMLInputElement && event.target.type === 'range') return
     if (pane === 'model' && showSearch && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
       event.preventDefault()
       if (!busy && visibleModels.length > 0) {
@@ -340,6 +360,8 @@ export function ModelSelect(
   }
 
   const onBlur = (event: FocusEvent<HTMLDivElement>): void => {
+    // WebKit clears focus when a native range starts tracking its thumb.
+    if (draggingEffort.current && event.relatedTarget === null) return
     if (event.relatedTarget instanceof Node && (
       rootRef.current?.contains(event.relatedTarget) === true
       || menuRef.current?.contains(event.relatedTarget) === true
@@ -481,7 +503,7 @@ export function ModelSelect(
         <MenuSurface
           ref={menuRef}
           id={`${id}-menu`}
-          className={css.menu}
+          className={clsx(css.menu, pane === 'root' && css.rootMenu)}
           style={anchorStyle}
           role={pane === 'model' ? 'group' : 'menu'}
           aria-label={t('menu.aria')}
@@ -489,19 +511,69 @@ export function ModelSelect(
         >
           {pane === 'root' && (
             <>
-              <button ref={itemRef()} type="button" role="menuitem" className={css.cell} disabled={selectionLocked} onClick={() => { drill('model') }}>
-                <span className={css.cellLabel}>{t('menu.model')}</span>
-                <span className={css.cellValue}>
-                  {currentChoice === undefined ? modelLabel : renderModelLabel(currentChoice.group.provider, currentChoice.model, 'menu', true)}
-                </span>
-                <IconChevronRightOutlineRegular className={css.cellChevron} />
-              </button>
-              {reasoning !== undefined && (
-                <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={() => { drill('effort') }}>
-                  <span className={css.cellLabel}>{t('menu.effort')}</span>
-                  <span className={css.cellValue}>{effortLabel}</span>
+              <div className={css.summary}>
+                <button ref={itemRef()} type="button" role="menuitem" className={clsx(css.cell, css.modelCell)} disabled={selectionLocked} onClick={() => { drill('model') }}>
+                  <span className={css.cellLabel}>{t('menu.model')}</span>
+                  <span className={css.cellValue}>
+                    {currentChoice === undefined ? modelLabel : renderModelLabel(currentChoice.group.provider, currentChoice.model, 'menu', true)}
+                  </span>
                   <IconChevronRightOutlineRegular className={css.cellChevron} />
                 </button>
+                {reasoning !== undefined && (
+                  <button ref={itemRef()} type="button" role="menuitem" className={clsx(css.cell, css.effortCell)} onClick={() => { drill('effort') }}>
+                    <span className={css.cellLabel}>{t('menu.effort')}</span>
+                    <span className={css.cellValue}>{sliderLabel}</span>
+                  </button>
+                )}
+                <Tooltip label={t('action.reload')} side="top" portal>
+                  <button type="button" className={css.reload} data-model-control aria-label={t('action.reload')} disabled={busy || state.status === 'loading'} onClick={reload}>
+                    <IconRefreshOutlineRegular size={16} />
+                  </button>
+                </Tooltip>
+              </div>
+              {effortChoices.length > 0 && (
+                <div className={css.effortSlider} style={effortSliderStyle}>
+                  <div className={css.effortTrack} aria-hidden="true">
+                    <span className={css.effortFill} />
+                    <span className={css.effortTicks}>
+                      {effortChoices.map(level => <span className={css.effortTick} key={level.key} />)}
+                    </span>
+                  </div>
+                  <input
+                    className={css.effortRange}
+                    type="range"
+                    min={0}
+                    max={Math.max(0, effortChoices.length - 1)}
+                    step={1}
+                    value={sliderIndex}
+                    aria-label={t('menu.effort')}
+                    aria-valuetext={sliderLabel}
+                    disabled={locked || busy || effortChoices.length < 2}
+                    onChange={(event) => {
+                      const index = Number(event.currentTarget.value)
+                      if (draggingEffort.current) setDraftEffortIndex(index)
+                      else chooseEffort(effortChoices[index]?.effort)
+                    }}
+                    onPointerDown={(event) => {
+                      event.currentTarget.focus()
+                      draggingEffort.current = true
+                    }}
+                    onPointerUp={(event) => {
+                      if (!draggingEffort.current) return
+                      const level = effortChoices[Number(event.currentTarget.value)]
+                      cancelEffortDrag()
+                      if (level !== undefined) chooseEffort(level.effort)
+                    }}
+                    onPointerCancel={(event) => { cancelEffortDrag(event.currentTarget) }}
+                    onLostPointerCapture={(event) => { cancelEffortDrag(event.currentTarget) }}
+                  />
+                </div>
+              )}
+              {state.error !== null && lastActionRef.current === 'load' && (
+                <div className={css.error}>
+                  <span>{t('error.action', { message: state.error })}</span>
+                  <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
+                </div>
               )}
               {renderSlot('conversation.input.model.options', {
                 locked: locked || busy,

@@ -3,7 +3,8 @@
 // what the picker offers, and picking one records it with the Agent default.
 // Zero model calls: declaring, describing, and switching are settings/llm
 // traffic only, so there is no fixture and a stray stream would fail loud.
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, readFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import type { Browser, Page, Request } from 'playwright'
@@ -258,7 +259,106 @@ describe.skipIf(MODE === 'record').each([
     expect(tripwire.pageErrors).toEqual([])
   })
 
+  it('previews native slider drags and keeps the popover inside desktop and narrow viewports', async () => {
+    onTestFailed(() => saveFailureShot(page, `web-e2e-model-slider-${engine.name()}`))
+    const trigger = page.getByRole('button', { name: /^选择模型/ })
+    const menu = page.getByRole('menu', { name: '模型与推理等级' })
+    await page.getByRole('alert').waitFor({ state: 'detached' })
+    await trigger.click()
+    await page.getByRole('menuitem', { name: /^模型/ }).click()
+    await page.getByRole('menuitemradio', { name: 'Acme Swift', exact: true }).click()
+    await trigger.click()
+    await page.getByRole('menuitem', { name: /推理等级/ }).click()
+    await page.getByRole('menuitemradio', { name: 'Max', exact: true }).click()
+    await menu.waitFor({ state: 'detached' })
+
+    let selections = 0
+    const countSelection = (request: Request): void => {
+      if (new URL(request.url()).pathname.endsWith('/session/selectModel')) selections++
+    }
+    page.on('request', countSelection)
+    onTestFinished(() => { page.off('request', countSelection) })
+    await trigger.click()
+    const slider = page.getByRole('slider', { name: '推理等级' })
+    await expect.poll(() => slider.getAttribute('aria-valuetext')).toBe('Max')
+    const rect = await slider.evaluate((element) => {
+      const bounds = element.getBoundingClientRect()
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
+    })
+    await page.mouse.move(rect.x + rect.width - 14, rect.y + rect.height / 2)
+    await page.mouse.down()
+    try {
+      await page.mouse.move(rect.x + 14 + (rect.width - 28) * 2 / 3, rect.y + rect.height / 2, { steps: 6 })
+      await expect.poll(() => slider.evaluateAll(elements => elements[0]?.getAttribute('aria-valuetext'))).toBe('High')
+      expect(selections).toBe(0)
+    } finally {
+      await page.mouse.up()
+    }
+    await menu.waitFor({ state: 'detached' })
+    expect(selections).toBe(1)
+    await expect.poll(() => trigger.getAttribute('aria-label')).toContain('推理等级 High')
+    await trigger.click()
+    await compareOrRefreshGolden(join(SNAPSHOT_DIR, 'slider.expected.md'),
+      await captureStableAria(page, '[role="menu"][aria-label="模型与推理等级"]', scaffold.workspaceCwd), MODE)
+    const shots = process.env['DSH_MODEL_SELECTOR_SHOTS'] === '1'
+      ? await mkdtemp(join(tmpdir(), `dsh-model-selector-${engine.name()}-`))
+      : undefined
+    onTestFinished(async () => {
+      await page.setViewportSize({ width: 1680, height: 1000 })
+      await page.emulateMedia({ colorScheme: null })
+    })
+    for (const width of [1680, 390]) {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 })
+      for (const colorScheme of ['light', 'dark'] as const) {
+        await page.emulateMedia({ colorScheme })
+        await expect.poll(() => page.locator('body').evaluate(element => element.hasAttribute('data-ds-dark-theme')))
+          .toBe(colorScheme === 'dark')
+        const layout = await menu.evaluate((element) => {
+          const bounds = element.getBoundingClientRect()
+          const entries = Array.from(element.querySelectorAll('[role="menuitem"]')).map(item => item.getBoundingClientRect())
+          const range = element.querySelector('input[type="range"]')!
+          const rangeBounds = range.getBoundingClientRect()
+          return {
+            left: bounds.left, right: bounds.right, width: bounds.width,
+            effortAboveModel: entries[1]!.bottom <= entries[0]!.top,
+            centered: entries.every(entry => Math.abs((entry.left + entry.right - bounds.left - bounds.right) / 2) < 1),
+            sliderContained: rangeBounds.left >= bounds.left && rangeBounds.right <= bounds.right,
+            thumb: getComputedStyle(range).getPropertyValue('--dsw-alias-slider-thumb').trim(),
+          }
+        })
+        expect(layout).toMatchObject({ width: 280, effortAboveModel: true, centered: true, sliderContained: true, thumb: '#fff' })
+        expect(layout.left).toBeGreaterThanOrEqual(12)
+        expect(layout.right).toBeLessThanOrEqual(width - 12)
+        if (shots !== undefined) await page.screenshot({ path: join(shots, `${width}-${colorScheme}.png`) })
+      }
+    }
+    if (shots !== undefined) console.info(`Model selector screenshots: ${shots}`)
+    await slider.press('Home')
+    await menu.waitFor({ state: 'detached' })
+    expect(selections).toBe(2)
+    await expect.poll(() => trigger.getAttribute('aria-label')).toContain('推理等级 Default')
+
+    await trigger.click()
+    const outsideDrag = await slider.evaluate((element) => {
+      const bounds = element.getBoundingClientRect()
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
+    })
+    await page.mouse.move(outsideDrag.x + 14, outsideDrag.y + outsideDrag.height / 2)
+    await page.mouse.down()
+    try {
+      await page.mouse.move(outsideDrag.x + outsideDrag.width + 24, outsideDrag.y + outsideDrag.height / 2, { steps: 6 })
+      await expect.poll(() => slider.evaluateAll(elements => elements[0]?.getAttribute('aria-valuetext'))).toBe('Max')
+      expect(selections).toBe(2)
+    } finally {
+      await page.mouse.up()
+    }
+    await menu.waitFor({ state: 'detached' })
+    expect(selections).toBe(3)
+    await expect.poll(() => trigger.getAttribute('aria-label')).toContain('推理等级 Max')
+    expect(tripwire.pageErrors).toEqual([])
+  })
+
   it('keeps its snapshot inventory closed', async () => {
-    await assertFixtureInventory(SNAPSHOT_DIR, ['ui.expected.md', 'pointer-menu.expected.md'])
+    await assertFixtureInventory(SNAPSHOT_DIR, ['ui.expected.md', 'pointer-menu.expected.md', 'slider.expected.md'])
   })
 })
