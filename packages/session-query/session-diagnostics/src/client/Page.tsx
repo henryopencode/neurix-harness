@@ -120,7 +120,7 @@ export function DiagnosticsPage({
         {current.occurrences.map(item => <article className={css.occurrence} key={item.id}>
           <div className={css.meta}><time dateTime={new Date(item.at).toISOString()}>{date(item.at)}</time><span>{t('event', { seq: item.eventSeq, turn: item.turn ?? '—' })}</span></div>
           <pre className={css.pre}>{item.details}</pre>
-          <Button onClick={() => { void open(item.sessionId) }}>{t('source')}</Button>
+          <Button onClick={() => { open(item.sessionId) }}>{t('source')}</Button>
         </article>)}
       </section>}
     </>}

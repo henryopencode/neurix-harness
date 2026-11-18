@@ -45,7 +45,7 @@ it.each([3, 6])('preserves a %i-backtick payload inside a longer literal fence',
   const report = diagnosticReport(data, data.groups, 'Report', 'Incomplete index')
   const outer = '`'.repeat(width + 1)
   expect(report.markdown).toContain(`${outer}text\n${item.sessionId} · #${item.eventSeq}\n${item.details}\n${outer}`)
-  expect(JSON.parse(report.json).groups[0].occurrences[0].details).toBe(item.details)
+  expect(JSON.parse(report.json)).toHaveProperty('groups.0.occurrences.0.details', item.details)
   expect(report.json).not.toMatch(/"(?:arguments|attachments|cwd|transcript|stdout)"\s*:/)
 })
 
@@ -58,5 +58,7 @@ it('keeps source, code, Markdown images, and HTML inside the literal summary', (
   group.message = '![remote image](https://example.invalid/message)\n# Forged heading\n<img src="https://example.invalid/error">'
   const report = diagnosticReport(data, data.groups, 'Report', 'Incomplete index')
   expect(report.markdown).toContain(`## ${group.category}\n\n\`\`\`text\n${group.source} · ${group.code}\n${group.message}\n\`\`\``)
-  expect(JSON.parse(report.json).groups[0]).toMatchObject({ source: group.source, code: group.code, message: group.message })
+  expect(JSON.parse(report.json)).toHaveProperty('groups.0', expect.objectContaining({
+    source: group.source, code: group.code, message: group.message,
+  }))
 })

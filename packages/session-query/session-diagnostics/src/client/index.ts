@@ -70,7 +70,9 @@ export function apply(ctx: Context): void {
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section', id: 'session-diagnostics', order: 80, locale: 'sessionDiagnostics',
     label: () => ctx.locale.bind('sessionDiagnostics')('nav'),
-    inject: (): DiagnosticsInjected => ({ openSession: id => ctx.uiWorkspace.openSession(id), releaseFocus, hooks: { focus } }),
+    inject: (): DiagnosticsInjected => ({
+      openSession: (id) => { ctx.uiWorkspace.openSession(id) }, releaseFocus, hooks: { focus },
+    }),
   }, DiagnosticsPage))
   ctx.inject(['settingsNavigation'], (navigationCtx) => {
     navigationCtx.slots.inject('tool.call.action', () => navigationCtx.slots.register({
