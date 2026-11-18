@@ -198,7 +198,7 @@ export function apply(ctx: ClientContext): void {
   if (typeof document !== 'undefined') ctx.effect(() => observeSidebarFocus(document), 'ui-sidebar-right: focus')
 
   ctx.effect(() => {
-    const handle = createSidebarRightStore(() => defaultSeed(tabs))
+    const handle = createSidebarRightStore(() => defaultSeed(tabs), kind => tabs.get(kind)?.persist === false)
     // Each Session Context generation owns one Store. Background tab actions
     // use the latest adoption for that Session.
     const adoptions = new Map<SessionId, () => void>()

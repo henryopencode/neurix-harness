@@ -85,6 +85,23 @@ it('pins restored records during adoption before the first render or store mutat
   }
 })
 
+it('saves ordinary tabs without writing live-only tabs or their floating panes', () => {
+  const values = storage()
+  const handle = createSidebarRightStore(seed, kind => kind === 'agent-browser')
+  const current = handle.create(sessionId)
+  let browser!: TabId
+  current.actions.openContent(sessionId, { kind: 'text', contentId: 'file:a', title: 'a' }, () => {})
+  current.actions.openContent(sessionId, {
+    kind: 'agent-browser', contentId: 'dsh-resource://agent-browser/session/first', title: 'Agent browser',
+  }, (id) => { browser = id })
+  current.actions.floatTab(sessionId, browser, { x: 20, y: 30, width: 480, height: 320 })
+  expect(current.getSnapshot().bySession[sessionId]?.layout.tabs[browser]?.kind).toBe('agent-browser')
+  expect([...values.values()][0]).not.toContain('agent-browser')
+  const recovered = handle.create(sessionId).getSnapshot().bySession[sessionId]!.layout
+  expect(Object.values(recovered.tabs).map(tab => tab.contentId)).toEqual(['file:a'])
+  expect(recovered.floats).toEqual([])
+})
+
 it('starts from an empty layout when stored JSON is corrupt and keeps working when storage rejects writes', () => {
   const values = storage()
   values.set(`dsh.sidebar-right.v1.${sessionId}`, '{broken')

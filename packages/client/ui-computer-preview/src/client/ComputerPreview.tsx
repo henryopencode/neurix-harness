@@ -8,8 +8,11 @@ import { Button, IconChevronDownOutlineRegular, IconChevronUpOutlineRegular, Ico
   IconFullscreenOutlineRegular, IconPanelLeftOutlineRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { ComputerPreviewSnapshot } from '../types.ts'
+import type { ComputerPreviewFrame, ComputerPreviewSnapshot } from '../types.ts'
+import type { PreviewSource } from './preview-ui.ts'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { BrowserRetry } from './BrowserViewport.tsx'
+import { browserCaptureAddress } from './browser-capture-address.ts'
 import { fitPreviewLayout, resizePreviewLayout, type PreviewLayout } from './preview-layout.ts'
 import css from './ComputerPreview.module.css'
 
@@ -41,7 +44,6 @@ export type ComputerPreviewProps = PropsRuntime<'conversation.session.header.uti
 export function ComputerPreview({ sessionId, loadPreview, t, surface, useConnectionGeneration }: ComputerPreviewProps) {
   const generationId = useConnectionGeneration(generation => generation?.id)
   const [collapsed, setCollapsed] = useState(false)
-  const [maximized, setMaximized] = useState(false)
   const [retry, setRetry] = useState(0)
   const [view, setView] = useState<{
     sessionId: SessionId
@@ -53,9 +55,6 @@ export function ComputerPreview({ sessionId, loadPreview, t, surface, useConnect
   }>({
     sessionId, failed: false, aspect: 1.6,
   })
-  const [layout, setLayout] = useState<PreviewLayout>()
-  const panel = useRef<HTMLElement>(null)
-  const dragging = useRef<{ pointerId: number; element: HTMLElement; x: number; y: number; start: PreviewLayout; edge?: 'left' | 'right' }>()
   useEffect(() => {
     if (collapsed || generationId === undefined) return
     const lifetime = new AbortController()
@@ -94,9 +93,47 @@ export function ComputerPreview({ sessionId, loadPreview, t, surface, useConnect
   }, [sessionId, collapsed, loadPreview, retry, generationId])
   const current = view.sessionId === sessionId ? view : undefined
   const frame = current?.snapshot?.frame
+  return <PreviewPanel t={t} surface={surface} frame={frame} aspect={current?.aspect ?? 1.6} failure={current?.failure}
+    failed={current?.failed === true || frame?.kind === 'unavailable' || current?.generationId !== generationId}
+    collapsed={collapsed} setCollapsed={setCollapsed} retry={() => { setRetry(value => value + 1) }} />
+}
+
+/** Picture-in-picture reads the same resource as the sidebar, including while collapsed. */
+type BrowserPictureInPictureProps = PropsRuntime<'conversation.session.header.utilities'>
+  & PropsLocale<'computerPreview'> & InjectFace<BrowserRetry>
+
+/**
+ * @param props - the selected Session and its shared browser capture.
+ * @returns picture-in-picture for the Session's current Agent target.
+ */
+export function BrowserPictureInPicture({ sessionId, useResource, t, retry }: BrowserPictureInPictureProps) {
+  const { status, value } = useResource<'agent-browser'>(browserCaptureAddress(sessionId))
+  const [collapsed, setCollapsed] = useState(false)
+  const frame = value?.frame
+  return <PreviewPanel t={t} surface="browser" frame={frame} aspect={value?.aspect ?? 1.6}
+    failure={frame?.kind === 'unavailable' ? frame.code : undefined}
+    failed={status === 'failed' || frame?.kind === 'unavailable'}
+    collapsed={collapsed} setCollapsed={setCollapsed} retry={() => { retry(sessionId) }} />
+}
+
+interface PreviewPanelProps extends PropsLocale<'computerPreview'> {
+  surface: PreviewSource['surface']
+  frame: ComputerPreviewFrame | undefined
+  failed: boolean
+  failure: Extract<ComputerPreviewFrame, { kind: 'unavailable' }>['code'] | undefined
+  aspect: number
+  collapsed: boolean
+  setCollapsed: (value: boolean) => void
+  retry: () => void
+}
+
+function PreviewPanel({ t, surface, frame, failed, failure, aspect, collapsed, setCollapsed, retry }: PreviewPanelProps) {
+  const [maximized, setMaximized] = useState(false)
+  const [layout, setLayout] = useState<PreviewLayout>()
+  const panel = useRef<HTMLElement>(null)
+  const dragging = useRef<{ pointerId: number; element: HTMLElement; x: number; y: number; start: PreviewLayout; edge?: 'left' | 'right' }>()
   const visible = frame !== undefined && frame.kind !== 'idle'
   const hasImage = frame?.kind === 'frame'
-  const aspect = current?.aspect ?? 1.6
   const viewport = () => ({ width: window.innerWidth, height: window.innerHeight,
     top: 16 + (Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dsh-frame-top-clearance')) || 0) })
   const endDrag = (event?: PointerEvent<HTMLElement>) => {
@@ -146,9 +183,8 @@ export function ComputerPreview({ sessionId, loadPreview, t, surface, useConnect
     ...layout === undefined || maximized && !collapsed ? {} : { left: layout.x, '--preview-top': `${layout.y}px`, right: 'auto',
       ...collapsed ? {} : { '--preview-width': `${layout.width}px` } },
   }
-  const failed = current?.failed || frame?.kind === 'unavailable' || current?.generationId !== generationId
-  const unavailable = current?.failure === 'PERMISSION_REQUIRED' ? 'previewPermissionRequired'
-    : current?.failure === 'CAPTURE_TIMEOUT' ? 'previewTimeout' : current?.failure === 'IMAGE_TOO_LARGE' ? 'previewTooLarge' : 'previewUnavailable'
+  const unavailable = failure === 'PERMISSION_REQUIRED' ? 'previewPermissionRequired'
+    : failure === 'CAPTURE_TIMEOUT' ? 'previewTimeout' : failure === 'IMAGE_TOO_LARGE' ? 'previewTooLarge' : 'previewUnavailable'
   const action = frame?.kind === 'frame' ? frame.action : ''
   const activity = action === 'type' ? 'previewType' : action === 'click' ? 'previewClick' : action === 'move' ? 'previewMove'
     : action === 'scroll-down' ? 'previewScrollDown' : action === 'scroll-up' ? 'previewScrollUp'
@@ -238,7 +274,7 @@ export function ComputerPreview({ sessionId, loadPreview, t, surface, useConnect
       </div>
       {failed ? <div className={css.error} role="status">
         {hasImage ? <span>{t(unavailable)}</span> : null}
-        <button className={css.retry} type="button" onClick={() => { setRetry(value => value + 1) }}>{t('previewRetry')}</button>
+        <button className={css.retry} type="button" onClick={retry}>{t('previewRetry')}</button>
       </div> : hasImage && (frame.active || scrolling) ? <div className={css.caption}
         data-active={frame.active} aria-hidden={!frame.active}>
         <span className={css.activity} role="status"><span className={css.dot} />{t(activity)}</span>

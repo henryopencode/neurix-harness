@@ -1,10 +1,7 @@
 - paragraph: 审批修改立即生效；其他设置请在保存后新建对话使用
 - group:
   - text: 浏览器
-  - combobox "浏览器":
-    - option "Google Chrome" [selected]
-    - option "Chromium"
-    - option "Microsoft Edge"
+  - combobox "浏览器": Google Chrome
   - paragraph: 请先在这台电脑上安装所选浏览器
   - checkbox "每次浏览器操作前确认"
   - text: 每次浏览器操作前确认
