@@ -206,6 +206,122 @@ describe('ModelSelect catalog badges', () => {
   })
 })
 
+describe('ModelSelect effort slider', () => {
+  it('shows catalog effort steps and submits keyboard changes through the existing selection', async () => {
+    const select = vi.fn(async () => ({ ok: true as const, value: undefined }))
+    render(<ModelSelect renderSlot={renderLabel} locked={false} available directory={createSnapshotStore(state())}
+      load={vi.fn()} resolveText={resolveText} select={select} t={t} />)
+    fireEvent.click(screen.getByRole('button', { name: /^选择模型/ }))
+    const slider = screen.getByRole('slider', { name: '推理等级' })
+    expect(slider.getAttribute('min')).toBe('0')
+    expect(slider.getAttribute('max')).toBe('2')
+    expect(slider.getAttribute('step')).toBe('1')
+    expect(slider.getAttribute('aria-valuetext')).toBe('High')
+    slider.focus()
+    expect(fireEvent.keyDown(slider, { key: 'ArrowUp' })).toBe(true)
+    expect(document.activeElement).toBe(slider)
+    fireEvent.change(slider, { target: { value: '2' } })
+    expect(select).toHaveBeenCalledExactlyOnceWith({
+      provider: 'deepseek-official', model: 'deepseek-v4-flash', reasoningEffort: 'max',
+    })
+    await waitFor(() => { expect(screen.queryByRole('slider')).toBeNull() })
+  })
+
+  it('previews a pointer drag and submits only its released step', async () => {
+    const select = vi.fn(async () => ({ ok: true as const, value: undefined }))
+    const directory = createSnapshotStore(state())
+    render(<ModelSelect renderSlot={renderLabel} locked={false} available directory={directory}
+      load={vi.fn()} resolveText={resolveText} select={select} t={t} />)
+    fireEvent.click(screen.getByRole('button', { name: /^选择模型/ }))
+    const slider = screen.getByRole('slider')
+    fireEvent.pointerDown(slider, { pointerId: 1 })
+    expect(document.activeElement).toBe(slider)
+    fireEvent.blur(slider, { relatedTarget: null })
+    expect(screen.getByRole('slider')).toBe(slider)
+    fireEvent.change(slider, { target: { value: '0' } })
+    expect(screen.getByRole('menuitem', { name: /推理等级/ }).textContent).toContain('Off')
+    fireEvent.change(slider, { target: { value: '2' } })
+    expect(slider.getAttribute('aria-valuetext')).toBe('Max')
+    expect(directory.getSnapshot().current).toEqual(state().current)
+    expect(select).not.toHaveBeenCalled()
+    fireEvent.pointerUp(slider, { pointerId: 1 })
+    fireEvent.lostPointerCapture(slider, { pointerId: 1 })
+    expect(select).toHaveBeenCalledExactlyOnceWith({
+      provider: 'deepseek-official', model: 'deepseek-v4-flash', reasoningEffort: 'max',
+    })
+    await waitFor(() => { expect(screen.queryByRole('slider')).toBeNull() })
+  })
+
+  it.each(['pointerCancel', 'lostPointerCapture'] as const)('restores the saved effort after %s without submitting', (event) => {
+    const select = vi.fn()
+    render(<ModelSelect renderSlot={renderLabel} locked={false} available directory={createSnapshotStore(state())}
+      load={vi.fn()} resolveText={resolveText} select={select} t={t} />)
+    fireEvent.click(screen.getByRole('button', { name: /^选择模型/ }))
+    const slider = screen.getByRole('slider')
+    fireEvent.pointerDown(slider, { pointerId: 1 })
+    fireEvent.change(slider, { target: { value: '2' } })
+    fireEvent[event](slider, { pointerId: 1 })
+    expect(slider.getAttribute('aria-valuetext')).toBe('High')
+    expect(slider.getAttribute('value')).toBe('1')
+    expect(select).not.toHaveBeenCalled()
+  })
+
+  it('includes the provider default as the first step when no model default is configured', () => {
+    const directory = createSnapshotStore(state({
+      current: { provider: 'provider', model: 'model', reasoningEffort: 'standard' },
+      groups: [{ id: 'provider', name: 'Provider', models: [{
+        id: 'model', name: 'Model', reasoning: { efforts: [{ id: 'standard', name: 'Standard' }] },
+      }] }],
+    }))
+    const select = vi.fn(async () => ({ ok: true as const, value: undefined }))
+    render(<ModelSelect renderSlot={renderLabel} locked={false} available directory={directory}
+      load={vi.fn()} resolveText={resolveText} select={select} t={t} />)
+    fireEvent.click(screen.getByRole('button', { name: /^选择模型/ }))
+    const slider = screen.getByRole('slider')
+    expect(slider.getAttribute('max')).toBe('1')
+    fireEvent.change(slider, { target: { value: '0' } })
+    expect(select).toHaveBeenCalledExactlyOnceWith({ provider: 'provider', model: 'model' })
+  })
+
+  it('disables the slider while a selection is pending and exposes no slider for models without reasoning', () => {
+    const directory = createSnapshotStore(state())
+    render(<ModelSelect renderSlot={renderLabel} locked={false} available directory={directory}
+      load={vi.fn()} resolveText={resolveText} select={vi.fn()} t={t} />)
+    fireEvent.click(screen.getByRole('button', { name: /^选择模型/ }))
+    act(() => { directory.update((snapshot) => { snapshot.pending = {
+      provider: 'deepseek-official', model: 'deepseek-v4-flash', reasoningEffort: 'max',
+    } }) })
+    expect(screen.getByRole('slider').hasAttribute('disabled')).toBe(true)
+    expect(screen.getByRole('button', { name: t('action.reload') }).hasAttribute('disabled')).toBe(true)
+    act(() => { directory.update((snapshot) => {
+      snapshot.pending = null
+      snapshot.groups = modelGroups(1).map(group => ({ ...group, models: group.models.map(model => ({ id: model.id, name: model.name })) }))
+    }) })
+    expect(screen.queryByRole('slider')).toBeNull()
+  })
+
+  it('reaches refresh and the slider by keyboard and reloads without selecting a model', () => {
+    const load = vi.fn()
+    const select = vi.fn()
+    render(<ModelSelect renderSlot={renderLabel} locked={false} available directory={createSnapshotStore(state())}
+      load={load} resolveText={resolveText} select={select} t={t} />)
+    fireEvent.click(screen.getByRole('button', { name: /^选择模型/ }))
+    expect(load).toHaveBeenCalledOnce()
+    const effort = screen.getByRole('menuitem', { name: /推理等级/ })
+    effort.focus()
+    fireEvent.keyDown(effort, { key: 'ArrowDown' })
+    const reload = screen.getByRole('button', { name: t('action.reload') })
+    expect(document.activeElement).toBe(reload)
+    fireEvent.click(reload)
+    expect(load).toHaveBeenCalledTimes(2)
+    fireEvent.keyDown(reload, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(screen.getByRole('slider'))
+    fireEvent.keyDown(screen.getByRole('slider'), { key: 'Escape' })
+    expect(screen.queryByRole('slider')).toBeNull()
+    expect(select).not.toHaveBeenCalled()
+  })
+})
+
 describe('ModelSelect reasoning effort', () => {
   it('preserves effort controls while a feature owns the model route', async () => {
     const directory = createSnapshotStore<ModelDirectoryState>(state({ selectionLocked: true }))
@@ -667,11 +783,11 @@ describe('ModelSelect keyboard walk', () => {
     expect(screen.getByRole('menu')).toBeTruthy()
   })
 
-  it('a backward step from outside the list enters at the last row, and a closed menu leaves Tab native', () => {
+  it('a backward step from outside the list enters at the last control, and a closed menu leaves Tab native', () => {
     mountOpen()
-    const [modelRow, effortRow] = screen.getAllByRole('menuitem')
+    const modelRow = screen.getAllByRole('menuitem')[0]
     expect(fireEvent.keyDown(modelRow!, { key: 'ArrowUp' })).toBe(false)
-    expect(document.activeElement).toBe(effortRow)
+    expect(document.activeElement).toBe(screen.getByRole('slider'))
     const trigger = screen.getByRole('button', { name: /选择模型/ })
     fireEvent.keyDown(trigger, { key: 'Escape' })
     expect(screen.queryByRole('menu')).toBeNull()
