@@ -90,6 +90,7 @@ describe('background bash output', () => {
       run_in_background: true,
     })
     expect(text(ack)).toContain('started background job')
+    expect(ack.meta).toEqual({ cwd: process.cwd() })
     const jobs = ctx.jobs
     const job = jobs.list()[0]
     expect(job).toBeDefined()
@@ -231,6 +232,7 @@ describe('foreground commands as jobs', () => {
       const body = text(result)
       expect(body).toContain('early-output')
       expect(body).toContain(`[still running after 250ms; moved to background job ${jobId}]`)
+      expect(result.meta).toEqual({ cwd: process.cwd() })
       expect(body.endsWith(`moved to background job ${jobId}]`)).toBe(true)
       expect(body.indexOf('early-output')).toBeLessThan(body.indexOf('[still running'))
 
@@ -274,6 +276,9 @@ describe('foreground commands as jobs', () => {
     if (result.isError) throw new Error('expected a foreground result')
     expect(result.value).toMatchObject({ kind: 'foreground', signal: 'SIGTERM', stopped: 'cancelled by the user' })
     expect(text(result)).toBe('(no output)\n[stopped: cancelled by the user]\n[killed by signal: SIGTERM]')
+    expect(result.meta).toMatchObject({
+      shellOutcome: { kind: 'foreground', exitCode: null, signal: 'SIGTERM', timedOut: false, aborted: true, stopped: 'cancelled by the user' },
+    })
     expect(ctx.jobs.list()).toEqual([])
   })
 
@@ -305,6 +310,7 @@ describe('foreground commands as jobs', () => {
     const result = await pending
     expect(result.isError).toBe(true)
     expect(result.error).toMatchObject({ message: 'tool call aborted', info: { name: 'AbortError', code: TOOL_ABORTED } })
+    expect(result.meta).toBeUndefined()
     // The kill is this call's own: the settlement was awaited (so no notice
     // follows the abort the result already carries) and the record left.
     expect(seen).toEqual(['registered', 'stopping', 'settled:killed:signal: SIGTERM; tool call aborted:true', 'removed'])
@@ -352,6 +358,10 @@ describe('foreground commands as jobs', () => {
     if (result.isError) throw new Error('expected a foreground result')
     expect(result.value).toMatchObject({ kind: 'foreground', exitCode: null, signal: null, timedOut: true, aborted: false, timeoutMs: 250 })
     expect(text(result)).toBe('(no output)\n[timed out after 250ms]\n[exit code: null]')
+    expect(result.meta).toEqual({
+      cwd: process.cwd(),
+      shellOutcome: { kind: 'foreground', exitCode: null, signal: null, timedOut: true, aborted: false, timeoutMs: 250 },
+    })
     expect(ctx.jobs.list()).toEqual([])
   })
 

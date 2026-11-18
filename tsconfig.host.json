@@ -111,6 +111,7 @@
     "apps/web/tests/icon-skin.e2e.ts",
     "apps/web/tests/draft-initialization.e2e.ts",
     "apps/web/tests/settings-chrome.e2e.ts",
+    "apps/web/tests/session-diagnostics.e2e.ts",
     "apps/web/tests/session-log-upload.e2e.ts",
     "apps/web/tests/caption-overlays.e2e.ts",
     "apps/web/tests/settings-appearance.e2e.ts",
@@ -649,6 +650,9 @@
     },
     {
       "path": "./packages/session-query/session-log-export/tsconfig.host.json"
+    },
+    {
+      "path": "./packages/session-query/session-diagnostics/tsconfig.host.json"
     },
     {
       "path": "./packages/settings/settings"

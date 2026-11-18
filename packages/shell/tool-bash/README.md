@@ -83,6 +83,8 @@ A composition with no executor provider never activates the tool. Background cal
 
 Structured foreground and background results expose `cwd`, the executor-resolved launch directory. Persisted presentation metadata carries the same value so settled cards retain the directory used by that call. A command’s own `cd` does not change this launch value; native result text remains stdout, stderr, and status markers.
 
+Settled foreground results persist `presentationMeta` as `{ cwd, shellOutcome }`. The outcome has `kind: 'foreground'`, nullable `exitCode` and `signal`, `timedOut`, `aborted`, and `timeoutMs`, plus optional `stopped` and executor-reported `sandbox` facts (`mode`, `denied`, optional `enforcement` and `runnerFailed`). A timeout can coexist with exit code zero, and a sandbox denial need not produce a nonzero exit. Consumers such as [local diagnostics](../../session-query/session-diagnostics/README.md) use these structured facts rather than guessing from rendered output; this metadata does not change model-visible text or make nonzero exits tool errors. Background starts and promoted running commands persist only `cwd`, not a terminal outcome. Thrown tool failures bypass this successful-output projection, and older results may lack `shellOutcome`. The type declarations in [`src/types.ts`](src/types.ts) own the exact fields.
+
 This section explains the design decisions behind the tool and points at the code that realizes them; the observable behavior is fully covered in [Use this package](#use-this-package).
 
 ### Design philosophy

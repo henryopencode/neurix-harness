@@ -83,6 +83,8 @@ kind: "package-reference"
 
 前台与后台的结构化结果均包含 `cwd`，即执行器解析后的启动目录。持久化展示元数据携带同一值，使已结束的调用卡片保留该次调用使用的目录。命令内部的 `cd` 不会改变这个启动值；原生结果文本仍由 stdout、stderr 与状态标记组成。
 
+已结算的前台结果将 `presentationMeta` 持久化为 `{ cwd, shellOutcome }`。结局包含 `kind: 'foreground'`、可为 null 的 `exitCode` 和 `signal`、`timedOut`、`aborted` 与 `timeoutMs`，以及可选的 `stopped` 和执行器报告的 `sandbox` 事实（`mode`、`denied`，以及可选的 `enforcement` 和 `runnerFailed`）。超时可以与退出码零同时存在，沙箱拒绝也不一定产生非零退出。[本地诊断](../../session-query/session-diagnostics/README.zh.md)等消费方使用这些结构化事实，而不是猜测渲染后的输出；元数据不会改变模型可见文本，也不会将非零退出变为工具错误。后台启动和转入后台后仍运行的命令仅持久化 `cwd`，不带终止结局。抛出的工具失败不经过这一成功输出投影，较旧的结果也可能没有 `shellOutcome`。[`src/types.ts`](src/types.ts) 中的类型声明定义确切字段。
+
 本节解释工具背后的设计决策，并指出实现它们的代码位置；可观察行为已在[使用本包](#use-this-package)中完整说明。
 
 ### 设计理念

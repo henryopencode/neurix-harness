@@ -72,6 +72,14 @@
     - id: session-log-download
       name: '@deepseek-ai/dsh-session-log-export'
 
+    - id: session-diagnostics
+      name: '@deepseek-ai/dsh-session-diagnostics'
+      config:
+        maxOccurrencesPerSession: 500
+        maxDetailChars: 2048
+        maxOccurrencesPerQuery: 1000
+        maxSessionsPerRefresh: 100
+
     # Session-menu application choices over Host resolution on macOS, Windows,
     # and Linux. An empty catalog hides the action. The Host routes and browser
     # controls also serve the file-tree directory opener.

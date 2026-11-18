@@ -54,6 +54,7 @@ const ToolCall = memo(function ToolCall({
           entryKey: toolName,
           fallback: renderFallback(owner),
         })}
+      {call.phase === 'result' ? renderSlot('tool.call.action', { block: call.block }) : null}
       {children}
     </div>
   )

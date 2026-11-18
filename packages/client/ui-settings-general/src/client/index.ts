@@ -245,7 +245,15 @@ export function apply(ctx: ClientContext): void {
         },
         inject: shellInjected,
       }, SettingsRoot)
-      return () => { disposeCommand(); disposeSlot() }
+      const disposeNavigation = ctx.provide('settingsNavigation', {
+        openSection(id: string): void {
+          if (!ctx.slots.entries('settings.section').some(entry => entry.options.id === id)) {
+            throw new Error(`Settings section is unavailable: ${id}`)
+          }
+          shellInstance.actions.openSection(id)
+        },
+      })
+      return async () => { await disposeNavigation(); disposeCommand(); disposeSlot() }
     }))
 
   ctx.slots.inject('settings.trigger', () =>
