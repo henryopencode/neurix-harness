@@ -29,6 +29,9 @@ import { DSH_ENV_PREFIX } from '@deepseek-ai/dsh-shell'
 import type { ShellExecRequest, ShellExecSpec, ShellExecution, ShellRunResult } from '@deepseek-ai/dsh-shell'
 import { processJob, processOutcome, processSources, ringDelta } from './background.ts'
 import { parseExitStatus, renderJobRead, renderPromoted, renderResult } from './render.ts'
+import type { BashOutcomeMeta } from './types.ts'
+
+export type { BashForegroundOutcome, BashOutcomeMeta } from './types.ts'
 
 export const name = 'tool-bash'
 export const inject = ['tools', 'shell', 'systemPrompt', 'shellEnv', 'workingDirectory']
@@ -473,7 +476,21 @@ export function apply(ctx: Context, config: Config = {}): void {
               ? renderPromoted(value)
               : renderResult(value as { kind: 'foreground' } & ShellRunResult, escalationModes),
         }],
-        presentationMeta: (_args, value) => ({ cwd: value.cwd }),
+        presentationMeta: (_args, value) => ({
+          cwd: value.cwd,
+          ...value.kind === 'foreground' ? {
+            shellOutcome: {
+              kind: value.kind,
+              exitCode: value.exitCode,
+              signal: value.signal,
+              timedOut: value.timedOut,
+              aborted: value.aborted,
+              timeoutMs: value.timeoutMs,
+              ...value.stopped !== undefined ? { stopped: value.stopped } : {},
+              ...value.sandbox !== undefined ? { sandbox: value.sandbox } : {},
+            },
+          } : {},
+        } satisfies BashOutcomeMeta),
       },
       async execute(args: BashToolArgs, exec) {
         // Description is display metadata; workdir defaults to the caller's session.

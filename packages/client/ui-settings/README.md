@@ -46,6 +46,11 @@ A settings surface registers into the slot types this package declares. The shel
 
 To customize a page's navigation icon, use `ctx.slots.inject('settings.section.icon', ...)` and register an icon component with the same `id` as its `settings.section` contribution. Unmatched ids never render, and the icon's `label` option is not displayed. The component receives `size` in pixels and `active`; the shell owns the button, label, and decorative icon wrapper. Without a matching icon registration, the shell renders its default glyph. Disposing the icon contribution restores that glyph.
 
+<a id="opening-a-settings-section"></a>
+### Opening a settings section
+
+Feature plugins inject `settingsNavigation` and call `ctx.settingsNavigation.openSection(id)` to select a registered `settings.section` in the existing Settings panel. An unavailable id throws without changing panel visibility or selection. The [General shell](../ui-settings-general/README.md#use-this-package) supplies the service; consumers follow its lifetime rather than creating another dialog or navigation store.
+
 ### Observable success and failures
 
 A committed write folds its answer into the shared mirror. Refused writes refresh the latest Host values. Browser validation uses the serialized Config schema; the Host validates complete configuration, including checks that cannot be serialized.

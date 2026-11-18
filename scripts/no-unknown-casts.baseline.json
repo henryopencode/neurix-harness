@@ -689,9 +689,6 @@
   "packages/client/ui-tool/tests/read-card.client.spec.tsx": {
     "ad325101d9586299adfd569b444e203060197b4613a9ca3b36671b96a635c569": 1
   },
-  "packages/client/ui-tool/tests/tool-call-tree.client.spec.tsx": {
-    "0579b8a3ceb3401991284810b465c683c710280c41f8e454e41183872b2475d1": 1
-  },
   "packages/client/ui-tool/tests/tool-fixtures.client.ts": {
     "9a6d99786c6afdc9d28a2984f465f14ddf09c84795c6c02abfad39c3013cec69": 1,
     "f5818e65d60cbb0c16df2dd6ab9b372fbe70ef24b16ddd62737e38f846bdc1c4": 1

@@ -37,9 +37,17 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * slot.
      */
     'tool.call.images': { kind: 'single'; scope: 'session'; owner: ToolImagesOwnerProps }
+    /** Optional actions after a settled native or nested Tool view; absent registrants render nothing. */
+    'tool.call.action': { kind: 'list'; scope: 'session'; owner: ToolCallActionOwnerProps }
     /** Generated-image gallery declared by generate_image, independent of the read_image gallery. */
     'tool.call.generatedImages': { kind: 'single'; scope: 'session'; owner: ToolImagesOwnerProps }
   }
+}
+
+/** Settled record passed to optional Tool actions, including its durable event reference. */
+export interface ToolCallActionOwnerProps {
+  /** Native or PTC result as projected from committed Session events. */
+  block: ToolResultNode
 }
 
 /** Owner currency of the Tool image gallery slot: references plus the loader. */
@@ -149,6 +157,6 @@ export type ToolHostInfoInjected = {
 
 /** Full props of the Tool call-tree renderer registered as a tool-call Chat Node. */
 export type ToolTreeProps = PropsRuntime<'conversation.chat.node', 'tool-call'>
-  & PropsRenderSlots<'tool.call.toolview'>
+  & PropsRenderSlots<'tool.call.toolview' | 'tool.call.action'>
   & PropsLocale<'conversation'>
   & InjectFace<ToolHostInfoInjected & ToolFileInjected>

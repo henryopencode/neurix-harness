@@ -3430,6 +3430,29 @@ export interface JsonRpcConfig {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-sdk-jsonrpc-server -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-session-diagnostics -->
+<a id="deepseek-aidsh-session-diagnostics"></a>
+
+## `@deepseek-ai/dsh-session-diagnostics`
+
+- `inject`: `sessions` · `sessionQuery` · `sessionProjections` · `sessionProjectionCache` · `remoteAccess`
+- `source`: [`packages/session-query/session-diagnostics/src/index.ts:16`](../packages/session-query/session-diagnostics/src/index.ts)
+
+```ts config-catalog
+/** Configurable local retention, response and explicit historical-index work bounds. */
+export interface Config {
+  /** Maximum newest failures retained in each Session's derived index. */
+  maxOccurrencesPerSession: number
+  /** Character limit for each redacted failure excerpt. */
+  maxDetailChars: number
+  /** Maximum matching occurrences in one grouped response. */
+  maxOccurrencesPerQuery: number
+  /** Maximum historical Session logs opened by one explicit index refresh. */
+  maxSessionsPerRefresh: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-session-diagnostics -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-session-log-deepseek -->
 <a id="deepseek-aidsh-session-log-deepseek"></a>
 
@@ -4386,7 +4409,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-tool-bash`
 
 - `inject`: `tools` · `shell` · `systemPrompt` · `shellEnv` · `workingDirectory`
-- `source`: [`packages/shell/tool-bash/src/index.ts:37`](../packages/shell/tool-bash/src/index.ts)
+- `source`: [`packages/shell/tool-bash/src/index.ts:40`](../packages/shell/tool-bash/src/index.ts)
 
 ```ts config-catalog
 /** Configuration for the bash tool. */

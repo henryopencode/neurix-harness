@@ -46,6 +46,11 @@ kind: "package-reference"
 
 要自定义页面的导航图标，使用 `ctx.slots.inject('settings.section.icon', ...)`，并以与其 `settings.section` 贡献相同的 `id` 注册图标组件。不匹配的 id 不会渲染，图标的 `label` 选项不会显示。组件接收以像素为单位的 `size` 和 `active`；外壳负责按钮、标签和装饰性图标容器。没有匹配的图标注册时，外壳渲染默认图标。释放图标贡献后恢复该默认图标。
 
+<a id="opening-a-settings-section"></a>
+### 打开设置分区
+
+功能插件注入 `settingsNavigation`，调用 `ctx.settingsNavigation.openSection(id)`，在已有设置面板中选中已注册的 `settings.section`。id 不可用时会抛错，且不改变面板可见状态或分区选择。[通用设置外壳](../ui-settings-general/README.zh.md#use-this-package)提供该服务；消费方跟随其生命周期，而不创建另一个弹窗或导航 store。
+
 ### 可观察的成功与失败
 
 已提交的写入将应答合入共享镜像。被拒绝的写入刷新最新 Host 值。浏览器使用序列化的 Config schema 校验；Host 校验完整配置，包括无法序列化的检查。

@@ -651,8 +651,16 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Session reads, traces, filters, and search',
     mode: 'seam',
     implementations: ['session-query-sqlite'],
-    consumers: ['session-reference', 'tool-session-query'],
+    consumers: ['session-reference', 'tool-session-query', 'session-diagnostics'],
     note: 'The interface supplies exact reads, filters, and traces; its concrete backend adds full-text reconciliation, ranking, snippets, and cursor generations, while the model consumer owns workspace authority and cursor-free rendering.',
+  },
+  {
+    key: 'sessionDiagnostics',
+    pkg: 'session-diagnostics',
+    title: 'Local Session diagnostics Remote',
+    mode: 'core',
+    consumers: ['session-diagnostics'],
+    note: 'Groups bounded failure records from authorized Session projections and refreshes historical indexes only on explicit request. The Settings client reviews and downloads reports locally.',
   },
   {
     key: 'fileReferences',
@@ -728,7 +736,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'session-projection',
     title: 'Session projection units',
     mode: 'core',
-    consumers: ['api-session-controller', 'tool-todo', 'session-title'],
+    consumers: ['api-session-controller', 'tool-todo', 'session-title', 'session-diagnostics'],
     note: 'Domains register state-driven fold units; the eager drive keeps per-session watermark states and the Session controller serves baselines and pushes changed values.',
   },
   {
@@ -736,7 +744,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'session-projection-cache',
     title: 'Persisted projection cache',
     mode: 'core',
-    consumers: ['api-session-controller', 'session-query', 'session-reference'],
+    consumers: ['api-session-controller', 'session-query', 'session-reference', 'session-diagnostics'],
     note: 'Durably checkpoints projection unit states per session (throttled + turn/end/detach mandatory points), serves cached projection views, and accelerates prepared-Session projection hydration.',
   },
   {

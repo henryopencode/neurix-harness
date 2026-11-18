@@ -579,6 +579,16 @@ it('publishes CLI runtime declarations and rejects a payload that omits them', (
     .toEqual([expect.stringContaining('@deepseek-ai/dsh: package.json files must be ["lib/*.js","lib/types/*.d.ts"]')])
 })
 
+it('publishes diagnostics type declarations without intermediate Client JavaScript', () => {
+  const dir = 'packages/session-query/session-diagnostics'
+  const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
+  expect(manifest.exports?.['./types']).toEqual({ types: './lib/types/types.d.ts' })
+  expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
+  const files = [...manifest.files!, 'lib/types/**/*.js']
+  expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files } }))
+    .toEqual([expect.stringContaining('package.json files must be')])
+})
+
 it('requires the shared Web injection entry in the published payload', () => {
   const manifest = JSON.parse(readFileSync(new URL('../packages/client/web/package.json', import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
   expect(checkWorkspaceManifest({ dir: 'packages/client/web', manifest })).toEqual([])
