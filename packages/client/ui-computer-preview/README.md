@@ -27,9 +27,9 @@ Watch browser and application activity in independently movable and resizable pi
 
 Enable Browser control or Application control from Plugins. The Web profile includes this carrier; users do not enable it separately. The Client provides `computerPreviewUi`, and each source registers a capture callback with its own lifetime and source identity. The Host body has no settings, tools, or capture side effects.
 
-Previews appear automatically when a target is available. Drag the picture to move it within the application window, or drag either bottom corner to resize it. Maximize fills the available window while preserving the image proportions; Restore returns to the previous floating size and position. Collapse pauses capture and leaves an Expand button.
+Previews appear automatically when a target is available. Drag the picture to move it within the application window, or drag either bottom corner to resize it. Maximize fills the available window while preserving the image proportions; Restore returns to the previous floating size and position. Collapse leaves an Expand button. For applications, it also pauses capture.
 
-Updates and connection failures do not open previews without a target. Capture pauses while disconnected and checks the target again after reconnection. An existing preview retains its last image with an unavailable notice until a fresh response arrives; a response with no target hides the panel. Target-specific capture failures, including missing permissions, show a Retry action.
+Capture pauses while disconnected and checks the target again after reconnection. The browser picture-in-picture hides during a disconnect; the application preview retains its last image with an unavailable notice. A response with no target hides picture-in-picture. Target-specific capture failures, including missing permissions, show a Retry action.
 
 -----
 
@@ -39,7 +39,7 @@ Updates and connection failures do not open previews without a target. Capture p
 <details>
 <summary>Implementation details — click to expand</summary>
 
-The Host exports a capture registry that each control plugin mounts with its own Remote and live pacing settings. The injected Client service mounts portals through the Session-scoped header slot without adding header controls. Each panel keeps its own display state and cancels pending reads when collapsed or unloaded. Shared geometry preserves the image proportions and clamps it to the viewport with desktop titlebar clearance. Capture ownership and Remote authentication remain with the source plugin.
+Each control plugin mounts its own capture registry and owns the authenticated Remote call and refresh interval. The browser sidebar and picture-in-picture subscribe to one Client resource for the current Session. The resource cancels an outstanding read when the Session or connection changes. Shared geometry preserves the image proportions and keeps the floating preview within the viewport.
 
 </details>
 

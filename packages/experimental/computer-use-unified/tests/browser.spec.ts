@@ -148,6 +148,141 @@ it('uses browser-only resources without native discovery or shutdown on unsuppor
   expect(desktop.calls).toEqual([])
 })
 
+async function useBrowserPreview(): Promise<void> {
+  await runtime.close()
+  runtime = new ComputerRuntime(undefined, Config({ headless: true, showOverlay: false, screenshots: false }), 'browser')
+}
+
+it('keeps one preview opening identity across actions and surviving tabs, then idles on last close, reset, and disconnection', async () => {
+  await useBrowserPreview()
+  expect(await runtime.capturePreview(signal)).toEqual({ kind: 'idle' })
+  await execute({ action: 'open_browser', url: 'https://fixture.test/first' })
+  const first = await runtime.capturePreview(signal)
+  if (first.kind !== 'frame') throw new Error('Expected the opened Page preview')
+  expect(first.openId).toMatch(/^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/)
+  const browser = browserFixture.browsers[0]
+  if (browser === undefined) throw new Error('Expected the owned browser')
+  const popup = await browser.context.newPage()
+  await popup.goto('https://fixture.test/popup')
+  await execute({ action: 'list' })
+  await execute({ action: 'navigate', target: 'tab-1', url: 'https://fixture.test/navigated' })
+  await execute({ action: 'observe', target: 'tab-2' })
+  await execute({ action: 'click', target: 'tab-2', locator })
+  expect(await runtime.capturePreview(signal)).toMatchObject({ kind: 'frame', title: 'https://fixture.test/popup', openId: first.openId })
+  expect(browserFixture.screenshotPages.at(-1)).toBe(popup)
+
+  browserFixture.fail = 'screenshot'
+  expect(await runtime.capturePreview(signal)).toEqual({ kind: 'unavailable', code: 'CAPTURE_FAILED', title: 'https://fixture.test/popup', openId: first.openId })
+  browserFixture.fail = undefined
+  await execute({ action: 'new_tab', target: 'tab-2', url: 'https://fixture.test/second' })
+  const second = await runtime.capturePreview(signal)
+  if (second.kind !== 'frame') throw new Error('Expected the new Page preview')
+  expect(second.title).toBe('https://fixture.test/second')
+  if (second.openId === undefined) throw new Error('Expected a new browser opening identity')
+  expect(second.openId).not.toBe(first.openId)
+  await execute({ action: 'close_tab', target: 'tab-3' })
+  expect(await runtime.capturePreview(signal)).toMatchObject({ kind: 'frame', title: 'https://fixture.test/navigated', openId: second.openId })
+  await execute({ action: 'close_tab', target: 'tab-1' })
+  expect(await runtime.capturePreview(signal)).toMatchObject({ kind: 'frame', title: 'https://fixture.test/popup', openId: second.openId })
+  await popup.close()
+  expect(await runtime.capturePreview(signal)).toEqual({ kind: 'idle' })
+
+  await execute({ action: 'open_browser' })
+  const reopened = await runtime.capturePreview(signal)
+  if (reopened.kind !== 'frame' || reopened.openId === undefined) throw new Error('Expected a reopened Page preview')
+  expect(reopened.openId).not.toBe(second.openId)
+  await execute({ action: 'reset' })
+  expect(await runtime.capturePreview(signal)).toEqual({ kind: 'idle' })
+  await execute({ action: 'open_browser' })
+  const replacement = browserFixture.browsers[1]
+  if (replacement === undefined) throw new Error('Expected a new owned browser after reset')
+  browser.emit('disconnected')
+  const unaffected = await runtime.capturePreview(signal)
+  if (unaffected.kind !== 'frame') throw new Error('Earlier disconnect hid the replacement browser')
+  expect(unaffected.openId).toBeDefined()
+  replacement.disconnect()
+  expect(await runtime.capturePreview(signal)).toEqual({ kind: 'idle' })
+  expect(desktop.calls).toEqual([])
+})
+
+it('publishes a partial open only after viewport readiness and never publishes failed opens', async () => {
+  await useBrowserPreview()
+  browserFixture.launchError = new Error('Cannot start browser')
+  await expect(execute({ action: 'open_browser' })).rejects.toMatchObject({ code: 'BROWSER_START_FAILED' })
+  expect(await runtime.capturePreview(signal)).toEqual({ kind: 'idle' })
+  browserFixture.launchError = undefined
+  browserFixture.fail = 'Browser.setContentsSize'
+  await expect(execute({ action: 'open_browser' })).rejects.toMatchObject({ code: 'BROWSER_VIEWPORT_FAILED' })
+  expect(await runtime.capturePreview(signal)).toEqual({ kind: 'idle' })
+
+  const entered = Promise.withResolvers<undefined>()
+  const blocked = Promise.withResolvers<undefined>()
+  browserFixture.fail = 'goto'
+  browserFixture.entered = entered
+  browserFixture.blocked = blocked
+  browserFixture.blockedOperation = 'Browser.setContentsSize'
+  const opening = execute({ action: 'open_browser', url: 'https://fixture.test/partial' })
+  try {
+    const enteredPreparation = await Promise.race([entered.promise.then(() => true), opening.then(() => false)])
+    expect(enteredPreparation).toBe(true)
+    expect(await runtime.capturePreview(signal)).toEqual({ kind: 'idle' })
+    expect(browserFixture.screenshotPages).toEqual([])
+  } finally {
+    browserFixture.blocked = undefined
+    blocked.resolve(undefined)
+    await Promise.allSettled([opening])
+  }
+  expect((await opening).structuredContent).toMatchObject({ status: 'partial', target: 'tab-2', browserStatus: 'open' })
+  const partial = await runtime.capturePreview(signal)
+  if (partial.kind !== 'frame') throw new Error('Expected the partially opened Page preview')
+  expect(partial.openId).toEqual(expect.any(String))
+  expect(partial.title).toBe('https://fixture.test/partial')
+  await expect(execute({ action: 'new_tab', target: 'tab-2', url: 'file:///fixture' })).rejects.toMatchObject({ code: 'INVALID_URL' })
+  expect(await runtime.capturePreview(signal)).toMatchObject({ kind: 'frame', openId: partial.openId, title: partial.title })
+})
+
+it.each(['open', 'switch', 'close', 'reset', 'disconnect'])('does not publish superseded Page pixels after %s during capture', async (change) => {
+  await useBrowserPreview()
+  await execute({ action: 'open_browser', url: 'https://fixture.test/first' })
+  if (change === 'switch' || change === 'close') await execute({ action: 'new_tab', target: 'tab-1', url: 'https://fixture.test/other' })
+  const initial = await runtime.capturePreview(signal)
+  if (initial.kind !== 'frame') throw new Error('Expected an initial Page preview')
+  const browser = browserFixture.browsers[0]
+  if (browser === undefined) throw new Error('Expected the owned browser')
+  const entered = Promise.withResolvers<undefined>()
+  const blocked = Promise.withResolvers<undefined>()
+  browserFixture.entered = entered
+  browserFixture.blocked = blocked
+  browserFixture.blockedOperation = 'screenshot'
+  const capturing = runtime.capturePreview(signal)
+  try {
+    const enteredCapture = await Promise.race([entered.promise.then(() => true), capturing.then(() => false)])
+    expect(enteredCapture).toBe(true)
+    browserFixture.blocked = undefined
+    if (change === 'open') await execute({ action: 'new_tab', target: 'tab-1', url: 'https://fixture.test/other' })
+    else if (change === 'switch') await execute({ action: 'observe', target: 'tab-1' })
+    else if (change === 'close') await execute({ action: 'close_tab', target: 'tab-2' })
+    else if (change === 'reset') await execute({ action: 'reset' })
+    else browser.disconnect()
+  } finally {
+    browserFixture.blocked = undefined
+    blocked.resolve(undefined)
+    await Promise.allSettled([capturing])
+  }
+  const next = await capturing
+  if (change === 'reset' || change === 'disconnect') {
+    expect(next).toEqual({ kind: 'idle' })
+    expect(browserFixture.screenshotPages).toEqual([browser.context.pages[0], browser.context.pages[0]])
+  } else {
+    if (next.kind !== 'frame') throw new Error('Expected a capture of the new current Page')
+    const currentPage = browser.context.pages[change === 'open' ? 1 : 0]
+    expect(browserFixture.screenshotPages.at(-1)).toBe(currentPage)
+    expect(next.title).toBe(currentPage?.url())
+    if (change === 'open') expect(next.openId).not.toBe(initial.openId)
+    else expect(next.openId).toBe(initial.openId)
+  }
+})
+
 it('retains an owned browser and independently tracks opened, popup, and closed tabs', async () => {
   const opened = await execute({ action: 'open_browser', url: 'https://example.com/' })
   expect(opened.structuredContent).toMatchObject({ target: 'tab-1', url: 'https://example.com/' })

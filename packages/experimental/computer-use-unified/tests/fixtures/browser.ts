@@ -21,6 +21,7 @@ export const browserFixture = {
   locatorObserved: true,
   locatorCount: 1,
   screenshotData: screenshotBase64,
+  screenshotPages: [] as FixturePage[],
   locatorBounds: {} as Record<string, { x: number; y: number; width: number; height: number } | null>,
 }
 
@@ -136,7 +137,7 @@ export class FixtureContext extends EventEmitter {
   }
   setDefaultTimeout(timeout: number): void { browserFixture.calls.push({ name: 'timeout', args: [timeout] }) }
   setDefaultNavigationTimeout(timeout: number): void { browserFixture.calls.push({ name: 'navigationTimeout', args: [timeout] }) }
-  newCDPSession() {
+  newCDPSession(page?: FixturePage) {
     const channel = new EventEmitter()
     const send = async (name: string, args?: Record<string, unknown>): Promise<unknown> => {
       if (name === 'Target.attachToTarget') return { sessionId: 'screenshot-reader' }
@@ -162,7 +163,12 @@ export class FixtureContext extends EventEmitter {
         await operation(name, args)
         return { result: { value: { x: 0, y: 0, width: 1200, height: 919, dpr: 2 } } }
       }
-      if (name === 'Page.captureScreenshot') { await operation('screenshot', args); return { data: browserFixture.screenshotData } }
+      if (name === 'Page.captureScreenshot') {
+        if (page !== undefined) browserFixture.screenshotPages.push(page)
+        const data = browserFixture.screenshotData
+        await operation('screenshot', args)
+        return { data }
+      }
       await operation(name, ...args === undefined ? [] : [args])
       if (name === 'Page.stopLoading') browserFixture.blocked?.reject(new Error('Navigation stopped'))
     }
@@ -173,14 +179,22 @@ export class FixtureContext extends EventEmitter {
 /** Browser ownership fixture with observable close and independent disconnection. */
 export class FixtureBrowser extends EventEmitter {
   readonly context = new FixtureContext(this)
+  private connected = true
+  isConnected(): boolean { return this.connected }
   newBrowserCDPSession(): ReturnType<FixtureContext['newCDPSession']> { return this.context.newCDPSession() }
   newContext(options: unknown): Promise<FixtureContext> { return operation('newContext', options).then(() => this.context) }
   close(): Promise<void> {
     if (browserFixture.closeError !== undefined) return Promise.reject(browserFixture.closeError)
     browserFixture.blocked?.reject(new Error('Browser closed'))
+    this.connected = false
     for (const page of this.context.pages) page.emit('close')
     this.emit('disconnected')
     return operation('browser.close')
+  }
+  disconnect(): void {
+    if (!this.connected) return
+    this.connected = false
+    this.emit('disconnected')
   }
 }
 
@@ -210,5 +224,6 @@ export function resetBrowser(): void {
   browserFixture.locatorCount = 1
   browserFixture.currentDialog = undefined
   browserFixture.screenshotData = screenshotBase64
+  browserFixture.screenshotPages = []
   browserFixture.locatorBounds = {}
 }

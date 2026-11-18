@@ -29,7 +29,7 @@ export class BrowserPreviewController extends TypertRemoteService {
    * @param signal - viewing and Remote lifetime.
    * @returns bounded image and Host-selected refresh interval.
    */
-  @Remote
+  @Remote({ resources: { session: sessionId => sessionId } })
   async frame(sessionId: SessionId, signal: AbortSignal): Promise<BrowserPreviewSnapshot> {
     const frame = await this.options.sources.capture(sessionId, signal)
     return { frame, refreshMs: this.options.refreshMs(frame.kind === 'frame' && frame.active, frame.kind === 'idle') }

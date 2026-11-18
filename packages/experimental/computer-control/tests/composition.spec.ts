@@ -24,6 +24,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
+import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
 import * as Provider from '../src/index.ts'
 import * as BrowserProvider from '@deepseek-ai/dsh-experimental-browser-control'
 import { desktop, resetDesktop, screenshotBase64 } from '../../computer-use-unified/tests/fixtures/native.ts'
@@ -123,7 +124,9 @@ it('loads both bundles from YAML, isolates their tools and previews, and unloads
   const preview = context.get('computerPreview')
   if (preview === undefined) throw new Error('Computer preview contribution was not mounted')
   expect(await preview.frame(SessionId('missing-preview-owner'), new AbortController().signal)).toMatchObject({ frame: { kind: 'idle' } })
-  expect((await preview.frame(agent.session.id, new AbortController().signal)).frame.kind).toBe('frame')
+  const applicationFrame = (await preview.frame(agent.session.id, new AbortController().signal)).frame
+  expect(applicationFrame.kind).toBe('frame')
+  expect(applicationFrame).not.toHaveProperty('openId')
   expect(desktop.calls.some(call => call.name === 'list_windows')).toBe(true)
   expect(browserFixture.calls.filter(call => call.name === 'keyboard.insertText')
     .map(call => typeof call.args[0] === 'string' ? call.args[0] : '').join('')).toBe('Harness control works')
@@ -144,7 +147,13 @@ it('loads both bundles from YAML, isolates their tools and previews, and unloads
   expect(agent.session.snapshotEvents().filter(event => event.type === 'tool/result')).toHaveLength(5)
   const browserPreview = context.get('browserPreview')
   if (browserPreview === undefined) throw new Error('Browser preview was not mounted')
-  expect((await browserPreview.frame(agent.session.id, new AbortController().signal)).frame.kind).toBe('frame')
+  const browserFrame = (await browserPreview.frame(agent.session.id, new AbortController().signal)).frame
+  if (browserFrame.kind !== 'frame' || browserFrame.openId === undefined) throw new Error('Expected the browser opening preview')
+  expect(remoteMethods(browserPreview).map(marker => marker.method)).toEqual(['frame'])
+  expect(remoteMethods(browserPreview)[0]?.resources?.session?.(agent.session.id, new AbortController().signal)).toBe(agent.session.id)
+  expect((await browserPreview.frame(SessionId('missing-preview-owner'), new AbortController().signal)).frame).toEqual({ kind: 'idle' })
+  expect(JSON.stringify(messages)).not.toContain(browserFrame.openId)
+  expect(JSON.stringify(model.requests)).not.toContain(browserFrame.openId)
   expect(context.tools.schemas().map(tool => tool.name)).toEqual(expect.arrayContaining(['application', 'browser']))
   const provider = [...context.loader.entries()].find(entry => entry.options.name === '@deepseek-ai/dsh-experimental-computer-control')
   if (provider?.fiber === undefined) throw new Error('The unified provider was not loaded')
@@ -154,7 +163,7 @@ it('loads both bundles from YAML, isolates their tools and previews, and unloads
   expect(context.computerUse.providerName).toBeUndefined()
   expect(context.browserUse.providerName).toBe('unified')
   expect(context.tools.schemas().some(tool => tool.name === 'browser')).toBe(true)
-  expect((await browserPreview.frame(agent.session.id, new AbortController().signal)).frame.kind).toBe('frame')
+  expect((await browserPreview.frame(agent.session.id, new AbortController().signal)).frame).toMatchObject({ kind: 'frame', openId: browserFrame.openId })
   const browserProvider = [...context.loader.entries()].find(entry => entry.options.name === '@deepseek-ai/dsh-experimental-browser-control')
   await browserProvider?.fiber?.dispose()
   expect(browserFixture.calls.filter(call => call.name === 'browser.close')).toHaveLength(1)

@@ -571,7 +571,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'Read-only Remote with a namespace independent of application control.',
     methods: [
       {
-        signature: '@Remote async frame(sessionId: SessionId, signal: AbortSignal): Promise<BrowserPreviewSnapshot>',
+        signature: '@Remote({ resources: { session: sessionId => sessionId } }) async frame(sessionId: SessionId, signal: AbortSignal): Promise<BrowserPreviewSnapshot>',
         description: 'Capture an existing browser target without starting an Agent or sending input.',
         parameters: [{ name: 'sessionId', description: 'Session displayed by the Client.' }, { name: 'signal', description: 'viewing and Remote lifetime.' }],
         returns: 'bounded image and Host-selected refresh interval.',
@@ -6210,6 +6210,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type BrandedNumber<B extends string> = number & {\n    readonly [BRAND]: B;\n};',
   },
   {
+    name: 'BrowserPreviewOpenId',
+    declaration: 'export type BrowserPreviewOpenId = Branded<\'BrowserPreviewOpenId\'>;',
+  },
+  {
     name: 'BrowserPreviewSnapshot',
     declaration: 'export interface BrowserPreviewSnapshot {\n    frame: ComputerPreviewFrame;\n    refreshMs: number;\n}',
   },
@@ -6367,7 +6371,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ComputerPreviewFrame',
-    declaration: 'export type ComputerPreviewFrame = {\n    kind: \'idle\';\n} | {\n    kind: \'unavailable\';\n    title: string;\n    code: \'CAPTURE_FAILED\' | \'IMAGE_TOO_LARGE\' | \'PERMISSION_REQUIRED\' | \'CAPTURE_TIMEOUT\';\n} | {\n    kind: \'frame\';\n    title: string;\n    imageUrl: string;\n    action: string;\n    active: boolean;\n    capturedAt: number;\n    cursor?: ComputerPreviewCursor;\n    keyboard?: {\n        kind: \'typing\';\n        key?: string;\n    } | {\n        kind: \'shortcut\';\n        keys: readonly string[];\n    };\n    scroll?: \'up\' | \'down\' | \'left\' | \'right\';\n};',
+    declaration: 'export type ComputerPreviewFrame = {\n    kind: \'idle\';\n} | {\n    kind: \'unavailable\';\n    title: string;\n    code: \'CAPTURE_FAILED\' | \'IMAGE_TOO_LARGE\' | \'PERMISSION_REQUIRED\' | \'CAPTURE_TIMEOUT\';\n    openId?: BrowserPreviewOpenId;\n} | {\n    kind: \'frame\';\n    title: string;\n    openId?: BrowserPreviewOpenId;\n    imageUrl: string;\n    action: string;\n    active: boolean;\n    capturedAt: number;\n    cursor?: ComputerPreviewCursor;\n    keyboard?: {\n        kind: \'typing\';\n        key?: string;\n    } | {\n        kind: \'shortcut\';\n        keys: readonly string[];\n    };\n    scroll?: \'up\' | \'down\' | \'left\' | \'right\';\n};',
   },
   {
     name: 'ComputerUseProviderName',

@@ -1,4 +1,4 @@
-/** Real plugin settings, approval decisions, browser ownership, preview interactions, and unload. */
+/** Real browser approval, shared sidebar and picture-in-picture captures, settings, and unload. */
 
 import { fileURLToPath } from 'node:url'
 import { readFile, mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises'
@@ -9,11 +9,60 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import sharp from 'sharp'
 import { z } from 'zod'
-import type { Browser } from 'playwright'
+import type { Browser, Locator } from 'playwright'
 import { chromium } from 'playwright'
 import { expect, it } from 'vitest'
+import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
+import type {} from '@deepseek-ai/dsh-user-approval'
 import { captureStableAria, compareOrRefreshGolden, launchWebScaffold, watchConsole, webSnapshotMode } from './scaffold.ts'
 import { connectFreshWorkspaceZh, PLUGIN_TOGGLE_SETTLE_MS, ZH_BROWSER_LOCALE } from './support.ts'
+
+const viewport = { width: 1440, height: 900 }
+// The edge markers lie outside the old 756×469 browser viewport.
+const markerPoints = [[1260, 20], [20, 840], [1260, 840], [1200, 75]] as const
+const cornerColors = [[255, 0, 0], [0, 255, 0], [0, 0, 255]]
+const pngPrefix = 'data:image/png;base64,'
+const frameSettleMs = 10_000
+const browserObservation = z.object({
+  target: z.string(),
+  url: z.string(),
+  tree: z.string(),
+  inputMode: z.string(),
+  tabs: z.array(z.object({ target: z.string(), url: z.string() })),
+  geometry: z.object({
+    viewport: z.object({ width: z.number(), height: z.number() }),
+    elements: z.array(z.object({
+      tag: z.string(), label: z.string(), inViewport: z.boolean(),
+      locator: z.object({ by: z.literal('css'), selector: z.string() }),
+    })),
+  }),
+})
+
+function observedBrowser(events: readonly SessionEvent[], callId: string) {
+  const result = events.find(event => event.type === 'tool/result' && event.data.message.toolCallId === callId)
+  if (result?.type !== 'tool/result') throw new Error(`No tool result for ${callId}`)
+  const text = result.data.message.content.find(block => block.type === 'text')
+  if (result.data.message.isError || text?.type !== 'text') {
+    throw new Error(`No browser observation for ${callId}: ${JSON.stringify(result.data.message.content)}`)
+  }
+  return browserObservation.parse(JSON.parse(text.text))
+}
+
+async function sampleMarkers(image: Locator) {
+  const source = await image.evaluateAll((elements) => {
+    const [element] = elements
+    return element instanceof HTMLImageElement && element.complete && element.naturalWidth > 0 ? element.currentSrc : null
+  })
+  if (source === null) return null
+  if (!source.startsWith(pngPrefix)) throw new Error('Browser view has no PNG capture')
+  const { data, info: { width, height, channels } } = await sharp(Buffer.from(source.slice(pngPrefix.length), 'base64'))
+    .removeAlpha().raw().toBuffer({ resolveWithObject: true })
+  const markers = markerPoints.map(([x, y]) => {
+    const offset = (Math.round(y * height / viewport.height) * width + Math.round(x * width / viewport.width)) * channels
+    return [...data.subarray(offset, offset + channels)]
+  })
+  return { width, height, channels, markers }
+}
 
 async function ownedChromeProcesses(): Promise<number[]> {
   const result = await promisify(execFile)('/bin/ps', ['-axo', 'pid=,ppid=,comm='])
@@ -23,31 +72,46 @@ async function ownedChromeProcesses(): Promise<number[]> {
   })
 }
 
-it.skipIf(webSnapshotMode() === 'record')('validates settings, rejects and approves real browser actions, operates the preview, applies live policy, and unloads', async () => {
+it.skipIf(webSnapshotMode() === 'record')('shares the approved browser page between sidebar and PiP, applies live policy, and unloads both views', async () => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-computer-ui-'))
   let requests = 0
   const server = createServer((request, response) => {
-    if (request.url === '/') requests++
-    response.setHeader('content-type', 'text/html')
+    if (request.url !== '/') { response.writeHead(404).end(); return }
+    requests++
+    response.writeHead(200, { 'content-type': 'text/html', 'cache-control': 'no-store' })
     response.end(`<title>Computer Plugin UI Test</title>
-      <style>body{margin:0;min-width:1280px;min-height:860px}.corner{position:absolute;width:40px;height:40px}
+      <style>body{margin:0;min-width:1280px;min-height:860px}.marker{position:absolute;width:40px;height:40px}
       #right{left:1240px;top:0;background:#ff0000}#bottom{left:0;top:820px;background:#00ff00}
-      #opposite{left:1240px;top:820px;background:#0000ff}</style>
+      #opposite{left:1240px;top:820px;background:#0000ff}#state{left:1180px;top:55px;background:#ff0}
+      body[data-clicked] #state{background:#f0f}</style>
       <h1>Plugin-owned real browser</h1><p>Approval and preview test page</p>
-      <div class="corner" id="right" aria-label="Right edge marker"></div>
-      <div class="corner" id="bottom" aria-label="Bottom edge marker"></div>
-      <div class="corner" id="opposite" aria-label="Opposite corner marker"></div>`)
+      <button id="advance-counter" type="button">Advance counter</button>
+      <p id="counter">Clicks: 0</p>
+      <div class="marker" id="right" aria-label="Right edge marker"></div>
+      <div class="marker" id="bottom" aria-label="Bottom edge marker"></div>
+      <div class="marker" id="opposite" aria-label="Opposite corner marker"></div>
+      <div class="marker" id="state"></div>
+      <script>
+        let clicks = 0
+        document.querySelector('#advance-counter').addEventListener('click', event => {
+          if (!event.isTrusted) return
+          document.querySelector('#counter').textContent = 'Clicks: ' + ++clicks
+          document.body.dataset.clicked = ''
+        })
+      </script>`)
   })
   let scaffold: Awaited<ReturnType<typeof launchWebScaffold>> | undefined
   let browser: Browser | undefined
   const failures: unknown[] = []
+  const artifacts = process.env.DSH_COMPUTER_USE_ARTIFACT_DIR
   try {
     await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve) })
     const address = server.address()
     if (address === null || typeof address === 'string') throw new Error('Computer UI fixture did not bind a port')
+    const fixtureUrl = `http://127.0.0.1:${address.port}/`
     const override = join(root, 'computer-control-browser.json')
     await writeFile(override, (await readFile(new URL('./fixtures/computer-control-browser.json', import.meta.url), 'utf8'))
-      .replaceAll('about:blank', `http://127.0.0.1:${address.port}/`))
+      .replaceAll('about:blank', fixtureUrl))
     const active = await launchWebScaffold({
       replayFixture: fileURLToPath(new URL('../../../snapshots/session/computer-use-unified/session.v4.jsonl', import.meta.url)),
       replayOverride: override,
@@ -56,9 +120,28 @@ it.skipIf(webSnapshotMode() === 'record')('validates settings, rejects and appro
       profile: { packages: [{ dir: fileURLToPath(new URL('../../../packages/experimental/browser-control', import.meta.url)) }] },
     })
     scaffold = active
+    const sessionEvents = new Map<SessionId, SessionEvent[]>()
+    active.ctx.on('session/event', ({ id }, event) => {
+      const events = sessionEvents.get(id)
+      if (events === undefined) sessionEvents.set(id, [event])
+      else events.push(event)
+    })
+    const hostDispatches: Array<{ name: string; callId: string }> = []
+    const deniedOpen = { name: 'browser', callId: 'computer-open-rejected' }
+    active.ctx.on('tools/execute', ({ name, callId }, next) => {
+      hostDispatches.push({ name, callId })
+      return next()
+    })
     browser = await chromium.launch()
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, locale: ZH_BROWSER_LOCALE })
     const consoleWatch = watchConsole(page)
+    const column = page.locator('[data-rightbar-col]')
+    const agentTab = column.getByRole('tab', { selected: true }).filter({ hasText: '代理浏览器' })
+    const allAgentTabs = column.getByRole('tab', { includeHidden: true }).filter({ hasText: '代理浏览器' })
+    const viewportPanel = column.locator('[data-agent-browser-viewport]')
+    const sidebarImage = viewportPanel.locator('img')
+    const preview = page.locator('[data-computer-preview][data-surface="browser"]')
+    const image = preview.locator('img')
     await page.goto(active.authenticatedUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     await connectFreshWorkspaceZh(page, active.workspaceCwd)
@@ -106,53 +189,95 @@ it.skipIf(webSnapshotMode() === 'record')('validates settings, rejects and appro
     await input.press('Enter')
     await page.getByRole('button', { name: '拒绝', exact: true }).click()
     const rejectedSession = await rejected
-    const rejectedEvents = active.ctx.sessions.get(rejectedSession)?.snapshotEvents() ?? []
+    const rejectedEvents = sessionEvents.get(rejectedSession) ?? []
     expect(rejectedEvents.some(event => event.type === 'approval/decided' && event.data.outcome === 'rejected')).toBe(true)
     await expect.poll(() => previewFailed).toBe(true)
-    expect(await page.locator('[data-computer-preview]').count()).toBe(0)
+    expect(await allAgentTabs.count()).toBe(0)
+    expect(await viewportPanel.count()).toBe(0)
+    expect(await preview.count()).toBe(0)
+    expect(hostDispatches).toEqual([deniedOpen])
     expect(requests).toBe(0)
     if (process.platform === 'darwin') expect(await ownedChromeProcesses()).toHaveLength(0)
     await page.reload({ waitUntil: 'load' })
     await input.waitFor({ timeout: 20_000 })
     // Approval, browser startup, and persistence share this wait; startup alone can consume 30 seconds.
     const settled = active.whenTurnSettled(90_000)
-    await input.fill('Open a blank browser tab with browser and show its preview.')
+    await input.fill('Open the test page with browser and show its preview.')
     await input.press('Enter')
     const allow = page.getByRole('button', { name: '允许一次', exact: true })
     await allow.waitFor()
     expect(await page.getByRole('button', { name: '显示浏览器画中画', exact: true }).count()).toBe(0)
     await allow.click()
     const sessionId = await settled
-    const events = active.ctx.sessions.get(sessionId)?.snapshotEvents() ?? []
+    const events = sessionEvents.get(sessionId)
+    if (events === undefined) throw new Error('No Session events for the browser opening')
     expect(events.some(event => event.type === 'approval/decided' && event.data.outcome === 'allowed-once')).toBe(true)
-    expect(events.some(event => event.type === 'tool/result' && !event.data.message.isError),
-      JSON.stringify(events.filter(event => event.type === 'tool/result'))).toBe(true)
-    const opened = events.findLast(event => event.type === 'tool/result')
-    if (opened?.type !== 'tool/result' || opened.data.message.isError) throw new Error('The browser failed to open')
-    const browserState = opened.data.message.content.find(block => block.type === 'text')
-    if (browserState?.type !== 'text') throw new Error('The browser returned no viewport state')
-    expect(z.object({ geometry: z.object({ viewport: z.object({ width: z.number(), height: z.number() }) }) })
-      .parse(JSON.parse(browserState.text)).geometry.viewport).toEqual({ width: 1440, height: 900 })
+    const opened = observedBrowser(events, 'computer-open-blank')
+    const sameTab = { target: opened.target, url: fixtureUrl }
+    expect(opened.url).toBe(fixtureUrl)
+    expect(opened.tabs).toEqual([sameTab])
+    expect(opened.geometry.viewport).toEqual(viewport)
+    expect(opened.tree).toContain('Clicks: 0')
+    const counter = opened.geometry.elements.find(element => element.tag === 'button' && element.label === 'Advance counter')
+    if (counter === undefined) throw new Error('The opening observation did not include the counter button')
+    expect(counter.inViewport).toBe(true)
     await expect.poll(() => requests).toBe(1)
     if (process.platform === 'darwin') await expect.poll(ownedChromeProcesses).toHaveLength(1)
-    const preview = page.locator('[data-computer-preview]')
-    const image = preview.getByRole('img')
+    await agentTab.waitFor({ timeout: 20_000 })
+    await viewportPanel.waitFor({ timeout: 20_000 })
+    await sidebarImage.waitFor({ timeout: 20_000 })
     await image.waitFor({ timeout: 20_000 })
+    expect(await column.locator('iframe, webview').count()).toBe(0)
     expect(await page.getByRole('button', { name: '隐藏浏览器画中画', exact: true }).count()).toBe(0)
     expect(await preview.getByRole('button', { name: '关闭画中画', exact: true }).count()).toBe(0)
-    await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0)
-    const source = await image.getAttribute('src')
-    if (source === null || !source.startsWith('data:image/png;base64,')) throw new Error('The preview has no PNG capture')
-    const png = Buffer.from(source.slice('data:image/png;base64,'.length), 'base64')
-    const pixels = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true })
-    expect(pixels.info).toMatchObject({ width: 640, height: 400, channels: 3 })
-    // The fixture's right, bottom and opposite markers sit outside Chrome's old 756×469 viewport.
-    for (const [x, y, expected] of [[1260, 20, [255, 0, 0]], [20, 840, [0, 255, 0]], [1260, 840, [0, 0, 255]]] as const) {
-      const offset = (Math.round(y * 400 / 900) * 640 + Math.round(x * 640 / 1440)) * 3
-      expect([...pixels.data.subarray(offset, offset + 3)]).toEqual(expected)
+    const initialMarkers = [...cornerColors, [255, 255, 0]]
+    await expect.poll(() => sampleMarkers(image), { timeout: frameSettleMs })
+      .toMatchObject({ width: 640, height: 400, channels: 3, markers: initialMarkers })
+    await expect.poll(() => sampleMarkers(sidebarImage), { timeout: frameSettleMs })
+      .toMatchObject({ channels: 3, markers: initialMarkers })
+    expect(hostDispatches).toEqual([deniedOpen, { name: 'browser', callId: 'computer-open-blank' }])
+    expect(requests).toBe(1)
+
+    const clicked = active.whenTurnSettled(90_000)
+    await input.fill('Click the observed Advance counter button once in the same browser tab.')
+    await input.press('Enter')
+    await allow.click()
+    expect(await clicked).toBe(sessionId)
+    const clickCall = events.find(event => event.type === 'tool/call' && event.data.callId === 'computer-click')
+    if (clickCall?.type !== 'tool/call') throw new Error('No browser click call')
+    expect(JSON.parse(clickCall.data.arguments)).toMatchObject({ target: opened.target, locator: counter.locator })
+    const changed = observedBrowser(events, 'computer-click')
+    expect(changed).toMatchObject({ ...sameTab, tabs: [sameTab] })
+    expect(changed.tree).toContain('Clicks: 1')
+    const changedMarkers = [...cornerColors, [255, 0, 255]]
+    await expect.poll(() => sampleMarkers(image), { timeout: frameSettleMs }).toMatchObject({ markers: changedMarkers })
+    await expect.poll(() => sampleMarkers(sidebarImage), { timeout: frameSettleMs }).toMatchObject({ markers: changedMarkers })
+    expect(hostDispatches).toEqual([
+      deniedOpen,
+      { name: 'browser', callId: 'computer-open-blank' },
+      { name: 'browser', callId: 'computer-click' },
+    ])
+    expect(requests).toBe(1)
+
+    await compareOrRefreshGolden(fileURLToPath(new URL('./expected/browser-control/sidebar.expected.md', import.meta.url)),
+      await captureStableAria(page, '[data-rightbar-col]', active.workspaceCwd), webSnapshotMode())
+    if (artifacts !== undefined) {
+      await mkdir(artifacts, { recursive: true })
+      await page.screenshot({ path: join(artifacts, 'browser-sidebar-desktop.png') })
+      await page.emulateMedia({ colorScheme: 'dark' })
+      await page.locator('body[data-ds-dark-theme]').waitFor()
+      await page.screenshot({ path: join(artifacts, 'browser-sidebar-dark.png') })
+      await page.emulateMedia({ colorScheme: null })
     }
-    const firstCapture = source
-    await expect.poll(() => image.getAttribute('src')).not.toBeNull()
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.locator('[data-sidebar-drawer][data-sidebar-collapsed]').waitFor({ state: 'attached' })
+    await expect.poll(async () => {
+      const bounds = await sidebarImage.boundingBox()
+      return bounds !== null && bounds.width > 0 && bounds.x >= 0 && bounds.x + bounds.width <= 390
+    }).toBe(true)
+    if (artifacts !== undefined) await page.screenshot({ path: join(artifacts, 'browser-sidebar-phone.png'), animations: 'disabled' })
+    await page.setViewportSize({ width: 1440, height: 1000 })
+
     const sessionPreview = active.ctx.get('browserPreview')
     if (sessionPreview === undefined) throw new Error('Browser preview Remote did not mount')
     for (let index = 0; index < 3; index++) {
@@ -161,7 +286,6 @@ it.skipIf(webSnapshotMode() === 'record')('validates settings, rejects and appro
       const metadata = await sharp(Buffer.from(current.frame.imageUrl.split(',')[1] ?? '', 'base64')).metadata()
       expect({ width: metadata.width, height: metadata.height }).toEqual({ width: 640, height: 400 })
     }
-    expect(firstCapture).toBeTruthy()
     // The entrance animation scales the rendered rectangle; compare layout widths.
     const width = await preview.evaluate(element => element.clientWidth)
     await preview.hover()
@@ -175,7 +299,6 @@ it.skipIf(webSnapshotMode() === 'record')('validates settings, rejects and appro
     expect(maximizedImage.width / maximizedImage.height).toBeCloseTo(1.6, 2)
     expect(maximizedImage.x + maximizedImage.width / 2).toBeCloseTo(720, 1)
     expect(maximizedImage.y + maximizedImage.height / 2).toBeCloseTo(500, 1)
-    const artifacts = process.env.DSH_COMPUTER_USE_ARTIFACT_DIR
     if (artifacts !== undefined) {
       await mkdir(artifacts, { recursive: true })
       await page.screenshot({ path: join(artifacts, 'computer-plugin-preview-maximized.png') })
@@ -273,19 +396,28 @@ it.skipIf(webSnapshotMode() === 'record')('validates settings, rejects and appro
     await detail.getByRole('button', { name: '保存', exact: true }).click()
     await page.reload({ waitUntil: 'load' })
     await input.waitFor({ timeout: 20_000 })
+    await agentTab.hover()
+    await agentTab.locator('[data-dockkit-tab-close]').click()
+    await allAgentTabs.waitFor({ state: 'detached' })
+    await preview.waitFor()
     const nextTurn = active.whenTurnSettled(90_000)
     await input.fill('Open a second test tab; input approval is now disabled.')
     await input.press('Enter')
     expect(await nextTurn).toBe(sessionId)
     await expect.poll(() => requests).toBe(2)
-    const after = active.ctx.sessions.get(sessionId)?.snapshotEvents() ?? []
-    const finalResult = after.filter(event => event.type === 'tool/result').at(-1)
-    expect(finalResult?.data.message.content.find(block => block.type === 'text')?.text).toContain('"inputMode":"background"')
-    expect(after.filter(event => event.type === 'approval/decided')).toHaveLength(2)
-    const calls = after.filter(event => event.type === 'tool/call')
+    const finalResult = observedBrowser(events, 'computer-new-tab')
+    expect(finalResult.inputMode).toBe('background')
+    expect(finalResult.target).not.toBe(opened.target)
+    expect(finalResult.tabs).toEqual([sameTab, { target: finalResult.target, url: fixtureUrl }])
+    expect(events.flatMap(event => event.type === 'approval/decided' ? [event.data.outcome] : []))
+      .toEqual(['rejected', 'allowed-once', 'allowed-once'])
+    const calls = events.filter(event => event.type === 'tool/call')
     expect(calls.map(event => z.object({ action: z.string() }).parse(JSON.parse(event.data.arguments)).action))
-      .toEqual(['open_browser', 'open_browser', 'new_tab'])
-    if (await preview.count() !== 0 && await preview.getAttribute('data-collapsed') === null) {
+      .toEqual(['open_browser', 'open_browser', 'click', 'new_tab'])
+    await agentTab.waitFor({ timeout: frameSettleMs })
+    await expect.poll(() => sampleMarkers(sidebarImage), { timeout: frameSettleMs }).toMatchObject({ markers: initialMarkers })
+    await preview.waitFor({ timeout: frameSettleMs })
+    if (await preview.getAttribute('data-collapsed') === null) {
       await preview.hover()
       await preview.getByRole('button', { name: '收起', exact: true }).click()
     }
@@ -296,15 +428,22 @@ it.skipIf(webSnapshotMode() === 'record')('validates settings, rejects and appro
     await finalPanel.getByRole('switch', { name: '启用 浏览器操作', exact: true }).click()
     await expect.poll(() => active.ctx.tools.schemas().map(tool => tool.name), { timeout: PLUGIN_TOGGLE_SETTLE_MS }).not.toContain('browser')
     await expect.poll(() => preview.count()).toBe(0)
+    await expect.poll(() => viewportPanel.count()).toBe(0)
     await active.ctx.loader.await()
     if (process.platform === 'darwin') {
       await expect.poll(ownedChromeProcesses, { timeout: PLUGIN_TOGGLE_SETTLE_MS }).toHaveLength(0)
     }
+    expect(hostDispatches).toEqual([
+      deniedOpen,
+      { name: 'browser', callId: 'computer-open-blank' },
+      { name: 'browser', callId: 'computer-click' },
+      { name: 'browser', callId: 'computer-new-tab' },
+    ])
+    expect(requests).toBe(2)
     expect(consoleWatch.warnings).toEqual([])
     expect(consoleWatch.pageErrors).toEqual([])
   } catch (error) {
     failures.push(error)
-    const artifacts = process.env.DSH_COMPUTER_USE_ARTIFACT_DIR
     const page = browser?.contexts()[0]?.pages()[0]
     if (artifacts !== undefined && page !== undefined) {
       try { await page.screenshot({ path: join(artifacts, 'computer-plugin-failure.png') }) } catch (captureError) {
@@ -313,7 +452,20 @@ it.skipIf(webSnapshotMode() === 'record')('validates settings, rejects and appro
     }
   } finally {
     try { await browser?.close() } catch (error) { failures.push(error) }
-    try { await scaffold?.close() } catch (error) { failures.push(error) }
+    const active = scaffold
+    try {
+      if (active !== undefined) {
+        const hmr = active.ctx.get('hmr')
+        // The patch watcher can still recompose the profile after the plugin switch settles.
+        if (hmr === undefined) await active.close()
+        else await hmr.runExclusive(() => active.close())
+      }
+    } catch (error) {
+      if (error instanceof AggregateError) {
+        const causes: readonly unknown[] = error.errors
+        failures.push(...causes)
+      } else failures.push(error)
+    }
     try {
       try {
         server.closeAllConnections()

@@ -106,6 +106,8 @@ export interface SidebarRightTabDefinition {
   readonly multiple?: boolean
   /** Lazily keep a visited body mounted through hiding, Session changes and docking; default false. */
   readonly keepMounted?: boolean
+  /** Omit a tab whose content exists only while its provider is live from saved layouts. */
+  readonly persist?: false
   /**
    * Resource-address globs this type recognizes; omit for a page type, which is
    * opened by kind and recognizes no address.

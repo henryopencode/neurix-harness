@@ -31,7 +31,9 @@ The `browser` tool operates only its owned tabs. Application control can run alo
 
 **Ask before each browser action** defaults off and applies immediately to all conversations after saving. `list` and `observe` remain automatic; every other action needs one-shot approval. An unavailable approval channel blocks actions. Enable **Include screenshots** only for image-capable models; picture-in-picture stays available independently. Other runtime settings need a new conversation. Advanced settings contain action and startup/navigation timeouts.
 
-Hidden pages use a 1440×900 CSS-pixel viewport. Configure `browserViewportWidth` and `browserViewportHeight` under `browser-control` to change it. Picture-in-picture fits the complete current viewport; scroll for content outside it. Drag the image to move it, or drag either bottom corner or use arrow keys to resize with its proportions preserved. Collapsing pauses preview capture while the Agent continues; expanding resumes it. Preview images are not sent to the model or written to Sessions.
+When the Agent opens a page, the current conversation opens the Agent browser tab in the right sidebar. The tab and picture-in-picture show the same live viewport. You can collapse picture-in-picture or close the sidebar tab while the Agent continues. Opening another browser page reveals the tab again. Preview images stay out of model requests and Session logs.
+
+Hidden pages use a 1440×900 CSS-pixel viewport. Configure `browserViewportWidth` and `browserViewportHeight` under `browser-control` to change it. Both previews fit the current viewport; scroll the page to reach content outside it. Drag either bottom corner of picture-in-picture or use the arrow keys to resize it while preserving the image proportions.
 
 -----
 
