@@ -37,6 +37,9 @@ export function connectDesktopVoice(ctx: Context, conversation: VoiceConversatio
     const current = conversation.state.getSnapshot()
     const state: DesktopVoiceState | null = current.phase === 'idle' ? null : {
       phase: current.phase, microphoneMuted: current.microphoneMuted, speakerMuted: current.speakerMuted,
+      inputLevel: !current.microphoneMuted && (current.phase === 'listening' || current.phase === 'recording')
+        ? conversation.inputLevel.getSnapshot() : 0,
+      sentCount: current.sentCount,
       labels: {
         status: current.error ? t(`error.${current.error}`)
           : current.microphoneMuted && current.phase === 'listening' ? t('microphoneMuted') : t(`phase.${current.phase}`),
@@ -51,18 +54,19 @@ export function connectDesktopVoice(ctx: Context, conversation: VoiceConversatio
   }
   if (bridge) ctx.effect(() => {
     const unobserve = conversation.state.subscribe(publish)
+    const unobserveInput = conversation.inputLevel.subscribe(publish)
     const unsubscribe = bridge.subscribe((command) => {
       if (disposed) return
       if (command === 'microphone') conversation.toggleMicrophone()
       else if (command === 'speaker') conversation.toggleSpeaker()
-      else if (command === 'end') void conversation.stop().catch(failed)
+      else if (command === 'end') void conversation.stop(true).catch(failed)
       else if (command === 'unavailable') failed(new Error('Desktop voice window is unavailable'))
       // Window restoration belongs to the shell; it does not create another voice conversation.
     })
     publish()
     return async () => {
       disposed = true
-      unsubscribe(); unobserve()
+      unsubscribe(); unobserve(); unobserveInput()
       await conversation.stop()
       await Promise.all(pending)
       await bridge.publish(null)

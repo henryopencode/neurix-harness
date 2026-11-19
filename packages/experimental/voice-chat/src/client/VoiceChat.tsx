@@ -17,6 +17,7 @@ import css from './VoiceChat.module.css'
 export interface VoiceChatInjected {
   hooks: {
     voiceState: HostObservable<ConversationVoiceState>
+    voiceInputLevel: HostObservable<number>
     voiceSetup: HostObservable<VoiceSetup>
     voiceSetupNotice: HostObservable<SessionId | null>
     voiceInputDevice: HostObservable<VoiceInputDevice>
@@ -129,31 +130,34 @@ function VoiceReplyObserver({ sessionId, useChat, useSession, observe }: Observe
   return null
 }
 
-/** Center the voice orb over the composer while leaving the Chat and draft in the document flow. */
-export function VoiceChatPanel({ sessionId, useVoiceState, useVoiceSetupNotice, inputActions, close, t }: PanelProps) {
+/** Keep the orb outside the composer flow and leave actionable notices in the dock. */
+export function VoiceChatPanel({ sessionId, useVoiceState, useVoiceInputLevel, useVoiceSetupNotice, inputActions, close, t }: PanelProps) {
   const state = useVoiceState(value => value.sessionId === sessionId ? value : null)
   const setupNotice = useVoiceSetupNotice(value => value === sessionId)
   const phase = state?.phase ?? 'idle'
   const error = state?.error
-  if (phase === 'idle' && !error && !setupNotice) return null
-  const preparing = phase === 'requesting' || phase === 'warming'
-  return <section className={css.stage} data-voice-chat={phase} data-composer-hero-replacement={phase === 'idle' ? undefined : ''}
-    aria-label={t('open')}>
-    {phase !== 'idle' && <div className={css.orbSeat}>
-      <VoiceOrb phase={phase} />
-      <span className={preparing ? css.preparing : css.screenReaderStatus} role="status">
-        {t(phase === 'listening' && state?.microphoneMuted ? 'microphoneMuted' : `phase.${phase}`)}
+  const active = phase !== 'idle'
+  const inputLevel = useVoiceInputLevel(value => active && !state?.microphoneMuted ? value : 0)
+  return <>
+    <section className={css.feedback} data-composer-dock-feedback
+      data-voice-chat={active ? phase : undefined} data-composer-hero-replacement={active ? '' : undefined}
+      aria-label={active ? t('open') : undefined}>
+      <VoiceOrb phase={phase} visible={active && phase !== 'stopping'} inputLevel={inputLevel} sentCount={state?.sentCount ?? 0} />
+      <span className={css.screenReaderStatus} role="status">
+        {active ? t(phase === 'listening' && state?.microphoneMuted ? 'microphoneMuted' : `phase.${phase}`) : ''}
       </span>
-    </div>}
-    {(error || setupNotice) && <div className={css.notice}>
-      <span role={error ? 'alert' : 'status'}>{error ? t(`error.${error}`) : t('settingsUnavailable')}</span>
-      <Button size="sm" className={css.close} aria-label={t('close')} onClick={close}><IconCloseOutlineRegular size={16} /></Button>
-    </div>}
-    {error === 'send' && state?.transcript && <div className={css.transcript} aria-label={t('transcript')}>
-      <span>{state.transcript}</span>
-      <Button size="sm" onClick={() => { inputActions.insertText(state.transcript, inputActions.captureInsertion()) }}>{t('insert')}</Button>
-    </div>}
-  </section>
+    </section>
+    {(error || setupNotice) && <section className={css.notices} data-voice-chat={active ? undefined : phase} aria-label={t('open')}>
+      <div className={css.notice}>
+        <span role={error ? 'alert' : 'status'}>{error ? t(`error.${error}`) : t('settingsUnavailable')}</span>
+        <Button size="sm" className={css.close} aria-label={t('close')} onClick={close}><IconCloseOutlineRegular size={16} /></Button>
+      </div>
+      {error === 'send' && state?.transcript && <div className={css.transcript} aria-label={t('transcript')}>
+        <span>{state.transcript}</span>
+        <Button size="sm" onClick={() => { inputActions.insertText(state.transcript, inputActions.captureInsertion()) }}>{t('insert')}</Button>
+      </div>}
+    </section>}
+  </>
 }
 
 /** Keep active voice controls beside the model and leave explicit Send or Stop to the composer. */

@@ -1,5 +1,6 @@
 /** Continuous browser capture, silence-based turn detection, and interruptible PCM playback. */
 import type { VoiceAudio, VoiceOptions } from '../types.ts'
+import { CLOSE_FEEDBACK_MS, playVoiceCue } from './voice-cues.ts'
 
 /** Microphone or audio-output failure rendered through the voice dictionary. */
 export class VoiceAudioError extends Error {
@@ -46,7 +47,8 @@ export class TurnDetector {
   private confirmed = false
 
   constructor(private readonly rate: number, private readonly options: VoiceOptions,
-    private readonly speechStarted: () => void, private readonly finished: (samples: Float32Array) => void) {}
+    private readonly speechStarted: () => void, private readonly finished: (samples: Float32Array) => void,
+    private readonly measureInput?: (rms: number) => void) {}
 
   /** Discard an unfinished utterance when input is muted. */
   reset(): void {
@@ -61,7 +63,9 @@ export class TurnDetector {
   push(samples: Float32Array): void {
     let energy = 0
     for (const value of samples) energy += value * value
-    const voiced = Math.sqrt(energy / samples.length) >= this.options.speechThreshold
+    const rms = Math.sqrt(energy / samples.length)
+    this.measureInput?.(rms)
+    const voiced = rms >= this.options.speechThreshold
     const duration = samples.length / this.rate * 1000
     if (this.utterance.length === 0) {
       this.preceding.push(samples); this.retainedSamples += samples.length
@@ -143,10 +147,11 @@ export class LiveAudio {
    * @param speechStarted - confirmed speech onset, used to interrupt the current reply.
    * @param utterance - completed PCM16 WAV after a silence interval.
    * @param failed - interrupted device or audio failure; the owner stops the conversation.
+   * @param measureInput - optional RMS amplitude from each unmuted microphone frame.
    * @returns after microphone and AudioWorklet are ready.
    */
   async start(options: VoiceOptions, speechStarted: () => void, utterance: (audio: Uint8Array) => void,
-    failed: (error: VoiceAudioError) => void): Promise<void> {
+    failed: (error: VoiceAudioError) => void, measureInput?: (rms: number) => void): Promise<void> {
     const devices = (navigator as Partial<Navigator>).mediaDevices
     if (!devices || typeof AudioWorkletNode === 'undefined') throw new VoiceAudioError('unsupported')
     this.playbackBufferSeconds = options.playbackBufferMs / 1000
@@ -154,9 +159,11 @@ export class LiveAudio {
     this.context = new AudioContext({ sampleRate: 16000 })
     const context = this.context
     await context.resume()
+    this.lifetime.signal.throwIfAborted()
     this.playback = context.createGain()
     this.playback.gain.value = this.outputMuted ? 0 : 1
     this.playback.connect(context.destination)
+    this.cue('open')
     try {
       const stream = await devices.getUserMedia({ audio: {
         echoCancellation: true, noiseSuppression: true, autoGainControl: true,
@@ -174,7 +181,7 @@ export class LiveAudio {
         void this.resample(samples, context.sampleRate).then((audio) => {
           if (!this.lifetime.signal.aborted) utterance(audio)
         }).catch(() => { if (!this.lifetime.signal.aborted) failed(new VoiceAudioError('device')) })
-      })
+      }, measureInput)
       this.detector = detector
       this.capture = new AudioWorkletNode(context, 'neurix-voice-capture', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] })
       this.capture.port.onmessage = (event: MessageEvent<Float32Array>) => {
@@ -320,19 +327,35 @@ export class LiveAudio {
     if (this.playback) this.playback.gain.value = muted ? 0 : 1
   }
 
+  /** Play the confirmation sound after a voice message is accepted. */
+  acknowledge(): void { this.cue('sent') }
+
+  private cue(kind: Parameters<typeof playVoiceCue>[2]): void {
+    if (this.context?.state === 'running' && this.playback && !this.outputMuted) {
+      try { playVoiceCue(this.context, this.playback, kind) }
+      catch (error) { console.warn('Voice feedback audio could not play', error) }
+    }
+  }
+
   /**
-   * Invalidate permission grants, stop all tracks and playback, and close Web Audio.
+   * Stop capture and speech immediately, then release the output.
+   * @param closingCue - keep output briefly for an explicit end action.
    * @returns the shared, joined release promise.
    */
-  dispose(): Promise<void> {
+  dispose(closingCue = false): Promise<void> {
     if (this.closing) return this.closing
     this.lifetime.abort(); this.interrupt()
     for (const track of this.stream?.getTracks() ?? []) track.stop()
     this.capture?.port.close(); this.capture?.disconnect()
-    this.playback?.disconnect(); this.detector?.reset()
+    this.detector?.reset()
     const context = this.context
+    if (closingCue) this.cue('close')
     this.context = undefined
-    this.closing = context && context.state !== 'closed' ? context.close() : Promise.resolve()
+    this.closing = (async () => {
+      if (closingCue && context) await new Promise<void>((resolve) => { setTimeout(resolve, CLOSE_FEEDBACK_MS) })
+      this.playback?.disconnect()
+      if (context && context.state !== 'closed') await context.close()
+    })()
     return this.closing
   }
 }

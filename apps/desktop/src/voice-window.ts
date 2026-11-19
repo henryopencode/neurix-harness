@@ -125,7 +125,10 @@ export class DesktopVoiceWindow {
     if (this.unavailable) { this.restore(); throw new Error('Desktop voice controls are unavailable') }
     if (this.loading) return this.loading
     if (this.disposed || this.state === null || owner.isDestroyed() || !this.background(owner)) return Promise.resolve()
-    if (this.window && !this.window.isDestroyed()) { this.window.showInactive(); return Promise.resolve() }
+    if (this.window && !this.window.isDestroyed()) {
+      if (!this.window.isVisible()) this.window.showInactive()
+      return
+    }
     const generation = this.generation
     const area = screen.getDisplayMatching(owner.getBounds()).workArea
     const width = 160, height = 180

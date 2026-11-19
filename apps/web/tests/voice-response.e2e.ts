@@ -1,4 +1,5 @@
 /** Exercise normal Session admission, long spoken replies, and barge-in through Web Audio. */
+import { execFileSync } from 'node:child_process'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -19,7 +20,11 @@ interface PlayedAudio {
 }
 interface VoiceResponseProof {
   speak: () => void
+  setInput: (level: number) => void
   audible: () => boolean
+  cues: number[]
+  pulses: number
+  fades: string[]
   output?: AudioContext
   playback: PlayedAudio[]
   tracks: MediaStreamTrack[]
@@ -66,6 +71,13 @@ it.skipIf(webSnapshotMode() === 'record')('plays a long streamed reply, interrup
     extraOverlayPath: [fileURLToPath(new URL('./pin-browse-picker.overlay.yml', import.meta.url)), overlay],
     replayFixture: join(root, 'override-only.jsonl'), replayOverride: replay, compareReplaySession: false, paceMs: 160 })
   resources.scaffold = scaffold
+  const git = (...args: string[]): void => {
+    execFileSync('git', args, { cwd: scaffold.workspaceCwd, stdio: 'pipe',
+      env: { ...process.env, GIT_DIR: undefined, GIT_WORK_TREE: undefined, GIT_INDEX_FILE: undefined,
+        GIT_CONFIG_COUNT: '0', GIT_CONFIG_PARAMETERS: '', GIT_CONFIG_GLOBAL: '', GIT_CONFIG_NOSYSTEM: '1' } })
+  }
+  git('init', '-b', 'develop')
+  git('-c', 'user.name=Voice fixture', '-c', 'user.email=voice@example.invalid', 'commit', '--allow-empty', '-m', 'Initial commit')
   const synthesize = vi.spyOn(scaffold.ctx.voiceChat, 'synthesize')
   onTestFinished(() => { synthesize.mockRestore() })
   if (cachedBreeze) scaffold.ctx.voiceChat.prepare()
@@ -104,15 +116,19 @@ it.skipIf(webSnapshotMode() === 'record')('plays a long streamed reply, interrup
   })
   const browser = await chromium.launch(); resources.browser = browser
   const page = await newEnglishPage(browser), watched = watchConsole(page)
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'no-preference' })
   onTestFailed(async () => { await saveFailureShot(page, 'voice-response') })
   await page.addInitScript((recording: string | null) => {
     const capture = new AudioContext({ sampleRate: 16000 })
     const destination = capture.createMediaStreamDestination()
+    const input = capture.createOscillator(), inputVolume = new GainNode(capture, { gain: 0 })
+    input.connect(inputVolume).connect(destination); input.start()
     const playback: PlayedAudio[] = []
     const analysers: AnalyserNode[] = []
     let sample: AudioBuffer | undefined
     const proof: VoiceResponseProof = {
-      playback, tracks: destination.stream.getTracks(),
+      playback, tracks: destination.stream.getTracks(), cues: [], pulses: 0, fades: [],
+      setInput: (level) => { inputVolume.gain.value = level },
       speak: () => {
         if (!sample) throw new Error('Test microphone is not ready')
         const source = capture.createBufferSource()
@@ -125,6 +141,21 @@ it.skipIf(webSnapshotMode() === 'record')('plays a long streamed reply, interrup
       }),
     }
     window.voiceResponseProof = proof
+    AudioContext.prototype.createOscillator = function () {
+      const node = BaseAudioContext.prototype.createOscillator.call(this), start = node.start.bind(node)
+      node.start = (when) => { proof.cues.push(node.frequency.value); start(when) }
+      return node
+    }
+    HTMLElement.prototype.animate = function (...args) {
+      if (this.closest('[data-voice-orb]')) proof.pulses++
+      return Element.prototype.animate.apply(this, args)
+    }
+    document.addEventListener('transitionrun', (event) => {
+      const target = event.target
+      if (event.propertyName === 'opacity' && target instanceof HTMLElement && target.dataset.voiceOrb) {
+        proof.fades.push(target.dataset.voiceOrb)
+      }
+    })
     AudioContext.prototype.createGain = function () {
       const node = BaseAudioContext.prototype.createGain.call(this), analyser = this.createAnalyser()
       node.connect(analyser); analysers.push(analyser); proof.output = this
@@ -169,9 +200,31 @@ it.skipIf(webSnapshotMode() === 'record')('plays a long streamed reply, interrup
 
   const firstTurn = scaffold.whenTurnSettled(120_000)
   const beforeFirst = Date.now()
-  await speak()
+  expect(await page.evaluate(() => window.voiceResponseProof.cues)).toHaveLength(2)
+  if (cachedSenseVoice) await speak()
+  else {
+    const meter = (minimum: number, maximum: number) => page.waitForFunction(([min, max]) => {
+      const orb = document.querySelector<HTMLElement>('[data-voice-orb="recording"]')
+      if (!orb) return false
+      const level = Number(orb.style.getPropertyValue('--voice-orb-input'))
+      return level >= min! && level <= max!
+    }, [minimum, maximum])
+    await page.evaluate(() => { window.voiceResponseProof.setInput(0.07) })
+    await meter(0.2, 0.4)
+    await page.evaluate(() => { window.voiceResponseProof.setInput(0.23) })
+    await meter(0.85, 1)
+    await page.screenshot({ path: join(review, 'recording.png') })
+    await page.evaluate(() => { window.voiceResponseProof.setInput(0) })
+  }
+  await page.waitForFunction(() => window.voiceResponseProof.cues.length === 4 && window.voiceResponseProof.pulses === 1)
   if (!cachedBreeze) {
-    await page.locator('[data-voice-chat="thinking"]').waitFor()
+    const thinking = page.locator('[data-voice-orb="thinking"]')
+    const workingText = page.locator('[data-chat-running]:not([data-holding])')
+    await thinking.waitFor()
+    await workingText.waitFor({ state: 'attached' })
+    expect(await workingText.isVisible()).toBe(false)
+    expect(await thinking.locator('span').first().evaluate(core => getComputedStyle(core, '::before').animationName)).not.toBe('none')
+    await page.screenshot({ path: join(review, 'thinking.png') })
     await page.evaluate(async () => { await window.voiceResponseProof.output?.suspend() })
     releaseReply.resolve(undefined)
   }
@@ -211,8 +264,23 @@ it.skipIf(webSnapshotMode() === 'record')('plays a long streamed reply, interrup
   expect(spoken.every(text => text.includes('散步'))).toBe(true)
   expect(synthesize.mock.calls.every(([request]) => typeof request !== 'string' && request.voice === 'natural'
     && !request.text.includes('reasoning'))).toBe(true)
+  const branch = page.locator('[data-git-branch-context]')
+  await branch.getByRole('button', { name: 'Switch Git branch: develop', exact: true }).waitFor()
+  await page.locator('[data-composer-entering]').waitFor({ state: 'detached' })
+  const card = page.locator('[data-composer-card]')
+  const contextBounds = (await branch.boundingBox())!, cardBounds = (await card.boundingBox())!
+  const ball = (await page.locator('[data-voice-orb="listening"]').boundingBox())!
+  expect(ball.y + ball.height).toBeLessThanOrEqual(contextBounds.y)
+  await page.screenshot({ path: join(review, 'docked.png') })
+  const beforeEndCues = await page.evaluate(() => window.voiceResponseProof.cues.length)
   await page.getByRole('button', { name: 'End conversation', exact: true }).click()
   await page.getByRole('button', { name: 'Voice chat', exact: true }).waitFor()
+  expect(await branch.boundingBox()).toEqual(contextBounds)
+  expect(await card.boundingBox()).toEqual(cardBounds)
+  const feedback = await page.evaluate(() => ({ cues: window.voiceResponseProof.cues, fades: window.voiceResponseProof.fades }))
+  expect(feedback.cues).toHaveLength(beforeEndCues + 2)
+  expect(feedback.fades.some(phase => phase !== 'idle' && phase !== 'stopping')).toBe(true)
+  expect(feedback.fades.some(phase => phase === 'idle' || phase === 'stopping')).toBe(true)
   expect(await page.evaluate(() => window.voiceResponseProof.tracks.every(track => track.readyState === 'ended'))).toBe(true)
   const input = page.locator('[data-composer-input]')
   const typed = scaffold.whenTurnSettled(120_000)

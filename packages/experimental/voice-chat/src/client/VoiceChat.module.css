@@ -31,7 +31,7 @@
 .waveIcon { mask-image: url('./assets/wave.svg'); }
 .speakerIcon { mask-image: url('./assets/speaker.svg'); }
 
-.controls { display: flex; align-items: center; gap: 4px; }
+.controls { display: flex; align-items: center; gap: 4px; min-height: 34px; }
 .controls .iconControl {
   display: grid;
   place-items: center;
@@ -66,29 +66,20 @@
   transform: rotate(45deg);
 }
 
-.stage {
+.feedback { --voice-orb-size: var(--dsh-composer-dock-feedback-size); }
+
+:global([data-conversation-scroll]):has(> :global([data-composer-seat]) .feedback:is([data-voice-chat='thinking'], [data-voice-chat='speaking']))
+  > :global([data-slot='conversation.session']) :global([data-chat-running]) {
+  visibility: hidden;
+}
+
+.notices {
   display: grid;
   justify-items: center;
   gap: 8px;
   padding: 6px 16px 14px;
   font-size: 13px;
   text-align: center;
-}
-
-.orbSeat { position: relative; }
-.preparing {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: max-content;
-  max-width: min(280px, 75vw);
-  transform: translate(-50%, 25%);
-  padding: 4px 10px;
-  border-radius: 999px;
-  corner-shape: round;
-  background: var(--dsw-alias-bg-module-platform);
-  color: var(--dsw-alias-label-secondary);
-  font-size: 12px;
 }
 
 .screenReaderStatus {

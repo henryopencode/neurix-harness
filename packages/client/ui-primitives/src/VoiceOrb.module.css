@@ -1,27 +1,93 @@
 .orb {
+  --voice-orb-activity: 0;
+  position: relative;
   width: var(--voice-orb-size, 88px);
   aspect-ratio: 1;
   flex: none;
-  border-radius: 50%;
-  corner-shape: round;
-  background:
-    radial-gradient(ellipse at 80% 95%, #f2faf0, transparent 63%),
-    linear-gradient(147deg, #168afe 8%, #a1ecff 52%, #d7f7f7);
 }
 
-.orb:is([data-voice-orb='requesting'], [data-voice-orb='warming'], [data-voice-orb='transcribing'], [data-voice-orb='thinking']) {
+.orb[data-voice-orb-hidden] { opacity: 0; }
+
+.orb:is([data-voice-orb='listening'], [data-voice-orb='recording']) {
+  --voice-orb-activity: var(--voice-orb-input);
+}
+
+.core, .flash {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  corner-shape: round;
+}
+
+.core {
+  overflow: hidden;
+  background: linear-gradient(145deg, #178bfc, #9feaff 57%, #e5faf7);
+}
+
+.core::before, .core::after {
+  content: '';
+  position: absolute;
+  inset: -25%;
+}
+
+.core::before {
   background:
-    radial-gradient(ellipse at 20% 75%, #f1f6ff, transparent 70%),
-    linear-gradient(35deg, #b3c9ff, #899aff 54%, #6869f4);
+    radial-gradient(ellipse at 34% 29%, #1787f9, transparent 46%),
+    radial-gradient(ellipse at 63% 70%, #eefbf3 8%, #baf2f6 26%, transparent 53%),
+    radial-gradient(ellipse at 70% 31%, #a3e5ff, transparent 45%);
+}
+
+.core::after {
+  background: radial-gradient(ellipse at 33% 67%, #fff, #c2f5ff 23%, transparent 48%);
+  opacity: calc(0.23 + 0.62 * var(--voice-orb-activity));
+}
+
+.orb:is([data-voice-orb='requesting'], [data-voice-orb='warming'], [data-voice-orb='transcribing'], [data-voice-orb='thinking']) .core {
+  background: linear-gradient(35deg, #c2d2ff, #899aff 56%, #6869f4);
+}
+
+.orb:is([data-voice-orb='requesting'], [data-voice-orb='warming'], [data-voice-orb='transcribing'], [data-voice-orb='thinking']) .core::before {
+  background:
+    radial-gradient(ellipse at 66% 34%, #7566f4, transparent 49%),
+    radial-gradient(ellipse at 33% 67%, #f2f6ff 8%, #bacaff 25%, transparent 52%),
+    radial-gradient(ellipse at 74% 71%, #8c95ff, transparent 54%);
+}
+
+.flash {
+  opacity: 0;
+  background: radial-gradient(circle, #fff 12%, #d3e9ff 50%, transparent 75%);
+  box-shadow: inset 0 0 0 1px #daefff;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .orb:is([data-voice-orb='recording'], [data-voice-orb='speaking']) {
-    animation: voice-pulse 1.8s ease-in-out infinite alternate;
+  .orb { transition: opacity 150ms ease, transform 180ms ease; }
+
+  .orb[data-voice-orb-hidden] {
+    transform: translateY(6px) scale(0.76);
   }
+
+  @starting-style {
+    .orb { opacity: 0; transform: translateY(6px) scale(0.76); }
+  }
+
+  .core {
+    transform: scale(calc(1 + 0.1 * var(--voice-orb-activity)));
+    transition: transform 110ms ease-out;
+  }
+
+  .core::before { animation: voice-current 7s linear infinite; }
+  .core::after {
+    transform: translate(calc(14% * var(--voice-orb-activity)), calc(-10% * var(--voice-orb-activity)));
+    transition: transform 110ms ease-out, opacity 110ms ease-out;
+  }
+
+  .orb[data-voice-orb-hidden] .core::before { animation-play-state: paused; }
+  .orb:is([data-voice-orb='recording'], [data-voice-orb='speaking']) .core::before { animation-duration: 3.2s; }
+  .orb[data-voice-orb='thinking'] .core::before { animation-duration: 1.8s; }
+  .orb[data-voice-orb='transcribing'] .core { transform: scale(0.91); }
 }
 
-@keyframes voice-pulse {
-  from { transform: scale(0.96); }
-  to { transform: scale(1); }
+@keyframes voice-current {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

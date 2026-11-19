@@ -84,6 +84,10 @@ it('shows compact controls only while hidden and restores the same application a
   const compact = electron.windows[1]!
   expect(compact.isVisible()).toBe(true)
   expect(mockMethod(compact, 'loadURL')).toHaveBeenCalledWith('dsh-app://voice/voice-window.html')
+  const showCount = mockMethod(compact, 'showInactive').mock.calls.length
+  await b.invoke(VOICE_WINDOW_IPC.publish, { ...state, inputLevel: 0.5, sentCount: 3 })
+  expect(mockMethod(compact, 'showInactive')).toHaveBeenCalledTimes(showCount)
+  expect(await b.invoke(VOICE_WINDOW_IPC.state, undefined, compact)).toMatchObject({ state: { inputLevel: 0.5, sentCount: 3 } })
   await b.invoke(VOICE_WINDOW_IPC.command, 'microphone', compact)
   expect(mockMethod(b.owner.webContents, 'send')).toHaveBeenCalledWith(VOICE_WINDOW_IPC.action, 'microphone')
   await b.invoke(VOICE_WINDOW_IPC.command, 'restore', compact)
@@ -174,4 +178,6 @@ it('publishes only audio controls and rejects unknown phases or oversized labels
   expect(parseDesktopVoiceState({ ...state, sessionTitle: 'private', tasks: ['private'] })).toEqual(state)
   expect(() => parseDesktopVoiceState({ ...state, phase: 'idle' })).toThrow('Invalid desktop voice state')
   expect(() => parseDesktopVoiceState({ ...state, labels: { ...state.labels, status: 'x'.repeat(513) } })).toThrow('Invalid desktop voice label')
+  expect(() => parseDesktopVoiceState({ ...state, inputLevel: Infinity })).toThrow('Invalid desktop voice feedback')
+  expect(() => parseDesktopVoiceState({ ...state, sentCount: -1 })).toThrow('Invalid desktop voice feedback')
 })

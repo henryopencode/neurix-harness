@@ -34,6 +34,11 @@ export function parseDesktopVoiceState(input: unknown): DesktopVoiceState | null
   if (typeof state.phase !== 'string' || !phases.has(state.phase)
     || typeof state.microphoneMuted !== 'boolean' || typeof state.speakerMuted !== 'boolean'
     || !state.labels || typeof state.labels !== 'object') throw new Error('Invalid desktop voice state')
+  const { inputLevel, sentCount } = state
+  if (inputLevel !== undefined && (typeof inputLevel !== 'number' || !Number.isFinite(inputLevel) || inputLevel < 0 || inputLevel > 1)
+    || sentCount !== undefined && (typeof sentCount !== 'number' || !Number.isSafeInteger(sentCount) || sentCount < 0)) {
+    throw new Error('Invalid desktop voice feedback')
+  }
   const labels = state.labels as Record<string, unknown>
   const text = (key: keyof DesktopVoiceState['labels']): string => {
     const value = labels[key]
@@ -41,6 +46,7 @@ export function parseDesktopVoiceState(input: unknown): DesktopVoiceState | null
     return value
   }
   return { phase: state.phase as DesktopVoiceState['phase'], microphoneMuted: state.microphoneMuted, speakerMuted: state.speakerMuted,
+    ...(inputLevel === undefined ? {} : { inputLevel }), ...(sentCount === undefined ? {} : { sentCount }),
     labels: { status: text('status'), muteMicrophone: text('muteMicrophone'), unmuteMicrophone: text('unmuteMicrophone'),
       muteSpeaker: text('muteSpeaker'), unmuteSpeaker: text('unmuteSpeaker'), end: text('end'), restore: text('restore') } }
 }

@@ -17,7 +17,8 @@ const options: VoiceOptions = { speechThreshold: 0.02, silenceMs: 300, minimumSp
 
 function fixture() {
   const audio = { start: vi.fn<LiveAudio['start']>(async () => {}), play: vi.fn<LiveAudio['play']>(async (_audio, _signal, started) => { started?.() }),
-    finishPlayback: vi.fn(), interrupt: vi.fn(), setMicrophoneMuted: vi.fn(), setSpeakerMuted: vi.fn(), dispose: vi.fn(async () => {}) }
+    finishPlayback: vi.fn(), interrupt: vi.fn(), setMicrophoneMuted: vi.fn(), setSpeakerMuted: vi.fn(),
+    acknowledge: vi.fn(), dispose: vi.fn<LiveAudio['dispose']>(async () => {}) }
   const prompt = vi.fn<SessionFace['prompt']>(async () => ({ ok: true, value: { accepted: true } }))
   const cancel = vi.fn<SessionFace['cancel']>(async () => ({ ok: true, value: { accepted: true } }))
   const root = new Context()
@@ -136,6 +137,8 @@ it('keeps controls in the stopping state until audio release settles', async () 
 
 it('submits recognized text through Session admission and speaks each new visible sentence once', async () => {
   const b = fixture()
+  const admission = Promise.withResolvers<Awaited<ReturnType<SessionFace['prompt']>>>()
+  b.prompt.mockReturnValueOnce(admission.promise)
   const old = { key: '1/1', turn: 1, step: 1, text: 'Old response.', final: true }
   try {
     await b.conversation.start(sid, options, [old], 1)
@@ -144,6 +147,10 @@ it('submits recognized text through Session admission and speaks each new visibl
     b.speech(); b.utterance()
     await vi.waitFor(() => { expect(b.prompt).toHaveBeenCalledWith(
       [{ type: 'text', text: '请检查代码' }], 'steer', expect.any(AbortSignal), expect.any(String)) })
+    expect(b.audio.acknowledge).not.toHaveBeenCalled()
+    admission.resolve({ ok: true, value: { accepted: true } })
+    await vi.waitFor(() => { expect(b.audio.acknowledge).toHaveBeenCalledOnce() })
+    expect(b.conversation.state.getSnapshot().sentCount).toBe(1)
     expect(b.cancel).not.toHaveBeenCalled()
     const reply = { key: '2/1', turn: 2, step: 1, text: '检查完成。', final: false }
     b.conversation.observe(sid, [old, reply], 2)
@@ -195,7 +202,8 @@ it('preserves uncertain-delivery text and stops automatic work after a submissio
     b.speech(); b.utterance()
     await vi.waitFor(() => { expect(b.conversation.state.getSnapshot()).toMatchObject({ phase: 'idle', error: 'send', transcript: '请检查代码' }) })
     expect(b.prompt).toHaveBeenCalledTimes(1)
-    expect(b.audio.dispose).toHaveBeenCalledTimes(1)
+    expect(b.audio.acknowledge).not.toHaveBeenCalled()
+    expect(b.audio.dispose).toHaveBeenCalledExactlyOnceWith(false)
   } finally { await b.conversation.stop() }
 })
 

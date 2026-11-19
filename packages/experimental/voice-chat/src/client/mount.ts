@@ -136,7 +136,7 @@ async function registerUi(ctx: Context): Promise<void> {
   }
   const checked = (result: RemoteResult<void>): void => { if (!result.ok) throw result.error }
   const actions: VoiceChatInjected = {
-    hooks: { voiceState: conversation.state, voiceSetup: setup, voiceSetupNotice: setupNotice,
+    hooks: { voiceState: conversation.state, voiceInputLevel: conversation.inputLevel, voiceSetup: setup, voiceSetupNotice: setupNotice,
       voiceInputDevice: inputDevice, voiceDevices: inputDevices, voiceSettingsAvailable: settingsAvailable, voicePreference },
     toggleMicrophone: () => { conversation.toggleMicrophone() },
     toggleSpeaker: () => { conversation.toggleSpeaker() },
@@ -151,7 +151,7 @@ async function registerUi(ctx: Context): Promise<void> {
     showSetupNotice: (sessionId) => { setupNotice.set(sessionId) },
     close: () => {
       setupNotice.set(null)
-      void conversation.stop().then(() => {
+      void conversation.stop(true).then(() => {
         const state = conversation.state.getSnapshot()
         if (state.phase === 'idle' && state.error) conversation.state.set({ ...state, error: null })
       }).catch((error: unknown) => { ctx.logger.warn('Voice audio cleanup failed', error) })

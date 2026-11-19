@@ -46,10 +46,10 @@ function VoiceWindow({ api }: { api: VoiceWindowApi }) {
   return <main className="voice-window" data-voice-window={state.phase}>
     <Tooltip label={labels.restore} side="bottom" {...tooltipOptions}>
       <button type="button" className="voice-orb" aria-label={labels.restore} onClick={() => { act('restore') }}>
-        <VoiceOrb phase={state.phase} />
+        <VoiceOrb phase={state.phase} visible={!stopping} inputLevel={state.inputLevel ?? 0} sentCount={state.sentCount ?? 0} />
       </button>
     </Tooltip>
-    <div className="voice-status" data-waiting={state.phase === 'warming' || state.phase === 'requesting'} role="status">{labels.status}</div>
+    <div className="voice-status" role="status">{labels.status}</div>
     <div className="voice-controls">
       <Tooltip label={state.microphoneMuted ? labels.unmuteMicrophone : labels.muteMicrophone} side="top" {...tooltipOptions}>
         <Button className="voice-control" aria-label={state.microphoneMuted ? labels.unmuteMicrophone : labels.muteMicrophone}

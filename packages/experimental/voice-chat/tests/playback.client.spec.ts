@@ -16,7 +16,15 @@ function browserAudio() {
     connect = vi.fn()
     disconnect = vi.fn()
   }
-  const sources: Source[] = [], track = new EventTarget()
+  class Oscillator {
+    frequency = { value: 0 }
+    onended: (() => void) | null = null
+    start = vi.fn()
+    stop = vi.fn()
+    connect = <Node>(node: Node): Node => node
+    disconnect = vi.fn()
+  }
+  const sources: Source[] = [], tones: Oscillator[] = [], track = new EventTarget()
   const stopTrack = vi.fn()
   Object.assign(track, { enabled: true, stop: stopTrack })
   const capture = { port: { close: vi.fn(), onmessage: null }, connect: vi.fn(), disconnect: vi.fn() }
@@ -34,17 +42,47 @@ function browserAudio() {
       duration: length / rate, getChannelData: () => new Float32Array(length),
     })
     createBufferSource = () => { const source = new Source(); sources.push(source); return source }
+    createOscillator = () => { const tone = new Oscillator(); tones.push(tone); return tone }
   }
   const context = new Audio()
   vi.stubGlobal('AudioContext', vi.fn(function () { return context }))
+  vi.stubGlobal('GainNode', class {
+    gain = { setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }
+    connect = vi.fn()
+    disconnect = vi.fn()
+  })
   vi.stubGlobal('AudioWorkletNode', vi.fn(function () { return capture }))
   vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: async () => ({ getTracks: () => [track], getAudioTracks: () => [track] }) } })
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:voice-test')
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
   const audio = new LiveAudio()
   onTestFinished(async () => { try { await audio.dispose() } finally { vi.restoreAllMocks(); vi.unstubAllGlobals() } })
-  return { audio, context, sources, stopTrack }
+  return { audio, context, sources, tones, stopTrack }
 }
+
+it('plays distinct open, accepted, and close sounds, releasing capture before the closing sound drains', async () => {
+  const b = browserAudio()
+  await b.audio.start(options, () => {}, () => {}, () => {})
+  expect(b.tones).toHaveLength(2)
+  b.audio.setSpeakerMuted(true); b.audio.acknowledge()
+  expect(b.tones).toHaveLength(2)
+  b.audio.setSpeakerMuted(false); b.audio.acknowledge()
+  vi.useFakeTimers()
+  const closing = b.audio.dispose(true)
+  try {
+    expect(b.stopTrack).toHaveBeenCalledOnce()
+    expect(b.context.close).not.toHaveBeenCalled()
+    const pitches = b.tones.map(tone => tone.frequency.value)
+    expect(pitches).toHaveLength(6)
+    expect(new Set(pitches).size).toBe(6)
+    expect(pitches[0]).toBeLessThan(pitches[1]!)
+    expect(pitches[4]).toBeGreaterThan(pitches[5]!)
+  } finally {
+    try { await vi.runOnlyPendingTimersAsync() } finally { vi.useRealTimers() }
+    await closing
+  }
+  expect(b.context.close).toHaveBeenCalledOnce()
+})
 
 it('collects reply lead and does not add latency again after an underrun', async () => {
   const b = browserAudio()

@@ -20,11 +20,13 @@ export interface ConversationVoiceState {
   readonly error: VoiceFailure | null
   readonly microphoneMuted: boolean
   readonly speakerMuted: boolean
+  /** Monotonic within one activation; increments only for accepted voice submissions. */
+  readonly sentCount: number
 }
 
 /** Host and Session callbacks captured by the Client registration. */
 export interface VoiceConversationDependencies {
-  readonly createAudio: () => Pick<LiveAudio, 'start' | 'play' | 'finishPlayback' | 'interrupt' | 'dispose' | 'setMicrophoneMuted' | 'setSpeakerMuted'>
+  readonly createAudio: () => Pick<LiveAudio, 'start' | 'play' | 'finishPlayback' | 'interrupt' | 'dispose' | 'setMicrophoneMuted' | 'setSpeakerMuted' | 'acknowledge'>
   readonly warm: (voice: VoicePreset, signal: AbortSignal) => Promise<void>
   readonly retain: (sessionId: SessionId, signal: AbortSignal) => SessionReference
   readonly catalog: () => SpeechCatalog | null
@@ -75,7 +77,9 @@ function afterPosition(turn: number, step: number, active: ActiveVoice): boolean
 export class VoiceConversation {
   /** Transient microphone, playback, transcript, and recovery state for the registered UI. */
   readonly state = createSnapshotStore<ConversationVoiceState>({ sessionId: null, phase: 'idle', transcript: '', error: null,
-    microphoneMuted: false, speakerMuted: false })
+    microphoneMuted: false, speakerMuted: false, sentCount: 0 })
+  /** Quantized microphone level for the orb, independent of the conversation's phase. */
+  readonly inputLevel = createSnapshotStore(0)
   private active: ActiveVoice | undefined
   private release: Promise<void> = Promise.resolve()
 
@@ -103,7 +107,7 @@ export class VoiceConversation {
       maxPendingSentences: options.maxPendingSentences, pendingSentences: 0, maxSentenceCharacters: options.maxSentenceCharacters }
     for (const reply of replies) active.sentences.take(reply, true)
     this.active = active
-    this.update({ sessionId, phase: 'requesting', transcript: '', error: null, microphoneMuted: false, speakerMuted: false })
+    this.update({ sessionId, phase: 'requesting', transcript: '', error: null, microphoneMuted: false, speakerMuted: false, sentCount: 0 })
     try {
       await this.release
       abort.signal.throwIfAborted()
@@ -113,7 +117,11 @@ export class VoiceConversation {
       })
       audio.setMicrophoneMuted(true)
       const capture = audio.start(options, () => { this.speechStarted(active) }, (bytes) => { void this.submit(active, bytes) },
-        (error) => { this.fail(active, error.kind) }).then(() => {
+        (error) => { this.fail(active, error.kind) }, (rms) => {
+          if (this.active !== active || !active.ready || this.state.getSnapshot().microphoneMuted) return
+          const level = Math.min(1, Math.max(0, (rms - 0.008) / 0.14))
+          this.inputLevel.set(Math.round(level * 24) / 24)
+        }).then(() => {
         if (!abort.signal.aborted) this.update({ phase: 'warming' })
       })
       active.warming = this.dependencies.warm(active.voice, abort.signal).catch((error: unknown) => {
@@ -163,6 +171,8 @@ export class VoiceConversation {
       const sent = await session.prompt([{ type: 'text', text }], mode, signal, submission.requestId)
       signal.throwIfAborted()
       if (!sent.ok) throw sent.error
+      this.update({ sentCount: this.state.getSnapshot().sentCount + 1 })
+      active.audio.acknowledge()
     } catch (_error) { if (!signal.aborted) this.fail(active, operation) }
   }
 
@@ -257,17 +267,19 @@ export class VoiceConversation {
 
   /**
    * End microphone and playback without cancelling an already submitted text task.
+   * @param feedback - use an audible close cue for an explicit user action.
    * @returns after Web Audio, cancelled synthesis, and prior audio release settle,
    * and the Session reference is released.
    */
-  stop(): Promise<void> {
+  stop(feedback = false): Promise<void> {
     const active = this.active
     this.active = undefined
     if (!active) return this.release
     active.abort.abort(); active.turn.abort()
     this.update({ phase: 'stopping' })
+    this.inputLevel.set(0)
     this.release = Promise.all([
-      this.release, active.audio.dispose(), Promise.allSettled([active.warming, ...active.syntheses]),
+      this.release, active.audio.dispose(feedback), Promise.allSettled([active.warming, ...active.syntheses]),
     ]).then(() => {
       active.reference.release()
       if (!this.active) this.update({ phase: 'idle' })
@@ -285,6 +297,7 @@ export class VoiceConversation {
     if (!active) return
     const muted = !this.state.getSnapshot().microphoneMuted
     active.audio.setMicrophoneMuted(muted || !active.ready)
+    if (muted) this.inputLevel.set(0)
     this.update({ microphoneMuted: muted,
       ...muted && this.state.getSnapshot().phase === 'recording' ? { phase: 'listening' } : {} })
   }

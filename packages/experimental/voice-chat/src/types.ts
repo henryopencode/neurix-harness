@@ -75,6 +75,10 @@ export interface DesktopVoiceState {
   readonly phase: Exclude<VoiceConversationPhase, 'idle'>
   readonly microphoneMuted: boolean
   readonly speakerMuted: boolean
+  /** Normalized microphone level from zero to one, for artwork only. */
+  readonly inputLevel?: number
+  /** Accepted voice submission count for the current activation. */
+  readonly sentCount?: number
   readonly labels: DesktopVoiceLabels
 }
 

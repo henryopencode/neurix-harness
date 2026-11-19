@@ -478,6 +478,7 @@
 }
 
 .scrollBody {
+  --dsh-composer-dock-feedback-size: clamp(48px, 16dvh, 88px);
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -504,6 +505,20 @@
 .embeddedBody[data-content-phase='active'] .viewArea {
   flex: 1 0 auto;
   min-height: auto;
+}
+
+/* Let the transcript scroll clear of active feedback without moving the composer. */
+.scrollBody:has(> .composerSeat .composerStack [data-composer-dock-feedback][data-composer-hero-replacement]):not(:has([data-conversation-composer-overlay]))
+  > :global([data-slot='conversation.session']) > .viewArea {
+  padding-bottom: calc(var(--dsh-composer-dock-feedback-size) + 16px);
+}
+
+.composerStack > :global([data-slot='conversation.input.dock']) :global([data-composer-dock-feedback]) {
+  position: absolute;
+  inset: auto 0 calc(100% + 8px);
+  display: grid;
+  justify-items: center;
+  pointer-events: none;
 }
 
 .root[data-phase='active'] .composerSeat,
@@ -600,8 +615,17 @@
   z-index: 1;
 }
 
-.composerHero:has(:global([data-composer-hero-replacement])) > :global([data-conversation-hero-intro]) {
+.composerHero:has(:global([data-composer-hero-replacement]:not([data-composer-dock-feedback]))) > :global([data-conversation-hero-intro]) {
   display: none;
+}
+
+.composerHero:has(:global([data-composer-hero-replacement][data-composer-dock-feedback])) > :global([data-conversation-hero-intro]) {
+  visibility: hidden;
+}
+
+.composerHero > :global([data-slot='conversation.input.dock']) :global([data-composer-dock-feedback]) {
+  inset-block: 0 auto;
+  translate: 0 -50%;
 }
 
 .heroWorkspaceRow {
