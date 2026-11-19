@@ -9,7 +9,7 @@ const conversationCss = readFileSync(fileURLToPath(new URL(
 
 /** Return one stylesheet rule body for an exact class selector. */
 function rule(css: string, selector: string): string {
-  const match = new RegExp(`\\${selector}\\s*\\{([^}]*)\\}`, 's').exec(css)
+  const match = new RegExp(`^\\${selector}\\s*\\{([^}]*)\\}`, 'm').exec(css)
   expect(match, `missing ${selector} rule`).not.toBeNull()
   return match?.[1] ?? ''
 }
