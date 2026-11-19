@@ -74,8 +74,8 @@ export class GithubReleaseDownloads {
 
   /**
    * Join metadata checks without replacing a transfer or a verified installer.
-   * @param manual - Whether a check failure remains visible for retry.
-   * @returns Current availability, readiness, or a contained check failure.
+   * @param manual - Whether a failed check replaces a known available release with a retry action.
+   * @returns Availability, readiness, or a check failure; failures without a known release always remain visible for retry.
    */
   async check(manual = false): Promise<DesktopUpdateState> {
     this.lifetime.signal.throwIfAborted()
@@ -83,7 +83,7 @@ export class GithubReleaseDownloads {
     if (!manual && this.current.phase === 'error' && this.current.failedOperation === 'download') return this.current
     this.checking ??= this.readLatest().finally(() => { this.checking = undefined })
     const result = await this.checking
-    if (manual && result.phase === 'error') this.setState(result)
+    if (manual && result.phase === 'error' && this.current.phase !== 'error') this.setState(result)
     return result
   }
 
@@ -194,7 +194,8 @@ export class GithubReleaseDownloads {
         ...(typeof asset.id === 'number' ? { apiUrl: `https://api.github.com/repos/${this.repository}/releases/assets/${asset.id}` } : {}) }
       return this.setState({ phase: 'available', version })
     } catch (error) {
-      return { phase: 'error', failedOperation: 'check', message: String(error) }
+      const failure: DesktopUpdateState = { phase: 'error', failedOperation: 'check', message: String(error) }
+      return this.current.phase === 'available' ? failure : this.setState(failure)
     }
   }
 

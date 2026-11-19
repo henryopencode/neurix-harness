@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 import { describe, expect, it } from 'vitest'
 import { presentDesktopUpdate } from '../../desktop/src/update-presentation.ts'
+import { GithubReleaseDownloads } from '../../desktop/src/github-release-downloads.ts'
 import { launchWebScaffold, watchConsole } from './scaffold.ts'
 
 // Mirrors the preload's presentation-only API; importing Client projects would mix compiler faces.
@@ -58,6 +59,34 @@ describe('web e2e: Desktop update workspace chrome', () => {
             (window as FixtureWindow).updateFixture.publish(value)
           }, state)
           const opens = async () => page.evaluate(() => (window as FixtureWindow).updateFixture.opens)
+          let renderCheck = Promise.resolve()
+          const checks = new GithubReleaseDownloads('henryopencode/neurix-harness', '1.0.0', (state) => {
+            renderCheck = renderCheck.then(() => publish(presentDesktopUpdate(state)))
+            return state
+          }, {
+            directory: evidence, platform: 'darwin', arch: 'arm64', installMode: 'restart',
+            metadataTimeoutMs: 10_000, idleTimeoutMs: 10_000,
+            request: async () => new Response(null, { status: 403 }),
+            beforeRestart: async () => false,
+            install: async () => { throw new Error('An automatic check must not install an update') },
+          })
+          try {
+            await checks.check()
+            await renderCheck
+            const retry = page.getByRole('button', { name: retryLabel, exact: true })
+            await retry.waitFor()
+            expect(await retry.getAttribute('aria-disabled')).toBe('false')
+            expect(await page.getByRole('dialog').count()).toBe(0)
+            expect(await opens()).toBe(0)
+            const footer = page.locator('[data-sidebar-footer]')
+            await expect(`${await footer.ariaSnapshot()}\n`).toMatchFileSnapshot(
+              `./expected/desktop-update/check-failure-${locale}.expected.md`,
+            )
+            await page.screenshot({ path: join(evidence, 'automatic-check-failure.png') })
+          } finally {
+            checks.dispose()
+            await renderCheck
+          }
           await publish(available)
           const update = page.getByRole('button', { name: availableLabel, exact: true })
           await update.waitFor()

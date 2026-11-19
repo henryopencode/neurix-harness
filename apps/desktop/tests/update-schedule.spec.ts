@@ -36,6 +36,19 @@ function fixture(jitter = 0, random = () => 0.5) {
 }
 
 describe('ordinary update polling', () => {
+  it('exposes an automatic check failure during backoff and recovers on the next poll without downloading', async () => {
+    const f = fixture()
+    f.checkForUpdates.mockRejectedValueOnce(new Error('offline'))
+    await f.schedule.check()
+    expect(f.coordinator.state).toMatchObject({ phase: 'error', failedOperation: 'check' })
+    expect(f.states).toEqual([expect.objectContaining({ phase: 'error', failedOperation: 'check' })])
+    f.checkForUpdates.mockResolvedValue({ isUpdateAvailable: true, updateInfo: { version: '1.1.0-nightly.1' } })
+    await vi.advanceTimersByTimeAsync(19_999)
+    expect(f.checkForUpdates).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(f.coordinator.state).toEqual({ phase: 'available', version: '1.1.0-nightly.1' })
+    expect(f.downloadUpdate).not.toHaveBeenCalled()
+  })
   it('checks immediately, doubles failed delays up to the cap, and resets after success', async () => {
     const f = fixture()
     f.checkForUpdates.mockRejectedValue(new Error('offline'))
@@ -48,7 +61,8 @@ describe('ordinary update polling', () => {
       await vi.advanceTimersByTimeAsync(1)
       expect(f.checkForUpdates).toHaveBeenCalledTimes(calls)
     }
-    expect(f.states).toEqual([])
+    expect(f.states).toHaveLength(4)
+    expect(f.states.every(state => state.phase === 'error' && state.failedOperation === 'check')).toBe(true)
     f.checkForUpdates.mockResolvedValue({ isUpdateAvailable: false, updateInfo: { version: '1.0.0' } })
     await f.schedule.check(true)
     await vi.advanceTimersByTimeAsync(9_999)
@@ -105,7 +119,7 @@ describe('ordinary update polling', () => {
     expect(f.checkForUpdates).toHaveBeenCalledOnce()
     f.checkForUpdates.mockRejectedValue(new Error('offline'))
     await f.schedule.check(false, true)
-    expect(f.states).toEqual([{ phase: 'idle' }])
+    expect(f.states).toEqual([{ phase: 'idle' }, expect.objectContaining({ phase: 'error', failedOperation: 'check' })])
     vi.setSystemTime(Date.now() - 172_800_000)
     await vi.advanceTimersByTimeAsync(20_000)
     expect(f.checkForUpdates).toHaveBeenCalledTimes(3)

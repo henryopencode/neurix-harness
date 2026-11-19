@@ -189,14 +189,41 @@ describe('desktop update coordinator', () => {
     await expect(f.coordinator.install('1.2.0')).rejects.toThrow(/not ready/u)
   })
 
-  it('keeps automatic failures silent and exposes a manual caller joining the same check', async () => {
+  it('exposes automatic failures and publishes once when a manual caller joins the same check', async () => {
     const f = fixture()
     f.checkForUpdates.mockRejectedValue(new Error('offline'))
     expect(await f.coordinator.check()).toMatchObject({ phase: 'error', failedOperation: 'check' })
-    expect(f.states).toEqual([])
-    await Promise.all([f.coordinator.check(), f.coordinator.check(true)])
     expect(f.states).toEqual([expect.objectContaining({ phase: 'error', failedOperation: 'check' })])
+    await Promise.all([f.coordinator.check(), f.coordinator.check(true)])
+    expect(f.states).toEqual([
+      expect.objectContaining({ phase: 'error', failedOperation: 'check' }),
+      expect.objectContaining({ phase: 'error', failedOperation: 'check' }),
+    ])
     expect(f.downloadUpdate).not.toHaveBeenCalled()
+  })
+  it('retains known availability after an automatic failure and exposes an explicit check failure', async () => {
+    const f = fixture()
+    await f.coordinator.check()
+    f.checkForUpdates.mockRejectedValue(new Error('offline'))
+    expect(await f.coordinator.check()).toMatchObject({ phase: 'error', failedOperation: 'check' })
+    expect(f.coordinator.state).toEqual({ phase: 'available', version: '1.1.0-rc.2' })
+    expect(f.states).toHaveLength(1)
+    await f.coordinator.check(true)
+    expect(f.coordinator.state).toMatchObject({ phase: 'error', failedOperation: 'check' })
+  })
+  it('keeps source-development checks quiet and explains a manual check without a packaged source', async () => {
+    const f = fixture()
+    const states: DesktopUpdateState[] = []
+    const coordinator = new DesktopUpdateCoordinator((state) => { states.push(state); return state },
+      f.beforeRestart, f.updater, () => false, () => '1.0.0')
+    coordinators.push(coordinator)
+    expect(await coordinator.check()).toMatchObject({ phase: 'error', failedOperation: 'check' })
+    expect(coordinator.state.phase).toBe('idle')
+    expect(states).toEqual([])
+    await coordinator.check(true)
+    expect(coordinator.state).toMatchObject({ phase: 'error', failedOperation: 'check' })
+    expect(states).toHaveLength(1)
+    expect(f.checkForUpdates).not.toHaveBeenCalled()
   })
 
   it.each(['1.0.0', '1.1.0-alpha.1', 'invalid'])('does not download or install inapplicable version %s', async (version) => {
