@@ -64,6 +64,7 @@ export class DesktopVoiceWindow {
   attach(owner: BrowserWindow): void {
     if (this.owner === owner) return
     this.reset(false); this.detachOwner?.(); this.owner = owner
+    const contents = owner.webContents
     const hidden = (): void => {
       if (this.state === null) return
       if (process.platform === 'darwin' && app.isHidden()) this.reset(true)
@@ -76,12 +77,12 @@ export class DesktopVoiceWindow {
     }
     owner.on('minimize', hidden); owner.on('hide', hidden)
     owner.on('restore', shown); owner.on('show', shown)
-    owner.webContents.on('did-start-navigation', navigation)
+    contents.on('did-start-navigation', navigation)
     owner.on('closed', reset)
     this.detachOwner = () => {
       owner.off('minimize', hidden); owner.off('hide', hidden)
       owner.off('restore', shown); owner.off('show', shown)
-      owner.webContents.off('did-start-navigation', navigation); owner.off('closed', reset)
+      contents.off('did-start-navigation', navigation); owner.off('closed', reset)
     }
   }
 
@@ -169,7 +170,7 @@ export class DesktopVoiceWindow {
     this.baselineThrottling = undefined
   }
 
-  /** Withdraw listeners, native windows, and IPC after application shutdown. */
+  /** Withdraw listeners, native windows, and IPC even after the primary window is destroyed. */
   dispose(): void {
     if (this.disposed) return
     this.disposed = true; this.reset(false); this.detachOwner?.()
