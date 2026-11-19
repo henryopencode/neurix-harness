@@ -1,0 +1,15 @@
+# Use the shipped disabled selection despite a non-empty DeepSeek credential.
+- id: web
+  name: '@deepseek-ai/dsh-web'
+  config:
+    searchProvider: none
+    fetchProvider: http
+
+- id: web-deepseek-api
+  name: '@deepseek-ai/dsh-web-deepseek-api'
+  config:
+    searchApiKeyEnv: DSH_SNAPSHOT_STALE_SEARCH_KEY
+
+- id: web-search-deepseek
+  config:
+    apiKeyEnv: DSH_SNAPSHOT_STALE_SEARCH_KEY

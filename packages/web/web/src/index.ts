@@ -53,16 +53,16 @@ interface Selection<P> {
 
 /**
  * Config for the web seam. `searchProvider` / `fetchProvider` pin which provider
- * wins for each capability; both are optional (a single registered usable
+ * wins for each capability; `none` disables it. Both are optional (a single registered usable
  * provider auto-selects). Each operation reads the current value, so a settings
  * change applies to the next search or fetch without remounting the service.
  * Operational overrides such as environment variables must feed these same
  * fields rather than introduce a hidden priority chain.
  */
 export interface WebRuntimeConfig {
-  /** Explicit search provider id. Omitted = auto-select when exactly one usable. */
+  /** Search provider id; `none` disables search. Omitted = auto-select when exactly one usable. */
   readonly searchProvider: Volatile<string | undefined>
-  /** Explicit fetch provider id. Omitted = auto-select when exactly one usable. */
+  /** Fetch provider id; `none` disables fetch. Omitted = auto-select when exactly one usable. */
   readonly fetchProvider: Volatile<string | undefined>
 }
 
@@ -71,6 +71,7 @@ export interface WebRuntimeConfig {
  * and exposed to Clients as the `web` Remote namespace (`listProviders`).
  *
  * Selection semantics (resolved at execution time, never order-dependent):
+ * - Configured `none` → `WEB_PROVIDER_DISABLED`, with no provider consulted.
  * - A configured id that is registered and `available()` → that provider.
  * - A configured id not registered → `WEB_PROVIDER_CONFIGURED_MISSING`.
  * - A configured id registered but unavailable →
@@ -106,7 +107,8 @@ export class WebRuntime extends TypertRemoteService {
    * registration is disposed, which happens with the calling fiber or through
    * the returned disposer; registration and disposal each emit
    * `web/providers-changed`. Throws {@link WebError} `WEB_DUPLICATE_PROVIDER`
-   * if its id is already registered for search.
+   * if its id is already registered for search, or `WEB_PROVIDER_RESERVED_ID`
+   * if its id is `none`.
    * @param provider - the provider; its `id` is the registry key.
    * @returns the disposer that unregisters the provider.
    */
@@ -117,7 +119,8 @@ export class WebRuntime extends TypertRemoteService {
   /**
    * Register a fetch provider, with the listing, disposal, and event behavior
    * of {@link WebRuntime.registerSearchProvider}. Throws {@link WebError}
-   * `WEB_DUPLICATE_PROVIDER` if its id is already registered for fetch.
+   * `WEB_DUPLICATE_PROVIDER` if its id is already registered for fetch, or
+   * `WEB_PROVIDER_RESERVED_ID` if its id is `none`.
    * @param provider - the provider; its `id` is the registry key.
    * @returns the disposer that unregisters the provider.
    */
@@ -126,6 +129,9 @@ export class WebRuntime extends TypertRemoteService {
   }
 
   private registerProvider<P extends { readonly id: string }>(store: Map<string, P>, provider: P): () => void {
+    if (provider.id === 'none') {
+      throw new WebError('web provider id "none" is reserved for disabling a capability', 'WEB_PROVIDER_RESERVED_ID')
+    }
     if (store.has(provider.id)) {
       throw new WebError(`a web provider with id "${provider.id}" is already registered`, 'WEB_DUPLICATE_PROVIDER')
     }
@@ -190,10 +196,10 @@ export class WebRuntime extends TypertRemoteService {
   /**
    * Whether the provider `search()` would select can authenticate a search made for a
    * model request on the `llmProvider` chat route. Asks only that provider's `ready()`;
-   * one without `ready()` counts as ready. Makes no network calls. A selection failure
-   * answers true, because `search()` reports that failure as a structured `WebError`.
+   * one without `ready()` counts as ready. Makes no network calls. `none` answers false;
+   * other selection failures answer true so `search()` can report a structured `WebError`.
    * @param llmProvider - the provider route id of the model request, when known.
-   * @returns false only when the selected provider reports that it cannot authenticate.
+   * @returns false when disabled or when the selected provider cannot authenticate.
    */
   async searchReady(llmProvider?: string): Promise<boolean> {
     return await selectedProviderReady(() => this.selectSearchProvider(), llmProvider)
@@ -223,10 +229,10 @@ export class WebRuntime extends TypertRemoteService {
   /**
    * Whether the provider `fetch()` would select can authenticate a fetch made for a
    * model request on the `llmProvider` chat route. Asks only that provider's `ready()`;
-   * one without `ready()` counts as ready. Makes no network calls. A selection failure
-   * answers true, because `fetch()` reports that failure as a structured `WebError`.
+   * one without `ready()` counts as ready. Makes no network calls. `none` answers false;
+   * other selection failures answer true so `fetch()` can report a structured `WebError`.
    * @param llmProvider - the provider route id of the model request, when known.
-   * @returns false only when the selected provider reports that it cannot authenticate.
+   * @returns false when disabled or when the selected provider cannot authenticate.
    */
   async fetchReady(llmProvider?: string): Promise<boolean> {
     return await selectedProviderReady(() => this.selectFetchProvider(), llmProvider)
@@ -261,19 +267,24 @@ interface ResolvableProvider {
  * Ask the provider an operation selects whether it can authenticate for one chat route.
  * @param select - the operation's selection; throws its {@link WebError} when no provider qualifies.
  * @param llmProvider - the provider route id of the model request, when known.
- * @returns the provider's answer; true when it has no `ready()` or selection fails, because the
- *   operation reports that failure itself.
+ * @returns false when disabled; otherwise the provider's answer, or true when it has no
+ *   `ready()` or selection fails so the operation can report that failure.
  */
 async function selectedProviderReady(select: () => ResolvableProvider, llmProvider: string | undefined): Promise<boolean> {
   let provider: ResolvableProvider
   try { provider = select() }
-  catch (_selectionFailure) { return true /* The operation surfaces the same failure when called. */ }
+  catch (selectionFailure) {
+    return !(selectionFailure instanceof WebError && selectionFailure.code === 'WEB_PROVIDER_DISABLED')
+  }
   return await provider.ready?.(llmProvider) ?? true
 }
 
 /** Resolve the selected provider or throw the matching {@link WebError}. */
 function resolveProvider<P extends ResolvableProvider>(selection: Selection<P>): P {
   const { configuredId, providers } = selection
+  if (configuredId === 'none') {
+    throw new WebError('web capability is disabled; select a provider in Web search and fetch settings or configure web.searchProvider / web.fetchProvider', 'WEB_PROVIDER_DISABLED')
+  }
   if (configuredId !== undefined) {
     const provider = providers.get(configuredId)
     if (!provider) {

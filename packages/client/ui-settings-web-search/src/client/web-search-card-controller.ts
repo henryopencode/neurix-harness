@@ -47,6 +47,7 @@ export const WEB_NS = 'web'
 
 /** Provider ids of the official providers whose settings this page edits. */
 export const PROVIDER_IDS = {
+  disabled: 'none',
   apiSearch: 'deepseek-search-api',
   legacySearch: 'deepseek-official',
   localFetch: 'http',
@@ -319,7 +320,7 @@ export class WebSearchCardController {
       ...info.description === undefined ? {} : { description: info.description },
       missing: false,
     }))
-    if (selected !== '' && !registered.some(info => info.id === selected)) options.push({ id: selected, missing: true })
+    if (selected !== '' && !registered.some(info => info.id === selected)) options.push({ id: selected, missing: selected !== PROVIDER_IDS.disabled })
     return options
   }
 
@@ -330,7 +331,7 @@ export class WebSearchCardController {
 
   private searchKind(): WebSearchKind {
     const id = this.selected('searchProvider')
-    if (id === '' || !this.registered('search', id)) return 'none'
+    if (id === '' || id === PROVIDER_IDS.disabled || !this.registered('search', id)) return 'none'
     if (id === PROVIDER_IDS.apiSearch) return this.api.shell().available ? 'deepseek' : 'none'
     if (id === PROVIDER_IDS.legacySearch) return this.legacy.shell().available ? 'legacy' : 'none'
     return this.providers === undefined ? 'none' : 'plugin'
@@ -338,7 +339,7 @@ export class WebSearchCardController {
 
   private fetchKind(): WebFetchKind {
     const id = this.selected('fetchProvider')
-    if (id === '' || !this.registered('fetch', id)) return 'none'
+    if (id === '' || id === PROVIDER_IDS.disabled || !this.registered('fetch', id)) return 'none'
     if (id === PROVIDER_IDS.localFetch) return 'local'
     if (id === PROVIDER_IDS.apiFetch) return this.api.shell().available ? 'deepseek' : 'none'
     return this.providers === undefined ? 'none' : 'plugin'

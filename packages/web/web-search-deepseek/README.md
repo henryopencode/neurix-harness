@@ -195,6 +195,6 @@ This Dev Note is working context for maintainers: open questions and undecided d
 
 #### Dedicated retrieval endpoint
 
-DeepSeek's Search and Fetch APIs, which avoid the full model turn, live in [dsh-web-deepseek-api](../web-deepseek-api/README.md) and are selected with the Search and Fetch menus on the Web search and fetch settings page. Shipped profiles select the Search API, so this provider runs only when `searchProvider: deepseek-official` is selected (for example, on gateways without Search API routes).
+DeepSeek's Search and Fetch APIs, which avoid the full model turn, live in [dsh-web-deepseek-api](../web-deepseek-api/README.md) and are selected with the Search and Fetch menus on the Web search and fetch settings page. Shipped profiles disable search by default; this provider runs only when `searchProvider: deepseek-official` is selected (for example, on gateways without Search API routes).
 
 </details>

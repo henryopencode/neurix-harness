@@ -5,7 +5,7 @@ import type { SettingsFormLabels } from '@deepseek-ai/dsh-client-ui-primitives'
 /** Locale keys the page renders. */
 export type WebSearchSettingsLocaleKey =
   | 'title' | 'description' | 'searchSection' | 'fetchSection'
-  | 'providerDeepSeek' | 'providerLocal' | 'providerDeepSeekFetch' | 'providerMissing' | 'providerAuto'
+  | 'providerDisabled' | 'providerDisabledHint' | 'providerDeepSeek' | 'providerLocal' | 'providerDeepSeekFetch' | 'providerMissing' | 'providerAuto'
   | 'providerLegacy' | 'legacyKeyHint' | 'maxUses' | 'maxUsesHint' | 'invalidMaxUses'
   | 'providersFailed' | 'retry'
   | 'pluginProviderHint' | 'searchGuide' | 'searchGuideUrl'
@@ -17,6 +17,8 @@ export type WebSearchSettingsLocaleKey =
 
 /** English copy. */
 export const en: Record<WebSearchSettingsLocaleKey, string> = {
+  providerDisabled: 'Disabled',
+  providerDisabledHint: 'This capability is disabled. Choose a provider to enable it; it is independent of the chat model.',
   title: 'Web search and fetch',
   description: 'Choose the providers web search and web fetch use.',
   searchSection: 'Web search provider',
@@ -56,6 +58,8 @@ export const en: Record<WebSearchSettingsLocaleKey, string> = {
 
 /** Simplified Chinese copy. */
 export const zh: Record<WebSearchSettingsLocaleKey, string> = {
+  providerDisabled: '已停用',
+  providerDisabledHint: '此功能已停用。选择提供方后启用，不随聊天模型自动切换。',
   title: '网页搜索与获取',
   description: '选择网页搜索与网页获取使用的提供方。',
   searchSection: '网页搜索提供方',
@@ -104,6 +108,8 @@ export function formLabels(t: (key: WebSearchSettingsLocaleKey) => string): Sett
 
 /** Japanese copy, checked against the English keys. */
 export const ja = {
+  providerDisabled: '無効',
+  providerDisabledHint: 'この機能は無効です。プロバイダーを選択して有効にしてください。チャットモデルとは独立しています。',
   'title': 'Web 検索と取得',
   'description': 'Web 検索と Web 取得に使用するプロバイダーを選択します。',
   'searchSection': 'Web 検索プロバイダー',
@@ -143,6 +149,8 @@ export const ja = {
 
 /** Spanish dictionary, checked against the English keys. */
 export const es = {
+  providerDisabled: 'Desactivado',
+  providerDisabledHint: 'Esta función está desactivada. Elija un proveedor para activarla; es independiente del modelo de chat.',
   title: 'Búsqueda y obtención web',
   description: 'Elija los proveedores que usan la búsqueda web y la obtención web.',
   searchSection: 'Proveedor de búsqueda web',
@@ -182,6 +190,8 @@ export const es = {
 
 /** French dictionary, checked against the English keys. */
 export const fr = {
+  providerDisabled: 'Désactivé',
+  providerDisabledHint: 'Cette fonction est désactivée. Choisissez un fournisseur pour l’activer ; elle est indépendante du modèle de discussion.',
   title: 'Recherche et récupération web',
   description: 'Choisissez les fournisseurs utilisés par la recherche web et la récupération web.',
   searchSection: 'Fournisseur de recherche web',
@@ -221,6 +231,8 @@ export const fr = {
 
 /** German dictionary, checked against the English keys. */
 export const de = {
+  providerDisabled: 'Deaktiviert',
+  providerDisabledHint: 'Diese Funktion ist deaktiviert. Wählen Sie einen Anbieter zum Aktivieren; sie ist unabhängig vom Chatmodell.',
   title: 'Websuche und Webabruf',
   description: 'Wählen Sie die Anbieter für Websuche und Webabruf.',
   searchSection: 'Anbieter für Websuche',
@@ -260,6 +272,8 @@ export const de = {
 
 /** Russian dictionary, checked against the English keys. */
 export const ru = {
+  providerDisabled: 'Отключено',
+  providerDisabledHint: 'Эта функция отключена. Выберите поставщика, чтобы включить её; она не зависит от модели чата.',
   title: 'Веб-поиск и загрузка',
   description: 'Выберите поставщиков для веб-поиска и загрузки веб-страниц.',
   searchSection: 'Поставщик веб-поиска',
@@ -299,6 +313,8 @@ export const ru = {
 
 /** Portuguese dictionary, checked against the English keys. */
 export const pt = {
+  providerDisabled: 'Desativado',
+  providerDisabledHint: 'Esta função está desativada. Escolha um provedor para ativá-la; ela é independente do modelo de chat.',
   title: 'Pesquisa e obtenção na web',
   description: 'Escolha os provedores usados pela pesquisa na web e pela obtenção na web.',
   searchSection: 'Provedor de pesquisa na web',

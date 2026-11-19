@@ -5095,16 +5095,16 @@ export type Config = ReturnType<typeof Config>
 ```ts config-catalog
 /**
  * Config for the web seam. `searchProvider` / `fetchProvider` pin which provider
- * wins for each capability; both are optional (a single registered usable
+ * wins for each capability; `none` disables it. Both are optional (a single registered usable
  * provider auto-selects). Each operation reads the current value, so a settings
  * change applies to the next search or fetch without remounting the service.
  * Operational overrides such as environment variables must feed these same
  * fields rather than introduce a hidden priority chain.
  */
 export interface WebRuntimeConfig {
-  /** Explicit search provider id. Omitted = auto-select when exactly one usable. */
+  /** Search provider id; `none` disables search. Omitted = auto-select when exactly one usable. */
   readonly searchProvider: Volatile<string | undefined>
-  /** Explicit fetch provider id. Omitted = auto-select when exactly one usable. */
+  /** Fetch provider id; `none` disables fetch. Omitted = auto-select when exactly one usable. */
   readonly fetchProvider: Volatile<string | undefined>
 }
 ```

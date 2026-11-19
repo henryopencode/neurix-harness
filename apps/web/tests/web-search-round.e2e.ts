@@ -1,5 +1,5 @@
-// Web e2e scenario for the shipped default search provider, the DeepSeek
-// Search API, with no provider selection patched. A real browser drives
+// Web e2e scenario for the explicitly selected DeepSeek Search API. The
+// recorded-session scaffold opts into search. A real browser drives
 // `web_search`; the model stream is replayed while the real DeepSeek provider
 // calls a deterministic local Search API endpoint through the real
 // credentials service.
@@ -23,7 +23,8 @@ const SNAPSHOT_DIR = fileURLToPath(new URL('../../../snapshots/web/web-search-ro
 const FIXTURE = fileURLToPath(new URL('../../../snapshots/web/web-search-round/session.v3.jsonl', import.meta.url))
 const UI_EXPECTED = fileURLToPath(new URL('../../../snapshots/web/web-search-round/ui.expected.md', import.meta.url))
 const MODE = webSnapshotMode()
-const QUERIES = ['Neurix Harness snapshot search', 'Neurix Harness multi-query search'] as const
+// Query text is an immutable input of the retained recording.
+const QUERIES = ['DeepSeek Harness snapshot search', 'DeepSeek Harness multi-query search'] as const
 const PROMPT = `Use web_search once with queries ${JSON.stringify(QUERIES)}. Then reply exactly SEARCH_DONE and stop.`
 const SEARCH_CREDENTIAL_REF = credentialRef('DSH_WEB_SEARCH_E2E_KEY')
 const SEARCH_CREDENTIAL = 'snapshot-search-key'
@@ -141,7 +142,7 @@ async function startSearchServer(captured: CapturedSearchRequest[]): Promise<{ s
   return { server, baseURL: `http://127.0.0.1:${address.port}` }
 }
 
-describe('web e2e: default Search API web search', () => {
+describe('web e2e: explicitly selected Search API web search', () => {
   let scaffold: WebScaffold
   let browser: Browser
   let page: Page

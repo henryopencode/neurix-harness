@@ -44,9 +44,10 @@ interface Sent {
  * Boot the composition with a fixed launch environment and a stubbed network.
  * @param web - web-deepseek-api config.
  * @param environment - launch-environment variables.
+ * @param selection - the web service’s independent search and fetch selection.
  * @returns the booted root context and the Search and Fetch API requests sent so far.
  */
-async function bootComposition(web: Record<string, unknown>, environment: Record<string, string>) {
+async function bootComposition(web: Record<string, unknown>, environment: Record<string, string>, selection = { searchProvider: 'deepseek-search-api', fetchProvider: 'deepseek-fetch-api' }) {
   // The providers and model listings dispatch to a string endpoint.
   const fetchMock = vi.fn(async (url: string, _init?: RequestInit) => {
     if (url.endsWith('/models')) return Response.json({ object: 'list', data: [] })
@@ -66,7 +67,7 @@ async function bootComposition(web: Record<string, unknown>, environment: Record
     { id: 'llm', name: '@deepseek-ai/dsh-llm' },
     { id: 'llm-deepseek', name: '@deepseek-ai/dsh-llm-deepseek-api-key' },
     { id: 'llm-deepseek-account', name: '@deepseek-ai/dsh-llm-deepseek-account' },
-    { id: 'web', name: '@deepseek-ai/dsh-web', config: { searchProvider: 'deepseek-search-api', fetchProvider: 'deepseek-fetch-api' } },
+    { id: 'web', name: '@deepseek-ai/dsh-web', config: selection },
     { id: 'web-deepseek-api', name: '@deepseek-ai/dsh-web-deepseek-api', config: web },
   ]))
   const ctx: Context = await boot('web-deepseek-api-composition', configPath, [], (host) => {
@@ -102,6 +103,19 @@ function entry(ctx: Context, id: string) {
 }
 
 describe('web-deepseek-api over the real model routes', () => {
+  it('keeps search disabled despite an existing DeepSeek credential on any chat route', async () => {
+    const { ctx, sent } = await bootComposition({}, { DEEPSEEK_API_KEY: 'unused-deepseek-key' }, { searchProvider: 'none', fetchProvider: 'deepseek-fetch-api' })
+    for (const route of ['openai', 'google', 'deepseek-official', 'deepseek-account']) {
+      await expect(ctx.web.searchReady(route)).resolves.toBe(false)
+      await expect(ctx.web.search({ query: 'private question' })).rejects.toMatchObject({ code: 'WEB_PROVIDER_DISABLED' })
+    }
+    expect(sent()).toEqual([])
+    await expect(ctx.web.fetchReady('openai')).resolves.toBe(true)
+    await entry(ctx, 'web-deepseek-api').dispose()
+    expect(ctx.web.listProviders()).toEqual({ search: [], fetch: [] })
+    await expect(ctx.web.searchReady('openai')).resolves.toBe(false)
+  })
+
   it('serves a user with only DEEPSEEK_API_KEY by default, at the origin DEEPSEEK_BASE_URL names', async () => {
     const { ctx, sent } = await bootComposition({}, {
       DEEPSEEK_API_KEY: 'chat-key', DEEPSEEK_BASE_URL: 'https://internal.deepseek.test/anthropic',

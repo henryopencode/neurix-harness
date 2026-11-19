@@ -57,8 +57,8 @@ function remoteApi(configured: boolean | Record<string, boolean>) {
   return { ctx: ctxWith({ credentials: { describe, set }, web: { listProviders } }), describe, set, listProviders }
 }
 
-/** The shipped composition's selection: the DeepSeek Search API and local HTTP fetch. */
-const SHIPPED_SELECTION = { searchProvider: 'deepseek-search-api', fetchProvider: 'http' }
+/** An explicit DeepSeek Search API selection with local HTTP fetch. */
+const EXPLICIT_SEARCH_SELECTION = { searchProvider: 'deepseek-search-api', fetchProvider: 'http' }
 
 /** Legacy Messages search with local HTTP fetch, the selection that shows the key control. */
 const LEGACY_SELECTION = { searchProvider: 'deepseek-official', fetchProvider: 'http' }
@@ -92,7 +92,7 @@ type SelectionLayers = { value?: WebProviderSelection; base?: WebProviderSelecti
 const API_DEFAULTS: WebApiSettings = { count: 10 }
 
 /**
- * Serve all three sections, with the shipped selection unless one is given,
+ * Serve all three sections, with explicit Search API selection unless one is given,
  * the API section composed as `composed`, and the legacy section as `legacy`,
  * each with no user layer.
  */
@@ -100,7 +100,7 @@ function serve(
   b: ReturnType<typeof bench>, selection: SelectionLayers = {}, composed: WebApiSettings = API_DEFAULTS,
   legacy: WebLegacySettings = { maxUses: 5 },
 ): void {
-  b.web.publish({ status: 'ready', writable: true, value: SHIPPED_SELECTION, base: SHIPPED_SELECTION, user: {}, ...selection })
+  b.web.publish({ status: 'ready', writable: true, value: EXPLICIT_SEARCH_SELECTION, base: EXPLICIT_SEARCH_SELECTION, user: {}, ...selection })
   b.api.publish({ status: 'ready', writable: true, value: composed, base: composed, user: {} })
   b.legacy.publish({ status: 'ready', writable: true, value: legacy, base: legacy, user: {} })
 }
@@ -964,6 +964,38 @@ describe('WebSearchCardController automatic selection', () => {
       await vi.waitFor(() => { expect(b.state().dirty).toBe(false) })
       expect(b.web.mutate).toHaveBeenLastCalledWith([{ op: 'unset', path: ['searchProvider'] }], undefined)
       expect(b.state().search).toMatchObject({ selected: '', auto: true })
+    } finally { b.controller.dispose() }
+  })
+})
+
+
+describe('WebSearchCardController disabled selection', () => {
+  it('opts in from the neutral default and resets back without changing credentials or provider settings', async () => {
+    const b = bench({ accept: true })
+    const defaults = { searchProvider: 'none', fetchProvider: 'http' }
+    try {
+      serve(b, { value: defaults, base: defaults }, { count: 20 })
+      await vi.waitFor(() => { expect(b.state().search.options).toContainEqual({ id: 'none', missing: false }) })
+      expect(b.state().search).toMatchObject({ selected: 'none', kind: 'none', auto: false })
+      expect(b.web.mutate).not.toHaveBeenCalled()
+      b.face.selectProvider('searchProvider', 'deepseek-search-api')
+      b.face.save()
+      await vi.waitFor(() => { expect(b.web.mutate).toHaveBeenCalledWith([{ op: 'set', path: ['searchProvider'], value: 'deepseek-search-api' }], undefined) })
+      await vi.waitFor(() => { expect(b.state().saving).toBe(false) })
+      expect(b.state().search.kind).toBe('deepseek')
+      b.face.selectProvider('searchProvider', 'none')
+      b.face.selectProvider('fetchProvider', 'none')
+      expect(b.state().fetch.kind).toBe('none')
+      b.face.save()
+      await vi.waitFor(() => { expect(b.web.mutate).toHaveBeenLastCalledWith([
+        { op: 'unset', path: ['searchProvider'] }, { op: 'set', path: ['fetchProvider'], value: 'none' },
+      ], undefined) })
+      await vi.waitFor(() => { expect(b.state().saving).toBe(false) })
+      expect(b.state().search.kind).toBe('none')
+      expect(b.state().count.text).toBe('20')
+      expect(b.api.mutate).not.toHaveBeenCalled()
+      expect(b.legacy.mutate).not.toHaveBeenCalled()
+      expect(b.credentials.set).not.toHaveBeenCalled()
     } finally { b.controller.dispose() }
   })
 })

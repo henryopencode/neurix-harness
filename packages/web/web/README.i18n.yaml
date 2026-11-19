@@ -21,14 +21,14 @@
   en: 557a8a3f2dfebae4
   zh: 3c85382484e4b717
 /deepseek-ai-dsh-web/use-this-package/minimal-configuration:
-  en: cb5267c425eef938
-  zh: 26c3c04ee28c8c01
+  en: 3546be86956194be
+  zh: 044bfb0a47d55279
 /deepseek-ai-dsh-web/use-this-package/searching-and-fetching:
   en: 713944abf68263cd
   zh: c428cb53b8708e99
 /deepseek-ai-dsh-web/use-this-package/provider-selection:
-  en: 5973c94b327aa8ae
-  zh: cbc15a2925f70347
+  en: e7535764c32420b4
+  zh: 95a0d2bda770c88d
 /deepseek-ai-dsh-web/use-this-package/listing-providers:
   en: 229aed591f2194e0
   zh: d62b4b41d26be94c
@@ -36,8 +36,8 @@
   en: cf0c7f95d944be5a
   zh: 1a2b3796acec7c29
 /deepseek-ai-dsh-web/use-this-package/search-and-fetch-readiness:
-  en: 30fec45dfb417eed
-  zh: 253f887aeb3deeea
+  en: 628e54e314e7a88a
+  zh: 74e813c5622f4379
 /deepseek-ai-dsh-web/use-this-package/failures-and-recovery:
   en: d8d09ed3839f6474
   zh: 7164d902f333592a
@@ -54,8 +54,8 @@
   en: 300340ff8465a03e
   zh: 34ab66eb6969dc94
 /deepseek-ai-dsh-web/understand-the-implementation/selection-flow:
-  en: d5cd4851d81892e6
-  zh: 18266b0bc8b1d1ae
+  en: 0716ec37bb64b5b0
+  zh: b8678b353a3f9a6e
 /deepseek-ai-dsh-web/further-exploration:
   en: f969a627e746906d
   zh: e6ffbe79fc539cec
@@ -66,8 +66,8 @@
   en: 40294c1c31b74824
   zh: d75d48f485447a74
 /deepseek-ai-dsh-web/known-limitations-and-deferred-work:
-  en: 12624cc86e6bc4e9
-  zh: c86de7d9b5302601
+  en: b1f1665b855edf26
+  zh: 793017e71e6d4b9e
 /deepseek-ai-dsh-web/known-limitations-and-deferred-work/dev-note:
   en: 7f775cc79dbce94b
   zh: 12b8f68f9e7c48ca

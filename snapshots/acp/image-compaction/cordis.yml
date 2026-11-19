@@ -4,6 +4,13 @@
 # commits through. The store resolves its root from $DSH_HOME, which the
 # snapshot harness scopes per run, so the patch itself carries no attachment
 # path. The ACP row selects the shipped vision model.
+# The recorded Session opts into its search-capable tool catalog.
+- id: web
+  name: '@deepseek-ai/dsh-web'
+  config:
+    searchProvider: deepseek-search-api
+    fetchProvider: http
+
 - id: acp
   name: '@deepseek-ai/dsh-acp'
   config:
