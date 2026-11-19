@@ -56,7 +56,8 @@ interface NativeAccess {
 
 type RuntimeMethod = (...args: never[]) => unknown
 
-const methodReplacement = Symbol('HMR method replacement')
+// Independently loaded HMR modules share the key; each wrapper owns its replacement state.
+const methodReplacement = '@deepseek-ai/dsh-hmr/method-replacement'
 
 interface MethodReplacement {
   original: RuntimeMethod

@@ -15,11 +15,15 @@ const manifest = join(root, 'package.json')
 const methods = () => [binding.readPackageJSON, binding.getPackageScopeConfig, binding.getPackageType,
   reader.getNearestParentPackageJSON, NodeModule._load]
 const original = methods()
+const { PackageManifests: ReloadedPackageManifests } = await import(new URL('../../src/package-manifest.ts?overlap', import.meta.url))
 
-for (const reverse of [false, true]) {
+for (const [Owner, reverse] of [
+  [PackageManifests, false], [PackageManifests, true],
+  [ReloadedPackageManifests, false], [ReloadedPackageManifests, true],
+]) {
   writeFileSync(manifest, '{"type":"commonjs"}')
   const first = new PackageManifests()
-  const second = new PackageManifests()
+  const second = new Owner()
   try {
     first.invalidate(manifest)
     second.invalidate(manifest)
