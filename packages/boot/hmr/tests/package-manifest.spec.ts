@@ -69,6 +69,7 @@ describe('overlapping method ownership', () => {
     const second = createReplaceHelper(target)
     const disposeSecond = second.replaceMethod('read', value => `second:${second.rawImpl.read(value)}`)
     try {
+      expect(target.read.name).toBe(original.name)
       expect(target.read('value')).toBe('second:first:native:value')
       ;(reverse ? disposeSecond : disposeFirst)()
       expect(target.read('value')).toBe(reverse ? 'first:native:value' : 'second:native:value')

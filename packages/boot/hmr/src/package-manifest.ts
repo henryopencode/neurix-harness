@@ -60,7 +60,7 @@ const methodReplacement = Symbol('HMR method replacement')
 
 interface MethodReplacement {
   original: RuntimeMethod
-  replacement?: RuntimeMethod
+  replacement: RuntimeMethod | undefined
 }
 
 /** Skip retired predecessors when the last overlapping owner restores a method. */
@@ -84,9 +84,14 @@ export function createReplaceHelper<T extends { [K in keyof T]: (...args: never[
     rawImpl,
     replaceMethod<K extends keyof T>(key: K, replacement: T[K]): () => void {
       const state: MethodReplacement = { original: rawImpl[key], replacement }
-      const wrapped = Object.assign(function (this: unknown, ...args: never[]): unknown {
-        return Reflect.apply(state.replacement ?? state.original, this, args)
-      }, { [methodReplacement]: state }) as T[K]
+      const wrapped = new Proxy(rawImpl[key], {
+        apply(_method, receiver: unknown, args: unknown[]): unknown {
+          return Reflect.apply(state.replacement ?? state.original, receiver, args)
+        },
+        get(method, property, receiver: unknown): unknown {
+          return property === methodReplacement ? state : Reflect.get(method, property, receiver)
+        },
+      })
       target[key] = wrapped
       return () => {
         state.replacement = undefined
