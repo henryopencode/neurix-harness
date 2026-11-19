@@ -1124,10 +1124,13 @@ describe('web e2e: New Session after an outdated blank cache', () => {
       await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
       const response = await creation
       expect(response.request().postDataJSON()).toHaveProperty('payload.args.request.sessionId', legacy)
-      expect(await response.json()).toMatchObject({ result: { ok: true } })
+      const result = await response.json() as { result: { ok: boolean; value: { sessionId: string } } }
+      expect(result.result.ok).toBe(true)
+      const createdId = SessionId(result.result.value.sessionId)
+      expect(createdId).not.toBe(legacy)
       const selected = page.locator('[role="treeitem"][aria-selected="true"]')
       await expect.poll(() => selected.innerText()).toBe('New Session')
-      await expect.poll(() => workspace.sessionIds.length).toBe(3)
+      expect(scaffold.ctx.sessions.get(createdId)?.header.cwd).toBe(scaffold.workspaceCwd)
       expect(scaffold.ctx.sessions.get(legacy)).toBeUndefined()
       expect(await readFile(path)).toEqual(original)
       await page.getByRole('treeitem', { name: /^Use the read tool twice/ }).click()
