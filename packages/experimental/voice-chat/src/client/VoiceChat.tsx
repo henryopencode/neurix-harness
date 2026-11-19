@@ -9,8 +9,7 @@ import type { SpeechSelectionPatch } from '@deepseek-ai/dsh-experimental-speech-
 import type { VoiceDevices, VoiceInputDevice } from './devices.ts'
 import type { ConversationVoiceState } from './controller.ts'
 import type { VoiceReply } from './replies.ts'
-import { Button, IconCloseOutlineRegular, IconMicrophoneOutlineRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
-import { VoiceOrb } from './VoiceOrb.tsx'
+import { Button, IconCloseOutlineRegular, IconMicrophoneOutlineRegular, Tooltip, VoiceOrb } from '@deepseek-ai/dsh-client-ui-primitives'
 import { NS } from './locales.ts'
 import css from './VoiceChat.module.css'
 

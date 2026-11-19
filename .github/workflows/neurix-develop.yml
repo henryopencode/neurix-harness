@@ -35,6 +35,7 @@ jobs:
       - name: Prepare confined execution backend
         run: bash scripts/prepare-ci-bubblewrap.sh
       - run: pnpm install --frozen-lockfile
+      - run: pnpm run verify-default-product-isolation
       - run: pnpm run build
       - run: pnpm run lint
       - name: Verify server update admission and rollback
