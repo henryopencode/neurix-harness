@@ -5,6 +5,9 @@ import { expect, it, vi } from 'vitest'
 import { TestRemote } from '@deepseek-ai/dsh-client-test-runtime'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
+import { ResourceRegistry } from '@deepseek-ai/dsh-client-resources/src/client/resources.ts'
+import { createSidebarRightController } from '@deepseek-ai/dsh-client-ui-sidebar-right/src/client/service.ts'
+import { SidebarRightTabRegistry } from '@deepseek-ai/dsh-client-ui-sidebar-right/src/client/tab-registry.ts'
 import * as settings from '@deepseek-ai/dsh-client-ui-settings/client'
 import * as PreviewUi from '@deepseek-ai/dsh-client-ui-computer-preview/client'
 import { inject, mountComputerControlUi } from '../src/client/mount.ts'
@@ -22,6 +25,16 @@ it('registers a localized configuration after the Plugins slot appears and remov
     locale.setLocale('zh')
     ctx.provide('locale', locale)
     ctx.provide('connection', { generation: { getSnapshot: () => undefined, subscribe: () => () => {} } })
+    const tabs = new SidebarRightTabRegistry(ctx)
+    const sidebar = createSidebarRightController(tabs, () => {}, {
+      autoFullscreen: () => false,
+      openWithFocus: (_sessionId, open) => { open() },
+      closeWithFocus: (_sessionId, _paneId, close) => { close() },
+    })
+    ctx.provide('resources', new ResourceRegistry(ctx))
+    ctx.provide('sidebarRightTabs', tabs)
+    ctx.provide('sidebarRight', sidebar.controller)
+    ctx.effect(() => () => { sidebar.controller.tabDomain.dispose() })
     new PreviewRemote(ctx, { settings: { describe: () => Promise.resolve({
       ok: true, value: { writable: true, hasDocument: true, namespaces: [] },
     }) } })
