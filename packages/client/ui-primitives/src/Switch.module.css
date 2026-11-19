@@ -12,7 +12,7 @@
   border: 0;
   border-radius: 999px;
   corner-shape: round;
-  background: var(--dsw-alias-border-l3);
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 23%, transparent);
   cursor: pointer;
 }
 
@@ -37,7 +37,11 @@
   border-radius: 50%;
   corner-shape: round;
   background: var(--dsw-alias-label-primary-foreground);
-  transition: transform 120ms ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .switch { transition: background-color var(--ds-transition-duration-fast) var(--ds-ease-in-out); }
+  .thumb { transition: transform var(--ds-transition-duration-fast) var(--ds-ease-in-out); }
 }
 
 .switch[aria-checked='false'] .thumb {

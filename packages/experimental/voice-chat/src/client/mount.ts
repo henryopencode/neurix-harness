@@ -7,6 +7,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-voice-chat/remote'
 import type {} from '@deepseek-ai/dsh-experimental-api-speech-to-text/remote'
 import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { RemoteResult, TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
 import type { SpeechCatalog } from '@deepseek-ai/dsh-experimental-api-speech-to-text/types'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
@@ -17,7 +18,7 @@ import { createVoiceInputDevice, discoverVoiceInputs, type VoiceDevices } from '
 import { createVoicePreference } from './voices.ts'
 import { VoiceChatSettings } from './VoiceChatSettings.tsx'
 import { connectDesktopVoice } from './desktop.ts'
-import { VoiceChatPanel, VoiceChatTrigger, VoiceChatSessionTrigger, type VoiceChatInjected, type VoiceSetup, type VoicePanelView } from './VoiceChat.tsx'
+import { VoiceChatControls, VoiceChatObserver, VoiceChatPanel, VoiceChatTrigger, VoiceChatSessionTrigger, type VoiceChatInjected, type VoiceSetup } from './VoiceChat.tsx'
 import { NS, en, zh } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-api-session-controller/client' {
@@ -32,7 +33,7 @@ async function registerUi(ctx: Context): Promise<void> {
   if (!options.ok) throw options.error
   const setup = createSnapshotStore<VoiceSetup>({ voice: null, options: options.value,
     recognitionReady: false, recognitionPreparing: false, connected: false, recognition: null, preparationError: false })
-  const panel = createSnapshotStore<VoicePanelView>({ sessionId: null, compact: false })
+  const setupNotice = createSnapshotStore<SessionId | null>(null)
   const inputDevice = createVoiceInputDevice()
   const voicePreference = createVoicePreference(options.value.voice)
   const inputDevices = createSnapshotStore<VoiceDevices>({ devices: [], pending: false, error: null })
@@ -77,7 +78,7 @@ async function registerUi(ctx: Context): Promise<void> {
     transcribe: (audioBase64, signal) => ctx.remote.speech.transcribe({ audioBase64, ...catalog?.selection }, signal),
     synthesize,
   })
-  const desktop = connectDesktopVoice(ctx, conversation)
+  const desktopAvailable = connectDesktopVoice(ctx, conversation)
   const disconnect = (): void => {
     setup.set({ ...setup.getSnapshot(), connected: false })
     if (conversation.state.getSnapshot().phase !== 'idle') {
@@ -124,7 +125,7 @@ async function registerUi(ctx: Context): Promise<void> {
   })
   ctx.effect(() => ctx.locale.register(NS, { en, zh }))
   const stop = (): void => { void conversation.stop().catch((error: unknown) => { ctx.logger.warn('Voice audio cleanup failed', error) }) }
-  const hidden = (): void => { if (document.hidden && !desktop.available.getSnapshot()) stop() }
+  const hidden = (): void => { if (document.hidden && !desktopAvailable.getSnapshot()) stop() }
   ctx.effect(() => {
     document.addEventListener('visibilitychange', hidden)
     return () => { document.removeEventListener('visibilitychange', hidden) }
@@ -135,15 +136,8 @@ async function registerUi(ctx: Context): Promise<void> {
   }
   const checked = (result: RemoteResult<void>): void => { if (!result.ok) throw result.error }
   const actions: VoiceChatInjected = {
-    hooks: { voiceState: conversation.state, voiceSetup: setup, voicePanel: panel,
-      voiceInputDevice: inputDevice, voiceDevices: inputDevices, voiceSettingsAvailable: settingsAvailable,
-      voiceDesktopAvailable: desktop.available, voicePreference },
-    minimize: () => {
-      if (desktop.available.getSnapshot()) desktop.minimize()
-      else panel.set({ ...panel.getSnapshot(), compact: true })
-    },
-    restorePanel: () => { panel.set({ ...panel.getSnapshot(), compact: false }) },
-    collapsePanel: () => { panel.set({ ...panel.getSnapshot(), compact: true }) },
+    hooks: { voiceState: conversation.state, voiceSetup: setup, voiceSetupNotice: setupNotice,
+      voiceInputDevice: inputDevice, voiceDevices: inputDevices, voiceSettingsAvailable: settingsAvailable, voicePreference },
     toggleMicrophone: () => { conversation.toggleMicrophone() },
     toggleSpeaker: () => { conversation.toggleSpeaker() },
     openSettings: () => { ctx.get('pluginNavigation')?.openBundle('@deepseek-ai/dsh-voice-chat-bundle') },
@@ -154,18 +148,18 @@ async function registerUi(ctx: Context): Promise<void> {
       const result = await ctx.remote.speech.configure(patch)
       if (!result.ok) { ctx.logger.warn('Voice recognition configuration failed', result.error); throw result.error }
     },
-    open: (sessionId) => {
-      const previous = conversation.state.getSnapshot()
-      if (previous.phase === 'idle' && previous.sessionId !== sessionId) {
-        conversation.state.set({ ...previous, sessionId, transcript: '', error: null })
-      }
-      panel.set({ sessionId, compact: false })
-    }, close: () => {
-      void conversation.stop().then(() => { panel.set({ sessionId: null, compact: false }) }).catch((error: unknown) => { ctx.logger.warn('Voice audio cleanup failed', error) })
+    showSetupNotice: (sessionId) => { setupNotice.set(sessionId) },
+    close: () => {
+      setupNotice.set(null)
+      void conversation.stop().then(() => {
+        const state = conversation.state.getSnapshot()
+        if (state.phase === 'idle' && state.error) conversation.state.set({ ...state, error: null })
+      }).catch((error: unknown) => { ctx.logger.warn('Voice audio cleanup failed', error) })
     },
     stop: (sessionId) => { if (conversation.state.getSnapshot().sessionId === sessionId) stop() },
     start: (sessionId, replies, turn, step) => {
       if (setup.getSnapshot().connected && setup.getSnapshot().recognitionReady && setup.getSnapshot().voice?.phase === 'ready') {
+        setupNotice.set(null)
         void conversation.start(sessionId, { ...options.value, voice: voicePreference.getSnapshot() }, replies, turn, step)
       }
     },
@@ -193,7 +187,11 @@ async function registerUi(ctx: Context): Promise<void> {
     yield ctx.slots.register({ name: 'voiceChat.primary', locale: NS, inject: () => actions }, VoiceChatSessionTrigger)
   })
   ctx.slots.inject('conversation.content.overlay', () => ctx.slots.register({
-    name: 'conversation.content.overlay', id: 'voice-chat', locale: NS, inject: () => actions }, VoiceChatPanel))
+    name: 'conversation.content.overlay', id: 'voice-chat', inject: () => actions }, VoiceChatObserver))
+  ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
+    name: 'conversation.input.dock', id: 'voice-chat', order: 100, locale: NS, inject: () => actions }, VoiceChatPanel))
+  ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
+    name: 'conversation.input.right', id: 'voice-chat', locale: NS, inject: () => actions }, VoiceChatControls))
   ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({
     name: 'plugins.bundle.config', key: '@deepseek-ai/dsh-voice-chat-bundle', locale: NS, inject: () => actions }, VoiceChatSettings))
 

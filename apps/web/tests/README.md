@@ -4,6 +4,8 @@ English | [中文](README.zh.md)
 
 These tests boot the real web composition in-process and drive it with real browsers over real HTTP. Chromium runs the full lane; the [model and reasoning picker scenario](declared-reasoning.e2e.ts) also runs in WebKit to cover native mouse focus behavior. [Session replay recovery](session-replay-reload.e2e.ts) also runs in WebKit, sharing the `fresh-round-trip` recording and expected output without rewriting them. It covers active-stream reload, completed-turn reload, and reopening a Session. The lane's mechanics — modes, fixtures, goldens, and the deliberate composition divergences from `dsh web` — are documented in [`scaffold.ts`](scaffold.ts) and the [browser e2e Agent Note](../../../.agents/notes/implemented/testing/2026-07-24-web-gui-browser-e2e-lane.md).
 
+The [voice response scenario](voice-response.e2e.ts) replays assistant text and feeds a test microphone. On Apple Silicon, set `DSH_VOICE_MODEL_CACHE` and `DSH_VOICE_RECOGNITION_CACHE` to isolated copies of prepared Breeze and SenseVoice caches, and `DSH_VOICE_SPEECH_WAV` to a mono 16 kHz PCM WAV recording containing the Chinese word “散步”. Run the built scenario to use both real local models and report first sound and the longest scheduled playback gap.
+
 After installing workspace dependencies, install the browsers and their system dependencies from the repository root:
 
 ```sh

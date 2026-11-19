@@ -115,19 +115,35 @@
 .input {
   height: 34px;
   padding: 0 12px;
-  border: 0.5px solid var(--dsw-alias-border-l4);
+  border: 0.5px solid var(--dsw-alias-border-l3);
   border-radius: var(--dsw-radius-md);
-  background: var(--dsw-alias-bg-layer-3);
+  background: var(--dsw-alias-field-fill);
   font: inherit;
   font-size: 13px;
   line-height: 1.5;
   color: var(--dsw-alias-label-primary);
 }
 
-.input:focus-visible {
+.input:where(input):focus {
   outline: none;
   border-color: var(--dsw-alias-state-business-primary);
 }
+
+.input:where(input):focus-visible {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: 1px;
+}
+
+input.input::placeholder {
+  color: var(--dsw-alias-label-tertiary);
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  input.input:hover:not(:disabled, :focus) { background: var(--dsw-alias-field-hover); }
+}
+
+@media (pointer: coarse) { .input { font-size: 16px; } }
 
 .input:disabled {
   color: var(--dsw-alias-label-tertiary);
@@ -135,6 +151,7 @@
 }
 
 .input[aria-invalid='true'] {
+  --dsw-focus-ring-color: var(--dsw-alias-state-error-primary);
   border-color: var(--dsw-alias-state-error-primary);
 }
 

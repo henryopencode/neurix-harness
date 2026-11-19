@@ -6,20 +6,13 @@ import type { DesktopVoiceBridge, DesktopVoiceState } from '../types.ts'
 import type { VoiceConversation } from './controller.ts'
 import { NS } from './locales.ts'
 
-/** Desktop capability owned by one Client plugin instance. */
-export interface DesktopVoiceControls {
-  readonly available: SnapshotStore<boolean>
-  /** Minimize the application only while desktop voice controls are available. */
-  minimize(): void
-}
-
 /**
  * Connect native controls without creating another microphone or conversation owner.
  * @param ctx - Client registration lifetime and localized reporting.
  * @param conversation - sole owner of recording and playback.
- * @returns availability and the user-requested minimize action.
+ * @returns whether the shell can keep audio running when minimized.
  */
-export function connectDesktopVoice(ctx: Context, conversation: VoiceConversation): DesktopVoiceControls {
+export function connectDesktopVoice(ctx: Context, conversation: VoiceConversation): SnapshotStore<boolean> {
   const bridge = (window as Window & { dshDesktop?: { voice?: DesktopVoiceBridge } }).dshDesktop?.voice
   const available = createSnapshotStore(bridge !== undefined)
   const pending = new Set<Promise<void>>()
@@ -76,7 +69,5 @@ export function connectDesktopVoice(ctx: Context, conversation: VoiceConversatio
     }
   })
   ctx.on('locale/change', publish)
-  return { available, minimize: () => {
-    if (bridge && available.getSnapshot()) observe(bridge.minimize())
-  } }
+  return available
 }

@@ -16,7 +16,8 @@ const options: VoiceOptions = { speechThreshold: 0.02, silenceMs: 300, minimumSp
   preRollMs: 200, maxUtteranceSeconds: 2, maxSentenceCharacters: 100, maxPendingSentences: 32, warmupText: '你好。', voice: 'natural', playbackBufferMs: 320, playbackResumeTimeoutMs: 5000 }
 
 function fixture() {
-  const audio = { start: vi.fn<LiveAudio['start']>(async () => {}), play: vi.fn(async () => {}), interrupt: vi.fn(), setMicrophoneMuted: vi.fn(), setSpeakerMuted: vi.fn(), dispose: vi.fn(async () => {}) }
+  const audio = { start: vi.fn<LiveAudio['start']>(async () => {}), play: vi.fn<LiveAudio['play']>(async (_audio, _signal, started) => { started?.() }),
+    finishPlayback: vi.fn(), interrupt: vi.fn(), setMicrophoneMuted: vi.fn(), setSpeakerMuted: vi.fn(), dispose: vi.fn(async () => {}) }
   const prompt = vi.fn<SessionFace['prompt']>(async () => ({ ok: true, value: { accepted: true } }))
   const cancel = vi.fn<SessionFace['cancel']>(async () => ({ ok: true, value: { accepted: true } }))
   const root = new Context()
@@ -76,7 +77,8 @@ it('keeps capture muted until local warmup completes and ignores early microphon
 
 it('shows thinking for a typed message and keeps the selected voice throughout queued playback', async () => {
   const b = fixture(), first = Promise.withResolvers<undefined>(), second = Promise.withResolvers<undefined>()
-  b.audio.play.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
+  b.audio.play.mockImplementationOnce(async (_audio, _signal, started) => { started?.(); await first.promise })
+    .mockImplementationOnce(async (_audio, _signal, started) => { started?.(); await second.promise })
   await b.conversation.start(sid, { ...options, voice: 'calm', maxSentenceCharacters: 20 }, [], 0)
   b.conversation.observe(sid, [], 1, true)
   expect(b.conversation.state.getSnapshot().phase).toBe('thinking')
@@ -142,7 +144,7 @@ it('submits recognized text through Session admission and speaks each new visibl
     b.speech(); b.utterance()
     await vi.waitFor(() => { expect(b.prompt).toHaveBeenCalledWith(
       [{ type: 'text', text: '请检查代码' }], 'steer', expect.any(AbortSignal), expect.any(String)) })
-    expect(b.cancel).toHaveBeenCalledTimes(1)
+    expect(b.cancel).not.toHaveBeenCalled()
     const reply = { key: '2/1', turn: 2, step: 1, text: '检查完成。', final: false }
     b.conversation.observe(sid, [old, reply], 2)
     await vi.waitFor(() => { expect(b.audio.play).toHaveBeenCalledTimes(1) })

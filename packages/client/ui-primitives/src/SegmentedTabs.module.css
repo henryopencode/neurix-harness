@@ -5,7 +5,7 @@
   display: grid;
   padding: var(--segmented-tabs-inset);
   border-radius: var(--dsw-radius-lg);
-  background: var(--dsw-alias-bg-module-platform);
+  background: var(--dsw-alias-field-fill);
 }
 
 .indicator {
@@ -14,7 +14,7 @@
   box-sizing: border-box;
   border: 0.5px solid var(--dsw-alias-border-l3);
   border-radius: var(--dsw-radius-md);
-  background: var(--dsw-alias-bg-layer-3);
+  background: var(--dsw-alias-segment-selected-fill);
   transition: transform 180ms ease;
   pointer-events: none;
 }

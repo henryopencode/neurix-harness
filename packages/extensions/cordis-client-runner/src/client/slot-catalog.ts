@@ -926,7 +926,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.composer.bar\', () => ctx.slots.register(\n      { name: \'conversation.composer.bar\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:343',
+    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:346',
   },
   {
     key: 'conversation.composer.dock',
@@ -987,7 +987,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.composer.dock\', () => ctx.slots.register(\n      { name: \'conversation.composer.dock\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:320',
+    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:321',
   },
   {
     key: 'conversation.content.overlay',
@@ -1043,7 +1043,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     slotInject: '',
     declaredBy: 'factory \'conversation.content\' (client-ui-conversation), so it exists while that definition is registered',
     occupants: [
-      'voice-chat VoiceChatPanel id \'voice-chat\'',
+      'voice-chat VoiceChatObserver id \'voice-chat\'',
     ],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.content.overlay\', () => ctx.slots.register(\n      { name: \'conversation.content.overlay\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
@@ -1413,7 +1413,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.input.activity\', () => ctx.slots.register(\n      { name: \'conversation.input.activity\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:338',
+    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:341',
   },
   {
     key: 'conversation.input.attachments',
@@ -1458,14 +1458,14 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.input.attachments\', () => ctx.slots.register(\n      { name: \'conversation.input.attachments\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:348',
+    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:351',
   },
   {
     key: 'conversation.input.dock',
     kind: 'list',
     scope: 'session',
-    summary: 'Full-width entries above the composer card; fixed overlays must portal to the document body because the docked composer contains them.',
-    doc: 'Full-width entries above the composer card; fixed overlays must portal to the document body\nbecause the docked composer contains them.',
+    summary: 'Full-width entries above the composer card.',
+    doc: 'Full-width entries above the composer card. An active entry marked\n`data-composer-hero-replacement` replaces the blank-session headline.\nFixed overlays must portal to the document body.',
     registerOptions: [
       {
         name: 'id',
@@ -1526,10 +1526,11 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       'experimental-client-ui-claude-code-mods Band id \'claude-code-mods\'',
       'experimental-client-ui-forge WorktreeProgress id \'forge-panel.worktree\'',
       'experimental-client-ui-model-group GroupDock id \'model-group\'',
+      'voice-chat VoiceChatPanel id \'voice-chat\'',
     ],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.input.dock\', () => ctx.slots.register(\n      { name: \'conversation.input.dock\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:310',
+    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:311',
   },
   {
     key: 'conversation.input.left',
@@ -1589,7 +1590,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.input.left\', () => ctx.slots.register(\n      { name: \'conversation.input.left\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:325',
+    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:326',
   },
   {
     key: 'conversation.input.model',
@@ -1633,7 +1634,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.input.model\', () => ctx.slots.register(\n      { name: \'conversation.input.model\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:369',
+    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:372',
   },
   {
     key: 'conversation.input.model.label',
@@ -1799,7 +1800,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.input.overlay\', () => ctx.slots.register(\n      { name: \'conversation.input.overlay\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:315',
+    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:316',
   },
   {
     key: 'conversation.input.permission',
@@ -1843,7 +1844,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.input.permission\', () => ctx.slots.register(\n      { name: \'conversation.input.permission\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:362',
+    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:365',
   },
   {
     key: 'conversation.input.plan',
@@ -1886,7 +1887,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.input.plan\', () => ctx.slots.register(\n      { name: \'conversation.input.plan\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:357',
+    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:360',
   },
   {
     key: 'conversation.input.primary',
@@ -1934,14 +1935,14 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.input.primary\', () => ctx.slots.register(\n      { name: \'conversation.input.primary\', select: owner => null },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:332',
+    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:335',
   },
   {
     key: 'conversation.input.right',
     kind: 'list',
     scope: 'session',
-    summary: 'Compact controls before the composer submit action; fixed overlays must portal to the document body because the docked composer contains them.',
-    doc: 'Compact controls before the composer submit action; fixed overlays must portal to the\ndocument body because the docked composer contains them.',
+    summary: 'Compact controls between model selection and the submit action.',
+    doc: 'Compact controls between model selection and the submit action. Controls\nthat own the same input as the activity seat can mark their group\n`data-composer-exclusive-activity` to hide the idle activity entry.\nFixed overlays must portal to the document body.',
     registerOptions: [
       {
         name: 'id',
@@ -1989,10 +1990,12 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     hookContext: '',
     slotInject: '',
     declaredBy: 'an entry in \'conversation.composer.bar\' (client-ui-conversation), so it exists while that entry is mounted',
-    occupants: [],
+    occupants: [
+      'voice-chat VoiceChatControls id \'voice-chat\'',
+    ],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.input.right\', () => ctx.slots.register(\n      { name: \'conversation.input.right\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:330',
+    source: 'packages/client/ui-conversation/src/client/contract/slots.ts:333',
   },
   {
     key: 'conversation.plan-review.actions',
@@ -6013,7 +6016,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'voiceChat.primary\', () => ctx.slots.register(\n      { name: \'voiceChat.primary\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/experimental/voice-chat/src/client/VoiceChat.tsx:66',
+    source: 'packages/experimental/voice-chat/src/client/VoiceChat.tsx:58',
   },
   {
     key: 'workspace.toast',

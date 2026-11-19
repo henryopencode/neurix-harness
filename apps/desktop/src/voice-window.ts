@@ -128,7 +128,8 @@ export class DesktopVoiceWindow {
     if (this.window && !this.window.isDestroyed()) { this.window.showInactive(); return Promise.resolve() }
     const generation = this.generation
     const area = screen.getDisplayMatching(owner.getBounds()).workArea
-    const window = new BrowserWindow({ width: 280, height: 280, x: area.x + area.width - 304, y: area.y + 64,
+    const width = 160, height = 180
+    const window = new BrowserWindow({ width, height, x: area.x + area.width - width - 24, y: area.y + 64,
       show: false, frame: false, transparent: true, backgroundColor: '#00000000', alwaysOnTop: true, skipTaskbar: true, resizable: false,
       minimizable: false, maximizable: false, fullscreenable: false,
       ...process.platform === 'darwin' ? { type: 'panel' } : {},

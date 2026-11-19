@@ -16,7 +16,6 @@ interface VoiceSettingsProof {
   captures: MediaStreamConstraints[]
   tracks: MediaStreamTrack[]
   states: object[]
-  minimize: number
   gains: GainNode[]
 }
 declare global {
@@ -28,6 +27,7 @@ declare global {
 }
 
 const bundle = fileURLToPath(new URL('../../../packages/experimental/voice-chat-bundle', import.meta.url))
+const dictation = fileURLToPath(new URL('../../../packages/experimental/voice-input-bundle', import.meta.url))
 const expected = fileURLToPath(new URL('./expected/voice-settings', import.meta.url))
 
 it.each([true, false])('configures voice and keeps one recording lifetime with native controls=%s', async (nativeControls) => {
@@ -42,7 +42,8 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
   })
   const overlay = join(scratch, 'voice.yml')
   await writeFile(overlay, `- id: speech-to-text-sensevoice\n  disabled: true\n- id: voice-chat\n  config:\n    dataRoot: ${JSON.stringify(join(scratch, 'models'))}\n`)
-  const scaffold = await launchWebScaffold({ profile: { packages: [{ dir: bundle, enabled: true }] }, extraOverlayPath: [fileURLToPath(new URL('./pin-browse-picker.overlay.yml', import.meta.url)), overlay] })
+  const scaffold = await launchWebScaffold({ profile: { packages: [{ dir: bundle, enabled: true }, { dir: dictation, enabled: true }] },
+    extraOverlayPath: [fileURLToPath(new URL('./pin-browse-picker.overlay.yml', import.meta.url)), overlay] })
   resources.scaffold = scaffold
   const voiceListeners = new Set<() => void>(), recognitionListeners = new Set<() => void>()
   let voice: VoiceStatus = { phase: 'unprepared', model: 'mlx-4bit', operation: null, completedBytes: 0,
@@ -88,7 +89,7 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
   onTestFailed(async () => { await saveFailureShot(page, `voice-settings-${nativeControls ? 'desktop' : 'web'}`) })
   const review = await mkdtemp(join(tmpdir(), 'dsh-voice-settings-review-'))
   await page.addInitScript((withNative: boolean) => {
-    const proof: VoiceSettingsProof = { captures: [], tracks: [], states: [], minimize: 0, gains: [] }
+    const proof: VoiceSettingsProof = { captures: [], tracks: [], states: [], gains: [] }
     window.dshVoiceSettingsProof = proof
     AudioContext.prototype.createGain = function () {
       const node = BaseAudioContext.prototype.createGain.call(this); proof.gains.push(node); return node
@@ -98,7 +99,6 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
     window.dshVoiceSettingsHidden = (value) => { hidden = value; document.dispatchEvent(new Event('visibilitychange')) }
     if (withNative) Object.defineProperty(window, 'dshDesktop', { configurable: true, value: { voice: {
       publish: async (state: object | null) => { proof.states.push(state ?? {}) },
-      minimize: async () => { proof.minimize++ },
       subscribe: (listener: (command: string) => void) => {
         window.dshVoiceSettingsAction = listener
         return () => { delete window.dshVoiceSettingsAction }
@@ -119,6 +119,7 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
   await page.goto(scaffold.authenticatedUrl)
   await connectFreshWorkspace(page, scaffold.workspaceCwd)
   const primary = page.getByRole('button', { name: 'Voice chat', exact: true })
+  const dictate = page.getByRole('button', { name: 'Start recording', exact: true })
   await primary.waitFor()
   expect(await primary.textContent()).toBe('')
   const input = page.locator('[data-composer-input]')
@@ -165,80 +166,73 @@ it.each([true, false])('configures voice and keeps one recording lifetime with n
   await settings.getByText('Local resources are ready and wake when a conversation starts', { exact: true }).waitFor()
   await compareOrRefreshGolden(join(expected, 'ready.expected.md'), await captureStableAria(page, '[data-voice-chat-settings]', scaffold.workspaceCwd), webSnapshotMode())
   await page.getByRole('button', { name: 'New session', exact: true }).filter({ hasText: 'New Session' }).click()
-  const composerBounds = () => page.locator('[data-composer-card]').evaluate((element) => {
-    const bounds = element.getBoundingClientRect()
-    return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
-  })
-  const beforeVoice = await composerBounds()
+  const composer = page.locator('[data-composer-card]')
+  const headline = page.locator('[data-conversation-hero-intro]')
+  await dictate.waitFor()
+  await headline.waitFor()
+  const beforeVoice = await composer.boundingBox()
   await primary.click()
   await page.locator('[data-voice-chat="warming"]').waitFor()
   await page.locator('[data-voice-orb="warming"]').waitFor()
   expect(await page.evaluate(() => window.dshVoiceSettingsProof.tracks.at(-1)?.enabled)).toBe(false)
-  expect(await composerBounds()).toEqual(beforeVoice)
-  expect(await page.locator('[data-composer-card]').isVisible()).toBe(false)
+  const duringVoice = await composer.boundingBox()
+  expect(duringVoice?.x).toBe(beforeVoice?.x)
+  expect(duringVoice?.width).toBe(beforeVoice?.width)
+  expect(await dictate.isVisible()).toBe(false)
+  await headline.waitFor({ state: 'hidden' })
+  expect(await page.locator('[data-conversation-content-cover]').count()).toBe(0)
   expect(await page.getByRole('dialog', { name: 'Voice chat', exact: true }).count()).toBe(0)
   expect(synthesize.mock.calls[0]?.[0]).toMatchObject({ voice: 'calm' })
   await page.screenshot({ path: join(review, 'preparing-voice.png') })
   warmed.resolve(undefined)
   await page.locator('[data-voice-chat="listening"]').waitFor()
   const orb = page.locator('[data-voice-orb="listening"]')
-  const orbBounds = await orb.boundingBox()
-  await page.mouse.move(orbBounds!.x + orbBounds!.width * 0.8, orbBounds!.y + orbBounds!.height * 0.4)
-  expect(await orb.evaluate(element => Number.parseFloat(getComputedStyle(element).getPropertyValue('--voice-gaze-x')))).toBeGreaterThan(0)
+  const controls = composer.locator('[data-voice-controls]')
   expect(await page.locator('[data-voice-chat] [aria-label="Transcript"]').count()).toBe(0)
-  await compareOrRefreshGolden(join(expected, nativeControls ? 'listening-native.expected.md' : 'listening.expected.md'),
-    await captureStableAria(page, '[data-voice-chat]', scaffold.workspaceCwd), webSnapshotMode())
+  await compareOrRefreshGolden(join(expected, 'listening.expected.md'),
+    await captureStableAria(page, '[data-voice-controls]', scaffold.workspaceCwd), webSnapshotMode())
   for (const [width, theme] of [[1280, 'light'], [390, 'dark']] as const) {
     if (width === 390) await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click()
     await page.setViewportSize({ width, height: 900 })
     await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' })
-    const stage = await page.locator('[data-conversation-content-cover]').boundingBox()
-    const content = await page.locator('[data-conversation-content]').boundingBox()
-    const face = await orb.boundingBox()
-    expect(stage!.x).toBeGreaterThanOrEqual(0)
-    expect(stage!.x + stage!.width).toBeLessThanOrEqual(width)
-    expect(Math.abs(face!.x + face!.width / 2 - content!.x - content!.width / 2)).toBeLessThanOrEqual(1)
-    expect(Math.abs(face!.y + face!.height / 2 - content!.y - content!.height / 2)).toBeLessThanOrEqual(1)
-    await page.screenshot({ path: join(review, `companion-${width}-${theme}.png`) })
+    const ball = (await orb.boundingBox())!, card = (await composer.boundingBox())!, buttons = (await controls.boundingBox())!
+    expect(ball.width).toBe(88)
+    expect(Math.abs(ball.x + ball.width / 2 - card.x - card.width / 2)).toBeLessThanOrEqual(1)
+    expect(card.y - ball.y - ball.height).toBeGreaterThanOrEqual(0)
+    expect(card.y - ball.y - ball.height).toBeLessThan(36)
+    expect(buttons.x).toBeGreaterThanOrEqual(card.x)
+    expect(buttons.x + buttons.width).toBeLessThanOrEqual(card.x + card.width)
+    expect(card.x).toBeGreaterThanOrEqual(0)
+    expect(card.x + card.width).toBeLessThanOrEqual(width)
+    await input.fill('A draft stays editable with voice chat on.')
+    await composer.getByRole('button', { name: 'Send message', exact: true }).waitFor()
+    await controls.getByRole('button', { name: 'End conversation', exact: true }).waitFor()
+    await page.screenshot({ path: join(review, `voice-${width}-${theme}.png`) })
   }
-  await page.setViewportSize({ width: 1280, height: 1000 })
-  const minimized = page.getByRole('button', { name: nativeControls ? 'Minimize voice window' : 'Minimize voice panel', exact: true })
-  await minimized.click()
   if (nativeControls) {
     await page.evaluate(() => { window.dshVoiceSettingsHidden?.(true) })
     expect(await page.locator('[data-voice-chat="listening"]').count()).toBe(1)
     await page.evaluate(() => { window.dshVoiceSettingsAction?.('microphone') })
   } else {
-    const floating = page.locator('[data-voice-floating]')
-    await floating.waitFor()
-    expect(await page.locator('[data-composer-card]').isVisible()).toBe(true)
-    const orb = await floating.locator('[data-voice-orb]').boundingBox(), floatingBox = await floating.boundingBox()
-    expect(orb!.x).toBeGreaterThanOrEqual(floatingBox!.x)
-    expect(orb!.y + orb!.height).toBeLessThanOrEqual(floatingBox!.y + floatingBox!.height)
-    expect(await floating.getByText(/running sessions/i).count()).toBe(0)
-    await floating.getByRole('button', { name: 'Mute microphone', exact: true }).click()
+    await controls.getByRole('button', { name: 'Mute microphone', exact: true }).click()
   }
   await page.getByRole('button', { name: 'Unmute microphone', exact: true }).waitFor()
   expect(await page.evaluate(() => window.dshVoiceSettingsProof.tracks.at(-1)?.enabled)).toBe(false)
   if (nativeControls) {
     await page.evaluate(() => { window.dshVoiceSettingsAction?.('speaker') })
-  } else await page.locator('[data-voice-floating]').getByRole('button', { name: 'Mute speaker', exact: true }).click()
+  } else await controls.getByRole('button', { name: 'Mute speaker', exact: true }).click()
   await page.getByRole('button', { name: 'Unmute speaker', exact: true }).waitFor()
   expect(await page.evaluate(() => window.dshVoiceSettingsProof.gains.at(-1)?.gain.value)).toBe(0)
   expect(await page.evaluate(() => window.dshVoiceSettingsProof.captures.length)).toBe(2)
-  await page.screenshot({ path: join(review, nativeControls ? 'active-native-projection.png' : 'active-web-floating.png') })
   if (nativeControls) {
     await page.evaluate(() => { window.dshVoiceSettingsAction?.('end') })
   } else {
-    await page.getByRole('button', { name: 'Expand voice panel', exact: true }).click()
-    expect(await page.locator('[data-voice-floating]').count()).toBe(0)
-    await page.keyboard.press('Escape')
-    await page.locator('[data-voice-floating]').waitFor()
-    expect(await page.getByRole('button', { name: 'Expand voice panel', exact: true })
-      .evaluate(element => element === document.activeElement)).toBe(true)
-    await page.locator('[data-voice-floating]').getByRole('button', { name: 'End conversation', exact: true }).click()
+    await page.evaluate(() => { window.dshVoiceSettingsHidden?.(true) })
   }
   await expect.poll(() => page.evaluate(() => window.dshVoiceSettingsProof.tracks.every(track => track.readyState === 'ended'))).toBe(true)
+  await dictate.waitFor()
+  await headline.waitFor()
+  expect(await input.textContent()).toBe('A draft stays editable with voice chat on.')
   expect(consoleWatch.pageErrors).toEqual([])
   process.stdout.write(`Voice plugin settings and controls evidence: ${review}\n`)
 }, 120_000)

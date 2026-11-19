@@ -9,9 +9,9 @@
   min-height: 34px;
   box-sizing: border-box;
   padding: 6px 10px;
-  border: 0.5px solid var(--dsw-alias-border-l4);
+  border: 0.5px solid var(--dsw-alias-border-l3);
   border-radius: var(--dsw-radius-md);
-  background: var(--dsw-alias-bg-layer-3);
+  background: var(--dsw-alias-field-fill);
   color: var(--dsw-alias-label-primary);
   font: inherit;
   font-size: 13px;
@@ -21,7 +21,8 @@
 .value { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .trigger > svg { flex: none; }
 .trigger:disabled { opacity: 0.5; cursor: default; }
-.trigger:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color); outline-offset: 2px; }
+.trigger:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: 2px; }
+.trigger[aria-expanded='true'] { background: var(--dsw-alias-field-hover); border-color: var(--dsw-alias-border-l4); }
 .trigger[aria-invalid='true'] { border-color: var(--dsw-alias-state-error-primary); }
-@media (hover: hover) { .trigger:not(:disabled):hover { background: var(--dsw-alias-interactive-bg-hover); } }
+@media (hover: hover) { .trigger:not(:disabled):hover { background: var(--dsw-alias-field-hover); } }
 @media (pointer: coarse) { .trigger { min-height: 40px; font-size: 16px; } }

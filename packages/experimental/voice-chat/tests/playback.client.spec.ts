@@ -46,34 +46,50 @@ function browserAudio() {
   return { audio, context, sources, stopTrack }
 }
 
-it('starts with a bounded buffer and schedules arriving fragments without inter-fragment gaps', async () => {
+it('collects reply lead and does not add latency again after an underrun', async () => {
   const b = browserAudio()
-  await b.audio.start(options, () => {}, () => {}, () => {})
+  await b.audio.start({ ...options, playbackBufferMs: 200 }, () => {}, () => {}, () => {})
   const fragment = { pcmBase64: btoa('\0'.repeat(4800)), sampleRate: 24000 }
   const first = b.audio.play(fragment, new AbortController().signal)
+  expect(b.sources).toHaveLength(0)
   b.context.currentTime = 4.12
   const second = b.audio.play(fragment, new AbortController().signal)
-  expect(b.sources[0]!.start).toHaveBeenCalledWith(4.32)
-  expect(b.sources[1]!.start).toHaveBeenCalledWith(4.42)
+  expect(b.sources[0]!.start).toHaveBeenCalledWith(4.12)
+  expect(b.sources[1]!.start).toHaveBeenCalledWith(4.22)
   b.sources[0]!.onended?.(); b.sources[1]!.onended?.()
   await Promise.all([first, second])
   b.context.currentTime = 10
   const resumed = b.audio.play(fragment, new AbortController().signal)
-  expect(b.sources[2]!.start).toHaveBeenCalledWith(10.32)
+  expect(b.sources[2]!.start).toHaveBeenCalledWith(10)
   b.audio.interrupt(); await resumed
   expect(b.sources[2]!.stop).toHaveBeenCalledOnce()
   await b.audio.dispose()
   expect(b.stopTrack).toHaveBeenCalledOnce()
 })
 
+it('starts a complete short reply and drops a cancelled buffer before it reaches Web Audio', async () => {
+  const b = browserAudio(), turn = new AbortController()
+  await b.audio.start(options, () => {}, () => {}, () => {})
+  const fragment = { pcmBase64: btoa('\0'.repeat(4800)), sampleRate: 24000 }
+  const discarded = b.audio.play(fragment, turn.signal)
+  turn.abort(); await discarded
+  expect(b.sources).toHaveLength(0)
+  b.audio.finishPlayback()
+  const short = b.audio.play(fragment, new AbortController().signal)
+  expect(b.sources).toHaveLength(0)
+  b.audio.finishPlayback()
+  expect(b.sources[0]?.start).toHaveBeenCalledWith(4)
+  b.sources[0]!.onended?.(); await short
+})
+
 it('resumes suspended output before scheduling a spoken reply', async () => {
   const b = browserAudio()
-  await b.audio.start(options, () => {}, () => {}, () => {})
+  await b.audio.start({ ...options, playbackBufferMs: 0 }, () => {}, () => {}, () => {})
   b.context.state = 'suspended'
   const played = b.audio.play({ pcmBase64: btoa('\0'.repeat(4800)), sampleRate: 24000 }, new AbortController().signal)
-  await vi.waitFor(() => { expect(b.context.resume).toHaveBeenCalledTimes(2) })
-  expect(b.context.state).toBe('running')
   await vi.waitFor(() => { expect(b.sources).toHaveLength(1) })
+  expect(b.context.resume).toHaveBeenCalledTimes(2)
+  expect(b.context.state).toBe('running')
   b.sources[0]!.onended?.(); await played
 })
 

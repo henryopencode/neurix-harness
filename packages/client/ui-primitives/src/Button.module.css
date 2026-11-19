@@ -8,6 +8,7 @@
   border: none;
   border-radius: var(--dsw-radius-sm);
   cursor: pointer;
+  font: inherit;
   font-size: 13px;
   line-height: 22px;
   color: var(--dsw-alias-label-primary);
@@ -23,6 +24,7 @@
 
 .md {
   height: 36px;
+  border-radius: var(--dsw-radius-md);
 }
 
 /* Compact controls retain their dimensions across filled and outlined variants. */
@@ -49,8 +51,9 @@
   }
 }
 
-.ghost:active:not(:disabled) {
-  background: var(--dsw-alias-interactive-bg-active);
+:where(.button:focus-visible) {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: 2px;
 }
 
 /* The transparent border preserves layout; the inset stroke stays complete at fractional widths. */
@@ -73,6 +76,23 @@
 @media (hover: hover) {
   .toolbar:hover:not(:disabled) {
     background: var(--dsw-alias-button-tool-bar-hover);
+  }
+}
+
+.primary:active:not(:disabled) {
+  background: color-mix(in srgb, var(--dsw-alias-button-primary-fill) 80%, var(--dsw-alias-label-primary-foreground));
+}
+
+.ghost:where([aria-pressed='true'], [aria-expanded='true']):not(:disabled),
+.ghost:active:not(:disabled),
+.outline:active:not(:disabled),
+.toolbar:active:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-active);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .button {
+    transition: background-color var(--ds-transition-duration-fast) var(--ds-ease-in-out);
   }
 }
 

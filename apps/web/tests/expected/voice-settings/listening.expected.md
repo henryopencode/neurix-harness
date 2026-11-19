@@ -1,6 +1,3 @@
-- region "Voice chat":
-  - status: Listening
-  - button "Mute microphone"
-  - button "Mute speaker"
-  - button "Minimize voice panel"
-  - button "End conversation"
+- button "Mute speaker"
+- button "Mute microphone"
+- button "End conversation"

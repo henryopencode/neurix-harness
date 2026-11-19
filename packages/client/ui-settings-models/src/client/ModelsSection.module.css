@@ -133,7 +133,6 @@
 /* `box-sizing` on every control here: the app has no global border-box reset,
    so without it the outlined variants stand 2px taller than the filled ones
    they sit beside (Cancel next to Apply, Edit next to Delete). */
-.primaryButton,
 .secondaryButton,
 .addButton {
   box-sizing: border-box;
@@ -151,17 +150,6 @@
   cursor: pointer;
 }
 
-.primaryButton {
-  background: var(--dsw-alias-button-primary-fill);
-  color: var(--dsw-alias-label-primary-foreground);
-}
-
-@media (hover: hover) {
-  .primaryButton:hover:not(:disabled) {
-    background: var(--dsw-alias-button-primary-hover);
-  }
-}
-
 .secondaryButton,
 .addButton {
   border: 0.5px solid var(--dsw-alias-border-l3);
@@ -173,10 +161,6 @@
   .secondaryButton:hover:not(:disabled),
   .addButton:hover:not(:disabled) {
     background: var(--dsw-alias-interactive-bg-hover);
-  }
-
-  .secondaryButton:hover:not(:disabled) {
-    background: var(--dsw-alias-interactive-bg-hover-solid);
   }
 }
 
@@ -213,7 +197,6 @@
   line-height: 18px;
 }
 
-.primaryButton:disabled,
 .secondaryButton:disabled,
 .dangerButton:disabled,
 .addButton:disabled,
@@ -223,7 +206,6 @@
   cursor: default;
 }
 
-.primaryButton:focus-visible,
 .secondaryButton:focus-visible,
 .dangerButton:focus-visible,
 .addButton:focus-visible,
@@ -761,12 +743,12 @@
   width: 100%;
   height: 32px;
   padding: 0 10px;
-  border: 0.5px solid var(--dsw-alias-border-l4);
+  border: 0.5px solid var(--dsw-alias-border-l3);
   border-radius: var(--dsw-radius-md);
   font: inherit;
   font-size: 14px;
   line-height: 22px;
-  background: var(--dsw-alias-bg-layer-1);
+  background: var(--dsw-alias-field-fill);
   color: var(--dsw-alias-label-primary);
 }
 
@@ -775,14 +757,31 @@
   border-color: var(--dsw-alias-state-business-primary);
 }
 
+.input:focus-visible {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: 1px;
+}
+
+.input[aria-invalid='true'] {
+  --dsw-focus-ring-color: var(--dsw-alias-state-error-primary);
+  border-color: var(--dsw-alias-state-error-primary);
+}
+
 .input::placeholder {
-  color: var(--dsw-alias-label-dimmed);
+  color: var(--dsw-alias-label-tertiary);
+  opacity: 1;
 }
 
 .input:disabled {
   opacity: 0.6;
   cursor: default;
 }
+
+@media (hover: hover) {
+  .input:hover:not(:disabled, :focus) { background: var(--dsw-alias-field-hover); }
+}
+
+@media (pointer: coarse) { .input { font-size: 16px; } }
 
 .keyInput {
   position: relative;

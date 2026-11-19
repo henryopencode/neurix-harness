@@ -526,10 +526,10 @@ export const InputBar = memo(function InputBar({
           </div>
           <div className={clsx(css.trailing, activity && css.trailingActive)}>
             <div className={css.standardControls} hidden={activity}>
+              {sessionId === undefined ? null : renderSlot('conversation.input.model', { locked: modelSeatLocked })}
               {input === undefined || sessionId === undefined
                 ? null
                 : renderSlot('conversation.input.right', {})}
-              {sessionId === undefined ? null : renderSlot('conversation.input.model', { locked: modelSeatLocked })}
             </div>
             {input === undefined || sessionId === undefined ? null : <div className={activity ? css.activityExpanded : css.activity}>
               {renderSlot('conversation.input.activity', { locked, onActiveChange: setActivity })}
