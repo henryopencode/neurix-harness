@@ -54,14 +54,53 @@ interface NativeAccess {
   esmLoader: { resolveSync(...args: unknown[]): unknown }
 }
 
-/** Snapshot own methods; each disposer restores its method only while its replacement is still installed. */
-function createReplaceHelper<T extends { [K in keyof T]: (...args: never[]) => unknown }>(target: T) {
+type RuntimeMethod = (...args: never[]) => unknown
+
+// Independently loaded HMR modules share the key; each wrapper owns its replacement state.
+const methodReplacement = '@deepseek-ai/dsh-hmr/method-replacement'
+
+interface MethodReplacement {
+  original: RuntimeMethod
+  replacement: RuntimeMethod | undefined
+}
+
+/** Skip retired predecessors when the last overlapping owner restores a method. */
+function liveMethod<F extends RuntimeMethod>(method: F): F {
+  let current = method
+  for (;;) {
+    const state = (current as RuntimeMethod & { [methodReplacement]?: MethodReplacement })[methodReplacement]
+    if (state === undefined || state.replacement !== undefined) return current
+    current = state.original as F
+  }
+}
+
+/**
+ * Retired method wrappers delegate to their predecessor and release their implementation.
+ * @param target - method owner shared by overlapping scopes.
+ * @returns original methods and independently disposable replacements.
+ */
+export function createReplaceHelper<T extends { [K in keyof T]: RuntimeMethod }>(target: T): {
+  rawImpl: T
+  replaceMethod<K extends keyof T>(key: K, replacement: T[K]): () => void
+} {
   const rawImpl = { ...target }
   return {
     rawImpl,
     replaceMethod<K extends keyof T>(key: K, replacement: T[K]): () => void {
-      target[key] = replacement
-      return () => { if (target[key] === replacement) target[key] = rawImpl[key] }
+      const state: MethodReplacement = { original: rawImpl[key], replacement }
+      const wrapped = new Proxy(rawImpl[key], {
+        apply(_method, receiver: unknown, args: unknown[]): unknown {
+          return Reflect.apply(state.replacement ?? state.original, receiver, args)
+        },
+        get(method, property, receiver: unknown): unknown {
+          return property === methodReplacement ? state : Reflect.get(method, property, receiver)
+        },
+      })
+      target[key] = wrapped
+      return () => {
+        state.replacement = undefined
+        if (target[key] === wrapped) target[key] = liveMethod(rawImpl[key])
+      }
     },
   }
 }
@@ -161,7 +200,7 @@ export class PackageManifests {
     if (cache !== undefined) Map.prototype.clear.call(cache)
   }
 
-  /** Restore every replaced Node method this instance installed. */
+  /** Release this instance's implementations and restore methods no newer owner still replaces. */
   dispose(): void {
     for (const restore of this.restorers.splice(0).reverse()) restore()
     this.native = undefined

@@ -80,6 +80,14 @@
   config:
     enabled: false
 
+# Recorded search-capable sessions select their provider explicitly. The
+# web-search-disabled composition covers the shipped disabled selection.
+- id: web
+  name: '@deepseek-ai/dsh-web'
+  config:
+    searchProvider: deepseek-search-api
+    fetchProvider: http
+
 # The recorded tool catalog includes the optional patch tool.
 - id: tool-fs
   config:

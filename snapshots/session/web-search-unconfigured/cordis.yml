@@ -8,3 +8,10 @@
 - id: web-search-deepseek
   config:
     apiKeyEnv: DSH_SNAPSHOT_UNSET_SEARCH_KEY
+
+# Exercise the explicitly selected DeepSeek provider rather than the disabled default.
+- id: web
+  name: '@deepseek-ai/dsh-web'
+  config:
+    searchProvider: deepseek-search-api
+    fetchProvider: http

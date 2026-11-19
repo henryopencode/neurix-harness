@@ -195,6 +195,6 @@ kind: "package-reference"
 
 #### 专用检索端点
 
-无需完整模型轮次的 DeepSeek Search 与 Fetch API 位于 [dsh-web-deepseek-api](../web-deepseek-api/README.zh.md)，由「网页搜索与获取」设置页的搜索和获取下拉框分别选择。内置配置选择 Search API，因此仅在选用 `searchProvider: deepseek-official` 时（例如网关未提供 Search API 路由）本提供方才会运行。
+无需完整模型轮次的 DeepSeek Search 与 Fetch API 位于 [dsh-web-deepseek-api](../web-deepseek-api/README.zh.md)，由「网页搜索与获取」设置页的搜索和获取下拉框分别选择。内置配置默认停用搜索；仅在选用 `searchProvider: deepseek-official` 时（例如网关未提供 Search API 路由）本提供方才会运行。
 
 </details>

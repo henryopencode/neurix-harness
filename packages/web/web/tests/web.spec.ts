@@ -41,6 +41,17 @@ async function mountWeb(config: { searchProvider?: string; fetchProvider?: strin
 }
 
 describe('WebRuntime registration', () => {
+  it('reserves none for disabling either capability', async () => {
+    const { ctx, web } = await mountWeb()
+    try {
+      expect(() => web.registerSearchProvider(makeSearchProvider('none', available, () => Promise.resolve(searchResult('none')))))
+        .toThrow(expect.objectContaining({ code: 'WEB_PROVIDER_RESERVED_ID' }))
+      expect(() => web.registerFetchProvider(makeFetchProvider('none', available, fetchResult('none'))))
+        .toThrow(expect.objectContaining({ code: 'WEB_PROVIDER_RESERVED_ID' }))
+      expect(web.listProviders()).toEqual({ search: [], fetch: [] })
+    } finally { await ctx.fiber.dispose() }
+  })
+
   it('registers a search provider and unregisters it via the returned disposer', async () => {
     const { web } = await mountWeb()
 
@@ -142,6 +153,21 @@ describe('WebRuntime provider listing', () => {
 })
 
 describe('WebRuntime execution resolution', () => {
+  it('blocks disabled capabilities without consulting registered providers', async () => {
+    const { ctx, web } = await mountWeb({ searchProvider: 'none', fetchProvider: 'none' })
+    let consulted = false
+    const unavailableWhenConsulted = () => { consulted = true; throw new Error('disabled provider consulted') }
+    try {
+      web.registerSearchProvider({ id: 'deepseek-search-api', available: unavailableWhenConsulted, ready: unavailableWhenConsulted, search: unavailableWhenConsulted })
+      web.registerFetchProvider({ id: 'http', available: unavailableWhenConsulted, ready: unavailableWhenConsulted, fetch: unavailableWhenConsulted })
+      await expect(web.searchReady('openai')).resolves.toBe(false)
+      await expect(web.fetchReady('openai')).resolves.toBe(false)
+      await expect(web.search({ query: 'q' })).rejects.toMatchObject({ code: 'WEB_PROVIDER_DISABLED' })
+      await expect(web.fetch({ url: 'https://example.com' })).rejects.toMatchObject({ code: 'WEB_PROVIDER_DISABLED' })
+      expect(consulted).toBe(false)
+    } finally { await ctx.fiber.dispose() }
+  })
+
   it('throws WEB_PROVIDER_UNAVAILABLE when nothing is registered', async () => {
     const { web } = await mountWeb()
     await expect(web.search({ query: 'q' })).rejects.toThrow(expect.objectContaining({ code: 'WEB_PROVIDER_UNAVAILABLE' }))
@@ -389,6 +415,16 @@ describe('live provider selection', () => {
       expect(Object.is(live.entry.fiber, fiber)).toBe(true)
       await expect(ctx.web.search({ query: 'q' })).resolves.toMatchObject({ content: 'second' })
       await expect(ctx.web.fetch({ url: 'https://example.com' })).resolves.toMatchObject({ body: { content: 'second' } })
+      await live.update({ searchProvider: 'none', fetchProvider: 'none' })
+      expect(Object.is(live.entry.fiber, fiber)).toBe(true)
+      await expect(ctx.web.searchReady('openai')).resolves.toBe(false)
+      await expect(ctx.web.fetchReady('openai')).resolves.toBe(false)
+      await expect(ctx.web.search({ query: 'q' })).rejects.toMatchObject({ code: 'WEB_PROVIDER_DISABLED' })
+      await expect(ctx.web.fetch({ url: 'https://example.com' })).rejects.toMatchObject({ code: 'WEB_PROVIDER_DISABLED' })
+      await live.update({ searchProvider: 'first', fetchProvider: 'first' })
+      await expect(ctx.web.searchReady('openai')).resolves.toBe(true)
+      await expect(ctx.web.fetchReady('openai')).resolves.toBe(true)
+      await expect(ctx.web.search({ query: 'q' })).resolves.toMatchObject({ content: 'first' })
     } finally { await ctx.fiber.dispose() }
   })
 })

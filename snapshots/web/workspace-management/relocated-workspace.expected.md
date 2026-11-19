@@ -1,0 +1,6 @@
+- treeitem "Relocated project Workspace actions for Relocated project New session in Relocated project" [expanded]:
+  - text: Relocated project
+  - button "Workspace actions for Relocated project"
+  - button "New session in Relocated project"
+- treeitem "New Session" [selected]
+- treeitem "Recorded history {{duration}}"

@@ -55,7 +55,7 @@ agent 会完成该任务，把提供方的每个非空推理（reasoning）增�
 
 随附的 headless profile 禁用托管凭据存储，以及依赖它的 authorization 和 DeepSeek account 消费方。API 密钥路由依次使用启动环境、`<运行命令的目录>/.env` 和 `$DSH_HOME/.env`。GUI 保存的密钥和登录凭据不会被使用，存储文件保持原样。需要已保存登录凭据的提供方会失败，除非恢复存储认证；AWS profile 等提供方外部凭据链仍然可用。
 
-DeepSeek Search 与 Fetch API [跟随会话的 DeepSeek 凭据](../../web/web-deepseek-api/README.zh.md#authentication)。在随附的 headless profile 中，它们将 DeepSeek 模型路由的 `DEEPSEEK_API_KEY` 发往该路由的 origin，因此无需登录。没有该密钥时，模型请求不包含 `web_search`。
+随附的 headless profile 停用网页搜索（`web.searchProvider: none`），使用 HTTP 获取（`web.fetchProvider: http`），与聊天模型独立。要启用 DeepSeek 搜索，请设置 `searchProvider: deepseek-search-api`；DeepSeek Search 与 Fetch API [跟随会话的 DeepSeek 凭据](../../web/web-deepseek-api/README.zh.md#authentication)。选中时，它们将 DeepSeek 模型路由的 `DEEPSEEK_API_KEY` 发往该路由的 origin，无需登录；没有凭据时，模型请求不包含对应工具。
 
 启动变量为空时，请取消导出该变量，让 `.env` 后备生效；已导出的空值会遮蔽后备值。
 

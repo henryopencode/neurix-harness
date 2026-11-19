@@ -1,0 +1,12 @@
+version: 1
+scenario: web-search-disabled
+profile: headless
+composition: web-search-disabled
+recording: authored
+environment:
+  DSH_SNAPSHOT_STALE_SEARCH_KEY: snapshot-stale-key
+header:
+  class: web-search-disabled
+  pin: true
+  systemPromptSource: web-search-unconfigured
+  toolSchemasSource: web-fetch

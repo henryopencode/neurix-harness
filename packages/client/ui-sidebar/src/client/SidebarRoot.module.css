@@ -3,6 +3,9 @@
 
 .root {
   --dsh-sidebar-inline-padding: 12px;
+  --dsh-sidebar-row-padding: 12px;
+  --dsh-sidebar-label-gap: 6px;
+  --dsh-sidebar-paint-inset: 3px;
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr) auto;
