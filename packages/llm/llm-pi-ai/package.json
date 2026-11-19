@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-llm-pi-ai",
   "description": "pi-ai-backed DeepSeek adapter for the Neurix Harness LLM seam (design-verification twin of dsh-llm-deepseek)",
-  "version": "1.1.23",
+  "version": "1.1.24",
   "dshApiVersion": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
