@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { provideWorkingDirectoryFixture } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import { ShellExecutor } from '@deepseek-ai/dsh-shell'
@@ -275,6 +275,10 @@ describe('bash tool', () => {
       stderr: { text: '', truncated: false },
     })
     expect(text(result)).toBe('hello\n')
+    expect(result.meta).toEqual({
+      cwd: process.cwd(),
+      shellOutcome: { kind: 'foreground', exitCode: 0, signal: null, timedOut: false, aborted: false, timeoutMs: 10_000 },
+    })
   })
 
   it('reports (no output) for silent commands', async () => {
@@ -295,6 +299,10 @@ describe('bash tool', () => {
     const result = await call(ctx, 'bash', { command: 'echo failing; exit 3', description: 'test command' })
     expect(result.isError).toBe(false)
     expect(text(result)).toBe('failing\n[exit code: 3]')
+    expect(result.meta).toEqual({
+      cwd: process.cwd(),
+      shellOutcome: { kind: 'foreground', exitCode: 3, signal: null, timedOut: false, aborted: false, timeoutMs: 10_000 },
+    })
   })
 
   it('reports timeout kills with both markers (timeout first)', async () => {
@@ -302,18 +310,29 @@ describe('bash tool', () => {
     const result = await call(ctx, 'bash', { command: 'sleep 60', description: 'test command', timeoutMs: 100 })
     expect(result.isError).toBe(false)
     expect(text(result)).toBe('(no output)\n[timed out after 100ms]\n[killed by signal: SIGTERM]')
+    expect(result.meta).toEqual({
+      cwd: process.cwd(),
+      shellOutcome: { kind: 'foreground', exitCode: null, signal: 'SIGTERM', timedOut: true, aborted: false, timeoutMs: 100 },
+    })
   })
 
-  it('reports a timeout even when the command traps the signal and exits 0', async () => {
-    // The signal-independent timeout marker: a trapped SIGTERM that exits 0
-    // after our timer fired must NOT look like a clean success. (bash may
-    // print "Terminated" to stderr for the killed sleep — environment
-    // dependent — so assert the marker, not the exact body.)
+  it('reports a timeout alongside a zero exit code', async () => {
     const ctx = await setup()
+    const outcome: ShellRunResult = {
+      exitCode: 0, signal: null, timedOut: true, aborted: false, timeoutMs: 100,
+      stdout: { text: '', truncated: false }, stderr: { text: '', truncated: false },
+    }
+    const execution = vi.spyOn(ctx.shell, 'execute').mockResolvedValue(fakeExecution({
+      status: 'completed', exitCode: 0, signal: null, done: Promise.resolve(),
+      readOutput: () => ({ delta: '', lossy: false }),
+      observed: { stdout: silentReader, stderr: silentReader }, kill: () => false,
+    }, () => Promise.resolve(outcome)))
+    onTestFinished(async () => { execution.mockRestore(); await ctx.fiber.dispose() })
     const result = await call(ctx, 'bash', { command: 'trap "exit 0" TERM; sleep 60', description: 'test command', timeoutMs: 100 })
     expect(result.isError).toBe(false)
     expect(text(result)).toContain('[timed out after 100ms]')
     expect(text(result)).not.toContain('[exit code:')
+    expect(result.meta).toMatchObject({ shellOutcome: { exitCode: 0, signal: null, timedOut: true, aborted: false } })
   })
 
   it('reports truncation with the spill path', async () => {
@@ -343,6 +362,7 @@ describe('bash tool', () => {
     const result = await call(ctx, 'bash', { command: 'true', description: 'test command', workdir: '/nonexistent-dsh' })
     expect(result.isError).toBe(true)
     expect(text(result)).toMatch(/ENOENT/)
+    expect(result.meta).toBeUndefined()
   })
 
   it('surfaces foreground aborts as the structured TOOL_ABORTED error', async () => {
@@ -927,6 +947,30 @@ describe('sandbox escalation through the generic task producer', () => {
     })
     expect((result.value as { sandbox: object }).sandbox).not.toHaveProperty('enforcement')
     expect((result.value as { sandbox: object }).sandbox).not.toHaveProperty('runnerFailed')
+    expect(result.meta).toMatchObject({ shellOutcome: { sandbox: { mode: 'read-only', denied: false } } })
+    expect(result.meta).not.toHaveProperty('shellOutcome.sandbox.enforcement')
+    expect(result.meta).not.toHaveProperty('shellOutcome.sandbox.runnerFailed')
+  })
+
+  it.each([
+    { mode: 'read-only' as const, denied: true, enforcement: 'full' as const, runnerFailed: false },
+    { mode: 'read-only' as const, denied: false, enforcement: 'full' as const, runnerFailed: true },
+  ])('preserves executor sandbox facts independently of a zero exit: %j', async (sandbox) => {
+    const { ctx, bash } = await setupSandboxed()
+    const execute = bash.execute.bind(bash)
+    vi.spyOn(bash, 'execute').mockImplementation(async (spec) => {
+      const execution = await execute(spec)
+      const result = await execution.result()
+      return { ...execution, sandbox, result: async () => ({ ...result, sandbox }) }
+    })
+    try {
+      const result = await call(ctx, 'bash', { command: 'true', description: 'Inspect sandbox outcome' })
+      expect(result.isError).toBe(false)
+      expect(result.meta).toEqual({
+        cwd: process.cwd(),
+        shellOutcome: { kind: 'foreground', exitCode: 0, signal: null, timedOut: false, aborted: false, timeoutMs: 1000, sandbox },
+      })
+    } finally { await ctx.fiber.dispose() }
   })
 
   it('stamps the resolved sandbox mode on a preparation timeout of a confined foreground job', async () => {
@@ -1524,7 +1568,10 @@ describe('resolved launch directory metadata', () => {
       expect(result.isError).toBe(false)
       if (result.isError) throw new Error('expected shell success')
       expect(result.value).toMatchObject({ cwd: directory })
-      expect(result.meta).toEqual({ cwd: directory })
+      expect(result.meta).toEqual(background ? { cwd: directory } : {
+        cwd: directory,
+        shellOutcome: { kind: 'foreground', exitCode: 0, signal: null, timedOut: false, aborted: false, timeoutMs: 10_000 },
+      })
       expect(resolving).toHaveBeenCalledOnce()
       expect(resolving).toHaveBeenCalledWith(expect.objectContaining({ workdir: workdir === undefined ? current : join(current, workdir) }))
       expect(launch).toHaveBeenCalledWith(expect.objectContaining({ workdir: directory }))

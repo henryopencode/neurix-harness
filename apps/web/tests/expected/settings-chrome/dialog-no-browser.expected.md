@@ -5,6 +5,7 @@
     - button "Models"
     - button "Built-in plugins"
     - button "Agent presets"
+    - button "Diagnostics"
     - button "About"
   - button "Open configuration file"
   - button "Close"

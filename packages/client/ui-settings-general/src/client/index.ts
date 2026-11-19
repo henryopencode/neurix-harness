@@ -206,11 +206,11 @@ export function apply(ctx: ClientContext): void {
   })
   // The settings shell reads this host's configuration, so it follows access to its description.
   ctx.remoteAccess.whenAccess('settings/describe', () =>
-    ctx.slots.inject('sidebar.settings', () => {
+    ctx.slots.inject('sidebar.settings', function* () {
       const shellHandle = createSettingsShellStore()
       const shellInstance = shellHandle.create()
       const shellStore: typeof shellHandle = { ...shellHandle, create: () => shellInstance }
-      const disposeCommand = ctx.shortcuts.register({
+      yield ctx.shortcuts.register({
         id: 'settings.open' as ShortcutCommandId, label: () => t('shortcut.open'), aliases: ['settings', 'preferences'],
         defaults: {
           'desktop:macos': { code: 'Comma', modifiers: ['primary'] },
@@ -229,7 +229,7 @@ export function apply(ctx: ClientContext): void {
         },
       })
 
-      const disposeSlot = ctx.slots.register({
+      yield ctx.slots.register({
         name: 'sidebar.settings',
         locale: NS,
         store: shellStore,
@@ -245,7 +245,14 @@ export function apply(ctx: ClientContext): void {
         },
         inject: shellInjected,
       }, SettingsRoot)
-      return () => { disposeCommand(); disposeSlot() }
+      yield ctx.provide('settingsNavigation', {
+        openSection(id: string): void {
+          if (!ctx.slots.entries('settings.section').some(entry => entry.options.id === id)) {
+            throw new Error(`Settings section is unavailable: ${id}`)
+          }
+          shellInstance.actions.openSection(id)
+        },
+      })
     }))
 
   ctx.slots.inject('settings.trigger', () =>

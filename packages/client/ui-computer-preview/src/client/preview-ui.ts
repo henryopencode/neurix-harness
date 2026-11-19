@@ -6,6 +6,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ComputerPreviewSnapshot } from '../types.ts'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { ComputerPreview } from './ComputerPreview.tsx'
+import { registerBrowserPreview } from './browser-capture.ts'
 
 /** One display-only source registered by its owning UI plugin. */
 export interface PreviewSource {
@@ -22,10 +23,10 @@ export interface PreviewSource {
 /** UI-only service shared through Cordis injection. */
 export interface ComputerPreviewUi {
   /**
-   * Add one independent source to the existing conversation header.
+   * Add a preview source for the conversation.
    * @param ctx - source owner's lifetime and slot context.
    * @param source - exact capture callback and presentation identity.
-   * @returns quiescent withdrawal of the source's header contribution.
+   * @returns withdrawal of the source's views and live resources.
    */
   register(ctx: Context, source: PreviewSource): () => Promise<void>
 }
@@ -39,11 +40,13 @@ declare module '@deepseek-ai/cordis' {
 
 /**
  * Create a renderer without starting capture or registering a source.
+ * @param services - injected services of the shared preview plugin.
  * @param connectionGeneration - shared Host readiness and reconnect lifetime.
  * @returns source-registration service owned by the caller's client plugin.
  */
-export function createPreviewUi(connectionGeneration: ConnectionGenerationState): ComputerPreviewUi {
+export function createPreviewUi(services: Context, connectionGeneration: ConnectionGenerationState): ComputerPreviewUi {
   return { register(ctx, source) {
+    if (source.surface === 'browser') return registerBrowserPreview(ctx, services, source, connectionGeneration)
     const fiber = ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({
       name: 'conversation.session.header.utilities', id: `${source.surface}-control.preview`, locale: 'computerPreview',
       inject: () => ({ ...source, hooks: { connectionGeneration } }),

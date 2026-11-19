@@ -571,7 +571,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'Read-only Remote with a namespace independent of application control.',
     methods: [
       {
-        signature: '@Remote async frame(sessionId: SessionId, signal: AbortSignal): Promise<BrowserPreviewSnapshot>',
+        signature: '@Remote({ resources: { session: sessionId => sessionId } }) async frame(sessionId: SessionId, signal: AbortSignal): Promise<BrowserPreviewSnapshot>',
         description: 'Capture an existing browser target without starting an Agent or sending input.',
         parameters: [{ name: 'sessionId', description: 'Session displayed by the Client.' }, { name: 'signal', description: 'viewing and Remote lifetime.' }],
         returns: 'bounded image and Host-selected refresh interval.',
@@ -3119,6 +3119,25 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Stream a complete live-control baseline followed by replacement frames.',
         parameters: [{ name: 'signal', description: 'cancellation owned by the Remote stream carrier.' }],
         returns: 'one complete baseline followed by live replacement frames.',
+      },
+    ],
+  },
+  {
+    key: 'sessionDiagnostics',
+    summary: 'Host owner of the local error index, authenticated query and refresh endpoints.',
+    description: 'Host owner of the local error index, authenticated query and refresh endpoints.',
+    methods: [
+      {
+        signature: '@Remote async list(request: DiagnosticQuery, signal: AbortSignal): Promise<DiagnosticList>',
+        description: 'Read current live values and historical cached values without opening cold logs.',
+        parameters: [{ name: 'request', description: 'Explicit scope and filters.' }, { name: 'signal', description: 'Request cancellation.' }],
+        returns: 'Redacted groups with visible missing-index and truncation counts.',
+      },
+      {
+        signature: '@Remote async refresh(request: DiagnosticQuery, signal: AbortSignal): Promise<DiagnosticList>',
+        description: 'Index a bounded batch of authorized historical logs; missing rows are prioritized. Original logs and their events remain unchanged. Failed reads remain visibly unindexed.',
+        parameters: [{ name: 'request', description: 'Explicit scope and filters; text filters do not narrow index work.' }, { name: 'signal', description: 'Cancellation checked before and after every log read.' }],
+        returns: 'Current redacted groups and any independent Session read failures.',
       },
     ],
   },
@@ -6191,6 +6210,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type BrandedNumber<B extends string> = number & {\n    readonly [BRAND]: B;\n};',
   },
   {
+    name: 'BrowserPreviewOpenId',
+    declaration: 'export type BrowserPreviewOpenId = Branded<\'BrowserPreviewOpenId\'>;',
+  },
+  {
     name: 'BrowserPreviewSnapshot',
     declaration: 'export interface BrowserPreviewSnapshot {\n    frame: ComputerPreviewFrame;\n    refreshMs: number;\n}',
   },
@@ -6348,7 +6371,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ComputerPreviewFrame',
-    declaration: 'export type ComputerPreviewFrame = {\n    kind: \'idle\';\n} | {\n    kind: \'unavailable\';\n    title: string;\n    code: \'CAPTURE_FAILED\' | \'IMAGE_TOO_LARGE\' | \'PERMISSION_REQUIRED\' | \'CAPTURE_TIMEOUT\';\n} | {\n    kind: \'frame\';\n    title: string;\n    imageUrl: string;\n    action: string;\n    active: boolean;\n    capturedAt: number;\n    cursor?: ComputerPreviewCursor;\n    keyboard?: {\n        kind: \'typing\';\n        key?: string;\n    } | {\n        kind: \'shortcut\';\n        keys: readonly string[];\n    };\n    scroll?: \'up\' | \'down\' | \'left\' | \'right\';\n};',
+    declaration: 'export type ComputerPreviewFrame = {\n    kind: \'idle\';\n} | {\n    kind: \'unavailable\';\n    title: string;\n    code: \'CAPTURE_FAILED\' | \'IMAGE_TOO_LARGE\' | \'PERMISSION_REQUIRED\' | \'CAPTURE_TIMEOUT\';\n    openId?: BrowserPreviewOpenId;\n} | {\n    kind: \'frame\';\n    title: string;\n    openId?: BrowserPreviewOpenId;\n    imageUrl: string;\n    action: string;\n    active: boolean;\n    capturedAt: number;\n    cursor?: ComputerPreviewCursor;\n    keyboard?: {\n        kind: \'typing\';\n        key?: string;\n    } | {\n        kind: \'shortcut\';\n        keys: readonly string[];\n    };\n    scroll?: \'up\' | \'down\' | \'left\' | \'right\';\n};',
   },
   {
     name: 'ComputerUseProviderName',
@@ -6649,6 +6672,34 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'DeveloperMessage',
     declaration: 'export interface DeveloperMessage extends MessageBase {\n    readonly role: \'developer\';\n}',
+  },
+  {
+    name: 'DiagnosticCategory',
+    declaration: 'export type DiagnosticCategory = \'arguments\' | \'command\' | \'permission\' | \'tool\' | \'turn\';',
+  },
+  {
+    name: 'DiagnosticGroup',
+    declaration: 'export interface DiagnosticGroup {\n    id: DiagnosticGroupId;\n    category: DiagnosticCategory;\n    source: string;\n    code: string;\n    message: string;\n    count: number;\n    firstAt: number;\n    lastAt: number;\n    occurrences: DiagnosticOccurrence[];\n}',
+  },
+  {
+    name: 'DiagnosticGroupId',
+    declaration: 'export type DiagnosticGroupId = string & Branded<\'DiagnosticGroupId\'>;',
+  },
+  {
+    name: 'DiagnosticList',
+    declaration: 'export interface DiagnosticList {\n    groups: DiagnosticGroup[];\n    incomplete: boolean;\n    scannedSessions: number;\n    scannedEvents: number;\n    unindexedSessions: number;\n    omittedOccurrences: number;\n    failedSessions: number;\n}',
+  },
+  {
+    name: 'DiagnosticOccurrence',
+    declaration: 'export interface DiagnosticOccurrence {\n    id: DiagnosticOccurrenceId;\n    sessionId: SessionId;\n    eventSeq: SessionSeq;\n    at: number;\n    turn: number | null;\n    step?: number | undefined;\n    message: string;\n    details: string;\n    category: DiagnosticCategory;\n    source: string;\n    code: string;\n}',
+  },
+  {
+    name: 'DiagnosticOccurrenceId',
+    declaration: 'export type DiagnosticOccurrenceId = string & Branded<\'DiagnosticOccurrenceId\'>;',
+  },
+  {
+    name: 'DiagnosticQuery',
+    declaration: 'export interface DiagnosticQuery {\n    scope?: {\n        kind: \'cwd\';\n        cwd: string;\n    } | {\n        kind: \'session\';\n        sessionId: SessionId;\n    } | {\n        kind: \'all\';\n    } | undefined;\n    since?: number | undefined;\n    category?: DiagnosticCategory | undefined;\n    search?: string | undefined;\n}',
   },
   {
     name: 'DiffCallView',

@@ -1,0 +1,23 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types",
+    "tsBuildInfoFile": "lib/tsconfig.host.tsbuildinfo"
+  },
+  "include": ["src/*.ts"],
+  "references": [
+    { "path": "../../../vendor/cordis" },
+    { "path": "../../../vendor/schemastery" },
+    { "path": "../../api/remote-access/tsconfig.host.json" },
+    { "path": "../../core/session" },
+    { "path": "../../core/tool-executor-ptc" },
+    { "path": "../../session/session-projection" },
+    { "path": "../../session/session-projection-cache" },
+    { "path": "../../util/brand" },
+    { "path": "../../util/values" },
+    { "path": "../../shell/tool-bash" },
+    { "path": "../../typert/protocol" },
+    { "path": "../session-query" }
+  ]
+}

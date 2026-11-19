@@ -1,0 +1,55 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/session-query/session-diagnostics/README.md
+/:
+  en: aea079f6c315ffd1
+  zh: 3298e20d4d552685
+/deepseek-ai-dsh-session-diagnostics:
+  en: 8b3a1fbe64b9d06d
+  zh: b8d1f969e9cdac24
+/deepseek-ai-dsh-session-diagnostics/summary:
+  en: 5f066235869a035a
+  zh: 9de6bae7a1ddc252
+/deepseek-ai-dsh-session-diagnostics/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-session-diagnostics/use-this-package:
+  en: 523b1feb54dfc469
+  zh: 15f01367410d45f4
+/deepseek-ai-dsh-session-diagnostics/use-this-package/inspect-and-export:
+  en: 5f29c125d8fec71d
+  zh: a5b9bc7e47296438
+/deepseek-ai-dsh-session-diagnostics/use-this-package/composition-and-configuration:
+  en: 30a3433698db091c
+  zh: 4a1c4b0a11bdb87c
+/deepseek-ai-dsh-session-diagnostics/use-this-package/failure-categories:
+  en: d04b2e167e221dd1
+  zh: a35b5b7ae0754985
+/deepseek-ai-dsh-session-diagnostics/understand-the-implementation:
+  en: 70f5d8497fb91461
+  zh: 06265d8e504cd72c
+/deepseek-ai-dsh-session-diagnostics/further-exploration:
+  en: 5c6d3d3a137a7cf4
+  zh: e41fe53f5cc73fad
+/deepseek-ai-dsh-session-diagnostics/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-session-diagnostics/model-experience/diagnostics-inspection:
+  en: 61496507d99bb686
+  zh: 05d3acbcfced5b08
+/deepseek-ai-dsh-session-diagnostics/model-experience/diagnostics-inspection/what-the-model-sees:
+  en: d11d3de6a645f587
+  zh: 8254efd8a374d30d
+/deepseek-ai-dsh-session-diagnostics/model-experience/diagnostics-inspection/token-effect:
+  en: 0dfd74b5b322335b
+  zh: bba1a29b913af0bd
+/deepseek-ai-dsh-session-diagnostics/model-experience/diagnostics-inspection/kv-cache-effect:
+  en: 4d28b87a648cf2e5
+  zh: 26cfdf3baadd4901
+/deepseek-ai-dsh-session-diagnostics/known-limitations-and-deferred-work:
+  en: 4da1524de8fd3ade
+  zh: 0982285fb31cc227
+/deepseek-ai-dsh-session-diagnostics/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

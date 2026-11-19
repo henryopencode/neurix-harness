@@ -66,7 +66,7 @@ Read-only Remote with a namespace independent of application control.
  * @param signal - viewing and Remote lifetime.
  * @returns bounded image and Host-selected refresh interval.
  */
-@Remote async frame(sessionId: SessionId, signal: AbortSignal): Promise<BrowserPreviewSnapshot>
+@Remote({ resources: { session: sessionId => sessionId } }) async frame(sessionId: SessionId, signal: AbortSignal): Promise<BrowserPreviewSnapshot>
 ```
 
 Types: [SessionId](core.zh.md)

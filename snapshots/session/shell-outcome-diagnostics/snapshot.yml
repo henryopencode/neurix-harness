@@ -1,0 +1,7 @@
+version: 1
+scenario: shell-outcome-diagnostics
+profile: headless
+composition: default
+recording: authored
+header:
+  class: default

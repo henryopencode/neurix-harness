@@ -11,6 +11,23 @@
 
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 
+/** Shell-owned navigation available while the settings shell is composed and authorized. */
+export interface SettingsNavigation {
+  /**
+   * Open one registered section in the existing settings panel.
+   * @param id - Registration id of an available settings.section contribution.
+   * @throws When the section is not registered.
+   */
+  openSection(id: string): void
+}
+
+declare module '@deepseek-ai/cordis' {
+  interface Context {
+    /** Navigate to a contributed settings section without a second dialog or store. */
+    settingsNavigation: SettingsNavigation
+  }
+}
+
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
     /** Optional sidebar account launcher; opens the shell-owned settings panel. */

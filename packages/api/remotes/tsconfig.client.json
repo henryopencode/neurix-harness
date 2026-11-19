@@ -11,6 +11,7 @@
     "src/types.ts"
   ],
   "references": [
+    { "path": "../../session-query/session-diagnostics/tsconfig.host.json" },
     {
       "path": "../../client/product-analytics/tsconfig.client.json"
     },

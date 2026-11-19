@@ -81,7 +81,7 @@ The `--dsw-alias-illustration-*` tokens separate layered decorative artwork back
 
 `base.css` suppresses only the outline of focused elements marked `data-dsh-automatic-focus` by the [primitive focus helper](../ui-primitives/README.md); ordinary keyboard focus styling, borders, shadows, and error states remain intact.
 
-System toasts use `--dsw-alias-toast-bg` and `--dsw-alias-toast-label` for a shared background and text color across callers. Document previews pair `--dsw-alias-bg-document-preview` with `--dsw-alias-label-document-preview` so the backdrop and status text follow the same theme. Tooltip keycaps use `--dsw-alias-tooltip-key-bg`, a lighter fill derived from the tooltip background in each palette. Switch thumbs read `--dsw-alias-switch-thumb`: white in light mode and neutral-bluish 400 in dark mode, so an off switch stays lighter than its track without the glare of pure white.
+System toasts use `--dsw-alias-toast-bg` and `--dsw-alias-toast-label` for a shared background and text color across callers. Document previews pair `--dsw-alias-bg-document-preview` with `--dsw-alias-label-document-preview` so the backdrop and status text follow the same theme. Tooltip keycaps use `--dsw-alias-tooltip-key-bg`, a lighter fill derived from the tooltip background in each palette. Switch thumbs read `--dsw-alias-switch-thumb`: white in light mode and neutral-bluish 400 in dark mode, so an off switch stays lighter than its track without the glare of pure white. Stepped sliders use `--dsw-alias-slider-fill` and `--dsw-alias-slider-thumb` for blue fill and a white thumb in both palettes.
 
 `--dsw-alias-label-shimmer` uses the active palette’s primary text color for a contrasting sweep over muted activity labels in both themes.
 

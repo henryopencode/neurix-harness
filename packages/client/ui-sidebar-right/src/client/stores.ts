@@ -320,10 +320,12 @@ function stepped(surface: SurfaceState, step: HistoryStepper): SurfaceState {
  * expansion of an empty column needs one, which can be long after the store was
  * built and in a language the user has since changed to.
  * @param seed - the registered default page, read at each mint.
+ * @param transient - kinds whose tab records are absent from saved layouts.
  * @returns the handle (spec, type, identity, and factory in one).
  */
 export function createSidebarRightStore(
   seed: () => SidebarRightSeed,
+  transient: (kind: string) => boolean = () => false,
 ): EngineStoreHandle<SidebarRightState, SidebarRightActions> {
   const handle = defineStore<SidebarRightState, SidebarRightActions>({
     init: (): SidebarRightState => ({ bySession: {} }),
@@ -516,7 +518,14 @@ export function createSidebarRightStore(
     if (saved !== undefined) instance.store.set({ bySession: { [scopeKey]: saved } })
     instance.subscribe(() => {
       const surface = instance.getSnapshot().bySession[scopeKey]
-      if (surface !== undefined) writeSidebarLayout(scopeKey, surface)
+      if (surface === undefined) return
+      const excluded = Object.values(surface.layout.tabs).filter(tab => transient(tab.kind))
+      if (excluded.length === 0) {
+        writeSidebarLayout(scopeKey, surface)
+        return
+      }
+      const saved = advance(surface, () => excluded.map(tab => ({ type: 'closeTab', tabId: tab.id })), seed)
+      writeSidebarLayout(scopeKey, saved)
     })
     return { ...instance, clearPersisted: () => { clearSidebarLayout(scopeKey) } }
   } }

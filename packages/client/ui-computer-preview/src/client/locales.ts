@@ -29,6 +29,7 @@ export const en = {
   'previewRead': 'Observing',
   'previewOther': 'Operating',
   'browserPreviewTitle': 'Browser preview',
+  'agentBrowserTab': 'Agent browser',
 }
 
 /** Localized preview controls. */
@@ -63,6 +64,7 @@ export const zh: Record<ComputerControlLocaleKey, string> = {
   'previewRead': '正在观察',
   'previewOther': '正在操作',
   'browserPreviewTitle': '浏览器画中画',
+  'agentBrowserTab': '代理浏览器',
 }
 
 /** ja preview copy. */
@@ -94,6 +96,7 @@ export const ja: Record<ComputerControlLocaleKey, string> = {
   'previewRead': '観察中',
   'previewOther': '操作中',
   'browserPreviewTitle': 'ブラウザープレビュー',
+  'agentBrowserTab': 'エージェントのブラウザー',
 }
 
 /** es preview copy. */
@@ -125,6 +128,7 @@ export const es: Record<ComputerControlLocaleKey, string> = {
   'previewRead': 'Observando',
   'previewOther': 'Operando',
   'browserPreviewTitle': 'Vista previa del navegador',
+  'agentBrowserTab': 'Navegador del agente',
 }
 
 /** fr preview copy. */
@@ -156,6 +160,7 @@ export const fr: Record<ComputerControlLocaleKey, string> = {
   'previewRead': 'Observation',
   'previewOther': 'Action en cours',
   'browserPreviewTitle': 'Aperçu du navigateur',
+  'agentBrowserTab': 'Navigateur de l’agent',
 }
 
 /** de preview copy. */
@@ -187,6 +192,7 @@ export const de: Record<ComputerControlLocaleKey, string> = {
   'previewRead': 'Beobachtung',
   'previewOther': 'Aktion läuft',
   'browserPreviewTitle': 'Browservorschau',
+  'agentBrowserTab': 'Agent-Browser',
 }
 
 /** ru preview copy. */
@@ -218,6 +224,7 @@ export const ru: Record<ComputerControlLocaleKey, string> = {
   'previewRead': 'Наблюдение',
   'previewOther': 'Действие',
   'browserPreviewTitle': 'Предпросмотр браузера',
+  'agentBrowserTab': 'Браузер агента',
 }
 
 /** pt preview copy. */
@@ -249,4 +256,5 @@ export const pt: Record<ComputerControlLocaleKey, string> = {
   'previewRead': 'A observar',
   'previewOther': 'A operar',
   'browserPreviewTitle': 'Pré-visualização do navegador',
+  'agentBrowserTab': 'Navegador do agente',
 }

@@ -1,6 +1,10 @@
 /** Display-only captures shared by preview sources and the Client. @module */
 
+import type { Branded } from '@deepseek-ai/dsh-brand'
 import type { SessionId } from '@deepseek-ai/dsh-session'
+
+/** Identity of the latest successful or partial browser open in a live preview. */
+export type BrowserPreviewOpenId = Branded<'BrowserPreviewOpenId'>
 
 /** Independent cursor position relative to the captured window. */
 export interface ComputerPreviewCursor {
@@ -17,10 +21,16 @@ export interface ComputerPreviewCursor {
 /** A complete display-only preview; capture failure preserves tool resources. */
 export type ComputerPreviewFrame =
   | { kind: 'idle' }
-  | { kind: 'unavailable'; title: string; code: 'CAPTURE_FAILED' | 'IMAGE_TOO_LARGE' | 'PERMISSION_REQUIRED' | 'CAPTURE_TIMEOUT' }
+  | {
+    kind: 'unavailable'
+    title: string
+    code: 'CAPTURE_FAILED' | 'IMAGE_TOO_LARGE' | 'PERMISSION_REQUIRED' | 'CAPTURE_TIMEOUT'
+    openId?: BrowserPreviewOpenId
+  }
   | {
     kind: 'frame'
     title: string
+    openId?: BrowserPreviewOpenId
     imageUrl: string
     action: string
     active: boolean

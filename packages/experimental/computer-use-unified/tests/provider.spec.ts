@@ -11,13 +11,17 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import ApprovalService from '@deepseek-ai/dsh-user-approval'
 import * as Provider from '../src/index.ts'
+import type { ComputerPreviewCapture } from '../src/types.ts'
+import { browserFixture, resetBrowser } from './fixtures/browser.ts'
 import { desktop, resetDesktop } from './fixtures/native.ts'
 
 vi.mock('../src/native-driver.ts', async () => import('./fixtures/native.ts'))
 vi.mock('../src/platform.ts', () => ({ nativeDesktopSupported: true }))
+vi.mock('playwright', async () => ({ chromium: { launch: (await import('./fixtures/browser.ts')).launch } }))
 let ctx: Context
 beforeEach(async () => {
   resetDesktop()
+  resetBrowser()
   ctx = new Context()
   await mountAgentLoopTestDependencies(ctx)
   await ctx.plugin(ComputerUseRegistry)
@@ -57,6 +61,38 @@ it('logs a separate one-shot approval for each action and honors rejection', asy
   expect((await execute()).isError).toBe(false)
   expect(agent.session.snapshotEvents().filter(event => event.type === 'approval/decided').map(event => event.data.outcome))
     .toEqual(['rejected', 'allowed-once'])
+  agent.session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+})
+
+it('keeps denied browser opens out of the preview and preserves an admitted Page when a new tab is denied', async () => {
+  await ctx.plugin(ApprovalService)
+  let capture: ComputerPreviewCapture | undefined
+  await Provider.mountComputerControl(ctx, () => Provider.Config({ requireInputApproval: true, headless: true,
+    showOverlay: false, screenshots: false }), (_session, source) => {
+    capture = source
+    return () => { capture = undefined; return Promise.resolve() }
+  }, 'browser')
+  const harness = await mountAgentLoopTestHarness(ctx)
+  const agent = await harness.create(SessionId('browser-preview-approval'))
+  agent.session.append('turn/start', { turn: 1 })
+  let allowed = false
+  ctx.on('approval/request', async () => allowed ? 'allowed-once' : 'rejected')
+  const signal = new AbortController().signal
+  const execute = (callId: string, args: Record<string, unknown>) => executeToolFixture(ctx, { agent, name: 'browser', arguments: args,
+    callId: ToolCallId(callId), signal })
+  const read = () => capture?.(signal)
+  const open = { action: 'open_browser', url: 'https://fixture.test' }
+  expect((await execute('denied-open', open)).isError).toBe(true)
+  expect(await read()).toBeUndefined()
+  expect(browserFixture.browsers).toHaveLength(0)
+  allowed = true
+  expect((await execute('allowed-open', open)).isError).toBe(false)
+  const initial = await read()
+  if (initial?.kind !== 'frame' || initial.openId === undefined) throw new Error('Expected an admitted browser preview')
+  allowed = false
+  expect((await execute('denied-tab', { action: 'new_tab', target: 'tab-1' })).isError).toBe(true)
+  expect(await read()).toMatchObject({ kind: 'frame', openId: initial.openId, title: initial.title })
+  expect(browserFixture.calls.filter(call => call.name === 'newPage')).toHaveLength(1)
   agent.session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
 })
 

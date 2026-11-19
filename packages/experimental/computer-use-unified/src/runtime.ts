@@ -7,6 +7,7 @@ import type { Browser, BrowserContext, CDPSession, Dialog, Locator, Page } from 
 import { scrubbedParentEnv } from '@deepseek-ai/dsh-subprocess'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 import type { Branded } from '@deepseek-ai/dsh-brand'
+import type { BrowserPreviewOpenId } from '@deepseek-ai/dsh-client-ui-computer-preview/types'
 import { z } from 'zod'
 import { ComputerError, nativeActionResult } from './native.ts'
 import type { NativeActionResult, NativeCalls, NativeResult } from './native.ts'
@@ -85,6 +86,7 @@ export class ComputerRuntime {
   private browserInputActive = false
   private nativeUsed = false
   private inputMode: ResolvedConfig['inputMode']
+  private browserPreviewOpenId: BrowserPreviewOpenId | undefined
   private previewImage: { target: TargetId; source: string; imageUrl: string; capturedAt: number } | undefined
   private preview: {
     target: TargetId
@@ -119,13 +121,16 @@ export class ComputerRuntime {
       `The ${input.action} operation is unavailable in the ${this.surface} tool.`, 'none',
       this.surface === 'browser' ? 'Use this tool for its owned browser tabs only. Native applications require the application tool.'
         : 'Use this tool for native application windows. Isolated browser tabs require the browser tool.')
-    if ('target' in input && this.targets.has(input.target as TargetId)) {
-      this.preview = { ...this.preview?.target === input.target ? this.preview : {}, target: input.target as TargetId,
-        action: input.action === 'scroll' ? `scroll-${input.direction}` : input.action, active: true, feedbackUntil: 0 }
-      if (this.targets.get(input.target as TargetId)?.kind === 'tab' && input.action !== 'dialog') {
-        delete this.preview.dialogWindow
+    if ('target' in input) {
+      const target = this.targets.get(input.target as TargetId)
+      if (target !== undefined && (this.surface !== 'browser'
+        || input.action !== 'new_tab' && input.action !== 'close_tab' && this.browserPreviewOpenId !== undefined)) {
+        this.preview = { ...this.preview?.target === input.target ? this.preview : {}, target: input.target as TargetId,
+          action: input.action === 'scroll' ? `scroll-${input.direction}` : input.action, active: true, feedbackUntil: 0 }
+        if (target.kind === 'tab' && input.action !== 'dialog') delete this.preview.dialogWindow
       }
     }
+    let opened: { id: TargetId; target: TabTarget } | undefined
     const deadline = new AbortController()
     const timeoutMs = input.action === 'open_app' || input.action === 'navigate' || input.action === 'open_browser' || input.action === 'new_tab'
       ? this.config.navigationTimeoutMs : this.config.operationTimeoutMs
@@ -144,17 +149,18 @@ export class ComputerRuntime {
     active.addEventListener('abort', abort, { once: true })
     const run = async () => {
       this.inputMode = this.surface === 'applications' ? 'foreground' : this.surface === 'browser' ? 'background' : inputMode
-      try { return await this.executeOperation(input, active) } catch (error) {
+      try {
+        return await this.executeOperation(input, active, (id, target) => { opened = { id, target } })
+      } catch (error) {
         await this.feedback.close()
         throw error
       }
     }
+    let result: NativeResult
     try {
-      const result = await (this.native === undefined ? run() : this.native.exclusive(input.action, active, run))
+      result = await (this.native === undefined ? run() : this.native.exclusive(input.action, active, run))
       signal.throwIfAborted()
-      if (interruption.kind === 'read' && result.structuredContent?.browserStatus === 'open') return result
-      active.throwIfAborted()
-      return result
+      if (interruption.kind !== 'read' || result.structuredContent?.browserStatus !== 'open') active.throwIfAborted()
     } catch (error) {
       if (!usesBrowser && active.aborted && !(error instanceof ComputerError
         && (error.effect === 'none' || error.code === 'TIMEOUT' || error.code === 'CANCELED'))) {
@@ -188,9 +194,15 @@ export class ComputerRuntime {
         throw new ComputerError('CLEANUP_FAILED', this.message(error), 'possible', 'Restart the host before reusing computer resources.')
       }
     }
+    if (opened !== undefined && !signal.aborted && this.closing === undefined && this.isOwnedLiveTab(opened.id, opened.target)) {
+      this.browserPreviewOpenId = randomUUID() as BrowserPreviewOpenId
+      this.preview = { target: opened.id, action: input.action, active: false }
+    }
+    return result
   }
 
-  private async executeOperation(input: ComputerInput, signal: AbortSignal): Promise<NativeResult> {
+  private async executeOperation(input: ComputerInput, signal: AbortSignal,
+    preparedOpen: (id: TargetId, target: TabTarget) => void): Promise<NativeResult> {
     await this.overflow
     signal.throwIfAborted()
     if (this.closing !== undefined) throw new ComputerError('CLOSING', 'Computer resources are closing.', 'none', 'Start a new Agent activation.')
@@ -223,11 +235,13 @@ export class ComputerRuntime {
       this.checkCapacity()
       const page = await context.newPage()
       const id = this.addTab(page)
-      const target = this.target(id)
-      this.preview = { target: id, action: input.action, active: true }
+      const target = this.tab(this.target(id))
+      if (this.surface !== 'browser') this.preview = { target: id, action: input.action, active: true }
       try {
-        if (target.kind === 'tab') { await this.prepareBrowser(target); await this.dialogConnection(target) }
-        if (input.url !== undefined) await this.runBrowserAction(this.tab(target), { action: 'navigate', target: id, url: input.url }, signal)
+        await this.prepareBrowser(target)
+        if (this.surface === 'browser') preparedOpen(id, target)
+        await this.dialogConnection(target)
+        if (input.url !== undefined) await this.runBrowserAction(target, { action: 'navigate', target: id, url: input.url }, signal)
         return await this.observe(id, target, input.screenshot ?? this.config.screenshots, signal)
       } catch (error) {
         if (error instanceof ComputerError && error.code === 'BROWSER_VIEWPORT_FAILED') throw error
@@ -254,7 +268,7 @@ export class ComputerRuntime {
     if (input.action === 'close_tab') {
       const tab = this.tab(target)
       await tab.page.close({ runBeforeUnload: false })
-      this.targets.delete(id)
+      this.removeTab(id, tab)
       return this.result({ status: 'closed', target: id })
     }
     const requestedScreenshot = input.screenshot ?? this.config.screenshots
@@ -311,10 +325,24 @@ export class ComputerRuntime {
    * @returns a bounded PNG, an idle state, or a display-only capture failure.
    */
   async capturePreview(signal: AbortSignal): Promise<ComputerPreviewFrame> {
-    return this.readPreview(signal)
+    if (this.surface !== 'browser') return this.readPreview(signal)
+    const active = AbortSignal.any([signal, AbortSignal.timeout(this.config.previewTimeoutMs)])
+    for (;;) {
+      signal.throwIfAborted()
+      const current = this.preview
+      const openId = this.browserPreviewOpenId
+      if (current === undefined || openId === undefined || this.closing !== undefined) return { kind: 'idle' }
+      const target = this.targets.get(current.target)
+      if (target?.kind !== 'tab' || !this.isOwnedLiveTab(current.target, target)) return { kind: 'idle' }
+      if (active.aborted) return { kind: 'unavailable', title: target.page.url(), code: 'CAPTURE_TIMEOUT', openId }
+      const frame = await this.readPreview(signal, false, active)
+      signal.throwIfAborted()
+      if (this.preview === current && this.browserPreviewOpenId === openId
+        && this.isOwnedLiveTab(current.target, target) && frame.kind !== 'idle') return { ...frame, openId }
+    }
   }
 
-  private async readPreview(signal: AbortSignal, refreshNative = false): Promise<ComputerPreviewFrame> {
+  private async readPreview(signal: AbortSignal, refreshNative = false, deadline?: AbortSignal): Promise<ComputerPreviewFrame> {
     const current = this.preview
     if (current === undefined || this.closing !== undefined) return { kind: 'idle' }
     const target = this.targets.get(current.target)
@@ -325,7 +353,7 @@ export class ComputerRuntime {
       : target.dialogWindow ?? (indicatorActive ? current.dialogWindow : undefined) ?? viewport
     const timeoutMs = native !== undefined && this.native?.previewReady === false
       ? this.config.operationTimeoutMs : this.config.previewTimeoutMs
-    const active = AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
+    const active = deadline ?? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
     const title = target.kind === 'window' ? `${target.app} — ${target.title}` : target.page.url()
     const visual = this.feedback.preview(current.target)
     const decorate = (imageUrl: string, capturedAt: number): ComputerPreviewFrame => ({ kind: 'frame', title,
@@ -368,7 +396,7 @@ export class ComputerRuntime {
       active.throwIfAborted()
       const imageUrl = `data:image/png;base64,${image.toString('base64')}`
       const capturedAt = Date.now()
-      this.previewImage = { target: current.target, source, imageUrl, capturedAt }
+      if (this.surface !== 'browser') this.previewImage = { target: current.target, source, imageUrl, capturedAt }
       return decorate(imageUrl, capturedAt)
     } catch (error) {
       signal.throwIfAborted()
@@ -394,6 +422,7 @@ export class ComputerRuntime {
     this.context = undefined
     this.dialogCDP = undefined
     this.targets.clear()
+    this.browserPreviewOpenId = undefined
     this.preview = undefined
     this.previewImage = undefined
     this.closedPopups = 0
@@ -465,8 +494,27 @@ export class ComputerRuntime {
       if (frame === page.mainFrame()) delete target.observation
     })
     page.on('dialog', (dialog) => { delete target.dialogWindow; target.dialog = dialog; target.pending?.dialog.resolve(undefined) })
-    page.on('close', () => { this.targets.delete(id) })
+    page.on('close', () => { this.removeTab(id, target) })
     return id
+  }
+
+  private isOwnedLiveTab(id: TargetId, target: TabTarget): boolean {
+    return this.closing === undefined && this.browser?.isConnected() === true && this.targets.get(id) === target
+      && target.page.context() === this.context && !target.page.isClosed()
+  }
+
+  private removeTab(id: TargetId, target: TabTarget): void {
+    if (this.targets.get(id) !== target) return
+    this.targets.delete(id)
+    if (this.surface !== 'browser' || this.preview?.target !== id) return
+    for (const [otherId, other] of this.targets) {
+      if (other.kind === 'tab' && this.isOwnedLiveTab(otherId, other)) {
+        this.preview = { target: otherId, action: 'observe', active: false }
+        return
+      }
+    }
+    this.browserPreviewOpenId = undefined
+    this.preview = undefined
   }
 
   private async sizeHiddenBrowser(page: Page): Promise<void> {
@@ -1110,5 +1158,10 @@ export class ComputerRuntime {
     this.browser = undefined
     this.context = undefined
     this.dialogCDP = undefined
+    if (this.surface === 'browser') {
+      this.targets.clear()
+      this.browserPreviewOpenId = undefined
+      this.preview = undefined
+    }
   }
 }

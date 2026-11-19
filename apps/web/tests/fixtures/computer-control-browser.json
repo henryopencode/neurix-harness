@@ -27,7 +27,23 @@
     "kind": "chunks",
     "chunks": [
       { "type": "block-start", "index": 0, "blockType": "text" },
-      { "type": "block-end", "index": 0, "block": { "type": "text", "text": "Opened the blank browser tab." } },
+      { "type": "block-end", "index": 0, "block": { "type": "text", "text": "Opened the test page." } },
+      { "type": "finish", "reason": { "kind": "stop" } }
+    ]
+  },
+  {
+    "kind": "chunks",
+    "chunks": [
+      { "type": "block-start", "index": 0, "blockType": "tool-call" },
+      { "type": "block-end", "index": 0, "block": { "type": "tool-call", "id": "computer-click", "name": "browser", "arguments": "{\"action\":\"click\",\"target\":\"tab-1\",\"locator\":{\"by\":\"css\",\"selector\":\"#advance-counter\"},\"screenshot\":false}" } },
+      { "type": "finish", "reason": { "kind": "tool-calls" } }
+    ]
+  },
+  {
+    "kind": "chunks",
+    "chunks": [
+      { "type": "block-start", "index": 0, "blockType": "text" },
+      { "type": "block-end", "index": 0, "block": { "type": "text", "text": "Clicked Advance counter once." } },
       { "type": "finish", "reason": { "kind": "stop" } }
     ]
   },

@@ -134,8 +134,7 @@
   outline: none;
 }
 
-/* Nav rail (figma .Setting-nav 501:29958): the 188px track's cells, pad
-   (12,0), no own fill — the panel white shows through. */
+/* The nav fills its 188px desktop track or both columns on narrow browsers. */
 .nav {
   grid-area: nav;
   min-width: 0;
@@ -143,7 +142,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 188px;
   padding: 22px 12px 0;
   box-sizing: border-box;
   background: var(--dsw-specific-sidebar-fill);
