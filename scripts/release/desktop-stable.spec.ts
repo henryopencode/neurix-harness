@@ -11,7 +11,9 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { nextStableDesktopVersion } from './desktop-stable.ts'
 import { GithubReleaseDownloads } from '../../apps/desktop/src/github-release-downloads.ts'
 
-it('reserves and reuses immutable tags when the selected version already matches every manifest', ({ task }) => {
+it.for(['workflow', 'local'] as const)('%s reservation reuses immutable tags when every manifest already has the selected version', {
+  timeout: Number(process.env.DSH_COVERAGE_TEST_TIMEOUT_MS ?? '30000'),
+}, (mode, { task }) => {
   const root = mkdtempSync(join(tmpdir(), 'neurix-version-reservation-'))
   onTestFinished(() => { rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }) })
   const repository = join(root, 'checkout')
@@ -40,13 +42,15 @@ it('reserves and reuses immutable tags when the selected version already matches
   git('remote', 'add', 'origin', remote)
   git('push', 'origin', 'master', '--tags')
   const source = git('rev-parse', 'HEAD')
+  if (mode === 'local') git('switch', '--detach', source)
   const module = new URL('./desktop-stable.ts', import.meta.url).href
-  const script = `import { reserveStableDesktopRelease } from ${JSON.stringify(module)}; const first = reserveStableDesktopRelease(${JSON.stringify(source)}); const retry = reserveStableDesktopRelease(${JSON.stringify(source)}); if (first.commit !== retry.commit) throw new Error('Retry changed the reservation');`
+  const method = mode === 'local' ? 'reserveLocalDesktopRelease()' : `reserveStableDesktopRelease(${JSON.stringify(source)})`
+  const script = `import { reserveStableDesktopRelease, reserveLocalDesktopRelease } from ${JSON.stringify(module)}; const first = ${method}; const retry = ${method}; if (first.commit !== retry.commit) throw new Error('Retry changed the reservation');`
   // Windows preserves inherited key casing but compares environment names without case.
   const environment = { ...process.env }
   for (const key of Object.keys(environment)) if (key.toLowerCase() === 'npm_execpath') Reflect.deleteProperty(environment, key)
   environment.npm_execpath = stub
-  environment.GITHUB_ACTIONS = 'true'
+  environment.GITHUB_ACTIONS = mode === 'workflow' ? 'true' : 'false'
   const child = spawnSync(process.execPath, ['--import', pathToFileURL(createRequire(import.meta.url).resolve('tsx/esm')).href, '--input-type=module', '-e', script], {
     cwd: repository, encoding: 'utf8', timeout: task.timeout,
     env: environment,
@@ -60,10 +64,14 @@ it('reserves and reuses immutable tags when the selected version already matches
   expect(git('rev-parse', 'v1.1.0^{tree}')).toBe(git('rev-parse', `${source}^{tree}`))
   expect(git('rev-parse', 'dsh-v1.1.0')).toBe(reservation)
   expect(git('log', '-1', '--format=%B', reservation)).toContain(`Neurix-Release-Source: ${source}`)
+  if (mode === 'local') {
+    expect(git('show', '-s', '--format=%an', reservation)).toBe('Release fixture')
+    expect(git('rev-parse', 'refs/heads/master')).toBe(source)
+  }
   const published = git('ls-remote', 'origin', 'refs/heads/master', 'refs/tags/v1.1.0', 'refs/tags/dsh-v1.1.0').split('\n')
   expect(published).toHaveLength(3)
   expect(published.every(line => line.startsWith(`${reservation}\t`))).toBe(true)
-}, Number(process.env.DSH_COVERAGE_TEST_TIMEOUT_MS ?? '30000'))
+})
 
 describe('stable Desktop versions', () => {
   it('starts at 1.0.0 without inheriting upstream prerelease numbers', () => {
