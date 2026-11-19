@@ -86,7 +86,7 @@ root 作用域的 `sidebar.panellist.actions` list 有注册项时，导航区�
 
 向下滚动时先把导航滚走，再滚动区块；向上滚动时先让区块回到顶部，导航再重新出现。如果一次滚轮或触控板手势的第一个事件需要移动视口，或者手势从区块滚动容器之外开始，JavaScript 会在整次手势（包括惯性）结束前一直把滚动量分配给两者，因此一次手势可以越过边界；间隔不足 100ms 的滚轮事件视为同一次手势。区块滚动容器能独自处理的手势保持浏览器原生滚动；不可取消的原生手势到达区块滚动容器顶部时，剩余距离交给视口。已被其他监听器取消的事件、双指缩放（Ctrl）事件以及以横向为主的滚轮事件保持浏览器原生滚动。视口内的内容不得自带纵向滚动，除非它自己取消这些滚轮事件。区块通过 `sidebar.workspaces` 获得这项能力：每次渲染都会提供 `hookContext.useSectionScroller`，同一个侧边栏中，占用者调用 `useSectionScroller()` 始终得到同一个 `{ bindScrollerRef }` 对象。未绑定滚动容器的占用者保持原生滚动。视口外层的区域是高度与视口相同的尺寸容器，视口本身是滚动状态容器，因此区块的滚动容器可以在视口滚到底之前拒绝原生滚动。
 
-侧边栏根节点向 `sidebar.workspaces` 与 `sidebar.settings` 提供可继承的 CSS 属性：`--dsh-sidebar-inline-padding: 8px`、`--dsh-sidebar-row-padding: 12px`、`--dsh-sidebar-label-gap: 6px` 和 `--dsh-sidebar-paint-inset: 3px`。占用者使用这些值对齐展开态行；独立组合必须在祖先节点提供这些值。底色内缩不移动内容：行从左右内边距中减去该内缩值，并以等宽透明边框承载内缩。展开态视口隐藏自身滚动条；其尾部网格列使导航和区块与侧栏边缘保持 8px，区块的滚动容器把滚动条放在距该边缘 2px 处。
+侧边栏根节点向 `sidebar.workspaces` 与 `sidebar.settings` 提供可继承的 CSS 属性：`--dsh-sidebar-inline-padding: 12px`、`--dsh-sidebar-row-padding: 12px`、`--dsh-sidebar-label-gap: 6px` 和 `--dsh-sidebar-paint-inset: 3px`。占用者使用这些值对齐展开态行；独立组合必须在祖先节点提供这些值。底色内缩不移动内容：行从左右内边距中减去该内缩值，并以等宽透明边框承载内缩。展开态视口隐藏自身滚动条；其尾部网格列使导航和区块与侧栏边缘保持 8px，区块的滚动容器把滚动条放在距该边缘 2px 处。
 
 ### slot 纪律
 

@@ -7,7 +7,7 @@ import { dirname, join, toNamespacedPath } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { ModuleLoader } from '@deepseek-ai/cordis-plugin-loader'
 import { afterEach, describe, expect, it } from 'vitest'
-import { PackageManifests } from '../src/package-manifest.ts'
+import { createReplaceHelper, PackageManifests } from '../src/package-manifest.ts'
 
 const require = createRequire(import.meta.url)
 const addon = require('node-addon-require-builtin') as { requireBuiltin(id: string): unknown }
@@ -59,6 +59,28 @@ function resolveEsm(specifier: string, parentURL: string): string {
     ? loader.resolveSync(parentURL, { specifier, attributes: {} })
     : loader.resolveSync(specifier, parentURL, {})).url
 }
+
+describe('overlapping method ownership', () => {
+  it.each([false, true])('preserves live behavior and restores method identity with reverse disposal %s', (reverse) => {
+    const target = { read: (value: string) => `native:${value}` }
+    const original = target.read
+    const first = createReplaceHelper(target)
+    const disposeFirst = first.replaceMethod('read', value => `first:${first.rawImpl.read(value)}`)
+    const second = createReplaceHelper(target)
+    const disposeSecond = second.replaceMethod('read', value => `second:${second.rawImpl.read(value)}`)
+    try {
+      expect(target.read.name).toBe(original.name)
+      expect(target.read('value')).toBe('second:first:native:value')
+      ;(reverse ? disposeSecond : disposeFirst)()
+      expect(target.read('value')).toBe(reverse ? 'first:native:value' : 'second:native:value')
+      ;(reverse ? disposeFirst : disposeSecond)()
+      expect(target.read).toBe(original)
+    } finally {
+      disposeSecond()
+      disposeFirst()
+    }
+  })
+})
 
 describe('package manifest invalidation', { concurrent: false }, () => {
   it('preserves filename-based resolve hooks and node-prefixed builtins after invalidation', async () => {
@@ -251,29 +273,40 @@ function outcome(run: () => unknown): unknown {
   }
 }
 
+async function runManifestFixture(name: string, root: string, timeout: number) {
+  // Resolver recursion can block the child's timers; the parent retains time to terminate and reap it.
+  const child = spawn(process.execPath, [
+    '--expose-internals', fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), root,
+  ], { stdio: ['ignore', 'pipe', 'pipe'], timeout: Math.floor(timeout / 2), killSignal: 'SIGKILL' })
+  const completed = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
+    child.once('error', reject)
+    child.once('close', (code, signal) => { resolve({ code, signal }) })
+  })
+  cleanup.push(async () => {
+    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL')
+    await completed
+  })
+  let stdout = '', stderr = ''
+  child.stdout.setEncoding('utf8').on('data', (chunk: string) => { stdout += chunk })
+  child.stderr.setEncoding('utf8').on('data', (chunk: string) => { stderr += chunk })
+  return { ...await completed, stdout, stderr }
+}
+
 describe('package manifest reader parity', { concurrent: false }, () => {
-  it('terminates scope lookup after invalidating the filesystem root without modifying it', async () => {
+  it('terminates scope lookup after invalidating the filesystem root without modifying it', async ({ task }) => {
     const f = fixture()
-    const child = spawn(process.execPath, [
-      '--expose-internals',
-      fileURLToPath(new URL('./fixtures/package-root-scope.mjs', import.meta.url)),
-      f.root,
-    ], { stdio: ['ignore', 'pipe', 'pipe'] })
-    const completed = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
-      child.once('error', reject)
-      child.once('close', (code, signal) => { resolve({ code, signal }) })
-    })
-    cleanup.push(async () => {
-      if (child.exitCode === null && child.signalCode === null) child.kill()
-      await completed
-    })
-    let stdout = '', stderr = ''
-    child.stdout.setEncoding('utf8').on('data', (chunk: string) => { stdout += chunk })
-    child.stderr.setEncoding('utf8').on('data', (chunk: string) => { stderr += chunk })
-    const result = await completed
-    expect(result.signal, stderr).toBeNull()
-    expect(result.code, stderr).toBe(0)
-    expect(stdout).toBe('scope traversal completed\n')
+    const result = await runManifestFixture('package-root-scope.mjs', f.root, task.timeout)
+    expect(result.signal, result.stderr).toBeNull()
+    expect(result.code, result.stderr).toBe(0)
+    expect(result.stdout).toBe('scope traversal completed\n')
+  })
+
+  it('restores native methods when overlapping instances retire in either order', async ({ task }) => {
+    const f = fixture()
+    const result = await runManifestFixture('package-manifest-overlap.mjs', f.root, task.timeout)
+    expect(result.signal, result.stderr).toBeNull()
+    expect(result.code, result.stderr).toBe(0)
+    expect(result.stdout).toBe('overlapping hooks restored\n')
   })
 
   it('reads valid JSON with a non-file ESM base like Node', async () => {

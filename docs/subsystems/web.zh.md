@@ -125,9 +125,9 @@ type WebFetchBody =
 
 提供方的 `available(): boolean` 是一个廉价的本地检查（凭证是否存在、配置是否可解析），**禁止发起网络调用**。它是执行时选择提供方的输入，而不是健康检查系统：`search()`／`fetch()` 会读取它来选择可用的提供方。选择失败时，调用方会收到可据以分支处理的结构化 `WebError`；其错误代码和消息会说明缺失的 id 或存在歧义的候选集。与可用性不同，注册情况在操作运行前即可观测：`listProviders()` 按 `id`、可选的 `title` 和可选的多语言 `description` 返回每个已注册的搜索与抓取提供方，每次注册或注销后都会触发不带载荷的 `web/providers-changed` 事件；可用性仍只在操作运行时体现。
 
-搜索或抓取提供方还可以实现 `ready(llmProvider): Promise<boolean>`，这是只检查配置、禁止发起网络调用的判断：它回答为该对话路由上的模型请求发起的操作是否有可发送的凭据。`searchReady(llmProvider?)` 与 `fetchReady(llmProvider?)` 只询问 `search()` 或 `fetch()` 会选中的提供方，把没有 `ready()` 的提供方视为就绪，并在选择失败时回答 true，因为对应操作会把该失败报告为 `WebError`。就绪判断不是选择输入；`dsh-tool-web` 把它作为 `web_search` 与 `web_fetch` 的激活条件，因此路由回答 false 的模型步骤既不声明也不派发该工具。DeepSeek Search 与 Fetch API 提供方依据该路由在账号令牌与 API 密钥之间选择，见 [web-deepseek-api 鉴权](../../packages/web/web-deepseek-api/README.zh.md#authentication)一节。
+搜索或抓取提供方还可以实现 `ready(llmProvider): Promise<boolean>`，这是只检查配置、禁止发起网络调用的判断：它回答为该对话路由上的模型请求发起的操作是否有可发送的凭据。`searchReady(llmProvider?)` 与 `fetchReady(llmProvider?)` 只询问 `search()` 或 `fetch()` 会选中的提供方，把没有 `ready()` 的提供方视为就绪，显式选择 `none` 时无需询问提供方即回答 false。其他选择失败回答 true，以便对应操作报告 `WebError`。就绪判断不是选择输入；`dsh-tool-web` 把它作为 `web_search` 与 `web_fetch` 的激活条件，因此路由回答 false 的模型步骤既不声明也不派发该工具。DeepSeek Search 与 Fetch API 提供方依据该路由在账号令牌与 API 密钥之间选择，见 [web-deepseek-api 鉴权](../../packages/web/web-deepseek-api/README.zh.md#authentication)一节。
 
-选择从不依赖注册顺序、配置顺序或 HMR（热模块替换）顺序：一项能力要么有显式的提供方 id（配置 `searchProvider`／`fetchProvider`，或填充同一字段的对应环境变量），要么在恰好只有一个可用提供方注册时自动选择；如果存在多个可用提供方却未配置 id，则抛出 `WEB_PROVIDER_AMBIGUOUS`，而不会选用最先注册的提供方。每次操作在执行时读取配置的 id，因此保存的设置变更无需重新挂载 `ctx.web` 即对下一次搜索或抓取生效。
+选择从不依赖注册顺序、配置顺序或 HMR（热模块替换）顺序：一项能力要么有显式的提供方 id（配置 `searchProvider`／`fetchProvider`，或填充同一字段的对应环境变量），要么在恰好只有一个可用提供方注册时自动选择；如果存在多个可用提供方却未配置 id，则抛出 `WEB_PROVIDER_AMBIGUOUS`，而不会选用最先注册的提供方。保留值 `none` 停用一项能力：直接调用在询问任何提供方之前以 `WEB_PROVIDER_DISABLED` 失败，就绪判断回答 false。随附 profile 停用搜索并选择 HTTP 获取，与聊天模型独立。每次操作在执行时读取配置的 id，因此保存的设置变更无需重新挂载 `ctx.web` 即对下一次搜索或抓取生效。
 
 ## 抓取网络策略
 
@@ -137,7 +137,7 @@ HTTP 提供方不限制目的地址：`web_fetch` 会像访问其他主机一样
 
 ## 错误
 
-`WebError extends HarnessError`（[core.md](core.zh.md) 错误分类体系），带有 `code: string`（开放式，与其他 seam 的错误一致——`LlmError`、`SubagentError`），而非封闭联合类型：提供方可以在不修改 `dsh-web` 的情况下抛出自己的错误代码，消费方必须容忍未知错误代码。错误代码按所有者划分。共享的 `WebRuntime` 约定会抛出与 seam 无关的错误代码：`WEB_PROVIDER_UNAVAILABLE`、`WEB_PROVIDER_CONFIGURED_MISSING`、`WEB_PROVIDER_CONFIGURED_UNAVAILABLE`、`WEB_PROVIDER_AMBIGUOUS`、`WEB_DUPLICATE_PROVIDER`（注册时的编程错误，类似 `LlmRuntime` 的 `DUPLICATE_ADAPTER`）、`WEB_ABORTED`，以及 `WEB_PROVIDER_ERROR`（提供方自身故障经 seam 暴露时使用的兜底代码，包括 DNS、连接被拒绝、TLS 等网络或传输故障）。抓取传输层错误代码由 `dsh-web-fetch-http` 实现拥有，不同的抓取后端无需抛出它们：`WEB_INVALID_URL`、`WEB_BLOCKED_URL`、`WEB_REDIRECT_BLOCKED`、`WEB_FETCH_TOO_LARGE`、`WEB_FETCH_TIMEOUT`、`WEB_UNSUPPORTED_CONTENT_TYPE`。
+`WebError extends HarnessError`（[core.md](core.zh.md) 错误分类体系），带有 `code: string`（开放式，与其他 seam 的错误一致——`LlmError`、`SubagentError`），而非封闭联合类型：提供方可以在不修改 `dsh-web` 的情况下抛出自己的错误代码，消费方必须容忍未知错误代码。错误代码按所有者划分。共享的 `WebRuntime` 约定会抛出与 seam 无关的错误代码：`WEB_PROVIDER_DISABLED`、`WEB_PROVIDER_RESERVED_ID`（注册拒绝保留 id `none`）、`WEB_PROVIDER_UNAVAILABLE`、`WEB_PROVIDER_CONFIGURED_MISSING`、`WEB_PROVIDER_CONFIGURED_UNAVAILABLE`、`WEB_PROVIDER_AMBIGUOUS`、`WEB_DUPLICATE_PROVIDER`（注册时的编程错误，类似 `LlmRuntime` 的 `DUPLICATE_ADAPTER`）、`WEB_ABORTED`，以及 `WEB_PROVIDER_ERROR`（提供方自身故障经 seam 暴露时使用的兜底代码，包括 DNS、连接被拒绝、TLS 等网络或传输故障）。抓取传输层错误代码由 `dsh-web-fetch-http` 实现拥有，不同的抓取后端无需抛出它们：`WEB_INVALID_URL`、`WEB_BLOCKED_URL`、`WEB_REDIRECT_BLOCKED`、`WEB_FETCH_TOO_LARGE`、`WEB_FETCH_TIMEOUT`、`WEB_UNSUPPORTED_CONTENT_TYPE`。
 
 ## 服务
 
@@ -159,6 +159,7 @@ The web access service. Registered as `ctx.web` (one instance per context) and e
 
 Selection semantics (resolved at execution time, never order-dependent):
 
+- Configured `none` → `WEB_PROVIDER_DISABLED`, with no provider consulted.
 - A configured id that is registered and `available()` → that provider.
 - A configured id not registered → `WEB_PROVIDER_CONFIGURED_MISSING`.
 - A configured id registered but unavailable → `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`.
@@ -172,7 +173,8 @@ Selection semantics (resolved at execution time, never order-dependent):
  * registration is disposed, which happens with the calling fiber or through
  * the returned disposer; registration and disposal each emit
  * `web/providers-changed`. Throws {@link WebError} `WEB_DUPLICATE_PROVIDER`
- * if its id is already registered for search.
+ * if its id is already registered for search, or `WEB_PROVIDER_RESERVED_ID`
+ * if its id is `none`.
  * @param provider - the provider; its `id` is the registry key.
  * @returns the disposer that unregisters the provider.
  */
@@ -181,7 +183,8 @@ registerSearchProvider(provider: WebSearchProvider): () => void
 /**
  * Register a fetch provider, with the listing, disposal, and event behavior
  * of {@link WebRuntime.registerSearchProvider}. Throws {@link WebError}
- * `WEB_DUPLICATE_PROVIDER` if its id is already registered for fetch.
+ * `WEB_DUPLICATE_PROVIDER` if its id is already registered for fetch, or
+ * `WEB_PROVIDER_RESERVED_ID` if its id is `none`.
  * @param provider - the provider; its `id` is the registry key.
  * @returns the disposer that unregisters the provider.
  */
@@ -208,10 +211,10 @@ async search(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearch
 /**
  * Whether the provider `search()` would select can authenticate a search made for a
  * model request on the `llmProvider` chat route. Asks only that provider's `ready()`;
- * one without `ready()` counts as ready. Makes no network calls. A selection failure
- * answers true, because `search()` reports that failure as a structured `WebError`.
+ * one without `ready()` counts as ready. Makes no network calls. `none` answers false;
+ * other selection failures answer true so `search()` can report a structured `WebError`.
  * @param llmProvider - the provider route id of the model request, when known.
- * @returns false only when the selected provider reports that it cannot authenticate.
+ * @returns false when disabled or when the selected provider cannot authenticate.
  */
 async searchReady(llmProvider?: string): Promise<boolean>
 
@@ -228,10 +231,10 @@ async fetch(request: WebFetchRequest, signal?: AbortSignal): Promise<WebFetchRes
 /**
  * Whether the provider `fetch()` would select can authenticate a fetch made for a
  * model request on the `llmProvider` chat route. Asks only that provider's `ready()`;
- * one without `ready()` counts as ready. Makes no network calls. A selection failure
- * answers true, because `fetch()` reports that failure as a structured `WebError`.
+ * one without `ready()` counts as ready. Makes no network calls. `none` answers false;
+ * other selection failures answer true so `fetch()` can report a structured `WebError`.
  * @param llmProvider - the provider route id of the model request, when known.
- * @returns false only when the selected provider reports that it cannot authenticate.
+ * @returns false when disabled or when the selected provider cannot authenticate.
  */
 async fetchReady(llmProvider?: string): Promise<boolean>
 ```

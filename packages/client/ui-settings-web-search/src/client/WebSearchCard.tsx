@@ -28,6 +28,7 @@ type T = WebSearchCardProps['t']
 
 /** Dictionary names of the official providers; any other provider shows its registered title or id. */
 const PROVIDER_LABELS: Record<string, WebSearchSettingsLocaleKey> = {
+  [PROVIDER_IDS.disabled]: 'providerDisabled',
   [PROVIDER_IDS.apiSearch]: 'providerDeepSeek',
   [PROVIDER_IDS.legacySearch]: 'providerLegacy',
   [PROVIDER_IDS.localFetch]: 'providerLocal',
@@ -60,6 +61,7 @@ export function WebSearchCard(props: WebSearchCardProps) {
   const { search, fetch } = state
   // The selected provider's own description, in the active language; an empty translation shows nothing.
   const describe = (section: WebSearchCardState['search' | 'fetch']): string | undefined => {
+    if (section.selected === PROVIDER_IDS.disabled) return t('providerDisabledHint')
     const description = section.options.find(option => option.id === section.selected)?.description
     return description === undefined ? undefined : props.resolveText(description) || undefined
   }
@@ -213,8 +215,11 @@ function ProviderSelect(props: {
   const { t, section } = props
   const current = section.options.find(option => option.id === section.selected)
   const items = [
+    { id: PROVIDER_IDS.disabled, label: t('providerDisabled') },
     ...section.auto ? [{ id: AUTO_ID, label: t('providerAuto') }] : [],
-    ...section.options.map(option => ({ id: option.id, label: providerLabel(t, option) })),
+    ...section.options
+      .filter(option => option.id !== PROVIDER_IDS.disabled)
+      .map(option => ({ id: option.id, label: providerLabel(t, option) })),
   ]
   return (
     <div className={styles.field}>

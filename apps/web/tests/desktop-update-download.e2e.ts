@@ -81,6 +81,8 @@ it('downloads, stops, retries, and offers the platform-specific installation act
   await stop.focus()
   await page.setViewportSize({ width: 390, height: 844 })
   await page.locator('[data-sidebar-collapsed]').waitFor()
+  await page.getByRole('button', { name: 'Open sidebar', exact: true }).click()
+  await stop.focus()
   expect(await stop.evaluate(element => element === document.activeElement)).toBe(true)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.screenshot({ path: evidence + '/progress-narrow.png' })

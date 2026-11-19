@@ -1,5 +1,12 @@
 # TypeScript SDK snapshot-record patch over `dsh --profile sdk`.
 
+# Recorded search-capable sessions opt in independently of the chat model.
+- id: web
+  name: '@deepseek-ai/dsh-web'
+  config:
+    searchProvider: deepseek-search-api
+    fetchProvider: http
+
 # The fixture corpus must not depend on the developer's personal skill roots.
 # Ordinary product launches retain the sdk profile's default skill discovery.
 - id: skill-filesystem

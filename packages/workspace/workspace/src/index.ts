@@ -205,6 +205,7 @@ export class WorkspaceRegistry extends Service {
   private readonly entities = new Map<WorkspaceId, WorkspaceEntity>()
   private readonly headers = new Map<SessionId, SessionHeader>()
   private readonly sessionPaths = new Map<SessionId, string>()
+  private readonly workspacePaths = new Map<string, string>()
   private readonly missingSessionPaths = new Set<SessionId>()
   private readonly invalidSessionPaths = new Map<SessionId, string>()
   private operationTail: Promise<void> = Promise.resolve()
@@ -213,6 +214,7 @@ export class WorkspaceRegistry extends Service {
   private readonly host: WorkspaceEntityHost = {
     table: () => this.requireTable(),
     candidateMatches: (id, path) => this.sessionPaths.get(id) === path || this.missingSessionPaths.has(id),
+    resolveWorkspacePath: path => this.resolveWorkspacePath(path),
     readSessionHeader: id => this.readSessionHeader(id),
     rememberSessionPath: (id, path) => {
       this.sessionPaths.set(id, path)
@@ -234,6 +236,7 @@ export class WorkspaceRegistry extends Service {
     this.state = domain.global.get()
 
     await this.recoverPendingMutation()
+    await this.refreshWorkspacePaths()
     this.validateStoredState(this.state)
     if (!this.state.initialized) {
       const headers = await this.listStoredHeaders()
@@ -614,15 +617,17 @@ export class WorkspaceRegistry extends Service {
    */
   async resolveByPath(path: string): Promise<Workspace | undefined> {
     const canonical = await realpathNormalize(path)
+    await this.refreshWorkspacePaths()
     for (const entity of this.entities.values()) {
-      if (entity.path === canonical) return entity
+      if (this.indexedPath(entity.path) === canonical) return entity
     }
     return undefined
   }
 
   private async createCanonical(canonical: string, title?: string, firstUse = false): Promise<WorkspaceEntity> {
+    await this.refreshWorkspacePaths()
     for (const entity of this.entities.values()) {
-      if (entity.path === canonical) return entity
+      if (this.indexedPath(entity.path) === canonical) return entity
     }
 
     const workspaceName = title ?? defaultWorkspaceTitle(canonical)
@@ -728,6 +733,7 @@ export class WorkspaceRegistry extends Service {
       }
       throw error
     }
+    this.workspacePaths.delete(entity.path)
     try {
       await this.setState(nextState)
     } catch (error) {
@@ -876,14 +882,15 @@ export class WorkspaceRegistry extends Service {
     const paths = new Map<string, WorkspaceId>()
     const accounted = new Map<SessionId, WorkspaceId>()
     for (const [id, record] of table.entries()) {
-      const pathHolder = paths.get(record.path)
+      const path = this.indexedPath(record.path)
+      const pathHolder = paths.get(path)
       if (pathHolder !== undefined) {
         throw new Error(
-          `workspace domain is inconsistent: path '${record.path}' is claimed `
+          `workspace domain is inconsistent: path '${path}' is claimed `
           + `by both workspace '${pathHolder}' and workspace '${id}'`,
         )
       }
-      paths.set(record.path, id)
+      paths.set(path, id)
       for (const sessionId of record.sessionIds) {
         const holder = accounted.get(sessionId)
         if (holder !== undefined) {
@@ -905,6 +912,37 @@ export class WorkspaceRegistry extends Service {
     }
   }
 
+  /** Current canonical targets for registered directory paths. */
+  private indexedPath(path: string): string {
+    return this.workspacePaths.get(path) ?? path
+  }
+
+  /** Registered paths remain stable membership keys; unregistered directories keep their canonical paths. */
+  private registrationPath(canonical: string): string {
+    for (const [path, resolved] of this.workspacePaths) {
+      if (resolved === canonical) return path
+    }
+    return canonical
+  }
+
+  private async resolveWorkspacePath(path: string): Promise<string> {
+    const canonical = await realpathNormalize(path)
+    this.workspacePaths.set(path, canonical)
+    return canonical
+  }
+
+  private async refreshWorkspacePaths(): Promise<void> {
+    for (const [id, record] of this.requireTable().entries()) {
+      try {
+        await this.resolveWorkspacePath(record.path)
+      } catch (error) {
+        // Unavailable directories retain their registrations; header validation still governs membership.
+        this.workspacePaths.delete(record.path)
+        this.ctx.logger.warn(`workspace '${id}' directory could not be resolved: ${String(error)}`)
+      }
+    }
+  }
+
   private async replaceHeaderIndex(headers: readonly SessionHeader[]): Promise<void> {
     this.headers.clear()
     this.sessionPaths.clear()
@@ -917,23 +955,29 @@ export class WorkspaceRegistry extends Service {
     for (const header of headers) await this.indexHeader(header)
   }
 
+  /** Pending lookups retain membership; completed validation replaces directory facts together. */
   private async indexHeader(header: SessionHeader): Promise<void> {
     this.headers.set(header.id, header)
-    this.sessionPaths.delete(header.id)
-    this.missingSessionPaths.delete(header.id)
     if (header.cwd === undefined) {
+      this.sessionPaths.delete(header.id)
+      this.missingSessionPaths.delete(header.id)
       this.invalidSessionPaths.set(header.id, 'header has no cwd')
       return
     }
     try {
       const path = await realpathNormalize(header.cwd)
       if (!(await stat(path)).isDirectory()) {
+        this.sessionPaths.delete(header.id)
+        this.missingSessionPaths.delete(header.id)
         this.invalidSessionPaths.set(header.id, `cwd '${header.cwd}' is not a directory`)
         return
       }
-      this.sessionPaths.set(header.id, path)
+      this.sessionPaths.set(header.id, this.registrationPath(path))
+      this.missingSessionPaths.delete(header.id)
       this.invalidSessionPaths.delete(header.id)
     } catch (error) {
+      this.sessionPaths.delete(header.id)
+      this.missingSessionPaths.delete(header.id)
       if (fullyQualifiedWorkspacePath(header.cwd)
         && error instanceof Error && 'code' in error && error.code === 'ENOENT') {
         this.missingSessionPaths.add(header.id)
@@ -962,7 +1006,7 @@ export class WorkspaceRegistry extends Service {
         const path = this.sessionPaths.get(sessionId)
         const reason = this.invalidSessionPaths.get(sessionId)
           ?? (this.headers.has(sessionId)
-            ? `canonical cwd '${path}' differs from workspace path '${record.path}'`
+            ? `validated directory '${path}' differs from workspace path '${record.path}'`
             : 'session header is missing')
         this.ctx.logger.warn(
           `workspace '${entity.id}' filtered session '${sessionId}' from membership: ${reason}`,
@@ -981,6 +1025,7 @@ export class WorkspaceRegistry extends Service {
     if (cached !== undefined) return cached
 
     const headers = await this.listStoredHeaders()
+    await this.refreshWorkspacePaths()
     await this.indexHeaders(headers)
     const header = this.headers.get(id)
     if (header === undefined) {

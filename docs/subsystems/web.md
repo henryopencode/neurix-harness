@@ -125,9 +125,9 @@ type WebFetchBody =
 
 A provider's `available(): boolean` is a cheap LOCAL check (credential presence, parseable config) and **must not make network calls**. It is an input to execution-time selection, not a health system: `search()`/`fetch()` read it to pick a usable provider, and a selection failure surfaces as the structured `WebError` the caller routes on — which carries the branchable detail (the missing id or ambiguous candidate set) in its code and message. Registration, unlike availability, is observable before an operation runs: `listProviders()` returns every registered search and fetch provider by `id`, optional `title`, and optional localized `description`, and the payload-free `web/providers-changed` event fires after each registration or disposal; availability still shows only when an operation runs.
 
-A search or fetch provider may also implement `ready(llmProvider): Promise<boolean>`, a configuration-only check that must not make network calls: it answers whether an operation made for a model request on that chat route has a credential to send. `searchReady(llmProvider?)` and `fetchReady(llmProvider?)` ask only the provider that `search()` or `fetch()` would select, treat a provider without `ready()` as ready, and answer true when selection fails, because the operation reports that failure as a `WebError`. Readiness is not a selection input; `dsh-tool-web` makes it the activation condition of `web_search` and `web_fetch`, so a model step whose route answers false neither declares nor dispatches the tool. The DeepSeek Search and Fetch API providers use the route to choose between the account token and the API key, as the [web-deepseek-api authentication](../../packages/web/web-deepseek-api/README.md#authentication) section describes.
+A search or fetch provider may also implement `ready(llmProvider): Promise<boolean>`, a configuration-only check that must not make network calls: it answers whether an operation made for a model request on that chat route has a credential to send. `searchReady(llmProvider?)` and `fetchReady(llmProvider?)` ask only the provider that `search()` or `fetch()` would select, treat a provider without `ready()` as ready, and answer false for an explicit `none` selection without consulting a provider. Other selection failures answer true so the operation can report a `WebError`. Readiness is not a selection input; `dsh-tool-web` makes it the activation condition of `web_search` and `web_fetch`, so a model step whose route answers false neither declares nor dispatches the tool. The DeepSeek Search and Fetch API providers use the route to choose between the account token and the API key, as the [web-deepseek-api authentication](../../packages/web/web-deepseek-api/README.md#authentication) section describes.
 
-Selection never depends on registration, config, or HMR order: a capability has an explicit provider id (config `searchProvider`/`fetchProvider`, or the matching env var feeding the same field), or auto-selects when exactly one usable provider is registered; multiple usable providers with no configured id is `WEB_PROVIDER_AMBIGUOUS`, not first-wins. Each operation reads the configured id when it runs, so a saved settings change applies to the next search or fetch without remounting `ctx.web`.
+Selection never depends on registration, config, or HMR order: a capability has an explicit provider id (config `searchProvider`/`fetchProvider`, or the matching env var feeding the same field), or auto-selects when exactly one usable provider is registered; multiple usable providers with no configured id is `WEB_PROVIDER_AMBIGUOUS`, not first-wins. The reserved value `none` disables a capability: direct calls fail with `WEB_PROVIDER_DISABLED` before any provider is consulted, and readiness answers false. Shipped profiles disable search and select HTTP fetch, independently of the chat model. Each operation reads the configured id when it runs, so a saved settings change applies to the next search or fetch without remounting `ctx.web`.
 
 ## Fetch network policy
 
@@ -137,7 +137,7 @@ The HTTP provider does not restrict destination addresses: `web_fetch` reaches l
 
 ## Errors
 
-`WebError extends HarnessError` ([core.md](core.md) error taxonomy) with a `code: string` (open, like every other seam's error — `LlmError`, `SubagentError`), not a closed union: a provider may raise its own codes without editing `dsh-web`, and consumers must tolerate an unknown code. The codes split by owner. Seam-neutral codes are raised by the shared `WebRuntime` contract: `WEB_PROVIDER_UNAVAILABLE`, `WEB_PROVIDER_CONFIGURED_MISSING`, `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`, `WEB_PROVIDER_AMBIGUOUS`, `WEB_DUPLICATE_PROVIDER` (a registration-time programming error, the analogue of `LlmRuntime`'s `DUPLICATE_ADAPTER`), `WEB_ABORTED`, and `WEB_PROVIDER_ERROR` (the catch-all for a provider's own failure surfaced through the seam, including network/transport failure — DNS, connection refused, TLS). Fetch-transport codes are owned by the `dsh-web-fetch-http` implementation and a different fetch backend need not raise them: `WEB_INVALID_URL`, `WEB_BLOCKED_URL`, `WEB_REDIRECT_BLOCKED`, `WEB_FETCH_TOO_LARGE`, `WEB_FETCH_TIMEOUT`, `WEB_UNSUPPORTED_CONTENT_TYPE`.
+`WebError extends HarnessError` ([core.md](core.md) error taxonomy) with a `code: string` (open, like every other seam's error — `LlmError`, `SubagentError`), not a closed union: a provider may raise its own codes without editing `dsh-web`, and consumers must tolerate an unknown code. The codes split by owner. Seam-neutral codes are raised by the shared `WebRuntime` contract: `WEB_PROVIDER_DISABLED`, `WEB_PROVIDER_RESERVED_ID` (registration rejects the reserved id `none`), `WEB_PROVIDER_UNAVAILABLE`, `WEB_PROVIDER_CONFIGURED_MISSING`, `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`, `WEB_PROVIDER_AMBIGUOUS`, `WEB_DUPLICATE_PROVIDER` (a registration-time programming error, the analogue of `LlmRuntime`'s `DUPLICATE_ADAPTER`), `WEB_ABORTED`, and `WEB_PROVIDER_ERROR` (the catch-all for a provider's own failure surfaced through the seam, including network/transport failure — DNS, connection refused, TLS). Fetch-transport codes are owned by the `dsh-web-fetch-http` implementation and a different fetch backend need not raise them: `WEB_INVALID_URL`, `WEB_BLOCKED_URL`, `WEB_REDIRECT_BLOCKED`, `WEB_FETCH_TOO_LARGE`, `WEB_FETCH_TIMEOUT`, `WEB_UNSUPPORTED_CONTENT_TYPE`.
 
 ## The service
 
@@ -159,6 +159,7 @@ The web access service. Registered as `ctx.web` (one instance per context) and e
 
 Selection semantics (resolved at execution time, never order-dependent):
 
+- Configured `none` → `WEB_PROVIDER_DISABLED`, with no provider consulted.
 - A configured id that is registered and `available()` → that provider.
 - A configured id not registered → `WEB_PROVIDER_CONFIGURED_MISSING`.
 - A configured id registered but unavailable → `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`.
@@ -172,7 +173,8 @@ Selection semantics (resolved at execution time, never order-dependent):
  * registration is disposed, which happens with the calling fiber or through
  * the returned disposer; registration and disposal each emit
  * `web/providers-changed`. Throws {@link WebError} `WEB_DUPLICATE_PROVIDER`
- * if its id is already registered for search.
+ * if its id is already registered for search, or `WEB_PROVIDER_RESERVED_ID`
+ * if its id is `none`.
  * @param provider - the provider; its `id` is the registry key.
  * @returns the disposer that unregisters the provider.
  */
@@ -181,7 +183,8 @@ registerSearchProvider(provider: WebSearchProvider): () => void
 /**
  * Register a fetch provider, with the listing, disposal, and event behavior
  * of {@link WebRuntime.registerSearchProvider}. Throws {@link WebError}
- * `WEB_DUPLICATE_PROVIDER` if its id is already registered for fetch.
+ * `WEB_DUPLICATE_PROVIDER` if its id is already registered for fetch, or
+ * `WEB_PROVIDER_RESERVED_ID` if its id is `none`.
  * @param provider - the provider; its `id` is the registry key.
  * @returns the disposer that unregisters the provider.
  */
@@ -208,10 +211,10 @@ async search(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearch
 /**
  * Whether the provider `search()` would select can authenticate a search made for a
  * model request on the `llmProvider` chat route. Asks only that provider's `ready()`;
- * one without `ready()` counts as ready. Makes no network calls. A selection failure
- * answers true, because `search()` reports that failure as a structured `WebError`.
+ * one without `ready()` counts as ready. Makes no network calls. `none` answers false;
+ * other selection failures answer true so `search()` can report a structured `WebError`.
  * @param llmProvider - the provider route id of the model request, when known.
- * @returns false only when the selected provider reports that it cannot authenticate.
+ * @returns false when disabled or when the selected provider cannot authenticate.
  */
 async searchReady(llmProvider?: string): Promise<boolean>
 
@@ -228,10 +231,10 @@ async fetch(request: WebFetchRequest, signal?: AbortSignal): Promise<WebFetchRes
 /**
  * Whether the provider `fetch()` would select can authenticate a fetch made for a
  * model request on the `llmProvider` chat route. Asks only that provider's `ready()`;
- * one without `ready()` counts as ready. Makes no network calls. A selection failure
- * answers true, because `fetch()` reports that failure as a structured `WebError`.
+ * one without `ready()` counts as ready. Makes no network calls. `none` answers false;
+ * other selection failures answer true so `fetch()` can report a structured `WebError`.
  * @param llmProvider - the provider route id of the model request, when known.
- * @returns false only when the selected provider reports that it cannot authenticate.
+ * @returns false when disabled or when the selected provider cannot authenticate.
  */
 async fetchReady(llmProvider?: string): Promise<boolean>
 ```

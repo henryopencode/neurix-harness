@@ -467,8 +467,8 @@
     # The shared base enables the stable model-facing web_search and web_fetch
     # tools. The Web app disables this host row and composes both tools per agent
     # preset; products with a stricter network policy override tool-web. Search
-    # defaults to the DeepSeek Search API (deepseek-search-api) and fetch to the
-    # anonymous local fetcher (http). The DeepSeek Search and Fetch APIs
+    # is disabled until a provider is explicitly selected; fetch defaults to the
+    # anonymous local fetcher (http). The optional DeepSeek Search and Fetch APIs
     # (deepseek-search-api, deepseek-fetch-api) follow the conversation: on the
     # deepseek-account route they send the account token to that route's
     # origin, and otherwise the API key of the DeepSeek API-key route to its
@@ -487,7 +487,7 @@
     - id: web
       name: '@deepseek-ai/dsh-web'
       config:
-        searchProvider: deepseek-search-api
+        searchProvider: none
         fetchProvider: http
 
     - id: web-search-deepseek

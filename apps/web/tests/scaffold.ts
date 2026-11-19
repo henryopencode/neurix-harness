@@ -708,8 +708,10 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
     { id: 'llm-deepseek', disabled: mode !== 'record' && !maskDeepSeekCredential },
   ]
 
-  // Recorded standard sessions pin the optional patch tool in their request headers.
+  // Recorded sessions opt into Search API and the optional patch tool. Scenarios
+  // without a recorded Session retain the shipped disabled-search default.
   if (options.replayFixture !== undefined || options.compareReplaySession === true) {
+    overlayPatches.push({ id: 'web', config: { searchProvider: 'deepseek-search-api', fetchProvider: 'http' } })
     const config = composedRows.find(row => row.id === 'preset-standard')!.config as PresetDefinition
     overlayPatches.push({
       id: 'preset-standard',
