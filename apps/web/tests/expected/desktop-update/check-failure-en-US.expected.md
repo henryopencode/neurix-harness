@@ -1,0 +1,2 @@
+- button "Retry update"
+- button "Account menu"
