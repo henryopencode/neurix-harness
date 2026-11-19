@@ -1,6 +1,6 @@
 import type { z } from 'zod'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join, relative } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -772,6 +772,140 @@ describe('Workspace session ordering', () => {
 })
 
 describe('header-validated membership projection', () => {
+  it('keeps accounted sessions while their directory validation is pending', async () => {
+    const dir = await makeDir('pending-directory')
+    const otherDir = await makeDir('pending-other')
+    const alias = join(base, 'pending-header-alias')
+    await symlink(dir, alias, 'junction')
+    const result = await harness()
+    onTestFinished(() => result.ctx.fiber.dispose())
+    result.setSessions([header('kept', alias)])
+    const workspace = await result.registry.create(dir)
+    await workspace.attachSession(SessionId('kept'))
+    const other = await result.registry.create(otherDir)
+    result.setSessions([header('kept', alias), header('other', otherDir)])
+
+    let enter!: () => void
+    const entered = new Promise<void>((resolve) => { enter = resolve })
+    let release!: () => void
+    const released = new Promise<void>((resolve) => { release = resolve })
+    const normalize = workspacePaths.realpathNormalize
+    const spy = vi.spyOn(workspacePaths, 'realpathNormalize').mockImplementation(async (path) => {
+      const canonical = await normalize(path)
+      if (path === alias) {
+        enter()
+        await released
+      }
+      return canonical
+    })
+    onTestFinished(() => {
+      release()
+      spy.mockRestore()
+    })
+    const attaching = other.attachSession(SessionId('other'))
+    try {
+      await entered
+      await workspace.setTitle('Still grouped')
+      expect(storedRecord(result.pool, workspace.id).sessionIds).toEqual(['kept'])
+    } finally {
+      release()
+      try {
+        await attaching
+      } finally {
+        spy.mockRestore()
+      }
+    }
+  })
+
+  it('keeps cached accounts when an existing symlink target moves again', async () => {
+    const dir = await makeDir('registered-original')
+    const first = join(base, 'first-target')
+    const second = join(base, 'second-target')
+    const id = WorkspaceId('moved-again')
+    const pool = storedPool([[id, record(dir, ['logical', 'physical'])]], { initialized: true, workspaceIds: [id] })
+    await rename(dir, first)
+    await symlink(first, dir, 'junction')
+    const result = await harness({ pool, liveSessions: [
+      header('logical', dir), header('physical', first), header('new', second),
+    ] })
+    onTestFinished(() => result.ctx.fiber.dispose())
+    const workspace = result.registry.get(id)!
+    expect(workspace.sessionIds).toEqual(['logical', 'physical'])
+
+    await rename(first, second)
+    await symlink(second, first, 'junction')
+    await workspace.attachSession(SessionId('new'))
+    expect(workspace.sessionIds).toEqual(['new', 'logical', 'physical'])
+    await workspace.setTitle('Still grouped')
+    expect(storedRecord(pool, id).sessionIds).toEqual(['new', 'logical', 'physical'])
+  })
+
+  it.each([false, true])('keeps a relocated workspace behind a symlink (restart: %s)', async (restart) => {
+    const dir = await makeDir('relocated-project')
+    const target = join(base, 'external disk project')
+    const sessions = [header('first', dir), header('second', dir), header('new', target)]
+    const initial = await harness({ liveSessions: sessions })
+    onTestFinished(() => initial.ctx.fiber.dispose())
+    const workspace = await initial.registry.create(dir, 'My project')
+    await workspace.attachSession(SessionId('first'))
+    await workspace.attachSession(SessionId('second'))
+    await workspace.insertSessionBefore(SessionId('first'), SessionId('second'))
+
+    if (restart) await initial.ctx.fiber.dispose()
+    await rename(dir, target)
+    await symlink(target, dir, 'junction')
+    const current = restart ? await harness({ pool: initial.pool, sessions }) : initial
+    if (restart) onTestFinished(() => current.ctx.fiber.dispose())
+    const restored = current.registry.get(workspace.id)!
+
+    expect(restored.path).toBe(dir)
+    expect(restored.title).toBe('My project')
+    expect(restored.sessionIds).toEqual(['first', 'second'])
+    await restored.attachSession(SessionId('new'))
+    expect(restored.sessionIds).toEqual(['new', 'first', 'second'])
+    expect(storedRecord(initial.pool, workspace.id).sessionIds).toEqual(['new', 'first', 'second'])
+    expect(await restored.status()).toBe('ok')
+    expect(await current.registry.resolveByPath(target)).toBe(restored)
+    expect(await current.registry.create(dir, 'Ignored')).toBe(restored)
+    expect(await current.registry.create(target, 'Ignored')).toBe(restored)
+    expect(current.registry.list()).toHaveLength(1)
+  })
+
+  it('reuses a relocated registration when initial history grouping resumes', async () => {
+    const dir = await makeDir('bootstrap-relocated')
+    const target = join(base, 'bootstrap-target')
+    const id = WorkspaceId('relocated-bootstrap')
+    const pool = storedPool([[id, record(dir, [])]], { initialized: false, workspaceIds: [id] })
+    await rename(dir, target)
+    await symlink(target, dir, 'junction')
+
+    const result = await harness({ pool, sessions: [header('history', dir)] })
+    onTestFinished(() => result.ctx.fiber.dispose())
+    expect(result.registry.list().map(workspace => workspace.id)).toEqual([id])
+    expect(result.registry.get(id)!.sessionIds).toEqual(['history'])
+    expect(storedRecord(pool, id).path).toBe(dir)
+  })
+
+  it('keeps relocated accounts when another workspace loads a stored session header', async () => {
+    const dir = await makeDir('relocated-account')
+    const otherDir = await makeDir('other-account')
+    const target = join(base, 'account-target')
+    const result = await harness()
+    onTestFinished(() => result.ctx.fiber.dispose())
+    result.setSessions([header('kept', dir)])
+    const workspace = await result.registry.create(dir)
+    await workspace.attachSession(SessionId('kept'))
+    const other = await result.registry.create(otherDir)
+    await rename(dir, target)
+    await symlink(target, dir, 'junction')
+    result.setSessions([header('kept', dir), header('other', otherDir)])
+
+    await other.attachSession(SessionId('other'))
+    expect(workspace.sessionIds).toEqual(['kept'])
+    await workspace.setTitle('Still grouped')
+    expect(storedRecord(result.pool, workspace.id).sessionIds).toEqual(['kept'])
+  })
+
   it('preserves owned sessions and manual order after directory removal and restart', async () => {
     const dir = await makeDir('removed-owned')
     const sessions = [header('first', dir), header('second', dir)]
@@ -824,16 +958,18 @@ describe('header-validated membership projection', () => {
 
   it('preserves an owned session when the directory disappears between realpath and stat', async () => {
     const dir = await makeDir('stat-missing')
+    const alias = join(base, 'stat-missing-alias')
+    await symlink(dir, alias, 'junction')
     const id = WorkspaceId('stat-missing-workspace')
     const pool = storedPool([[id, record(dir, ['kept'])]], { initialized: true, workspaceIds: [id] })
     const normalize = workspacePaths.realpathNormalize
     const spy = vi.spyOn(workspacePaths, 'realpathNormalize').mockImplementation(async (path) => {
       const canonical = await normalize(path)
-      if (path === dir) await rm(dir, { recursive: true })
+      if (path === alias) await rm(dir, { recursive: true })
       return canonical
     })
     onTestFinished(() => { spy.mockRestore() })
-    const result = await harness({ pool, sessions: [header('kept', dir)] })
+    const result = await harness({ pool, sessions: [header('kept', alias)] })
     onTestFinished(() => result.ctx.fiber.dispose())
     expect(result.registry.get(id)!.sessionIds).toEqual(['kept'])
   })

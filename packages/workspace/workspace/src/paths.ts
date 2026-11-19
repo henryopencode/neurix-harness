@@ -39,10 +39,10 @@ export function defaultWorkspaceTitle(
 /**
  * Canonicalize a fully qualified directory path via `fs.realpath`: trailing
  * slashes, `..` segments, and symlinks are all resolved. This is the ONE
- * uniqueness canon of the package — workspace paths are stored canonicalized,
- * uniqueness is string equality of canonicalized paths (a symlink to an
- * existing workspace's directory collides), and attach-time session `cwd`
- * checks go through the same canon. Relative paths reject before `realpath` can
+ * uniqueness canon of the package — workspace paths are stored canonicalized
+ * at creation. Lookup and attachment resolve stored paths again, so moving a
+ * directory behind a symlink preserves its registration. Canonical directory
+ * equality determines uniqueness and membership. Relative paths reject before `realpath` can
  * resolve them from the Host cwd or current Windows drive. A path that does not
  * exist rejects with the original `ENOENT` — this is `create`'s reject path (a
  * workspace must point at an existing directory).
