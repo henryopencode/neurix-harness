@@ -78,7 +78,10 @@ function liveMethod<F extends RuntimeMethod>(method: F): F {
  * @param target - method owner shared by overlapping scopes.
  * @returns original methods and independently disposable replacements.
  */
-export function createReplaceHelper<T extends { [K in keyof T]: (...args: never[]) => unknown }>(target: T) {
+export function createReplaceHelper<T extends { [K in keyof T]: RuntimeMethod }>(target: T): {
+  rawImpl: T
+  replaceMethod<K extends keyof T>(key: K, replacement: T[K]): () => void
+} {
   const rawImpl = { ...target }
   return {
     rawImpl,
