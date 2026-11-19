@@ -38,6 +38,10 @@ vi.mock('electron', async () => {
           destroy: vi.fn(() => { destroyed = true; visible = false; window.emit('closed') }),
           loadURL: vi.fn(async (_url: string) => { await electron.loading }),
         })
+      Object.defineProperty(window, 'webContents', { get: () => {
+        if (destroyed) throw new TypeError('Object has been destroyed')
+        return contents
+      } })
       electron.windows.push(window as BrowserWindow)
       return window
     }),
@@ -127,12 +131,42 @@ it('restores the application and requests audio shutdown when compact rendering 
 
 it('ends hidden audio before application shutdown and leaves no registered control handlers', async () => {
   const b = fixture()
+  const contents = b.owner.webContents
   await b.invoke(VOICE_WINDOW_IPC.publish, state)
   await b.invoke(VOICE_WINDOW_IPC.minimize)
   app.emit('before-quit', {})
   expect(mockMethod(b.owner.webContents, 'send')).toHaveBeenCalledWith(VOICE_WINDOW_IPC.action, 'end')
   expect(electron.windows[1]!.isDestroyed()).toBe(true)
+  b.owner.destroy()
+  app.emit('will-quit', {})
+  expect(electron.handlers.size).toBe(0)
+  expect(contents.listenerCount('did-start-navigation')).toBe(0)
+})
+
+it('withdraws controls after the primary window is destroyed without starting voice', () => {
+  const b = fixture(), contents = b.owner.webContents
+  b.controls.attach(b.owner)
+  app.emit('before-quit', {})
+  b.owner.destroy()
+  expect(() => app.emit('will-quit', {})).not.toThrow()
+  expect(electron.handlers.size).toBe(0)
+  expect(contents.listenerCount('did-start-navigation')).toBe(0)
+  expect(b.owner.eventNames()).toEqual([])
+  expect(app.listenerCount('before-quit')).toBe(0)
+  expect(app.listenerCount('will-quit')).toBe(0)
+})
+
+it('observes a replacement primary window after its predecessor has been destroyed', () => {
+  const b = fixture(), contents = b.owner.webContents
+  b.controls.attach(b.owner)
+  b.owner.destroy()
+  const next = new BrowserWindow()
+  b.controls.attach(next)
+  expect(contents.listenerCount('did-start-navigation')).toBe(0)
+  expect(b.owner.eventNames()).toEqual([])
+  expect(next.webContents.listenerCount('did-start-navigation')).toBe(1)
   b.controls.dispose()
+  expect(next.webContents.listenerCount('did-start-navigation')).toBe(0)
   expect(electron.handlers.size).toBe(0)
 })
 
