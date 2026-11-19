@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { provideWorkingDirectoryFixture } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import { ShellExecutor } from '@deepseek-ai/dsh-shell'
@@ -316,12 +316,18 @@ describe('bash tool', () => {
     })
   })
 
-  it('reports a timeout even when the command traps the signal and exits 0', async () => {
-    // The signal-independent timeout marker: a trapped SIGTERM that exits 0
-    // after our timer fired must NOT look like a clean success. (bash may
-    // print "Terminated" to stderr for the killed sleep — environment
-    // dependent — so assert the marker, not the exact body.)
+  it('reports a timeout alongside a zero exit code', async () => {
     const ctx = await setup()
+    const outcome: ShellRunResult = {
+      exitCode: 0, signal: null, timedOut: true, aborted: false, timeoutMs: 100,
+      stdout: { text: '', truncated: false }, stderr: { text: '', truncated: false },
+    }
+    const execution = vi.spyOn(ctx.shell, 'execute').mockResolvedValue(fakeExecution({
+      status: 'completed', exitCode: 0, signal: null, done: Promise.resolve(),
+      readOutput: () => ({ delta: '', lossy: false }),
+      observed: { stdout: silentReader, stderr: silentReader }, kill: () => false,
+    }, () => Promise.resolve(outcome)))
+    onTestFinished(async () => { execution.mockRestore(); await ctx.fiber.dispose() })
     const result = await call(ctx, 'bash', { command: 'trap "exit 0" TERM; sleep 60', description: 'test command', timeoutMs: 100 })
     expect(result.isError).toBe(false)
     expect(text(result)).toContain('[timed out after 100ms]')
