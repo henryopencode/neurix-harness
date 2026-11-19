@@ -76,7 +76,7 @@ Loader entry 保留原始导入结果。HMR 为每个 entry 名称与配置树 b
 
 共享同一运行时的 entry 一起替换，每个 entry 使用其自身模块对应的实现。同一模块的重复 entry 仍保有各自的插件实例。替换失败时，HMR 清理已部分激活的替换实例，并恢复原来的模块和插件实现。重载成功后更新所有匹配的 entry 记录，包括已停用的 entry；替换失败时这些记录保持不变。从未加载过的 entry 仍保持未初始化状态。
 
-[package-manifest.ts](src/package-manifest.ts) 封装 package 读取、scope、type 和最近 manifest 查询所需的 Node internal 接口。每个 HMR 实例拥有自己的配置缓存，销毁时恢复它安装的 hook。manifest 失效会清空 ESM `ResolveCache` 和 CommonJS `_pathCache`：它们都不记录查询过的全部 manifest，入口也可能指向包目录之外。CommonJS 加载先用 Node 默认 resolver 解析请求，再进入原生 loader，绕过旧请求别名并保留已求值模块。同步 resolve hook 收到的是解析后的文件名。普通模块替换仍由 HMR 独立处理。
+[package-manifest.ts](src/package-manifest.ts) 封装 package 读取、scope、type 和最近 manifest 查询所需的 Node internal 接口。每个 HMR 实例拥有自己的配置缓存和已安装 hook。重叠实例可按任意顺序销毁：退役包装器委托给前序方法并释放自身实现，最后一个实例恢复方法时跳过退役包装器。manifest 失效会清空 ESM `ResolveCache` 和 CommonJS `_pathCache`：它们都不记录查询过的全部 manifest，入口也可能指向包目录之外。CommonJS 加载先用 Node 默认 resolver 解析请求，再进入原生 loader，绕过旧请求别名并保留已求值模块。同步 resolve hook 收到的是解析后的文件名。普通模块替换仍由 HMR 独立处理。
 
 被监听模块的路径沿用 Node ESM 解析所用的 `realpathSync()` 表示，包括 Windows 短目录名，使文件事件与模块缓存匹配。
 

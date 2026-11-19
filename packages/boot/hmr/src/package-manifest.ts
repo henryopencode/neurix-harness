@@ -54,14 +54,40 @@ interface NativeAccess {
   esmLoader: { resolveSync(...args: unknown[]): unknown }
 }
 
-/** Snapshot own methods; each disposer restores its method only while its replacement is still installed. */
+type RuntimeMethod = (...args: never[]) => unknown
+
+const methodReplacement = Symbol('HMR method replacement')
+
+interface MethodReplacement {
+  original: RuntimeMethod
+  replacement?: RuntimeMethod
+}
+
+/** Skip retired predecessors when the last overlapping owner restores a method. */
+function liveMethod<F extends RuntimeMethod>(method: F): F {
+  let current = method
+  for (;;) {
+    const state = (current as RuntimeMethod & { [methodReplacement]?: MethodReplacement })[methodReplacement]
+    if (state === undefined || state.replacement !== undefined) return current
+    current = state.original as F
+  }
+}
+
+/** Each replacement owns its implementation; retired wrappers only delegate to their predecessor. */
 function createReplaceHelper<T extends { [K in keyof T]: (...args: never[]) => unknown }>(target: T) {
   const rawImpl = { ...target }
   return {
     rawImpl,
     replaceMethod<K extends keyof T>(key: K, replacement: T[K]): () => void {
-      target[key] = replacement
-      return () => { if (target[key] === replacement) target[key] = rawImpl[key] }
+      const state: MethodReplacement = { original: rawImpl[key], replacement }
+      const wrapped = Object.assign(function (this: unknown, ...args: never[]): unknown {
+        return Reflect.apply(state.replacement ?? state.original, this, args)
+      }, { [methodReplacement]: state }) as T[K]
+      target[key] = wrapped
+      return () => {
+        state.replacement = undefined
+        if (target[key] === wrapped) target[key] = liveMethod(rawImpl[key])
+      }
     },
   }
 }
@@ -161,7 +187,7 @@ export class PackageManifests {
     if (cache !== undefined) Map.prototype.clear.call(cache)
   }
 
-  /** Restore every replaced Node method this instance installed. */
+  /** Release this instance's implementations and restore methods no newer owner still replaces. */
   dispose(): void {
     for (const restore of this.restorers.splice(0).reverse()) restore()
     this.native = undefined

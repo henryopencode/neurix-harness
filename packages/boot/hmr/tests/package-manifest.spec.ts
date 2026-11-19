@@ -251,29 +251,40 @@ function outcome(run: () => unknown): unknown {
   }
 }
 
+async function runManifestFixture(name: string, root: string, timeout: number) {
+  // Resolver recursion can block the child's timers; the parent retains time to terminate and reap it.
+  const child = spawn(process.execPath, [
+    '--expose-internals', fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), root,
+  ], { stdio: ['ignore', 'pipe', 'pipe'], timeout: Math.floor(timeout / 2), killSignal: 'SIGKILL' })
+  const completed = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
+    child.once('error', reject)
+    child.once('close', (code, signal) => { resolve({ code, signal }) })
+  })
+  cleanup.push(async () => {
+    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL')
+    await completed
+  })
+  let stdout = '', stderr = ''
+  child.stdout.setEncoding('utf8').on('data', (chunk: string) => { stdout += chunk })
+  child.stderr.setEncoding('utf8').on('data', (chunk: string) => { stderr += chunk })
+  return { ...await completed, stdout, stderr }
+}
+
 describe('package manifest reader parity', { concurrent: false }, () => {
-  it('terminates scope lookup after invalidating the filesystem root without modifying it', async () => {
+  it('terminates scope lookup after invalidating the filesystem root without modifying it', async ({ task }) => {
     const f = fixture()
-    const child = spawn(process.execPath, [
-      '--expose-internals',
-      fileURLToPath(new URL('./fixtures/package-root-scope.mjs', import.meta.url)),
-      f.root,
-    ], { stdio: ['ignore', 'pipe', 'pipe'] })
-    const completed = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
-      child.once('error', reject)
-      child.once('close', (code, signal) => { resolve({ code, signal }) })
-    })
-    cleanup.push(async () => {
-      if (child.exitCode === null && child.signalCode === null) child.kill()
-      await completed
-    })
-    let stdout = '', stderr = ''
-    child.stdout.setEncoding('utf8').on('data', (chunk: string) => { stdout += chunk })
-    child.stderr.setEncoding('utf8').on('data', (chunk: string) => { stderr += chunk })
-    const result = await completed
-    expect(result.signal, stderr).toBeNull()
-    expect(result.code, stderr).toBe(0)
-    expect(stdout).toBe('scope traversal completed\n')
+    const result = await runManifestFixture('package-root-scope.mjs', f.root, task.timeout)
+    expect(result.signal, result.stderr).toBeNull()
+    expect(result.code, result.stderr).toBe(0)
+    expect(result.stdout).toBe('scope traversal completed\n')
+  })
+
+  it('restores native methods when overlapping instances retire in either order', async ({ task }) => {
+    const f = fixture()
+    const result = await runManifestFixture('package-manifest-overlap.mjs', f.root, task.timeout)
+    expect(result.signal, result.stderr).toBeNull()
+    expect(result.code, result.stderr).toBe(0)
+    expect(result.stdout).toBe('overlapping hooks restored\n')
   })
 
   it('reads valid JSON with a non-file ESM base like Node', async () => {
