@@ -149,8 +149,8 @@ export class DesktopUpdateCoordinator {
 
   /**
    * Check metadata without downloading, joining any current check.
-   * @param manual - Whether a failed check must remain visible in the status indicator.
-   * @returns The check result, including a silent automatic failure when applicable.
+   * @param manual - Whether a failed check replaces a known available release with a retry action.
+   * @returns The check result; failures from a packaged source remain visible unless a known release is still available.
    */
   async check(manual = false): Promise<DesktopUpdateState> {
     this.assertLive()
@@ -160,7 +160,7 @@ export class DesktopUpdateCoordinator {
     this.checkOperation ??= Promise.resolve().then(() => this.doCheck())
       .finally(() => { this.checkOperation = undefined })
     const result = await this.checkOperation
-    if (manual && result.phase === 'error') this.setState(result)
+    if (manual && result.phase === 'error' && this.current.phase !== 'error') this.setState(result)
     return result
   }
 
@@ -293,7 +293,8 @@ export class DesktopUpdateCoordinator {
       return this.setState(this.candidate === undefined ? { phase: 'idle' } : { phase: 'available', version })
     } catch (error) {
       if (generation !== this.generation || this.disposed) return this.current
-      return this.failure(error, 'check')
+      const failure = this.failure(error, 'check')
+      return !this.enabled() || this.current.phase === 'available' ? failure : this.setState(failure)
     }
   }
 }
