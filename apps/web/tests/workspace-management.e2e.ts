@@ -1104,10 +1104,9 @@ describe('web e2e: New Session after an outdated blank cache', () => {
       await handle.flush()
       await handle.close()
       const path = logPath(scaffold.persistenceRoot, header.cwd, legacy, 'zstd')
-      // The old writer emitted this required event before its feature was removed.
+      // An unregistered required event invalidates an otherwise blank cached observation.
       await appendFile(path, await compressZstdFrame(`${JSON.stringify({
-        type: 'model-group/configured', seq: 0, time: now - 30_000,
-        data: { mode: 'single', leader: '', members: [], stopped: false, direct: [], stoppedMembers: [] },
+        type: 'test/retired-required-event', seq: 0, time: now - 30_000, data: {},
       })}\n`))
       const original = await readFile(path)
       await scaffold.ctx.sessionProjectionCache.write(scaffold.ctx.sessions.prepare(legacy, { meta: header }))
@@ -1130,6 +1129,7 @@ describe('web e2e: New Session after an outdated blank cache', () => {
       expect(createdId).not.toBe(legacy)
       const selected = page.locator('[role="treeitem"][aria-selected="true"]')
       await expect.poll(() => selected.innerText()).toBe('New Session')
+      await expect.poll(() => workspace.sessionIds.length).toBe(3)
       expect(scaffold.ctx.sessions.get(createdId)?.header.cwd).toBe(scaffold.workspaceCwd)
       expect(scaffold.ctx.sessions.get(legacy)).toBeUndefined()
       expect(await readFile(path)).toEqual(original)
