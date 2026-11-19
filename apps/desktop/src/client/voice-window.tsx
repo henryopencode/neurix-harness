@@ -1,15 +1,22 @@
 /** Render compact voice controls without starting another Host, microphone, or conversation. */
+import '@deepseek-ai/dsh-client-ui-theme/src/styles/base.css'
+import '@deepseek-ai/dsh-client-ui-theme/src/styles/corner-shape.css'
 import '@deepseek-ai/dsh-client-ui-theme/src/styles/design-platform.css'
+import '@deepseek-ai/dsh-client-ui-theme/src/styles/focus.css'
+import '@deepseek-ai/dsh-client-ui-theme/src/styles/gradient-shadow-text.css'
 import { useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives/src/Button.tsx'
 import { Tooltip } from '@deepseek-ai/dsh-client-ui-primitives/src/Tooltip.tsx'
 import { ICON_SYMBOLS, type IconSymbolId } from '@deepseek-ai/dsh-client-ui-primitives/src/icons/artwork.ts'
+import { VoiceOrb } from '@deepseek-ai/dsh-voice-chat/src/client/VoiceOrb.tsx'
 import type { DesktopVoiceCommand } from '@deepseek-ai/dsh-voice-chat/types'
 import type { VoiceWindowApi, VoiceWindowSnapshot } from '../voice-window-protocol.ts'
 import './voice-window.css'
 
 declare global { interface Window { dshVoiceWindow: VoiceWindowApi } }
+
+const tooltipOptions = { portal: true, maxWidth: 160, delayMs: 500 } as const
 
 function VoiceIcon({ id }: { id: IconSymbolId }) {
   return <span className="voice-icon" aria-hidden dangerouslySetInnerHTML={{ __html: ICON_SYMBOLS[id] }} />
@@ -37,25 +44,27 @@ function VoiceWindow({ api }: { api: VoiceWindowApi }) {
   if (!state) return null
   const { labels } = state, stopping = state.phase === 'stopping'
   return <main className="voice-window" data-voice-window={state.phase}>
-    <div className="voice-orb" data-phase={state.phase} data-muted={state.microphoneMuted} aria-hidden />
-    <div className="voice-status" role="status">{labels.status}</div>
+    <Tooltip label={labels.restore} side="bottom" {...tooltipOptions}>
+      <button type="button" className="voice-orb" aria-label={labels.restore} onClick={() => { act('restore') }}>
+        <VoiceOrb phase={state.phase} />
+      </button>
+    </Tooltip>
+    <div className="voice-status" data-waiting={state.phase === 'warming' || state.phase === 'requesting'} role="status">{labels.status}</div>
     <div className="voice-controls">
-      <Tooltip label={state.microphoneMuted ? labels.unmuteMicrophone : labels.muteMicrophone} side="top" portal>
+      <Tooltip label={state.microphoneMuted ? labels.unmuteMicrophone : labels.muteMicrophone} side="top" {...tooltipOptions}>
         <Button className="voice-control" aria-label={state.microphoneMuted ? labels.unmuteMicrophone : labels.muteMicrophone}
           aria-pressed={state.microphoneMuted} disabled={stopping} onClick={() => { act('microphone') }}>
           <span className={state.microphoneMuted ? 'voice-muted' : undefined}><VoiceIcon id="dsw-icon-microphone-outline-regular" /></span>
         </Button>
       </Tooltip>
-      <Tooltip label={state.speakerMuted ? labels.unmuteSpeaker : labels.muteSpeaker} side="top" portal>
+      <Tooltip label={labels.end} side="top" {...tooltipOptions}><Button className="voice-control voice-end" aria-label={labels.end} disabled={stopping}
+        onClick={() => { act('end') }}><VoiceIcon id="dsw-icon-close-outline-regular" /></Button></Tooltip>
+      <Tooltip label={state.speakerMuted ? labels.unmuteSpeaker : labels.muteSpeaker} side="top" {...tooltipOptions}>
         <Button className="voice-control" aria-label={state.speakerMuted ? labels.unmuteSpeaker : labels.muteSpeaker}
           aria-pressed={state.speakerMuted} disabled={stopping} onClick={() => { act('speaker') }}>
           <span className={state.speakerMuted ? 'voice-muted' : undefined}><span className="voice-speaker" aria-hidden /></span>
         </Button>
       </Tooltip>
-      <Tooltip label={labels.end} side="top" portal><Button className="voice-control" aria-label={labels.end} disabled={stopping}
-        onClick={() => { act('end') }}><VoiceIcon id="dsw-icon-close-outline-regular" /></Button></Tooltip>
-      <Tooltip label={labels.restore} side="top" portal><Button className="voice-control" aria-label={labels.restore}
-        onClick={() => { act('restore') }}><VoiceIcon id="dsw-icon-chevron-up-outline-regular" /></Button></Tooltip>
     </div>
   </main>
 }

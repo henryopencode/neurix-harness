@@ -204,7 +204,7 @@ it('shares settings card materials and control sizes in both palettes', async ()
     await dialog.getByRole('button', { name: '添加模型提供商', exact: true }).click()
     const field = dialog.getByLabel('提供商', { exact: true })
     await field.waitFor()
-    expect(await appearance(field)).toMatchObject({ radius: '12px', height: 32 })
+    expect(await appearance(field)).toMatchObject({ radius: '12px', height: 34 })
     const save = await appearance(dialog.getByRole('button', { name: '保存', exact: true }))
     expect(save).toMatchObject({ radius: '12px', height: 36 })
     await compareOrRefreshGolden(join(EXPECTED, `${palette}.expected.md`),

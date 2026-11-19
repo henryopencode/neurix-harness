@@ -110,13 +110,22 @@ const captureProcessor = `class VoiceCapture extends AudioWorkletProcessor {
 }
 registerProcessor('neurix-voice-capture', VoiceCapture);`
 
+interface BufferedAudio {
+  readonly duration: number
+  readonly schedule: () => void
+  readonly cancel: () => void
+}
+
 /** One user-started microphone and playback lifetime, including late permission grants. */
 export class LiveAudio {
   private readonly lifetime = new AbortController()
   private context: AudioContext | undefined
   private stream: MediaStream | undefined
   private capture: AudioWorkletNode | undefined
-  private readonly playing = new Set<AudioBufferSourceNode>()
+  private readonly buffered = new Set<BufferedAudio>()
+  private readonly playing = new Set<() => void>()
+  private buffering: ReturnType<typeof setTimeout> | undefined
+  private playbackStarted = false
   private playbackUntil = 0
   private closing: Promise<void> | undefined
   private detector: TurnDetector | undefined
@@ -191,12 +200,14 @@ export class LiveAudio {
   }
 
   /**
-   * Schedule a streamed PCM fragment after previously accepted audio.
+   * Buffer or schedule a streamed PCM fragment in order. Only the start of a
+   * reply accumulates lead; an underrun resumes as soon as audio arrives.
    * @param audio - decoded Remote audio fragment.
    * @param signal - owning reply lifetime; cancellation prevents late output resumption and stops queued audio.
+   * @param started - notified when this fragment is handed to Web Audio.
    * @returns after playback or cancellation; rejects if output cannot resume within the configured deadline.
    */
-  async play(audio: VoiceAudio, signal: AbortSignal): Promise<void> {
+  async play(audio: VoiceAudio, signal: AbortSignal, started?: () => void): Promise<void> {
     const context = this.context
     const lifetime = AbortSignal.any([this.lifetime.signal, signal])
     const isCancelled = (): boolean => lifetime.aborted
@@ -214,21 +225,61 @@ export class LiveAudio {
     const view = new DataView(bytes.buffer), buffer = context.createBuffer(1, bytes.length / 2, audio.sampleRate)
     const samples = buffer.getChannelData(0)
     for (let index = 0; index < samples.length; index++) samples[index] = view.getInt16(index * 2, true) / 32768
-    const source = context.createBufferSource()
-    source.buffer = buffer; source.connect(this.playback ?? context.destination)
-    const cancelled = (): void => { source.stop() }
-    const finished = new Promise<void>((resolve) => {
-      source.onended = () => {
-        lifetime.removeEventListener('abort', cancelled)
-        this.playing.delete(source); source.disconnect(); resolve()
+    const done = Promise.withResolvers<void>()
+    let source: AudioBufferSourceNode | undefined
+    const detach = (): void => {
+      lifetime.removeEventListener('abort', cancel)
+      this.buffered.delete(fragment); this.playing.delete(cancel)
+      if (source) { source.onended = null; source.disconnect() }
+      if (this.buffered.size === 0) this.clearBuffering()
+    }
+    const cancel = (): void => {
+      if (source) { source.onended = null; source.stop() }
+      detach(); done.resolve()
+    }
+    const fragment: BufferedAudio = { duration: buffer.duration, cancel, schedule: () => {
+      this.buffered.delete(fragment)
+      if (isCancelled()) { cancel(); return }
+      try {
+        const node = source = context.createBufferSource()
+        node.buffer = buffer; node.connect(this.playback ?? context.destination)
+        const start = Math.max(this.playbackUntil, context.currentTime)
+        node.start(start)
+        this.playbackUntil = start + buffer.duration
+        this.playing.add(cancel)
+        node.onended = () => { detach(); done.resolve() }
+        started?.()
+      } catch (_error) {
+        if (source && this.playing.has(cancel)) { source.onended = null; source.stop() }
+        detach(); done.reject(new VoiceAudioError('playback'))
       }
-    })
-    this.playing.add(source)
-    const start = this.playbackUntil > context.currentTime ? this.playbackUntil : context.currentTime + this.playbackBufferSeconds
-    this.playbackUntil = start + buffer.duration
-    source.start(start)
-    lifetime.addEventListener('abort', cancelled, { once: true })
-    return finished
+    } }
+    lifetime.addEventListener('abort', cancel, { once: true })
+    if (this.playbackStarted) fragment.schedule()
+    else {
+      this.buffered.add(fragment)
+      const duration = [...this.buffered].reduce((sum, item) => sum + item.duration, 0)
+      if (duration >= this.playbackBufferSeconds) this.startBuffered()
+      else this.buffering ??= setTimeout(() => { this.startBuffered() }, this.playbackBufferSeconds * 1000)
+    }
+    return done.promise
+  }
+
+  private clearBuffering(): void {
+    clearTimeout(this.buffering); this.buffering = undefined
+  }
+
+  private startBuffered(): void {
+    this.clearBuffering()
+    if (this.buffered.size === 0) return
+    this.playbackStarted = true
+    for (const fragment of this.buffered) fragment.schedule()
+  }
+
+  /** Start a completed short reply, or reset the lead after the completed reply drains. */
+  finishPlayback(): void {
+    if (this.buffered.size > 0) this.startBuffered()
+    else if (this.playing.size === 0) this.playbackStarted = false
   }
 
   private async resumeOutput(context: AudioContext, signal: AbortSignal): Promise<void> {
@@ -247,8 +298,9 @@ export class LiveAudio {
 
   /** Stop audible and queued fragments immediately; capture remains active for the next utterance. */
   interrupt(): void {
-    for (const source of this.playing) source.stop()
-    this.playbackUntil = 0
+    for (const fragment of this.buffered) fragment.cancel()
+    for (const cancel of this.playing) cancel()
+    this.playbackUntil = 0; this.playbackStarted = false
   }
 
   /** Suppress microphone frames and discard an unfinished utterance.

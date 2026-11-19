@@ -304,8 +304,9 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     /** Compact options right-aligned in the New Session row after the workspace and preset controls; rendered only with a Session. */
     'conversation.hero.options': { kind: 'list'; scope: 'session' }
     /**
-     * Full-width entries above the composer card; fixed overlays must portal to the document body
-     * because the docked composer contains them.
+     * Full-width entries above the composer card. An active entry marked
+     * `data-composer-hero-replacement` replaces the blank-session headline.
+     * Fixed overlays must portal to the document body.
      */
     'conversation.input.dock': { kind: 'list'; scope: 'session'; owner: InputZone }
     /**
@@ -324,8 +325,10 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      */
     'conversation.input.left': { kind: 'list'; scope: 'session' }
     /**
-     * Compact controls before the composer submit action; fixed overlays must portal to the
-     * document body because the docked composer contains them.
+     * Compact controls between model selection and the submit action. Controls
+     * that own the same input as the activity seat can mark their group
+     * `data-composer-exclusive-activity` to hide the idle activity entry.
+     * Fixed overlays must portal to the document body.
      */
     'conversation.input.right': { kind: 'list'; scope: 'session' }
     /** Primary composer action; consumers may replace the empty idle action and otherwise retain the owner's Send/Stop fallback. */

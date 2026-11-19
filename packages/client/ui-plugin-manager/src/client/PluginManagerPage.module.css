@@ -759,13 +759,26 @@
 .installField input[type='text'] {
   height: 40px;
   padding: 0 14px;
-  border: 0.5px solid var(--dsw-alias-border-l4);
+  border: 0.5px solid var(--dsw-alias-border-l3);
   border-radius: var(--dsw-radius-md);
   outline: none;
-  background: var(--dsw-alias-bg-layer-3);
+  background: var(--dsw-alias-field-fill);
   font: inherit;
   font-size: 13px;
   color: var(--dsw-alias-label-primary);
+}
+
+.installField input[type='text']::placeholder,
+.registryCustomField::placeholder {
+  color: var(--dsw-alias-label-tertiary);
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .installField input[type='text']:hover:not(:disabled, :focus),
+  .registryCustomField:hover:not(:disabled, :focus) {
+    background: var(--dsw-alias-field-hover);
+  }
 }
 
 .installField input[type='text']:focus,
@@ -1057,9 +1070,9 @@ label.registryOption {
   height: 32px;
   margin-left: 26px;
   padding: 0 10px;
-  border: 0.5px solid var(--dsw-alias-border-l4);
+  border: 0.5px solid var(--dsw-alias-border-l3);
   border-radius: var(--dsw-radius-md);
-  background: var(--dsw-alias-bg-layer-3);
+  background: var(--dsw-alias-field-fill);
   font: inherit;
   font-size: 13px;
   color: var(--dsw-alias-label-primary);

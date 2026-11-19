@@ -77,7 +77,7 @@ export interface HeroShellProps {
  */
 export function HeroShell({ t, renderSlot, children }: HeroShellProps) {
   return (
-    <div className={css.root}>
+    <div className={css.root} data-conversation-hero-intro>
       <div className={css.stack}>
         <div className={css.headline}>
           <span className={css.fishHitbox}>

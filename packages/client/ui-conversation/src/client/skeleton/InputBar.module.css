@@ -464,4 +464,5 @@
 .trailingActive { flex: 1; margin-left: 0; }
 .activity { display: flex; align-items: center; flex: none; }
 .activity:empty { display: none; }
+.trailing:has([data-composer-exclusive-activity]) > .activity { display: none; }
 .activityExpanded { flex: 1; min-width: 0; }

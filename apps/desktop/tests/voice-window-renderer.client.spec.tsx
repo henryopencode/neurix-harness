@@ -32,8 +32,10 @@ it('retains newer audio state and routes only explicit compact control actions',
   fireEvent.click(screen.getByRole('button', { name: 'Mute speaker' }))
   fireEvent.click(screen.getByRole('button', { name: 'Restore window' }))
   expect(command.mock.calls).toEqual([['speaker'], ['restore']])
-  for (const name of ['Unmute microphone', 'End conversation', 'Restore window']) {
+  for (const name of ['Unmute microphone', 'End conversation']) {
     expect(screen.getByRole('button', { name }).querySelector('svg path')).not.toBeNull()
   }
+  expect([...document.querySelectorAll('.voice-controls button')].map(button => button.getAttribute('aria-label')))
+    .toEqual(['Unmute microphone', 'End conversation', 'Mute speaker'])
   expect(document.body.textContent).not.toMatch(/running sessions/i)
 })

@@ -4,9 +4,22 @@
 .head label { color: var(--dsw-alias-label-primary); font-size: 13px; font-weight: 500; }
 .head button { border: none; background: none; color: var(--dsw-alias-label-secondary); font: inherit; cursor: pointer; }
 .field input, .field textarea {
-  padding: 6px 12px; border: 0.5px solid var(--dsw-alias-border-l4); border-radius: var(--dsw-radius-md);
-  background: var(--dsw-alias-bg-layer-3); color: var(--dsw-alias-label-primary); font: inherit;
+  padding: 6px 12px; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-md);
+  background: var(--dsw-alias-field-fill); color: var(--dsw-alias-label-primary); font: inherit;
 }
 .field textarea { resize: vertical; }
-.field [aria-invalid='true'] { border-color: var(--dsw-alias-state-error-primary); }
+.field :where(input, textarea):focus { outline: none; border-color: var(--dsw-alias-state-business-primary); }
+.field :where(input, textarea):focus-visible {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: 1px;
+}
+.field :is(input, textarea):disabled { opacity: 0.55; }
+@media (hover: hover) {
+  .field :is(input, textarea):hover:not(:disabled, :focus) { background: var(--dsw-alias-field-hover); }
+}
+@media (pointer: coarse) { .field :is(input, textarea) { font-size: 16px; } }
+.field [aria-invalid='true'] {
+  --dsw-focus-ring-color: var(--dsw-alias-state-error-primary);
+  border-color: var(--dsw-alias-state-error-primary);
+}
 .field p { margin: 0; color: var(--dsw-alias-state-error-primary); font-size: 12px; }

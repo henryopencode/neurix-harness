@@ -24,7 +24,7 @@ export interface ConversationVoiceState {
 
 /** Host and Session callbacks captured by the Client registration. */
 export interface VoiceConversationDependencies {
-  readonly createAudio: () => Pick<LiveAudio, 'start' | 'play' | 'interrupt' | 'dispose' | 'setMicrophoneMuted' | 'setSpeakerMuted'>
+  readonly createAudio: () => Pick<LiveAudio, 'start' | 'play' | 'finishPlayback' | 'interrupt' | 'dispose' | 'setMicrophoneMuted' | 'setSpeakerMuted'>
   readonly warm: (voice: VoicePreset, signal: AbortSignal) => Promise<void>
   readonly retain: (sessionId: SessionId, signal: AbortSignal) => SessionReference
   readonly catalog: () => SpeechCatalog | null
@@ -48,7 +48,6 @@ interface ActiveVoice {
   latestTurn: number
   latestStep: number
   admitting: boolean
-  cancellation: Promise<void>
   speech: Promise<void>
   playback: Promise<void>
   capacity: Promise<void>
@@ -59,7 +58,7 @@ interface ActiveVoice {
   readonly maxPendingSentences: number
   pendingSentences: number
   readonly maxSentenceCharacters: number
-  queuedSegment?: { text: string; started: boolean }
+  queuedSegment?: { text: string; started: boolean; complete: boolean }
 }
 
 function stepAtTurn(replies: readonly VoiceReply[], turn: number): number {
@@ -99,7 +98,7 @@ export class VoiceConversation {
     const active: ActiveVoice = { sessionId, abort, audio, reference, sentences: new ReplySentences(options.maxSentenceCharacters),
       voice: options.voice, syntheses: new Set(),
       turn: new AbortController(), afterTurn: latestTurn, afterStep: latestStep, latestTurn, latestStep, admitting: false,
-      cancellation: Promise.resolve(), speech: Promise.resolve(),
+      speech: Promise.resolve(),
       playback: Promise.resolve(), capacity: Promise.resolve(), warming: Promise.resolve(), ready: false, running: false, replies: [],
       maxPendingSentences: options.maxPendingSentences, pendingSentences: 0, maxSentenceCharacters: options.maxSentenceCharacters }
     for (const reply of replies) active.sentences.take(reply, true)
@@ -114,8 +113,9 @@ export class VoiceConversation {
       })
       audio.setMicrophoneMuted(true)
       const capture = audio.start(options, () => { this.speechStarted(active) }, (bytes) => { void this.submit(active, bytes) },
-        (error) => { this.fail(active, error.kind) })
-      this.update({ phase: 'warming' })
+        (error) => { this.fail(active, error.kind) }).then(() => {
+        if (!abort.signal.aborted) this.update({ phase: 'warming' })
+      })
       active.warming = this.dependencies.warm(active.voice, abort.signal).catch((error: unknown) => {
         if (!abort.signal.aborted) this.fail(active, 'synthesis')
         throw error
@@ -136,11 +136,6 @@ export class VoiceConversation {
     delete active.queuedSegment
     active.afterTurn = active.latestTurn; active.afterStep = active.latestStep; active.admitting = false
     this.update({ phase: 'recording', error: null })
-    const session = active.session
-    if (!session?.getSnapshot().running) return
-    active.cancellation = session.cancel().then((result) => {
-      if (!result.ok) throw result.error
-    }).catch(() => { if (this.active === active) this.fail(active, 'send') })
   }
 
   private async submit(active: ActiveVoice, bytes: Uint8Array): Promise<void> {
@@ -158,8 +153,6 @@ export class VoiceConversation {
       if (text === '') { this.update({ phase: 'listening' }); return }
       this.update({ transcript: text })
       operation = 'send'
-      await active.cancellation
-      signal.throwIfAborted()
       const session = active.session
       if (!session) throw new Error('Voice Session is not ready')
       active.afterTurn = active.latestTurn; active.afterStep = active.latestStep
@@ -201,7 +194,7 @@ export class VoiceConversation {
           queued.text += separator + sentence
           continue
         }
-        const segment = { text: sentence, started: false }
+        const segment = { text: sentence, started: false, complete: false }
         active.queuedSegment = segment
         active.pendingSentences++
         const capacity = active.capacity, previousPlayback = active.playback
@@ -220,12 +213,16 @@ export class VoiceConversation {
           const playing: Promise<void>[] = []
           await this.dependencies.synthesize(segment.text, active.voice, signal, (audio) => {
             if (!signal.aborted) {
-              if (this.state.getSnapshot().phase !== 'speaking') this.update({ phase: 'speaking' })
-              const playback = active.audio.play(audio, signal)
+              const playback = active.audio.play(audio, signal, () => {
+                if (this.state.getSnapshot().phase !== 'speaking') this.update({ phase: 'speaking' })
+              })
               void playback.catch(() => { if (!signal.aborted) this.fail(active, 'playback') })
               playing.push(playback)
             }
           })
+          signal.throwIfAborted()
+          segment.complete = true
+          if (!active.running && active.queuedSegment === segment) active.audio.finishPlayback()
           void Promise.all(playing).then(() => {
             if (!signal.aborted) {
               active.pendingSentences--
@@ -247,6 +244,7 @@ export class VoiceConversation {
       const next = running && active.admitting ? 'thinking' : 'listening'
       if (phase !== next) this.update({ phase: next })
     }
+    if (!running && active.queuedSegment?.complete) active.audio.finishPlayback()
   }
 
   private update(patch: Partial<ConversationVoiceState>): void { this.state.set({ ...this.state.getSnapshot(), ...patch }) }

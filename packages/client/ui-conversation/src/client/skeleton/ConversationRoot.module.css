@@ -600,6 +600,10 @@
   z-index: 1;
 }
 
+.composerHero:has(:global([data-composer-hero-replacement])) > :global([data-conversation-hero-intro]) {
+  display: none;
+}
+
 .heroWorkspaceRow {
   display: flex;
   align-items: center;

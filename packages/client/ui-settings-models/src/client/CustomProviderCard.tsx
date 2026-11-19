@@ -229,6 +229,7 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
             value={route}
             placeholder="acme-gateway"
             aria-label={t('customRoute')}
+            aria-invalid={routeInvalid || routeTaken}
             disabled={profileDisabled}
             onChange={(event) => { setRoute(event.target.value) }}
           />
@@ -286,6 +287,7 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
           value={keyDraft}
           placeholder={t('keyPlaceholder')}
           aria-label={t('keyInput')}
+          aria-invalid={keyFailure !== undefined}
           disabled={disabled}
           onChange={(event) => { setKeyDraft(event.target.value) }}
         />

@@ -9,7 +9,7 @@
     "radius": "12px",
     "border": "0px",
     "stroke": "rgb(249, 250, 251)",
-    "fill": "rgb(53, 54, 56)",
+    "fill": "rgb(41, 41, 41)",
     "height": 36
   },
   "usage": {

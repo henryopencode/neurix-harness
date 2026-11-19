@@ -77,6 +77,8 @@ Desktop 的固定快捷键 `Cmd`/`Ctrl` + `+`（或 `=`）和 `Cmd`/`Ctrl` + `-`
 
 `--dsw-alias-composer-action-*` token 为可用的输入框操作按钮提供配色：浅色模式为近黑底白色图标，深色模式为浅灰底深色图标，并分别定义悬停底色。禁用按钮使用中灰底并保留相同的图标颜色，因此空草稿显示灰底，可发送的草稿显示可用态底色。
 
+`--dsw-alias-field-fill` 和 `--dsw-alias-field-hover` 为深浅主题下的输入框、选择器和分段轨道提供下沉底色。`--dsw-alias-segment-selected-fill` 以区别于轨道的平面底色标记所选分段。
+
 `--dsw-alias-illustration-*` token 分别定义分层装饰插画的背景、前层表面、后层、投影、内嵌填充与细节配色。表盘使用内嵌填充。深色配色让前层表面比后层和背景更亮；内嵌填充与投影沿用后层色调。
 
 `base.css` 仅抑制[基础控件焦点工具](../ui-primitives/README.zh.md)通过 `data-dsh-automatic-focus` 标记的聚焦元素外轮廓线；正常键盘焦点样式、边框、阴影及错误状态保持不变。
