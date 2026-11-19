@@ -7,7 +7,7 @@ import { dirname, join, toNamespacedPath } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { ModuleLoader } from '@deepseek-ai/cordis-plugin-loader'
 import { afterEach, describe, expect, it } from 'vitest'
-import { PackageManifests } from '../src/package-manifest.ts'
+import { createReplaceHelper, PackageManifests } from '../src/package-manifest.ts'
 
 const require = createRequire(import.meta.url)
 const addon = require('node-addon-require-builtin') as { requireBuiltin(id: string): unknown }
@@ -59,6 +59,27 @@ function resolveEsm(specifier: string, parentURL: string): string {
     ? loader.resolveSync(parentURL, { specifier, attributes: {} })
     : loader.resolveSync(specifier, parentURL, {})).url
 }
+
+describe('overlapping method ownership', () => {
+  it.each([false, true])('preserves live behavior and restores method identity with reverse disposal %s', (reverse) => {
+    const target = { read: (value: string) => `native:${value}` }
+    const original = target.read
+    const first = createReplaceHelper(target)
+    const disposeFirst = first.replaceMethod('read', value => `first:${first.rawImpl.read(value)}`)
+    const second = createReplaceHelper(target)
+    const disposeSecond = second.replaceMethod('read', value => `second:${second.rawImpl.read(value)}`)
+    try {
+      expect(target.read('value')).toBe('second:first:native:value')
+      ;(reverse ? disposeSecond : disposeFirst)()
+      expect(target.read('value')).toBe(reverse ? 'first:native:value' : 'second:native:value')
+      ;(reverse ? disposeFirst : disposeSecond)()
+      expect(target.read).toBe(original)
+    } finally {
+      disposeSecond()
+      disposeFirst()
+    }
+  })
+})
 
 describe('package manifest invalidation', { concurrent: false }, () => {
   it('preserves filename-based resolve hooks and node-prefixed builtins after invalidation', async () => {

@@ -73,8 +73,12 @@ function liveMethod<F extends RuntimeMethod>(method: F): F {
   }
 }
 
-/** Each replacement owns its implementation; retired wrappers only delegate to their predecessor. */
-function createReplaceHelper<T extends { [K in keyof T]: (...args: never[]) => unknown }>(target: T) {
+/**
+ * Retired method wrappers delegate to their predecessor and release their implementation.
+ * @param target - method owner shared by overlapping scopes.
+ * @returns original methods and independently disposable replacements.
+ */
+export function createReplaceHelper<T extends { [K in keyof T]: (...args: never[]) => unknown }>(target: T) {
   const rawImpl = { ...target }
   return {
     rawImpl,
