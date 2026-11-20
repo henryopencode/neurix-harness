@@ -185,8 +185,8 @@ Owns one model worker; downloads and Python installation require prepare().
 @Remote({ mode: 'stream' }) async *follow(signal: AbortSignal): AsyncIterable<VoiceStatus>
 
 /**
- * Read the deployment's utterance and playback limits.
- * @returns browser turn-detection options; no microphone or model is activated.
+ * Read the deployment's voice interaction limits.
+ * @returns capture, submission, and playback options without activating the microphone or model.
  */
 @Remote options(): VoiceOptions
 

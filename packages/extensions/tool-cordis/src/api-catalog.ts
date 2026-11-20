@@ -4593,9 +4593,9 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: '@Remote options(): VoiceOptions',
-        description: 'Read the deployment\'s utterance and playback limits.',
+        description: 'Read the deployment\'s voice interaction limits.',
         parameters: [],
-        returns: 'browser turn-detection options; no microphone or model is activated.',
+        returns: 'capture, submission, and playback options without activating the microphone or model.',
       },
       {
         signature: '@Remote prepare(): void',
@@ -10506,7 +10506,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'VoiceOptions',
-    declaration: 'export interface VoiceOptions {\n    readonly speechThreshold: number;\n    readonly silenceMs: number;\n    readonly minimumSpeechMs: number;\n    readonly preRollMs: number;\n    readonly maxUtteranceSeconds: number;\n    readonly maxSentenceCharacters: number;\n    readonly maxPendingSentences: number;\n    readonly warmupText: string;\n    readonly voice: VoicePreset;\n    readonly playbackBufferMs: number;\n    readonly playbackResumeTimeoutMs: number;\n}',
+    declaration: 'export interface VoiceOptions {\n    readonly speechThreshold: number;\n    readonly silenceMs: number;\n    readonly minimumSpeechMs: number;\n    readonly preRollMs: number;\n    readonly maxUtteranceSeconds: number;\n    readonly maxPendingUtterances: number;\n    readonly maxSentenceCharacters: number;\n    readonly maxPendingSentences: number;\n    readonly warmupText: string;\n    readonly voice: VoicePreset;\n    readonly playbackBufferMs: number;\n    readonly playbackResumeTimeoutMs: number;\n}',
   },
   {
     name: 'VoicePreset',

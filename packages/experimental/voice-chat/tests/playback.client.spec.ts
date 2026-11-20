@@ -4,7 +4,7 @@ import { LiveAudio } from '../src/client/audio.ts'
 import type { VoiceOptions } from '../src/types.ts'
 
 const options: VoiceOptions = { speechThreshold: 0.02, silenceMs: 300, minimumSpeechMs: 150,
-  preRollMs: 200, maxUtteranceSeconds: 2, maxSentenceCharacters: 100, maxPendingSentences: 32,
+  preRollMs: 200, maxUtteranceSeconds: 2, maxPendingUtterances: 4, maxSentenceCharacters: 100, maxPendingSentences: 32,
   warmupText: '', voice: 'natural', playbackBufferMs: 320, playbackResumeTimeoutMs: 5000 }
 
 function browserAudio() {
@@ -63,6 +63,8 @@ function browserAudio() {
 it('plays distinct open, accepted, and close sounds, releasing capture before the closing sound drains', async () => {
   const b = browserAudio()
   await b.audio.start(options, () => {}, () => {}, () => {})
+  expect(b.tones).toHaveLength(0)
+  b.audio.announceReady()
   expect(b.tones).toHaveLength(2)
   b.audio.setSpeakerMuted(true); b.audio.acknowledge()
   expect(b.tones).toHaveLength(2)

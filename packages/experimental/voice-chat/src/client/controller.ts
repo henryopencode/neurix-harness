@@ -10,12 +10,13 @@ import { base64Audio, LiveAudio, VoiceAudioError } from './audio.ts'
 import { ReplySentences, type VoiceReply } from './replies.ts'
 
 /** Localized failure identities; raw transport or model errors never become UI copy. */
-export type VoiceFailure = 'permission' | 'device' | 'unsupported' | 'playback' | 'recognition' | 'send' | 'synthesis' | 'connection' | 'cleanup' | 'controls'
+export type VoiceFailure = 'permission' | 'device' | 'unsupported' | 'playback' | 'recognition' | 'backlog' | 'send' | 'synthesis' | 'connection' | 'cleanup' | 'controls'
 /** Transient interaction state, independent of the durable Session. */
 export interface ConversationVoiceState {
   /** Session owning the active microphone or the retained transcript while idle. */
   readonly sessionId: SessionId | null
   readonly phase: VoiceConversationPhase
+  /** Recognized text whose Session receipt has not been confirmed. */
   readonly transcript: string
   readonly error: VoiceFailure | null
   readonly microphoneMuted: boolean
@@ -26,12 +27,17 @@ export interface ConversationVoiceState {
 
 /** Host and Session callbacks captured by the Client registration. */
 export interface VoiceConversationDependencies {
-  readonly createAudio: () => Pick<LiveAudio, 'start' | 'play' | 'finishPlayback' | 'interrupt' | 'dispose' | 'setMicrophoneMuted' | 'setSpeakerMuted' | 'acknowledge'>
+  readonly createAudio: () => Pick<LiveAudio, 'start' | 'play' | 'finishPlayback' | 'interrupt' | 'dispose' | 'setMicrophoneMuted' | 'setSpeakerMuted' | 'announceReady' | 'acknowledge'>
   readonly warm: (voice: VoicePreset, signal: AbortSignal) => Promise<void>
   readonly retain: (sessionId: SessionId, signal: AbortSignal) => SessionReference
   readonly catalog: () => SpeechCatalog | null
   readonly transcribe: (audioBase64: string, signal: AbortSignal) => Promise<RemoteResult<Transcript>>
   readonly synthesize: (text: string, voice: VoicePreset, signal: AbortSignal, accept: (audio: VoiceAudio) => void) => Promise<void>
+}
+
+interface Utterance {
+  readonly encode: () => Promise<Uint8Array>
+  readonly replySignal: AbortSignal
 }
 
 interface ActiveVoice {
@@ -42,7 +48,7 @@ interface ActiveVoice {
   readonly sentences: ReplySentences
   readonly voice: VoicePreset
   readonly syntheses: Set<Promise<void>>
-  turn: AbortController
+  reply: AbortController
   session?: SessionFace
   /** Steering can admit a new model request inside the same turn. */
   afterTurn: number
@@ -54,6 +60,9 @@ interface ActiveVoice {
   playback: Promise<void>
   capacity: Promise<void>
   warming: Promise<void>
+  inputWork: Promise<void>
+  readonly utterances: Utterance[]
+  readonly maxPendingUtterances: number
   ready: boolean
   running: boolean
   replies: readonly VoiceReply[]
@@ -92,7 +101,7 @@ export class VoiceConversation {
    * @param replies - existing text, remembered without playback.
    * @param latestTurn - current Session turn watermark, including an unfinished turn.
    * @param latestStep - current step, including one without text; omitted uses the supplied replies.
-   * @returns after capture, Session retention, and voice warmup are ready; failures remain visible in state.
+   * @returns after capture and Session retention are ready; synthesis prewarms in the background.
    */
   async start(sessionId: SessionId, options: VoiceOptions, replies: readonly VoiceReply[], latestTurn: number,
     latestStep = stepAtTurn(replies, latestTurn)): Promise<void> {
@@ -101,9 +110,10 @@ export class VoiceConversation {
     const reference = this.dependencies.retain(sessionId, abort.signal)
     const active: ActiveVoice = { sessionId, abort, audio, reference, sentences: new ReplySentences(options.maxSentenceCharacters),
       voice: options.voice, syntheses: new Set(),
-      turn: new AbortController(), afterTurn: latestTurn, afterStep: latestStep, latestTurn, latestStep, admitting: false,
+      reply: new AbortController(), afterTurn: latestTurn, afterStep: latestStep, latestTurn, latestStep, admitting: false,
       speech: Promise.resolve(),
       playback: Promise.resolve(), capacity: Promise.resolve(), warming: Promise.resolve(), ready: false, running: false, replies: [],
+      inputWork: Promise.resolve(), utterances: [], maxPendingUtterances: options.maxPendingUtterances,
       maxPendingSentences: options.maxPendingSentences, pendingSentences: 0, maxSentenceCharacters: options.maxSentenceCharacters }
     for (const reply of replies) active.sentences.take(reply, true)
     this.active = active
@@ -116,7 +126,7 @@ export class VoiceConversation {
         return value
       })
       audio.setMicrophoneMuted(true)
-      const capture = audio.start(options, () => { this.speechStarted(active) }, (bytes) => { void this.submit(active, bytes) },
+      const capture = audio.start(options, () => { this.speechStarted(active) }, (encode) => { this.enqueue(active, encode) },
         (error) => { this.fail(active, error.kind) }, (rms) => {
           if (this.active !== active || !active.ready || this.state.getSnapshot().microphoneMuted) return
           const level = Math.min(1, Math.max(0, (rms - 0.008) / 0.14))
@@ -124,21 +134,22 @@ export class VoiceConversation {
         }).then(() => {
         if (!abort.signal.aborted) this.update({ phase: 'warming' })
       })
-      active.warming = this.dependencies.warm(active.voice, abort.signal).catch((error: unknown) => {
+      active.warming = this.dependencies.warm(active.voice, abort.signal).catch(() => {
         if (!abort.signal.aborted) this.fail(active, 'synthesis')
-        throw error
       })
-      await Promise.all([binding, capture, active.warming])
+      await Promise.all([binding, capture])
       abort.signal.throwIfAborted()
       active.ready = true
-      audio.setMicrophoneMuted(this.state.getSnapshot().microphoneMuted)
+      const { microphoneMuted } = this.state.getSnapshot()
+      audio.setMicrophoneMuted(microphoneMuted)
       this.update({ phase: 'listening' })
+      if (!microphoneMuted) audio.announceReady()
     } catch (error) { if (!abort.signal.aborted) this.fail(active, error instanceof VoiceAudioError ? error.kind : 'device') }
   }
 
   private speechStarted(active: ActiveVoice): void {
     if (this.active !== active || !active.ready) return
-    active.turn.abort(); active.audio.interrupt(); active.turn = new AbortController()
+    active.reply.abort(); active.audio.interrupt(); active.reply = new AbortController()
     active.speech = Promise.resolve(); active.playback = Promise.resolve(); active.capacity = Promise.resolve()
     active.pendingSentences = 0
     delete active.queuedSegment
@@ -146,34 +157,62 @@ export class VoiceConversation {
     this.update({ phase: 'recording', error: null })
   }
 
-  private async submit(active: ActiveVoice, bytes: Uint8Array): Promise<void> {
+  private enqueue(active: ActiveVoice, encode: Utterance['encode']): void {
     if (this.active !== active || !active.ready) return
-    const signal = AbortSignal.any([active.abort.signal, active.turn.signal])
-    const catalog = this.dependencies.catalog()
-    if (!catalog || bytes.length > catalog.maxAudioBytes) { this.fail(active, 'recognition'); return }
+    if (active.utterances.length >= active.maxPendingUtterances) {
+      this.update({ phase: 'transcribing', error: 'backlog' })
+      return
+    }
+    active.utterances.push({ encode, replySignal: active.reply.signal })
     this.update({ phase: 'transcribing' })
-    let operation: VoiceFailure = 'recognition'
+    if (active.utterances.length === 1) active.inputWork = this.drainInput(active)
+  }
+
+  private async drainInput(active: ActiveVoice): Promise<void> {
+    const signal = active.abort.signal
+    for (let next = active.utterances[0]; next && !signal.aborted; next = active.utterances[0]) {
+      await this.submit(active, next)
+      active.utterances.shift()
+    }
+    if (!signal.aborted && this.state.getSnapshot().phase === 'transcribing') this.update({ phase: 'listening' })
+  }
+
+  private async submit(active: ActiveVoice, { encode, replySignal }: Utterance): Promise<void> {
+    const signal = active.abort.signal
+    let operation: VoiceFailure = 'device'
+    const delivery = { accepted: false }
     try {
+      const bytes = await encode()
+      signal.throwIfAborted()
+      operation = 'recognition'
+      const catalog = this.dependencies.catalog()
+      if (!catalog || bytes.length > catalog.maxAudioBytes) { this.fail(active, operation); return }
       const result = await this.dependencies.transcribe(base64Audio(bytes), signal)
       signal.throwIfAborted()
       if (!result.ok) throw result.error
       const text = result.value.text.trim()
-      if (text === '') { this.update({ phase: 'listening' }); return }
+      if (text === '') return
       this.update({ transcript: text })
       operation = 'send'
       const session = active.session
       if (!session) throw new Error('Voice Session is not ready')
-      active.afterTurn = active.latestTurn; active.afterStep = active.latestStep
-      active.admitting = true
-      this.update({ phase: 'thinking' })
+      if (!replySignal.aborted) {
+        active.afterTurn = active.latestTurn; active.afterStep = active.latestStep
+        active.admitting = true
+        this.update({ phase: 'thinking' })
+      }
       const mode = session.getSnapshot().running ? 'steer' : 'queue'
-      const submission = session.beginSubmission({ mode, text, attachments: [] })
+      const confirm = (): void => {
+        if (delivery.accepted || signal.aborted) return
+        delivery.accepted = true
+        this.update({ transcript: '', sentCount: this.state.getSnapshot().sentCount + 1 })
+        active.audio.acknowledge()
+      }
+      const submission = session.beginSubmission({ mode, text, attachments: [], onAccept: confirm })
       const sent = await session.prompt([{ type: 'text', text }], mode, signal, submission.requestId)
-      signal.throwIfAborted()
       if (!sent.ok) throw sent.error
-      this.update({ sentCount: this.state.getSnapshot().sentCount + 1 })
-      active.audio.acknowledge()
-    } catch (_error) { if (!signal.aborted) this.fail(active, operation) }
+      confirm()
+    } catch (_error) { if (!signal.aborted && !delivery.accepted) this.fail(active, operation) }
   }
 
   /**
@@ -195,7 +234,7 @@ export class VoiceConversation {
     const currentPhase = this.state.getSnapshot().phase
     if (active.ready && currentPhase !== 'recording' && currentPhase !== 'transcribing'
       && afterPosition(active.latestTurn, active.latestStep, active)) active.admitting = true
-    const signal = AbortSignal.any([active.abort.signal, active.turn.signal])
+    const signal = active.reply.signal
     for (const reply of replies) {
       for (const sentence of active.sentences.take(reply, !active.admitting || !afterPosition(reply.turn, reply.step, active),
         active.maxPendingSentences - active.pendingSentences)) {
@@ -216,7 +255,7 @@ export class VoiceConversation {
         active.playback = drained.promise
         active.speech = active.speech.then(async () => {
           if (signal.aborted) return
-          await capacity
+          await Promise.all([capacity, active.warming])
           signal.throwIfAborted()
           segment.started = true
           if (this.state.getSnapshot().phase === 'listening') this.update({ phase: 'thinking' })
@@ -266,27 +305,29 @@ export class VoiceConversation {
   }
 
   /**
-   * End microphone and playback without cancelling an already submitted text task.
+   * End capture and playback while retaining recognized text with unconfirmed delivery.
    * @param feedback - use an audible close cue for an explicit user action.
-   * @returns after Web Audio, cancelled synthesis, and prior audio release settle,
-   * and the Session reference is released.
+   * @returns after capture, outstanding input and synthesis, and the retained Session are released.
    */
   stop(feedback = false): Promise<void> {
     const active = this.active
     this.active = undefined
     if (!active) return this.release
-    active.abort.abort(); active.turn.abort()
-    this.update({ phase: 'stopping' })
+    active.abort.abort(); active.reply.abort()
+    active.utterances.length = 0
+    const { error, transcript } = this.state.getSnapshot()
+    this.update({ phase: 'stopping', error: error && error !== 'backlog' ? error : transcript ? 'send' : null })
     this.inputLevel.set(0)
-    this.release = Promise.all([
-      this.release, active.audio.dispose(feedback), Promise.allSettled([active.warming, ...active.syntheses]),
-    ]).then(() => {
+    this.release = Promise.allSettled([
+      this.release, active.audio.dispose(feedback), Promise.allSettled([active.inputWork, active.warming, ...active.syntheses]),
+    ]).then((releases) => {
       active.reference.release()
+      const failure = releases.find(release => release.status === 'rejected')
+      if (failure) {
+        if (!this.active) this.update({ error: 'cleanup' })
+        throw failure.reason
+      }
       if (!this.active) this.update({ phase: 'idle' })
-    }, (error: unknown) => {
-      active.reference.release()
-      if (!this.active) this.update({ error: 'cleanup' })
-      throw error
     })
     return this.release
   }
@@ -299,7 +340,8 @@ export class VoiceConversation {
     active.audio.setMicrophoneMuted(muted || !active.ready)
     if (muted) this.inputLevel.set(0)
     this.update({ microphoneMuted: muted,
-      ...muted && this.state.getSnapshot().phase === 'recording' ? { phase: 'listening' } : {} })
+      ...muted && this.state.getSnapshot().phase === 'recording'
+        ? { phase: active.utterances.length ? 'transcribing' : 'listening' } : {} })
   }
 
   /** Toggle audible playback while retaining the written reply and synthesis ordering. */

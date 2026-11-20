@@ -103,15 +103,15 @@ export default class VoiceChat extends TypertRemoteService {
   }
 
   /**
-   * Read the deployment's utterance and playback limits.
-   * @returns browser turn-detection options; no microphone or model is activated.
+   * Read the deployment's voice interaction limits.
+   * @returns capture, submission, and playback options without activating the microphone or model.
    */
   @Remote
   options(): VoiceOptions {
-    const { speechThreshold, silenceMs, minimumSpeechMs, preRollMs, maxUtteranceSeconds,
+    const { speechThreshold, silenceMs, minimumSpeechMs, preRollMs, maxUtteranceSeconds, maxPendingUtterances,
       maxSentenceCharacters, maxPendingSentences, warmupText, voice, playbackBufferMs, playbackResumeTimeoutMs } = this.config
     return { speechThreshold, silenceMs, minimumSpeechMs, preRollMs, maxUtteranceSeconds,
-      maxSentenceCharacters, maxPendingSentences, warmupText, voice, playbackBufferMs, playbackResumeTimeoutMs }
+      maxPendingUtterances, maxSentenceCharacters, maxPendingSentences, warmupText, voice, playbackBufferMs, playbackResumeTimeoutMs }
   }
 
   /** Start or join explicit local runtime and model preparation; failures appear in follow(). */

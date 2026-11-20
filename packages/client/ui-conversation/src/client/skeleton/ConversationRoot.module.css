@@ -510,7 +510,7 @@
 /* Let the transcript scroll clear of active feedback without moving the composer. */
 .scrollBody:has(> .composerSeat .composerStack [data-composer-dock-feedback][data-composer-hero-replacement]):not(:has([data-conversation-composer-overlay]))
   > :global([data-slot='conversation.session']) > .viewArea {
-  padding-bottom: calc(var(--dsh-composer-dock-feedback-size) + 16px);
+  padding-bottom: calc(var(--dsh-composer-dock-feedback-size) + 16px + var(--dsh-composer-dock-feedback-extra, 0px));
 }
 
 .composerStack > :global([data-slot='conversation.input.dock']) :global([data-composer-dock-feedback]) {

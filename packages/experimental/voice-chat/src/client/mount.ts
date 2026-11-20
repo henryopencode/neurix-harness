@@ -150,11 +150,13 @@ async function registerUi(ctx: Context): Promise<void> {
     },
     showSetupNotice: (sessionId) => { setupNotice.set(sessionId) },
     close: () => {
+      void conversation.stop(true).catch((error: unknown) => { ctx.logger.warn('Voice audio cleanup failed', error) })
+    },
+    dismissNotice: () => {
       setupNotice.set(null)
-      void conversation.stop(true).then(() => {
-        const state = conversation.state.getSnapshot()
-        if (state.phase === 'idle' && state.error) conversation.state.set({ ...state, error: null })
-      }).catch((error: unknown) => { ctx.logger.warn('Voice audio cleanup failed', error) })
+      const state = conversation.state.getSnapshot()
+      conversation.state.set({ ...state, error: state.error === 'cleanup' ? state.error : null,
+        transcript: state.phase === 'idle' || state.phase === 'stopping' ? '' : state.transcript })
     },
     stop: (sessionId) => { if (conversation.state.getSnapshot().sessionId === sessionId) stop() },
     start: (sessionId, replies, turn, step) => {

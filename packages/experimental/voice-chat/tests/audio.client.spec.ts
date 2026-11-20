@@ -5,7 +5,8 @@ import { TurnDetector, waveBytes } from '../src/client/audio.ts'
 import type { VoiceOptions } from '../src/types.ts'
 
 const options: VoiceOptions = { speechThreshold: 0.02, silenceMs: 300, minimumSpeechMs: 150,
-  preRollMs: 200, maxUtteranceSeconds: 2, maxSentenceCharacters: 100, maxPendingSentences: 32, warmupText: '你好。', voice: 'natural', playbackBufferMs: 320, playbackResumeTimeoutMs: 5000 }
+  preRollMs: 200, maxUtteranceSeconds: 2, maxPendingUtterances: 4, maxSentenceCharacters: 100, maxPendingSentences: 32,
+  warmupText: '你好。', voice: 'natural', playbackBufferMs: 320, playbackResumeTimeoutMs: 5000 }
 
 it('ignores silence and brief noise, retains the onset, and submits once after a speech pause', () => {
   const started = vi.fn(), finished = vi.fn<(audio: Float32Array) => void>()

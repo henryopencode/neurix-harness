@@ -29,13 +29,15 @@ export interface VoiceStatus {
   readonly failedStep?: 'assets' | 'python' | 'dependencies' | 'model' | 'loading' | undefined
 }
 
-/** Detection and playback limits selected by the Host composition. */
+/** Capture, submission, and playback limits selected by the Host composition. */
 export interface VoiceOptions {
   readonly speechThreshold: number
   readonly silenceMs: number
   readonly minimumSpeechMs: number
   readonly preRollMs: number
   readonly maxUtteranceSeconds: number
+  /** Maximum completed recordings waiting for delivery, including the one being processed. */
+  readonly maxPendingUtterances: number
   readonly maxSentenceCharacters: number
   readonly maxPendingSentences: number
   readonly warmupText: string

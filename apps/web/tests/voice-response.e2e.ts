@@ -24,6 +24,8 @@ interface VoiceResponseProof {
   audible: () => boolean
   cues: number[]
   pulses: number
+  speechEndedAt?: number
+  acceptedAt?: number
   fades: string[]
   output?: AudioContext
   playback: PlayedAudio[]
@@ -128,11 +130,16 @@ it.skipIf(webSnapshotMode() === 'record')('plays a long streamed reply, interrup
     let sample: AudioBuffer | undefined
     const proof: VoiceResponseProof = {
       playback, tracks: destination.stream.getTracks(), cues: [], pulses: 0, fades: [],
-      setInput: (level) => { inputVolume.gain.value = level },
+      setInput: (level) => {
+        inputVolume.gain.value = level
+        if (level === 0) proof.speechEndedAt = performance.now()
+      },
       speak: () => {
         if (!sample) throw new Error('Test microphone is not ready')
         const source = capture.createBufferSource()
-        source.buffer = sample; source.connect(destination); source.start()
+        source.buffer = sample; source.connect(destination)
+        source.onended = () => { proof.speechEndedAt = performance.now() }
+        source.start()
       },
       audible: () => analysers.some((analyser) => {
         const values = new Float32Array(analyser.fftSize)
@@ -147,7 +154,7 @@ it.skipIf(webSnapshotMode() === 'record')('plays a long streamed reply, interrup
       return node
     }
     HTMLElement.prototype.animate = function (...args) {
-      if (this.closest('[data-voice-orb]')) proof.pulses++
+      if (this.closest('[data-voice-orb]')) { proof.pulses++; proof.acceptedAt = performance.now() }
       return Element.prototype.animate.apply(this, args)
     }
     document.addEventListener('transitionrun', (event) => {
@@ -188,10 +195,20 @@ it.skipIf(webSnapshotMode() === 'record')('plays a long streamed reply, interrup
   await page.goto(scaffold.authenticatedUrl)
   await connectFreshWorkspace(page, scaffold.workspaceCwd)
   await page.locator('[data-voice-ready="true"]').waitFor({ timeout: 90_000 })
+  const opening = performance.now()
   await page.getByRole('button', { name: 'Voice chat', exact: true }).click()
   const listening = page.locator('[data-voice-chat="listening"]')
+  const recording = page.locator('[data-voice-chat="recording"]')
   await listening.waitFor({ timeout: 90_000 })
-  const speak = () => page.evaluate(() => { window.voiceResponseProof.speak() })
+  const openToListeningMs = Math.round(performance.now() - opening)
+  const startSpeech = async (): Promise<void> => {
+    if (cachedSenseVoice) await page.evaluate(() => { window.voiceResponseProof.speak() })
+    else await page.evaluate(() => { window.voiceResponseProof.setInput(0.2) })
+    await recording.waitFor({ timeout: 15_000 })
+  }
+  const endSpeech = async (): Promise<void> => {
+    if (!cachedSenseVoice) await page.evaluate(() => { window.voiceResponseProof.setInput(0) })
+  }
   const audible = (after: number) => page.waitForFunction(count =>
     window.voiceResponseProof.playback.length > count && window.voiceResponseProof.audible(),
   after, { timeout: 90_000 })
@@ -199,9 +216,8 @@ it.skipIf(webSnapshotMode() === 'record')('plays a long streamed reply, interrup
   const review = await mkdtemp(join(tmpdir(), 'dsh-voice-response-review-'))
 
   const firstTurn = scaffold.whenTurnSettled(120_000)
-  const beforeFirst = Date.now()
   expect(await page.evaluate(() => window.voiceResponseProof.cues)).toHaveLength(2)
-  if (cachedSenseVoice) await speak()
+  if (cachedSenseVoice) await startSpeech()
   else {
     const meter = (minimum: number, maximum: number) => page.waitForFunction(([min, max]) => {
       const orb = document.querySelector<HTMLElement>('[data-voice-orb="recording"]')
@@ -229,7 +245,12 @@ it.skipIf(webSnapshotMode() === 'record')('plays a long streamed reply, interrup
     releaseReply.resolve(undefined)
   }
   await audible(0)
-  const firstAudibleMs = Date.now() - beforeFirst
+  const firstReplyTiming = await page.evaluate(() => {
+    const { speechEndedAt, acceptedAt } = window.voiceResponseProof
+    if (speechEndedAt === undefined || acceptedAt === undefined) throw new Error('Voice timing markers are missing')
+    return { speechEndToAcceptanceMs: Math.round(acceptedAt - speechEndedAt),
+      acceptanceToAudibleMs: Math.round(performance.now() - acceptedAt) }
+  })
   expect(await page.evaluate(() => window.voiceResponseProof.output?.state)).toBe('running')
   await page.screenshot({ path: join(review, 'long-speaking.png') })
   await firstTurn
@@ -246,15 +267,17 @@ it.skipIf(webSnapshotMode() === 'record')('plays a long streamed reply, interrup
     .join('').replaceAll(' ', '')).toBe(long.join(''))
 
   const secondTurn = scaffold.whenTurnSettled(120_000)
-  await speak()
+  await startSpeech()
+  await endSpeech()
+  await expect.poll(() => admitted.length, { timeout: 30_000 }).toBe(2)
   await audible(uninterrupted.length)
   await secondTurn
   const thirdTurn = scaffold.whenTurnSettled(120_000)
-  await speak()
-  await page.locator('[data-voice-chat="recording"]').waitFor()
+  await startSpeech()
   await page.waitForFunction(() => !window.voiceResponseProof.audible())
   const interrupted = await playback()
   expect(interrupted.slice(uninterrupted.length).some(audio => audio.cancelled)).toBe(true)
+  await endSpeech()
   await audible(interrupted.length)
   await thirdTurn
   await listening.waitFor({ timeout: 90_000 })
@@ -290,7 +313,7 @@ it.skipIf(webSnapshotMode() === 'record')('plays a long streamed reply, interrup
   await page.getByText('DONE', { exact: true }).waitFor()
   expect(admitted.at(-1)).toBe('Continue by typing.')
   expect(watched.pageErrors).toEqual([])
-  process.stdout.write(`Voice Web evidence: ${JSON.stringify({ firstAudibleMs, largestGapMs,
+  process.stdout.write(`Voice Web evidence: ${JSON.stringify({ openToListeningMs, ...firstReplyTiming, largestGapMs,
     audioSeconds: Math.round(uninterrupted.reduce((sum, audio) => sum + audio.duration, 0)), review,
     recognition: cachedSenseVoice ? 'SenseVoice' : 'fixture', synthesis: cachedBreeze ? 'Breeze' : 'fixture' })}\n`)
 })

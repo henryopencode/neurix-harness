@@ -145,12 +145,12 @@ export class LiveAudio {
    * Start echo-cancelled continuous capture and unlock browser audio in the user gesture.
    * @param options - validated detection limits.
    * @param speechStarted - confirmed speech onset, used to interrupt the current reply.
-   * @param utterance - completed PCM16 WAV after a silence interval.
+   * @param utterance - encoder for one completed recording, delivered in capture order.
    * @param failed - interrupted device or audio failure; the owner stops the conversation.
    * @param measureInput - optional RMS amplitude from each unmuted microphone frame.
    * @returns after microphone and AudioWorklet are ready.
    */
-  async start(options: VoiceOptions, speechStarted: () => void, utterance: (audio: Uint8Array) => void,
+  async start(options: VoiceOptions, speechStarted: () => void, utterance: (encode: () => Promise<Uint8Array>) => void,
     failed: (error: VoiceAudioError) => void, measureInput?: (rms: number) => void): Promise<void> {
     const devices = (navigator as Partial<Navigator>).mediaDevices
     if (!devices || typeof AudioWorkletNode === 'undefined') throw new VoiceAudioError('unsupported')
@@ -163,7 +163,6 @@ export class LiveAudio {
     this.playback = context.createGain()
     this.playback.gain.value = this.outputMuted ? 0 : 1
     this.playback.connect(context.destination)
-    this.cue('open')
     try {
       const stream = await devices.getUserMedia({ audio: {
         echoCancellation: true, noiseSuppression: true, autoGainControl: true,
@@ -177,10 +176,8 @@ export class LiveAudio {
       try { await context.audioWorklet.addModule(url) } finally { URL.revokeObjectURL(url) }
       this.lifetime.signal.throwIfAborted()
       const detector = new TurnDetector(context.sampleRate, options, speechStarted, (samples) => {
-        if (context.sampleRate === 16000) { utterance(waveBytes(samples, 16000)); return }
-        void this.resample(samples, context.sampleRate).then((audio) => {
-          if (!this.lifetime.signal.aborted) utterance(audio)
-        }).catch(() => { if (!this.lifetime.signal.aborted) failed(new VoiceAudioError('device')) })
+        utterance(async () => context.sampleRate === 16000
+          ? waveBytes(samples, 16000) : this.resample(samples, context.sampleRate))
       }, measureInput)
       this.detector = detector
       this.capture = new AudioWorkletNode(context, 'neurix-voice-capture', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] })
@@ -326,6 +323,9 @@ export class LiveAudio {
     this.outputMuted = muted
     if (this.playback) this.playback.gain.value = muted ? 0 : 1
   }
+
+  /** Play the start sound when the microphone and Session can accept speech. */
+  announceReady(): void { this.cue('open') }
 
   /** Play the confirmation sound after a voice message is accepted. */
   acknowledge(): void { this.cue('sent') }

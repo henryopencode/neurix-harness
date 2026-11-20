@@ -36,6 +36,7 @@ export const Config = z.object({
   minimumSpeechMs: z.natural().min(50).max(2000).default(180),
   preRollMs: z.natural().min(0).max(1000).default(300),
   maxUtteranceSeconds: z.number().min(1).max(120).default(30),
+  maxPendingUtterances: z.natural().min(2).max(16).default(4),
   maxSentenceCharacters: z.natural().min(20).max(1000).default(100),
   maxPendingSentences: z.natural().min(1).max(128).default(32),
   maxPendingSyntheses: z.natural().min(1).max(16).default(4),

@@ -27,6 +27,7 @@ export interface VoiceChatInjected {
   }
   showSetupNotice: (sessionId: SessionId) => void
   close: () => void
+  dismissNotice: () => void
   prepare: () => void
   cancelPreparation: () => void
   openSettings: () => void
@@ -131,30 +132,41 @@ function VoiceReplyObserver({ sessionId, useChat, useSession, observe }: Observe
 }
 
 /** Keep the orb outside the composer flow and leave actionable notices in the dock. */
-export function VoiceChatPanel({ sessionId, useVoiceState, useVoiceInputLevel, useVoiceSetupNotice, inputActions, close, t }: PanelProps) {
+export function VoiceChatPanel({ sessionId, useVoiceState, useVoiceInputLevel, useVoiceSetupNotice, inputActions,
+  dismissNotice, t }: PanelProps) {
   const state = useVoiceState(value => value.sessionId === sessionId ? value : null)
   const setupNotice = useVoiceSetupNotice(value => value === sessionId)
   const phase = state?.phase ?? 'idle'
   const error = state?.error
   const active = phase !== 'idle'
+  const transcript = state?.transcript ?? ''
+  const recovery = transcript !== '' && (phase === 'idle' || phase === 'stopping')
+  const visibleStatus = phase === 'requesting' || phase === 'warming' || phase === 'transcribing' || (transcript !== '' && !recovery)
+  const status = active ? (!recovery && transcript) || t(phase === 'listening' && state?.microphoneMuted ? 'microphoneMuted' : `phase.${phase}`) : ''
   const inputLevel = useVoiceInputLevel(value => active && !state?.microphoneMuted ? value : 0)
   return <>
     <section className={css.feedback} data-composer-dock-feedback
       data-voice-chat={active ? phase : undefined} data-composer-hero-replacement={active ? '' : undefined}
       aria-label={active ? t('open') : undefined}>
       <VoiceOrb phase={phase} visible={active && phase !== 'stopping'} inputLevel={inputLevel} sentCount={state?.sentCount ?? 0} />
-      <span className={css.screenReaderStatus} role="status">
-        {active ? t(phase === 'listening' && state?.microphoneMuted ? 'microphoneMuted' : `phase.${phase}`) : ''}
+      <span className={visibleStatus ? css.caption : css.screenReaderStatus} role="status" dir="auto"
+        data-voice-caption={visibleStatus ? '' : undefined}>
+        <span>{status}</span>
       </span>
     </section>
     {(error || setupNotice) && <section className={css.notices} data-voice-chat={active ? undefined : phase} aria-label={t('open')}>
       <div className={css.notice}>
-        <span role={error ? 'alert' : 'status'}>{error ? t(`error.${error}`) : t('settingsUnavailable')}</span>
-        <Button size="sm" className={css.close} aria-label={t('close')} onClick={close}><IconCloseOutlineRegular size={16} /></Button>
+        <span role={error ? 'alert' : 'status'}>
+          {error ? t(`error.${error}`) : t('settingsUnavailable')}
+          {recovery && error !== 'send' && <> {t('error.send')}</>}
+        </span>
+        {error !== 'cleanup' && <Button size="sm" className={css.close} aria-label={t('dismissNotice')} onClick={dismissNotice}>
+          <IconCloseOutlineRegular size={16} />
+        </Button>}
       </div>
-      {error === 'send' && state?.transcript && <div className={css.transcript} aria-label={t('transcript')}>
-        <span>{state.transcript}</span>
-        <Button size="sm" onClick={() => { inputActions.insertText(state.transcript, inputActions.captureInsertion()) }}>{t('insert')}</Button>
+      {recovery && <div className={css.transcript} aria-label={t('transcript')}>
+        <span dir="auto">{transcript}</span>
+        <Button size="sm" onClick={() => { if (inputActions.insertText(transcript, inputActions.captureInsertion())) dismissNotice() }}>{t('insert')}</Button>
       </div>}
     </section>}
   </>

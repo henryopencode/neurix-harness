@@ -68,6 +68,36 @@
 
 .feedback { --voice-orb-size: var(--dsh-composer-dock-feedback-size); }
 
+:global([data-conversation-scroll]):has(> :global([data-composer-seat]) .caption) {
+  --voice-caption-gap: 8px;
+  --voice-caption-line-height: 18px;
+  --voice-caption-block-padding: 4px;
+  --dsh-composer-dock-feedback-extra: calc(2 * (var(--voice-caption-line-height) + var(--voice-caption-block-padding)) + var(--voice-caption-gap));
+}
+
+.caption {
+  position: absolute;
+  inset-block-end: calc(100% + var(--voice-caption-gap));
+  box-sizing: border-box;
+  max-inline-size: min(440px, calc(100% - 32px));
+  padding: var(--voice-caption-block-padding) 10px;
+  border-radius: var(--dsw-radius-sm);
+  background: var(--dsw-alias-bg-layer-1);
+  box-shadow: var(--dsw-elevation-panel);
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  line-height: var(--voice-caption-line-height);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.caption > span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
 :global([data-conversation-scroll]):has(> :global([data-composer-seat]) .feedback:is([data-voice-chat='thinking'], [data-voice-chat='speaking']))
   > :global([data-slot='conversation.session']) :global([data-chat-running]) {
   visibility: hidden;
