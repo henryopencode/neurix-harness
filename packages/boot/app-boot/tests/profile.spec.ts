@@ -394,7 +394,10 @@ describe('loadProfile', () => {
     ])
   })
 
-  it.each(['@deepseek-ai/dsh-experimental-schedule-bundle'])('removes retired %s and keeps the rest of an application-owned manifest', (retired) => {
+  it.each([
+    '@deepseek-ai/dsh-experimental-schedule-bundle',
+    '@deepseek-ai/dsh-experimental-model-group',
+  ])('removes retired %s and keeps the rest of an application-owned manifest', (retired) => {
     const anchor = stageInstallation({
       '@deepseek-ai/dsh-base': { patch: '[]\n' },
       'custom-bundle': { patch: '[]\n' },

@@ -2375,35 +2375,6 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
-    key: 'modelGroups',
-    summary: 'Model groups with independent model routes, shared tasks, and direct human addressing.',
-    description: 'Model groups with independent model routes, shared tasks, and direct human addressing.',
-    methods: [
-      {
-        signature: 'snapshot(agent: Agent): ModelGroupSnapshot | null',
-        description: 'Read one conversation\'s durable model-group selection.',
-        parameters: [{ name: 'agent', description: 'Exact live root.' }],
-        returns: 'Its group selection, if configured.',
-      },
-      {
-        signature: 'async setMode(agent: Agent, mode: ModelGroupMode): Promise<void>',
-        description: 'Change only this conversation after stopping existing executions.',
-        parameters: [{ name: 'agent', description: 'Live root.' }, { name: 'mode', description: 'Desired mode.' }],
-      },
-      {
-        signature: 'async stop(agent: Agent, member?: string): Promise<void>',
-        description: 'Stop current work and close new assignment admission.',
-        parameters: [{ name: 'agent', description: 'Live root.' }, { name: 'member', description: 'Optional single model name.' }],
-      },
-      {
-        signature: 'assign( agent: Agent, name: string, prompt: ContentBlock[], direct: boolean, signal: AbortSignal, taskId?: TeamTaskId, ): Promise<ModelGroupDispatchReceipt>',
-        description: 'Dispatch one admitted model task.',
-        parameters: [{ name: 'agent', description: 'Live leader.' }, { name: 'name', description: 'Configured model name.' }, { name: 'prompt', description: 'Logged task input.' }, { name: 'direct', description: 'Human-directed delivery.' }, { name: 'signal', description: 'Admission cancellation.' }, { name: 'taskId', description: 'Existing ready task; omission creates a new task.' }],
-        returns: 'Accepted model, target Session, and shared task identities.',
-      },
-    ],
-  },
-  {
     key: 'officeToPdf',
     summary: 'A provider lifetime owns all converters, queued calls, and temporary files.',
     description: 'A provider lifetime owns all converters, queued calls, and temporary files.',
@@ -7880,22 +7851,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ModelCatalogModel',
     declaration: 'export interface ModelCatalogModel {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n    readonly badge?: LlmModelBadge;\n}',
-  },
-  {
-    name: 'ModelGroupDispatchReceipt',
-    declaration: 'export interface ModelGroupDispatchReceipt {\n    readonly member: string;\n    readonly sessionId: SessionId;\n    readonly taskId?: Branded<\'TeamTaskId\'>;\n    readonly accepted: true;\n}',
-  },
-  {
-    name: 'ModelGroupMember',
-    declaration: 'export interface ModelGroupMember {\n    readonly name: string;\n    readonly label: string;\n    readonly provider: string;\n    readonly model: string;\n    readonly strengths: string;\n}',
-  },
-  {
-    name: 'ModelGroupMode',
-    declaration: 'export type ModelGroupMode = \'single\' | \'multi\';',
-  },
-  {
-    name: 'ModelGroupSnapshot',
-    declaration: 'export interface ModelGroupSnapshot {\n    readonly mode: ModelGroupMode;\n    readonly leader: string;\n    readonly members: readonly ModelGroupMember[];\n    readonly stopped: boolean;\n    readonly direct: readonly string[];\n    readonly stoppedMembers: readonly string[];\n}',
   },
   {
     name: 'ModelMessageSource',

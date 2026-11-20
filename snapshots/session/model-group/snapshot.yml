@@ -1,8 +1,10 @@
 version: 1
 scenario: model-group
 profile: headless
-composition: model-group
+composition: default
 recording: authored
+sessionFormat:
+  version: 4
+  coverage: [retired-tools]
 header:
-  class: model-group
-  pin: true
+  class: default

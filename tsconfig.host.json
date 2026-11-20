@@ -289,12 +289,6 @@
       "path": "./packages/core/knowledge-base"
     },
     {
-      "path": "packages/experimental/model-group-runtime"
-    },
-    {
-      "path": "packages/experimental/model-group"
-    },
-    {
       "path": "./packages/experimental/action-cards"
     },
     {

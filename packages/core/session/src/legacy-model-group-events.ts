@@ -1,8 +1,8 @@
 /**
- * Model-group configuration and replayable, browser-safe records.
+ * Payloads stored by the retired Model groups bundle.
  * @module
  */
-import type { SessionId, SessionSeq } from '@deepseek-ai/dsh-session/types'
+import type { SessionId, SessionSeq } from './types.ts'
 import type { Branded } from '@deepseek-ai/dsh-brand'
 
 /**
@@ -44,7 +44,7 @@ export interface ModelGroupMember {
 }
 
 /**
- * Conversation configuration; unused conversations may refresh members from live defaults.
+ * Recorded conversation configuration and execution state.
  */
 export interface ModelGroupSnapshot {
   readonly mode: ModelGroupMode
@@ -69,34 +69,24 @@ export interface ModelGroupPost {
 
 declare module '@deepseek-ai/dsh-session/types' {
   interface SessionEventMap {
-    /**
-     * Whole conversation-local group selection; log-only.
-     */
+    /** Conversation configuration recorded by the retired Model groups bundle. */
     'model-group/configured': ModelGroupSnapshot
-    /**
-     * Group stop state, preventing new assignments until the next human message; log-only.
-     */
+    /** Recorded group stop state. */
     'model-group/stopped': { readonly stopped: boolean }
-    /**
-     * Most recent delivery ownership for one member; log-only.
-     */
+    /** Recorded ownership of the latest delivery to a member. */
     'model-group/delivery': { readonly member: string; readonly direct: boolean }
-    /** Human interruption prevents automatic reassignment until a later human request. */
+    /** Recorded interruption of a member. */
     'model-group/member-stopped': { readonly member: string }
-    /**
-     * Publicly posted member output or direct human message; log-only.
-     */
+    /** Recorded public member output or direct human message. */
     'model-group/post': ModelGroupPost
-    /** Direct-message acceptance linked to its public input; task settlement owns completion. Log-only. */
+    /** Recorded acceptance or lack of confirmation for each recipient of a direct message. */
     'model-group/dispatched': ModelGroupDelivery
   }
 }
 
-declare module '@deepseek-ai/dsh-session-projection/types' {
-  interface SessionProjectionMap {
-    /**
-     * Per-conversation model-group selection and control state.
-     */
-    modelGroup: ModelGroupSnapshot | null
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    /** Historical receipt notice stored in the leader's inbox; it does not request a reply. */
+    'model-group': { readonly kind: 'model-group'; readonly form: 'notice'; readonly summary: string }
   }
 }

@@ -122,7 +122,9 @@ interface TeamProjection {
 
 ## 模型分配
 
-通过团队工具创建的队友继承负责人的模型。可信协调器可以向 `spawnTeammate` 传入 `agentOptions`；[模型群运行时](../../packages/experimental/model-group-runtime/README.zh.md) 用它选择明确的模型路由。`TeamModel`、`TeamModelSelection` 和 `TeamPost` 保留已有 Session 事件中的候选模型选择与署名回复。
+通过团队工具创建的队友继承负责人的模型。可信协调器可以向 `spawnTeammate` 传入 `agentOptions` 来指定模型路由。`TeamModel`、`TeamModelSelection` 和 `TeamPost` 保留已有 Session 事件中的候选模型选择与署名回复。
+
+<a id="historical-model-group-records"></a>
 
 ### 历史模型群记录
 
@@ -309,49 +311,4 @@ tryMembership(agent: Agent): TeamMembership | undefined
 Types: [Agent](core.zh.md)
 
 Source: [`packages/experimental/agent-team/src/index.ts`](../../packages/experimental/agent-team/src/index.ts)
-
-<a id="ctxmodelgroups--modelgroups"></a>
-
-### `ctx.modelGroups` — `ModelGroups`
-
-Model groups with independent model routes, shared tasks, and direct human addressing.
-
-```ts cordis-catalog
-/**
- * Read one conversation's durable model-group selection.
- * @param agent - Exact live root.
- * @returns Its group selection, if configured.
- */
-snapshot(agent: Agent): ModelGroupSnapshot | null
-
-/**
- * Change only this conversation after stopping existing executions.
- * @param agent - Live root.
- * @param mode - Desired mode.
- */
-async setMode(agent: Agent, mode: ModelGroupMode): Promise<void>
-
-/**
- * Stop current work and close new assignment admission.
- * @param agent - Live root.
- * @param member - Optional single model name.
- */
-async stop(agent: Agent, member?: string): Promise<void>
-
-/**
- * Dispatch one admitted model task.
- * @param agent - Live leader.
- * @param name - Configured model name.
- * @param prompt - Logged task input.
- * @param direct - Human-directed delivery.
- * @param signal - Admission cancellation.
- * @param taskId - Existing ready task; omission creates a new task.
- * @returns Accepted model, target Session, and shared task identities.
- */
-assign( agent: Agent, name: string, prompt: ContentBlock[], direct: boolean, signal: AbortSignal, taskId?: TeamTaskId, ): Promise<ModelGroupDispatchReceipt>
-```
-
-Types: [Agent](core.zh.md) · [ContentBlock](llm-streaming.zh.md)
-
-Source: [`packages/experimental/model-group-runtime/src/index.ts`](../../packages/experimental/model-group-runtime/src/index.ts)
 <!-- END GENERATED cordis-surface -->

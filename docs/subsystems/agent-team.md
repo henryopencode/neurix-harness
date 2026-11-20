@@ -122,7 +122,9 @@ The `agentTeam` projection replays task records selected by `TeamId` and the Ses
 
 ## Model assignment
 
-Teammates created through the Team tools inherit the Lead's model. Trusted coordinators can pass `agentOptions` to `spawnTeammate`; the [model-group runtime](../../packages/experimental/model-group-runtime/README.md) uses it to select explicit routes. `TeamModel`, `TeamModelSelection`, and `TeamPost` retain candidate-model choices and attributed replies in existing Session events.
+Teammates created through the Team tools inherit the Lead's model. Trusted coordinators can pass `agentOptions` to `spawnTeammate` to select an explicit route. `TeamModel`, `TeamModelSelection`, and `TeamPost` retain candidate-model choices and attributed replies in existing Session events.
+
+<a id="historical-model-group-records"></a>
 
 ### Historical model-group records
 
@@ -309,49 +311,4 @@ tryMembership(agent: Agent): TeamMembership | undefined
 Types: [Agent](core.md)
 
 Source: [`packages/experimental/agent-team/src/index.ts`](../../packages/experimental/agent-team/src/index.ts)
-
-<a id="ctxmodelgroups--modelgroups"></a>
-
-### `ctx.modelGroups` — `ModelGroups`
-
-Model groups with independent model routes, shared tasks, and direct human addressing.
-
-```ts cordis-catalog
-/**
- * Read one conversation's durable model-group selection.
- * @param agent - Exact live root.
- * @returns Its group selection, if configured.
- */
-snapshot(agent: Agent): ModelGroupSnapshot | null
-
-/**
- * Change only this conversation after stopping existing executions.
- * @param agent - Live root.
- * @param mode - Desired mode.
- */
-async setMode(agent: Agent, mode: ModelGroupMode): Promise<void>
-
-/**
- * Stop current work and close new assignment admission.
- * @param agent - Live root.
- * @param member - Optional single model name.
- */
-async stop(agent: Agent, member?: string): Promise<void>
-
-/**
- * Dispatch one admitted model task.
- * @param agent - Live leader.
- * @param name - Configured model name.
- * @param prompt - Logged task input.
- * @param direct - Human-directed delivery.
- * @param signal - Admission cancellation.
- * @param taskId - Existing ready task; omission creates a new task.
- * @returns Accepted model, target Session, and shared task identities.
- */
-assign( agent: Agent, name: string, prompt: ContentBlock[], direct: boolean, signal: AbortSignal, taskId?: TeamTaskId, ): Promise<ModelGroupDispatchReceipt>
-```
-
-Types: [Agent](core.md) · [ContentBlock](llm-streaming.md)
-
-Source: [`packages/experimental/model-group-runtime/src/index.ts`](../../packages/experimental/model-group-runtime/src/index.ts)
 <!-- END GENERATED cordis-surface -->

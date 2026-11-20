@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { SESSION_FORMAT_VERSION } from '@deepseek-ai/dsh-session'
 import type { SessionFormatArtifact, SessionFormatHeader } from '@deepseek-ai/dsh-session-format'
+import { sessionFormatCatalog } from '../src/index.ts'
 import {
   validateInstalledCurrentSessionArtifact,
   validateInstalledCurrentSessionHeader,
@@ -35,6 +36,24 @@ describe('installed current Session restoration', () => {
       }
       expect(() => { validateInstalledCurrentSessionArtifact(artifact) }).not.toThrow()
     }
+  })
+
+  it('restores required records from the retired Model groups bundle', () => {
+    const restore = sessionFormatCatalog.createRestore({ type: 'session', ...currentHeader }, {
+      recovery: 'strict', validation: 'current',
+    })
+    const rows = [
+      { type: 'model-group/configured', data: {
+        mode: 'multi', leader: 'a', members: [], stopped: false, direct: [], stoppedMembers: [],
+      } },
+      { type: 'model-group/delivery', data: { member: 'b', direct: true } },
+      { type: 'model-group/post', data: { member: 'b', label: 'Model B', text: 'Reply', sourceSession: 'member-b' } },
+      { type: 'model-group/dispatched', data: { requestSeq: 2, accepted: [], failed: ['b'] } },
+      { type: 'model-group/member-stopped', data: { member: 'b' } },
+      { type: 'model-group/stopped', data: { stopped: true } },
+    ].map((row, seq) => ({ ...row, seq, time: seq + 1 }))
+    for (const row of rows) restore.decodeRow(row)
+    expect(restore.finish().events).toEqual(rows)
   })
 
   it('rejects version skew before entering current Session validation', () => {

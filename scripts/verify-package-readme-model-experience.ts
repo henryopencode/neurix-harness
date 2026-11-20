@@ -55,7 +55,6 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/experimental/client-ui-agent-team': { kind: 'none', reason: 'The browser projection and task controls register no model-facing input.' },
   'packages/experimental/computer-control': { kind: 'indirect', reason: 'The optional layer delegates computer tools, guidance, and results to computer-use-unified.' },
   'packages/experimental/mobile-access': { kind: 'none', reason: 'Phone connection and transport add no model-visible context.' },
-  'packages/experimental/model-group': { kind: 'indirect', reason: 'The optional layer delegates logged guidance, assignments, and public replies to model-group-runtime.' },
   'packages/image-generation/image-generation-bundle': { kind: 'indirect', reason: 'The optional layer delegates model-facing tools and results to tool-image-generation.' },
   'packages/web/web-search-exa': { kind: 'indirect', reason: 'The provider backend delegates model rendering to dsh-tool-web.' },
   'packages/client/ui-context-menu': { kind: 'none', reason: 'Client menu presentation and contributed callbacks add no model input.' },

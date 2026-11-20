@@ -567,3 +567,5 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'session/not-found': { readonly sessionId: SessionId }
   }
 }
+
+export type {} from './legacy-model-group-events.ts'

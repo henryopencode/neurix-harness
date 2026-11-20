@@ -1500,53 +1500,6 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-mobile-access -->
 
-<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-model-group-runtime -->
-<a id="deepseek-aidsh-experimental-model-group-runtime"></a>
-
-## `@deepseek-ai/dsh-experimental-model-group-runtime`
-
-- `inject`: `agents` · `sessions` · `sessionProjections` · `sessionPersistence` · `subagents` · `legacyAgentTeams` · `commands` · `tools` · `systemPrompt` · `llm`
-- `refs`: `Volatile` (`@deepseek-ai/cordis`)
-- `source`: [`packages/experimental/model-group-runtime/src/index.ts:45`](../packages/experimental/model-group-runtime/src/index.ts)
-
-```ts config-catalog
-/**
- * Live member defaults follow unused conversations; started conversations retain their routes.
- */
-export interface Config {
-  /** Execution mode captured by subsequently created conversations. */
-  readonly defaultMode: Volatile<ModelGroupMode>
-  /** Name of the configured model that coordinates new groups. */
-  readonly leader: Volatile<string>
-  /** Exact model routes and editable strengths followed until a conversation starts. */
-  readonly members: Volatile<ModelGroupMember[]>
-  /** Live worker-model limit per group; the leader does not consume a slot. */
-  readonly maxParallel: Volatile<number>
-}
-
-/**
- * Conversation-local execution mode.
- */
-export type ModelGroupMode = 'single' | 'multi'
-
-/**
- * A named exact model route; strengths guide assignment without fixing its role.
- */
-export interface ModelGroupMember {
-  /** Unique lowercase model alias used in mentions and task assignment. */
-  readonly name: string
-  /** Model name shown in the group roster and public replies. */
-  readonly label: string
-  /** Registered LLM provider route. */
-  readonly provider: string
-  /** Provider-owned exact model identifier. */
-  readonly model: string
-  /** User-authored task strengths used by the leader when choosing models. */
-  readonly strengths: string
-}
-```
-<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-model-group-runtime -->
-
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-ptc-runtime-python -->
 <a id="deepseek-aidsh-experimental-ptc-runtime-python"></a>
 
@@ -5476,7 +5429,6 @@ export interface Config {
 | `@deepseek-ai/dsh-experimental-auto-review` | `approval` · `llm` · `permissionPresets` · `sessions` · `tools` · `workingDirectory` | [`packages/experimental/auto-review/src/index.ts`](../packages/experimental/auto-review/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-agent-team` | — | [`packages/experimental/client-ui-agent-team/src/index.ts`](../packages/experimental/client-ui-agent-team/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-claude-code-mods` | — | [`packages/experimental/client-ui-claude-code-mods/src/index.ts`](../packages/experimental/client-ui-claude-code-mods/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-client-ui-model-group` | — | [`packages/experimental/client-ui-model-group/src/index.ts`](../packages/experimental/client-ui-model-group/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-stats` | — | [`packages/experimental/client-ui-stats/src/index.ts`](../packages/experimental/client-ui-stats/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-voice-input` | — | [`packages/experimental/client-ui-voice-input/src/index.ts`](../packages/experimental/client-ui-voice-input/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-computer-use-cua-driver-native` | `computerUse` · `tools` · `systemPrompt` | [`packages/experimental/computer-use-cua-driver-native/src/index.ts`](../packages/experimental/computer-use-cua-driver-native/src/index.ts) |
@@ -5575,7 +5527,6 @@ export interface Config {
 | `@deepseek-ai/dsh-experimental-inspector-profile` | — | [`packages/experimental/inspector-profile/src/index.ts`](../packages/experimental/inspector-profile/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-liveshare` | — | [`packages/experimental/liveshare/src/index.ts`](../packages/experimental/liveshare/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-liveshare-protocol` | — | [`packages/experimental/liveshare-protocol/src/index.ts`](../packages/experimental/liveshare-protocol/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-model-group` | — | [`packages/experimental/model-group/src/index.ts`](../packages/experimental/model-group/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-plugin-market-bundle` | — | [`packages/experimental/plugin-market-bundle/src/index.ts`](../packages/experimental/plugin-market-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-ralph-bundle` | — | [`packages/experimental/ralph-bundle/src/index.ts`](../packages/experimental/ralph-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-session-search` | — | [`packages/experimental/session-search/src/index.ts`](../packages/experimental/session-search/src/index.ts) |

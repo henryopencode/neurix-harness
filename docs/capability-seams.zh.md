@@ -12,11 +12,9 @@ flowchart LR
   pkg_experimental_agent_team["experimental-agent-team"]
   svc_legacyAgentTeams["ctx.legacyAgentTeams<br/>Optional named Team coordination"]
   pkg_experimental_tool_agent_team["experimental-tool-agent-team"]
-  pkg_experimental_model_group_runtime["experimental-model-group-runtime"]
   pkg_mcp_config_manager["mcp-config-manager"]
   svc_mcpConfigManager["ctx.mcpConfigManager<br/>Global MCP configuration editor"]
   pkg_client_ui_mcp["client-ui-mcp"]
-  svc_modelGroups["ctx.modelGroups<br/>Optional model-group coordination"]
   pkg_knowledge_base["knowledge-base"]
   svc_knowledgeBase["ctx.knowledgeBase<br/>Workspace document knowledge"]
   pkg_client_ui_knowledge_base["client-ui-knowledge-base"]
@@ -401,7 +399,6 @@ flowchart LR
   pkg_experimental_forge_github --> svc_forge
   pkg_experimental_forge_session --> svc_forgeSession
   pkg_experimental_liveshare --> svc_liveshareShares
-  pkg_experimental_model_group_runtime --> svc_modelGroups
   pkg_experimental_ptc_runtime_python --> svc_ptcRuntime
   pkg_experimental_speech_to_text --> svc_speechToText
   pkg_experimental_speech_to_text_sensevoice --> svc_speechToText
@@ -570,7 +567,6 @@ flowchart LR
   svc_knowledgeBase --> pkg_client_ui_knowledge_base
   svc_knowledgeBase --> pkg_knowledge_base
   svc_knowledgeController --> pkg_client_ui_knowledge_base
-  svc_legacyAgentTeams --> pkg_experimental_model_group_runtime
   svc_legacyAgentTeams --> pkg_experimental_tool_agent_team
   svc_llm --> pkg_agent_loop
   svc_llm --> pkg_compaction_basic
@@ -693,9 +689,8 @@ flowchart LR
 
 | ctx 键 | 角色 | 所属包 | 实现 | 直接消费方 | 配套插件 | 说明 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `ctx.legacyAgentTeams` | `core` | [`experimental-agent-team`](../packages/experimental/agent-team) | - | [`experimental-tool-agent-team`](../packages/experimental/tool-agent-team), [`experimental-model-group-runtime`](../packages/experimental/model-group-runtime) | - | 管理已安装 Neurix Team 与模型组组合包使用的命名队友名册、邮箱和任务协调。 |
+| `ctx.legacyAgentTeams` | `core` | [`experimental-agent-team`](../packages/experimental/agent-team) | - | [`experimental-tool-agent-team`](../packages/experimental/tool-agent-team) | - | 管理 Neurix 智能体团队组合包的命名队友名册、邮箱和任务协调。 |
 | `ctx.mcpConfigManager` | `core` | [`mcp-config-manager`](../packages/mcp/mcp-config-manager) | - | [`client-ui-mcp`](../packages/client/ui-mcp) | - | 编辑 profile 中的字面量 MCP 声明并报告实时连接，不暴露凭据。 |
-| `ctx.modelGroups` | `core` | [`experimental-model-group-runtime`](../packages/experimental/model-group-runtime) | - | - | - | 通过共享 Team 任务与逐会话用户控制协调已配置的模型路由。 |
 | `ctx.knowledgeBase` | `core` | [`knowledge-base`](../packages/core/knowledge-base) | - | [`knowledge-base`](../packages/core/knowledge-base), [`client-ui-knowledge-base`](../packages/client/ui-knowledge-base) | - | 服务、LanceDB 提供方和原生工具消费者位于同一个可选包；文档快照保留来源版本，并与个人记忆分开保存。 |
 | `ctx.knowledgeController` | `core` | [`knowledge-base`](../packages/core/knowledge-base) | - | [`client-ui-knowledge-base`](../packages/client/ui-knowledge-base) | - | 工作区资源授权覆盖上传文档、精确原文读取及关键词关联。 |
 | `ctx.browserPreview` | `core` | [`experimental-browser-control`](../packages/experimental/browser-control) | - | - | - | 返回会话自有标签页的纯展示截图，不访问原生应用。 |

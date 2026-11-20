@@ -454,7 +454,7 @@ describe('session.create reuse of a stored blank Session', () => {
   it('creates an independent Session when the reuse candidate has an unsupported log', async () => {
     const { ctx, remote, resumed, presetOf } = await harness({ presets: ['standard', 'minimal'] })
     const draft = SessionId('unsupported-draft')
-    const failure = new SessionFormatUnsupportedError('unknown required event model-group/configured')
+    const failure = new SessionFormatUnsupportedError('unknown required event future/required')
     const open = vi.spyOn(ctx.sessionPersistence, 'open').mockRejectedValue(failure)
     vi.spyOn(ctx.sessionPersistence, 'stat').mockResolvedValue({
       header: storedHeader(draft, '/old-workspace'),

@@ -112,8 +112,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'experimental-agent-team',
     title: 'Optional named Team coordination',
     mode: 'core',
-    consumers: ['experimental-tool-agent-team', 'experimental-model-group-runtime'],
-    note: 'Owns the retained named-teammate roster, mailbox, and task coordination used by installed Neurix Team and model-group bundles.',
+    consumers: ['experimental-tool-agent-team'],
+    note: 'Owns the retained named-teammate roster, mailbox, and task coordination used by the Neurix Agent Teams bundle.',
   },
   {
     key: 'mcpConfigManager',
@@ -122,13 +122,6 @@ const SERVICE_ROLES: ServiceRole[] = [
     mode: 'core',
     consumers: ['client-ui-mcp'],
     note: 'Edits literal profile MCP declarations and reports their live connections without exposing credentials.',
-  },
-  {
-    key: 'modelGroups',
-    pkg: 'experimental-model-group-runtime',
-    title: 'Optional model-group coordination',
-    mode: 'core',
-    note: 'Coordinates configured model routes through shared Team tasks and conversation-local human controls.',
   },
   {
     key: 'knowledgeBase',

@@ -39,7 +39,10 @@ describe('web e2e: plugin configuration pages', () => {
     scaffold = await launchWebScaffold({
       extraOverlayPath: fileURLToPath(new URL('./pin-browse-picker.overlay.yml', import.meta.url)),
       deepSeekSearch: { apiKeyEnv: UNUSED_KEY_ENV },
-      profile: { packages: [{ dir: join(FIXTURE_PLUGINS, 'fixture-live-client') }] },
+      profile: {
+        packages: [{ dir: join(FIXTURE_PLUGINS, 'fixture-live-client') }],
+        bundles: ['@deepseek-ai/dsh-experimental-model-group'],
+      },
     })
     browser = await chromium.launch()
     // Chinese browser: the pages assert the localized copy the client derives
@@ -116,6 +119,8 @@ describe('web e2e: plugin configuration pages', () => {
     expect(await basic.count()).toBe(0)
     expect(await extensions.count()).toBe(0)
     expect(await panel.locator('[data-plugin-group="custom"]').count()).toBe(0)
+    expect(await panel.getByRole('button', { name: '查看 模型群', exact: true }).count()).toBe(0)
+    expect(await panel.getByRole('button', { name: '查看 智能体团队', exact: true }).count()).toBe(1)
     await panel.getByRole('button', { name: '查看 开发者工具', exact: true }).click()
     await panel.locator('[data-plugin-detail]').waitFor()
     await panel.getByRole('button', { name: '返回 实验性插件', exact: true }).click()

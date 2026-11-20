@@ -718,74 +718,66 @@ Source: [`packages/core/agent/src/types.ts:137`](../packages/core/agent/src/type
 #### `model-group/configured` — log-only
 
 ```ts persistence-catalog
-/**
- * Whole conversation-local group selection; log-only.
- */
+/** Conversation configuration recorded by the retired Model groups bundle. */
 'model-group/configured': ModelGroupSnapshot
 ```
 
-Source: [`packages/experimental/model-group-runtime/src/types.ts:75`](../packages/experimental/model-group-runtime/src/types.ts)
+Source: [`packages/core/session/src/legacy-model-group-events.ts:73`](../packages/core/session/src/legacy-model-group-events.ts)
 
 <a id="model-groupdelivery--log-only"></a>
 
 #### `model-group/delivery` — log-only
 
 ```ts persistence-catalog
-/**
- * Most recent delivery ownership for one member; log-only.
- */
+/** Recorded ownership of the latest delivery to a member. */
 'model-group/delivery': { readonly member: string; readonly direct: boolean }
 ```
 
-Source: [`packages/experimental/model-group-runtime/src/types.ts:83`](../packages/experimental/model-group-runtime/src/types.ts)
+Source: [`packages/core/session/src/legacy-model-group-events.ts:77`](../packages/core/session/src/legacy-model-group-events.ts)
 
 <a id="model-groupdispatched--log-only"></a>
 
 #### `model-group/dispatched` — log-only
 
 ```ts persistence-catalog
-/** Direct-message acceptance linked to its public input; task settlement owns completion. Log-only. */
+/** Recorded acceptance or lack of confirmation for each recipient of a direct message. */
 'model-group/dispatched': ModelGroupDelivery
 ```
 
-Source: [`packages/experimental/model-group-runtime/src/types.ts:91`](../packages/experimental/model-group-runtime/src/types.ts)
+Source: [`packages/core/session/src/legacy-model-group-events.ts:83`](../packages/core/session/src/legacy-model-group-events.ts)
 
 <a id="model-groupmember-stopped--log-only"></a>
 
 #### `model-group/member-stopped` — log-only
 
 ```ts persistence-catalog
-/** Human interruption prevents automatic reassignment until a later human request. */
+/** Recorded interruption of a member. */
 'model-group/member-stopped': { readonly member: string }
 ```
 
-Source: [`packages/experimental/model-group-runtime/src/types.ts:85`](../packages/experimental/model-group-runtime/src/types.ts)
+Source: [`packages/core/session/src/legacy-model-group-events.ts:79`](../packages/core/session/src/legacy-model-group-events.ts)
 
 <a id="model-grouppost--log-only"></a>
 
 #### `model-group/post` — log-only
 
 ```ts persistence-catalog
-/**
- * Publicly posted member output or direct human message; log-only.
- */
+/** Recorded public member output or direct human message. */
 'model-group/post': ModelGroupPost
 ```
 
-Source: [`packages/experimental/model-group-runtime/src/types.ts:89`](../packages/experimental/model-group-runtime/src/types.ts)
+Source: [`packages/core/session/src/legacy-model-group-events.ts:81`](../packages/core/session/src/legacy-model-group-events.ts)
 
 <a id="model-groupstopped--log-only"></a>
 
 #### `model-group/stopped` — log-only
 
 ```ts persistence-catalog
-/**
- * Group stop state, preventing new assignments until the next human message; log-only.
- */
+/** Recorded group stop state. */
 'model-group/stopped': { readonly stopped: boolean }
 ```
 
-Source: [`packages/experimental/model-group-runtime/src/types.ts:79`](../packages/experimental/model-group-runtime/src/types.ts)
+Source: [`packages/core/session/src/legacy-model-group-events.ts:75`](../packages/core/session/src/legacy-model-group-events.ts)
 
 ### `permission/*`
 
@@ -4600,13 +4592,13 @@ Array of [`Message`](#persistence-type-sha256-31e047b2c84848f8b03c2fd8fb544c542c
 
 <a id="persistence-type-modelgroupdelivery"></a>
 
-<a id="persistence-type-packagesexperimentalmodel-group-runtimesrctypestsmodelgroupdelivery"></a>
+<a id="persistence-type-packagescoresessionsrclegacy-model-group-eventstsmodelgroupdelivery"></a>
 
 ### `ModelGroupDelivery`
 
 SHA-256: `fd2125988405fd64ee70114b04fe3d060dab4a9a0354caf59de12535932b46c4`
 
-Sources: [`packages/experimental/model-group-runtime/src/types.ts:22`](../packages/experimental/model-group-runtime/src/types.ts)
+Sources: [`packages/core/session/src/legacy-model-group-events.ts:22`](../packages/core/session/src/legacy-model-group-events.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -4619,13 +4611,13 @@ Sources: [`packages/experimental/model-group-runtime/src/types.ts:22`](../packag
 
 <a id="persistence-type-modelgroupdispatchreceipt"></a>
 
-<a id="persistence-type-packagesexperimentalmodel-group-runtimesrctypestsmodelgroupdispatchreceipt"></a>
+<a id="persistence-type-packagescoresessionsrclegacy-model-group-eventstsmodelgroupdispatchreceipt"></a>
 
 ### `ModelGroupDispatchReceipt`
 
 SHA-256: `4ebf91f29bf0fbc9f0b6398945391f35b34e2027c38779b8bc35daf69aee1501`
 
-Sources: [`packages/experimental/model-group-runtime/src/types.ts:14`](../packages/experimental/model-group-runtime/src/types.ts)
+Sources: [`packages/core/session/src/legacy-model-group-events.ts:14`](../packages/core/session/src/legacy-model-group-events.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -4642,17 +4634,49 @@ SHA-256: `de5fe0d380f024a8d1a2b08607db43adb65af49628a9f5d9677ae134775edd31`
 
 Array of [`ModelGroupDispatchReceipt`](#persistence-type-sha256-4ebf91f29bf0fbc9f0b6398945391f35b34e2027c38779b8bc35daf69aee1501).
 
+<a id="persistence-type-sha256-14d88fc0238fd2a4d0ecff03262e5b5b18aee619b09088fdb96b4bd1a9745be1"></a>
+
+<a id="persistence-type-modelgroupmember"></a>
+
+<a id="persistence-type-packagescoresessionsrclegacy-model-group-eventstsmodelgroupmember"></a>
+
+<a id="persistence-type-packagesexperimentalagent-teamsrctypeststeammodel"></a>
+
+<a id="persistence-type-teammodel"></a>
+
+### `ModelGroupMember`
+
+SHA-256: `14d88fc0238fd2a4d0ecff03262e5b5b18aee619b09088fdb96b4bd1a9745be1`
+
+Sources: [`packages/core/session/src/legacy-model-group-events.ts:33`](../packages/core/session/src/legacy-model-group-events.ts) · [`packages/experimental/agent-team/src/types.ts:12`](../packages/experimental/agent-team/src/types.ts)
+
+| Property | Presence | Type |
+|---|---|---|
+| `label` | required | `string` |
+| `model` | required | `string` |
+| `name` | required | `string` |
+| `provider` | required | `string` |
+| `strengths` | required | `string` |
+
+<a id="persistence-type-sha256-6b0d198055b987f9c09007777c94ac66da81d35ce0b197837ce130a57c06a4a8"></a>
+
+### `ModelGroupMember[]`
+
+SHA-256: `6b0d198055b987f9c09007777c94ac66da81d35ce0b197837ce130a57c06a4a8`
+
+Array of [`ModelGroupMember`](#persistence-type-sha256-14d88fc0238fd2a4d0ecff03262e5b5b18aee619b09088fdb96b4bd1a9745be1).
+
 <a id="persistence-type-sha256-42783d34c3838919f9eca06bea26a884761e679b8d4e259492dfcd3e3dd5529c"></a>
 
 <a id="persistence-type-modelgroupmode"></a>
 
-<a id="persistence-type-packagesexperimentalmodel-group-runtimesrctypestsmodelgroupmode"></a>
+<a id="persistence-type-packagescoresessionsrclegacy-model-group-eventstsmodelgroupmode"></a>
 
 ### `ModelGroupMode`
 
 SHA-256: `42783d34c3838919f9eca06bea26a884761e679b8d4e259492dfcd3e3dd5529c`
 
-Sources: [`packages/experimental/model-group-runtime/src/types.ts:11`](../packages/experimental/model-group-runtime/src/types.ts)
+Sources: [`packages/core/session/src/legacy-model-group-events.ts:11`](../packages/core/session/src/legacy-model-group-events.ts)
 
 One of:
 
@@ -4663,13 +4687,13 @@ One of:
 
 <a id="persistence-type-modelgrouppost"></a>
 
-<a id="persistence-type-packagesexperimentalmodel-group-runtimesrctypestsmodelgrouppost"></a>
+<a id="persistence-type-packagescoresessionsrclegacy-model-group-eventstsmodelgrouppost"></a>
 
 ### `ModelGroupPost`
 
 SHA-256: `a20e709c6358001cd0cc9ae8645477820149fd65474c7c7b1aff2e33f0b02c2a`
 
-Sources: [`packages/experimental/model-group-runtime/src/types.ts:61`](../packages/experimental/model-group-runtime/src/types.ts)
+Sources: [`packages/core/session/src/legacy-model-group-events.ts:61`](../packages/core/session/src/legacy-model-group-events.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -4684,19 +4708,19 @@ Sources: [`packages/experimental/model-group-runtime/src/types.ts:61`](../packag
 
 <a id="persistence-type-modelgroupsnapshot"></a>
 
-<a id="persistence-type-packagesexperimentalmodel-group-runtimesrctypestsmodelgroupsnapshot"></a>
+<a id="persistence-type-packagescoresessionsrclegacy-model-group-eventstsmodelgroupsnapshot"></a>
 
 ### `ModelGroupSnapshot`
 
 SHA-256: `28bff3ea84c64da612257a05bc89b7c2e59ce67b07bfb3028cf166505f1db25c`
 
-Sources: [`packages/experimental/model-group-runtime/src/types.ts:49`](../packages/experimental/model-group-runtime/src/types.ts)
+Sources: [`packages/core/session/src/legacy-model-group-events.ts:49`](../packages/core/session/src/legacy-model-group-events.ts)
 
 | Property | Presence | Type |
 |---|---|---|
 | `direct` | required | [`string[]`](#persistence-type-sha256-93c33d9687613293f8c95d46c4d922fe9ceae83b84c384beff5c3315abe005f2) |
 | `leader` | required | `string` |
-| `members` | required | [`TeamModel[]`](#persistence-type-sha256-6b0d198055b987f9c09007777c94ac66da81d35ce0b197837ce130a57c06a4a8) |
+| `members` | required | [`ModelGroupMember[]`](#persistence-type-sha256-6b0d198055b987f9c09007777c94ac66da81d35ce0b197837ce130a57c06a4a8) |
 | `mode` | required | [`ModelGroupMode`](#persistence-type-sha256-42783d34c3838919f9eca06bea26a884761e679b8d4e259492dfcd3e3dd5529c) |
 | `stopped` | required | `boolean` |
 | `stoppedMembers` | required | [`string[]`](#persistence-type-sha256-93c33d9687613293f8c95d46c4d922fe9ceae83b84c384beff5c3315abe005f2) |
@@ -5407,30 +5431,6 @@ Sources: [`packages/team/agent-team/src/types.ts:123`](../packages/team/agent-te
 | `senderName` | required | `string` |
 | `teamId` | required | `string` |
 
-<a id="persistence-type-sha256-14d88fc0238fd2a4d0ecff03262e5b5b18aee619b09088fdb96b4bd1a9745be1"></a>
-
-<a id="persistence-type-modelgroupmember"></a>
-
-<a id="persistence-type-packagesexperimentalagent-teamsrctypeststeammodel"></a>
-
-<a id="persistence-type-packagesexperimentalmodel-group-runtimesrctypestsmodelgroupmember"></a>
-
-<a id="persistence-type-teammodel"></a>
-
-### `TeamModel`
-
-SHA-256: `14d88fc0238fd2a4d0ecff03262e5b5b18aee619b09088fdb96b4bd1a9745be1`
-
-Sources: [`packages/experimental/agent-team/src/types.ts:12`](../packages/experimental/agent-team/src/types.ts) · [`packages/experimental/model-group-runtime/src/types.ts:33`](../packages/experimental/model-group-runtime/src/types.ts)
-
-| Property | Presence | Type |
-|---|---|---|
-| `label` | required | `string` |
-| `model` | required | `string` |
-| `name` | required | `string` |
-| `provider` | required | `string` |
-| `strengths` | required | `string` |
-
 <a id="persistence-type-sha256-497b689f4099c829a050292d17fb2f046018cda0e6e367d6b3a84f28a48af219"></a>
 
 <a id="persistence-type-packagesexperimentalagent-teamsrctypeststeammodelselection"></a>
@@ -5446,15 +5446,7 @@ Sources: [`packages/experimental/agent-team/src/types.ts:26`](../packages/experi
 | Property | Presence | Type |
 |---|---|---|
 | `leader` | required | `string` |
-| `models` | required | [`TeamModel[]`](#persistence-type-sha256-6b0d198055b987f9c09007777c94ac66da81d35ce0b197837ce130a57c06a4a8) |
-
-<a id="persistence-type-sha256-6b0d198055b987f9c09007777c94ac66da81d35ce0b197837ce130a57c06a4a8"></a>
-
-### `TeamModel[]`
-
-SHA-256: `6b0d198055b987f9c09007777c94ac66da81d35ce0b197837ce130a57c06a4a8`
-
-Array of [`TeamModel`](#persistence-type-sha256-14d88fc0238fd2a4d0ecff03262e5b5b18aee619b09088fdb96b4bd1a9745be1).
+| `models` | required | [`ModelGroupMember[]`](#persistence-type-sha256-6b0d198055b987f9c09007777c94ac66da81d35ce0b197837ce130a57c06a4a8) |
 
 <a id="persistence-type-sha256-903edd5bda5d1ffe8a02e37eed22cd6d9df452cf36af54e0f51b5c9ce4409b85"></a>
 
@@ -6731,7 +6723,7 @@ Sources: [`packages/experimental/hook-protocol/src/types.ts:19`](../packages/exp
 
 SHA-256: `e450c908393db7ea5ff3d42f680c26e3278291a62344193420be8133563a26a8`
 
-Sources: [`packages/experimental/model-group-runtime/src/types.ts:83`](../packages/experimental/model-group-runtime/src/types.ts)
+Sources: [`packages/core/session/src/legacy-model-group-events.ts:77`](../packages/core/session/src/legacy-model-group-events.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -7448,7 +7440,7 @@ Sources: [`packages/core/session/src/types.ts:220`](../packages/core/session/src
 
 SHA-256: `ec086aba0ddea39364fdaec089d345440a4260d58f1ee140659f2df456397761`
 
-Sources: [`packages/experimental/model-group-runtime/src/index.ts:34`](../packages/experimental/model-group-runtime/src/index.ts)
+Sources: [`packages/core/session/src/legacy-model-group-events.ts:90`](../packages/core/session/src/legacy-model-group-events.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -8418,7 +8410,7 @@ Sources: [`packages/web/web-search-deepseek/src/provider.ts:61`](../packages/web
 
 SHA-256: `5449a9353e94a5682b0d4c6fd9fff5dcf6ded2c85ddfcd7e4af310c506063ae1`
 
-Sources: [`packages/experimental/model-group-runtime/src/types.ts:85`](../packages/experimental/model-group-runtime/src/types.ts)
+Sources: [`packages/core/session/src/legacy-model-group-events.ts:79`](../packages/core/session/src/legacy-model-group-events.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -8606,7 +8598,7 @@ Sources: [`packages/core/session/src/types.ts:305`](../packages/core/session/src
 
 SHA-256: `c35898fd3bb16932a371353167bc2ce07d38788067e9fded34f883ba2991db5b`
 
-Sources: [`packages/experimental/model-group-runtime/src/types.ts:79`](../packages/experimental/model-group-runtime/src/types.ts)
+Sources: [`packages/core/session/src/legacy-model-group-events.ts:75`](../packages/core/session/src/legacy-model-group-events.ts)
 
 | Property | Presence | Type |
 |---|---|---|
