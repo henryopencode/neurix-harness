@@ -21,7 +21,7 @@ const MODE = webSnapshotMode()
 const ACTION_TARGET_SIZE = 24
 const ACTION_LAYOUT_SIZE = 16
 const ACTION_CENTER_SPACING = 29
-const ACTION_TRAILING_INSET = 7
+const ACTION_TRAILING_INSET = 4
 const SEARCH_HEIGHT = 32
 const SEARCH_TRANSITION_MS = 180
 const HEADER_LABEL_OFFSET = 11
@@ -301,8 +301,8 @@ describe('web e2e: sidebar search alignment and row action targets', () => {
       else await input.press('Escape')
     }
     await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click()
-    await expect.poll(() => page.getByRole('button', { name: 'Account menu', exact: true }).getAttribute('data-collapsed')).toBe('true')
-    const add = page.getByRole('button', { name: 'Add workspace', exact: true })
+    await page.getByRole('button', { name: 'View options', exact: true }).waitFor({ state: 'detached', timeout: 10_000 })
+    const add = page.locator('[data-sidebar-browser]').getByRole('button', { name: 'Add workspace', exact: true })
     const samples = await add.evaluate(async (button, entry) => {
       const header = button.closest<HTMLElement>('[class*="sectionHeader"]')
       const root = header?.parentElement
@@ -327,18 +327,23 @@ describe('web e2e: sidebar search alignment and row action targets', () => {
           searchExpanded: header.querySelector('button[aria-label="Search sessions"]')?.getAttribute('aria-expanded'),
         }
       }
-      const first = await new Promise<ReturnType<typeof measure>>((resolve) => {
+      const trigger = entry === 'search'
+        ? root.querySelector<HTMLButtonElement>('button[aria-label="Search sessions"]')
+        : root.closest('[class*="sidebarCol"]')?.querySelector<HTMLButtonElement>('button[aria-label="Open sidebar"]')
+      if (trigger == null) throw new Error('Rail expansion trigger is missing')
+      const first = await new Promise<ReturnType<typeof measure>>((resolve, reject) => {
         // Observe the first rendered wide frame after the rail gesture's React updates.
         const observer = new MutationObserver(() => {
           if (root.className === railClass) return
           observer.disconnect()
+          window.clearTimeout(deadline)
           requestAnimationFrame(() => { resolve(measure()) })
         })
+        const deadline = window.setTimeout(() => {
+          observer.disconnect()
+          reject(new Error('Rail did not switch to the wide layout'))
+        }, 5000)
         observer.observe(root, { attributes: true, attributeFilter: ['class'] })
-        const trigger = entry === 'search'
-          ? root.querySelector<HTMLButtonElement>('button[aria-label="Search sessions"]')
-          : document.querySelector<HTMLButtonElement>('button[aria-label="Open sidebar"]')
-        if (trigger === null) { observer.disconnect(); throw new Error('Rail expansion trigger is missing') }
         trigger.click()
       })
       const headerTransitions = header.getAnimations()

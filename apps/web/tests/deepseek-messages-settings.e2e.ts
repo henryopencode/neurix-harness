@@ -118,15 +118,17 @@ describe.skipIf(webSnapshotMode() === 'record')('web e2e: DeepSeek Messages sett
     expect(credentials).not.toContain('DEEPSEEK_MESSAGES_API_KEY')
     expect(await page.locator('body').innerText()).not.toContain('sk-e2e-')
     await page.keyboard.press('Escape')
+    await dialog.waitFor({ state: 'detached', timeout: 10_000 })
     await connectFreshWorkspaceZh(page, scaffold.workspaceCwd, 'messages-settings-e2e')
-    await page.getByRole('button', { name: /^选择模型/ }).click()
-    await page.getByRole('menuitem', { name: /模型/ }).click()
-    await page.getByRole('menuitemradio', { name: 'Messages Flash', exact: true }).waitFor()
+    await page.getByRole('button', { name: /^选择模型.*Messages Flash/ }).click({ timeout: 10_000 })
+    const picker = page.getByRole('menu', { name: '模型与推理等级', exact: true })
+    await picker.getByRole('menuitem', { name: /^模型/ }).click({ timeout: 10_000 })
+    await page.getByRole('menuitemradio', { name: 'Messages Flash', exact: true }).waitFor({ timeout: 10_000 })
     await compareOrRefreshGolden(join(EXPECTED, 'picker.expected.md'),
       await captureStableAria(page, '[role="group"][aria-label="模型与推理等级"]', scaffold.workspaceCwd), webSnapshotMode())
     await page.keyboard.press('Escape')
-    await page.getByRole('menuitem', { name: /推理等级/ }).click()
-    const effortWeights = await page.getByRole('menuitemradio').evaluateAll(rows => rows.map(row =>
+    await picker.getByRole('menuitem', { name: /推理等级/ }).click({ timeout: 10_000 })
+    const effortWeights = await picker.getByRole('menuitemradio').evaluateAll(rows => rows.map(row =>
       getComputedStyle(row.querySelector('span span')!).fontWeight,
     ))
     expect(new Set(effortWeights)).toEqual(new Set(['400']))

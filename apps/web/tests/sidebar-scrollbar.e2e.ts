@@ -405,7 +405,7 @@ describe('web e2e: sidebar session list scrollbar (reserved gutter / themed thum
     await expect.poll(async () => (await measureList(page)).overflows, { timeout: 10_000 }).toBe(true)
     const metrics = await measureList(page)
     expect(metrics.gutter).toBe('stable')
-    const horizontal = await page.locator('[data-sidebar-scrollport]').evaluate(viewport => ({
+    const horizontal = await page.locator('[data-sidebar-browser]').evaluate(viewport => ({
       overflow: getComputedStyle(viewport).overflowX,
       scrollbarHeight: viewport.getBoundingClientRect().height - viewport.clientHeight,
     }))
@@ -415,7 +415,7 @@ describe('web e2e: sidebar session list scrollbar (reserved gutter / themed thum
     expect(metrics.band).toBeGreaterThan(0)
     expect(metrics.scrollbarEdgeOffset).toBe(2)
     expect(metrics.rowEdgeInset).toBe(12)
-    expect(metrics.rowPaintInset).toBe(15)
+    expect(metrics.rowPaintInset).toBe(12)
     // Measure against the bar because overlay scrollbars do not move the client edge.
     expect(metrics.timeCoveredBy).toBe(0)
     expect(metrics.timeRight).toBeLessThanOrEqual(metrics.clientRight)
@@ -458,15 +458,15 @@ describe('web e2e: sidebar session list scrollbar (reserved gutter / themed thum
     onTestFailed(() => saveFailureShot(page, 'web-e2e-sidebar-scrollbar-stable-inset'))
     const viewport = page.locator('[data-sidebar-list-area]')
     const height = await viewport.evaluate(el => el.scrollHeight)
-    expect(await measureRowInset(page)).toEqual({ overflows: true, rowEdgeInset: 12, rowPaintInset: 15 })
+    expect(await measureRowInset(page)).toEqual({ overflows: true, rowEdgeInset: 12, rowPaintInset: 12 })
     const bucket = page.getByText('Ungrouped', { exact: true }).locator('..').locator('..')
     await bucket.click()
     try {
       await expect.poll(async () => viewport.evaluate(el => el.scrollHeight)).toBeLessThan(height)
       await expect.poll(async () => (await measureRowInset(page)).overflows).toBe(false)
-      expect(await measureRowInset(page)).toEqual({ overflows: false, rowEdgeInset: 12, rowPaintInset: 15 })
+      expect(await measureRowInset(page)).toEqual({ overflows: false, rowEdgeInset: 12, rowPaintInset: 12 })
       // A section that fits leaves the sidebar viewport nothing to scroll, so the navigation stays.
-      expect((await nestedScrollGeometry(page)).viewportRange).toBe(0)
+      expect(await page.locator('[data-sidebar-browser]').evaluate(el => el.scrollHeight - el.clientHeight)).toBe(0)
     } finally {
       await expandSeededSessions(page)
       await viewport.evaluate((el) => { el.scrollTop = 0 })

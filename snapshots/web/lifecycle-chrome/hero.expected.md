@@ -7,7 +7,6 @@
   - button "MCP"
   - button "Knowledge base"
   - button "Automation tasks"
-  - button "Unpin Automation tasks from sidebar"
   - button "More"
 - text: Workspaces
 - button "Search sessions"
@@ -23,8 +22,7 @@
 - heading "What would you like to do today?" [level=1]
 - button "Choose workspace": workspace
 - button "Standard mode"
-- textbox "Describe what you want to do":
-  - paragraph
+- textbox "Describe what you want to do"
 - button "Add files or run commands"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
 - button "Select model, current DeepSeek-V4-Flash": DeepSeek-V4-Flash

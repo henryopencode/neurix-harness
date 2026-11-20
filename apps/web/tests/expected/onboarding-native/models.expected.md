@@ -16,6 +16,7 @@
       - text: DeepSeek
       - img "API 密钥缺失"
       - button "编辑 DeepSeek (deepseek-official)": 编辑
+      - button "删除 DeepSeek (deepseek-official)": 删除
       - text: DeepSeek deepseek-official API 密钥
       - button "认证说明": "?"
       - textbox "API 密钥":
