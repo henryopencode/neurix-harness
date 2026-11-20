@@ -65,13 +65,10 @@
   width: 100%;
   max-width: var(--dsh-composer-card-max-width);
   padding-top: 12px;
-  /* Input stroke: the light neutral (l2, one step above the menus' l1),
-     drawn as the elevation hairline so it costs no layout; the shadow is the
-     soft elevation tier. Fill: the input surface token (elevated in dark). */
   border: 0;
   --dsw-elevation-stroke-color: var(--dsw-alias-border-l3);
   border-radius: var(--dsw-radius-xl);
-  background: var(--dsw-specific-input-major);
+  background: var(--dsw-alias-bg-layer-1);
   box-shadow: var(--dsw-elevation-soft);
   /* The draft text follows the Settings font-size preference (the textarea,
      mirror, and backdrop all inherit from here, so the three layers stay in
@@ -79,11 +76,6 @@
      delta. */
   font-size: var(--dsh-content-font-size, 14px);
   line-height: calc(24px + var(--dsh-content-font-delta, 0px));
-  /* Elevated surface in dark, same as the menus: the draft scrollport inside
-     scrolls once the composer hits its height cap, so the thumb takes the l2
-     pair. Declared on the card because the elevation belongs to the surface,
-     and the custom properties inherit down to the box that actually scrolls
-     (see ui-theme styles/scrollbar.css for the rebinding contract). */
   --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
   --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
 }

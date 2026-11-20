@@ -49,7 +49,7 @@ To customize a page's navigation icon, use `ctx.slots.inject('settings.section.i
 <a id="opening-a-settings-section"></a>
 ### Opening a settings section
 
-Feature plugins inject `settingsNavigation` and call `ctx.settingsNavigation.openSection(id)` to select a registered `settings.section` in the existing Settings panel. An unavailable id throws without changing panel visibility or selection. The [General shell](../ui-settings-general/README.md#use-this-package) supplies the service; consumers follow its lifetime rather than creating another dialog or navigation store.
+Feature plugins inject `settingsNavigation` and call `ctx.settingsNavigation.openSection(id)` to select a registered `settings.section` in the existing Settings panel. Use `openOnboarding(id, chooseMethod?)` to request a registered onboarding step. A true `chooseMethod` asks the step to show its initial connection choices when available. An unavailable id throws without changing the panel or active step. The [General shell](../ui-settings-general/README.md#use-this-package) supplies the service; consumers follow its lifetime rather than creating another dialog or navigation store.
 
 ### Observable success and failures
 

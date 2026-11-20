@@ -252,6 +252,12 @@ export function apply(ctx: ClientContext): void {
           }
           shellInstance.actions.openSection(id)
         },
+        openOnboarding(id, chooseMethod): void {
+          if (!ctx.slots.entries('settings.onboarding').some(entry => entry.options.id === id)) {
+            throw new Error(`Settings onboarding step is unavailable: ${id}`)
+          }
+          shellInstance.actions.openOnboarding(id, chooseMethod)
+        },
       })
     }))
 

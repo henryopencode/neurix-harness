@@ -3,9 +3,6 @@
   min-width: 0;
 }
 
-/* Figma 313:14108 ToggleButton: 13/20 regular secondary label, 4px gap,
-   12px caption chevron; 28px chip height matches the sibling Plan /
-   Read-only selects in the same tool row. */
 .trigger {
   anchor-name: var(--dsh-model-anchor);
   display: flex;
@@ -23,12 +20,16 @@
   border-radius: 999px;
   corner-shape: round;
   outline: none;
-  background: var(--dsw-alias-interactive-bg-hover);
+  background: transparent;
   color: var(--dsw-alias-label-secondary);
   font-size: 13px;
   line-height: 20px;
   font-weight: 400;
   cursor: pointer;
+}
+
+.trigger[aria-expanded='true'] {
+  background: var(--dsw-alias-interactive-bg-hover);
 }
 
 @media (hover: hover) {
@@ -81,7 +82,6 @@
 
 .chevron {
   flex: 0 0 auto;
-  color: var(--dsw-alias-label-caption);
   transition: transform 120ms ease;
 }
 

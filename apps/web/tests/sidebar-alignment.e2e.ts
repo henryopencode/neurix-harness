@@ -24,8 +24,8 @@ const ACTION_CENTER_SPACING = 29
 const ACTION_TRAILING_INSET = 7
 const SEARCH_HEIGHT = 32
 const SEARCH_TRANSITION_MS = 180
-const HEADER_LABEL_OFFSET = 7
-const HEADER_ACTION_RIGHT_OFFSETS = { search: -61, view: -29, add: 3 }
+const HEADER_LABEL_OFFSET = 11
+const HEADER_ACTION_RIGHT_OFFSETS = { search: -64, view: -32, add: 0 }
 
 /**
  * Measure painted glyphs and pointer targets independently of the row's layout cells.
@@ -262,26 +262,26 @@ describe('web e2e: sidebar search alignment and row action targets', () => {
           element.removeEventListener('transitionrun', pause, true)
         }
       }, { expand, duration: SEARCH_TRANSITION_MS })
-      for (const property of ['margin-right', 'padding-left', 'padding-right', 'column-gap']) {
+      for (const property of ['padding-left', 'column-gap']) {
         expect(samples.headerTransitions).toContainEqual({ property, duration: SEARCH_TRANSITION_MS })
       }
       const first = samples.frames[0]!
       const last = samples.frames.at(-1)!
       expect(first).toMatchObject(expand
-        ? { marginRight: -4, paddingLeft: 12, paddingRight: 1, gap: 4 }
-        : { marginRight: 0, paddingLeft: 4, paddingRight: 4, gap: 0 })
+        ? { marginRight: 0, paddingLeft: 12, paddingRight: 12, gap: 4 }
+        : { marginRight: 0, paddingLeft: 0, paddingRight: 12, gap: 0 })
       expect(last).toMatchObject(expand
-        ? { marginRight: 0, paddingLeft: 4, paddingRight: 4, gap: 0 }
-        : { marginRight: -4, paddingLeft: 12, paddingRight: 1, gap: 4 })
+        ? { marginRight: 0, paddingLeft: 0, paddingRight: 12, gap: 0 }
+        : { marginRight: 0, paddingLeft: 12, paddingRight: 12, gap: 4 })
       for (const frame of samples.frames.slice(1, -1)) {
-        for (const key of ['marginRight', 'paddingLeft', 'paddingRight', 'gap', 'width'] as const) {
+        expect(frame.width).toBe(first.width)
+        expect(frame.paddingRight).toBe(first.paddingRight)
+        for (const key of ['paddingLeft', 'gap'] as const) {
           expect(frame[key]).toBeGreaterThan(Math.min(first[key], last[key]))
           expect(frame[key]).toBeLessThan(Math.max(first[key], last[key]))
         }
-        const progress = (frame.marginRight - first.marginRight) / (last.marginRight - first.marginRight)
-        for (const key of ['paddingLeft', 'paddingRight', 'gap'] as const) {
-          expect((frame[key] - first[key]) / (last[key] - first[key])).toBeCloseTo(progress, 2)
-        }
+        const progress = (frame.paddingLeft - first.paddingLeft) / (last.paddingLeft - first.paddingLeft)
+        expect((frame.gap - first.gap) / (last.gap - first.gap)).toBeCloseTo(progress, 2)
       }
     }
   })
@@ -357,8 +357,8 @@ describe('web e2e: sidebar search alignment and row action targets', () => {
     expect(samples.first.transitionDuration).toBe('0s')
     expect(samples.first).toEqual(samples.last)
     expect(samples.first).toMatchObject(entry !== 'toggle'
-      ? { marginRight: 0, paddingLeft: 4, paddingRight: 4, gap: 0, searchExpanded: 'true' }
-      : { marginRight: -4, paddingLeft: 12, paddingRight: 1, gap: 4, searchExpanded: 'false' })
+      ? { marginRight: 0, paddingLeft: 0, paddingRight: 12, gap: 0, searchExpanded: 'true' }
+      : { marginRight: 0, paddingLeft: 12, paddingRight: 12, gap: 4, searchExpanded: 'false' })
     expect(samples.sameHeader).toBe(true)
     expect(samples.sameAdd).toBe(true)
     if (entry === 'search') {

@@ -289,7 +289,7 @@ describe.each(MODE === 'record' ? ['deepseek-official'] : ['deepseek-official', 
     await selectModel('DeepSeek-V4-Flash')
     expect(captured()).toHaveLength(releasedCount)
     await page.getByRole('button', { name: 'New session', exact: true }).last().click()
-    const input = page.locator('[data-composer-input][contenteditable="true"][data-placeholder="Describe what you want to build, / commands, @ files or sessions"]')
+    const input = page.locator('[data-composer-input][contenteditable="true"][data-placeholder="Describe what you want to do"]')
     await input.waitFor({ timeout: 15_000 })
     await input.fill('/feedback Feedback before any model request.')
     expect(captured()).toHaveLength(releasedCount)

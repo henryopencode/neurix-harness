@@ -162,7 +162,8 @@ function harness(options: {
   const complete = vi.fn()
   const unusedHook = (() => { throw new Error('unused standard hook') }) as never
   const props: DeepSeekOnboardingDialogProps = {
-    automatic: true,
+    explicit: true,
+    chooseMethod: true,
     stepId: 'deepseek-official',
     complete,
     openSection,
@@ -380,7 +381,7 @@ it('offers account choice before reusing the existing API key editor', async () 
 })
 it('explicit account-menu setup reuses the editor without another login choice', async () => {
   const h = harness({ configured: () => true })
-  h.props.explicit = true
+  h.props.chooseMethod = false
   const choice = vi.fn()
   h.props.renderSlot = (_name, _owner, options) => { choice(); return options?.fallback }
   render(<DeepSeekOnboardingDialog {...h.props} />)
@@ -389,13 +390,13 @@ it('explicit account-menu setup reuses the editor without another login choice',
   expect(h.complete).not.toHaveBeenCalled()
 })
 
-it('keeps explicit API key setup available when automatic onboarding is disabled', async () => {
+it('does not interrupt the composer without a setup request', async () => {
   const h = harness()
-  h.props.automatic = false
-  h.props.explicit = true
+  h.props.explicit = false
   render(<DeepSeekOnboardingDialog {...h.props} />)
-  await waitFor(() => { expect(screen.getByRole('dialog')).toBeTruthy() })
-  expect(h.complete).not.toHaveBeenCalled()
+  await waitFor(() => { expect(h.complete).toHaveBeenCalledOnce() })
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(h.controller.store.getSnapshot().status).toBe('idle')
 })
 
 function chooseOption(control: HTMLElement, value: string): void {

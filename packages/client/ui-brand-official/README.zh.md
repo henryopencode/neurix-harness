@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-本包让以 `official` profile 构建的客户端在侧栏显示 Neurix Harness 标志与名称。其他构建 profile 保留外壳的 N 标识与 Neurix Harness 标签，会话首屏也使用同一 N 标识。品牌为 Neurix Harness 的部署应选择本包；使用其他品牌的部署应提供替代品牌包。本包不保留运行时状态，也不影响模型请求。
+本包让以 `official` profile 构建的客户端在侧栏显示 Neurix Harness 标志与名称。其他构建 profile 保留外壳的 N 标识与 Neurix Harness 标签。品牌为 Neurix Harness 的部署应选择本包；使用其他品牌的部署应提供替代品牌包。本包不保留运行时状态，也不影响模型请求。
 
 ## 目录
 
@@ -29,11 +29,11 @@ kind: "package-reference"
 
 ### 选择 profile
 
-`DSH_CLIENT_BUILD_PROFILE` 决定侧栏品牌。`official` 构建注册 Neurix N 标志与字标；其他构建使用外壳的 N 回退标志和本地化名称。会话首屏使用共享 N 标志，悬停时轻微摆动。两种情况下插件都会照常加载并通过校验；注册受 profile 门控。
+`DSH_CLIENT_BUILD_PROFILE` 决定侧栏品牌。`official` 构建注册 Neurix N 标志与字标；其他构建使用外壳的 N 回退标志和本地化名称。两种情况下插件都会照常加载并通过校验；注册受 profile 门控。
 
 ### 替换品牌
 
-自有身份的部署不组合本包，而是组合另一个占据侧栏 slot——以及本包留给回退的首屏 slot——的包。占据 slot 是唯一的组合路径；这里不存在任何品牌配置面。
+自有身份的部署不组合本包，而是组合另一个占据侧栏插槽的品牌包。该包也可以为会话首屏提供可选标志。占据 slot 是唯一的组合路径；这里不存在任何品牌配置面。
 
 -----
 

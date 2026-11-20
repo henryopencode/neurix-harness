@@ -353,7 +353,7 @@ async function bootPreview(site: Site, manifest: ImageManifest, browser: Browser
     const configureLater = page.getByRole('button', { name: 'Configure later' })
     await configureLater.waitFor({ timeout: 30_000 })
     await configureLater.click()
-    await page.locator('[data-composer-input][data-placeholder="Describe what you want to build, / commands, @ files or sessions"]')
+    await page.locator('[data-composer-input][data-placeholder="Describe what you want to do"]')
       .waitFor({ timeout: 30_000 })
 
     const exercised = await page.evaluate(async ({ seededSessionId, seededSessionTitle }) => {

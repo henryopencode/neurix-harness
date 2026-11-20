@@ -28,7 +28,7 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
   let tripwire: ReturnType<typeof watchConsole>
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({ deepSeekMissingCredential: true })
+    scaffold = await launchWebScaffold({ deepSeekMissingCredential: true, firstUse: true })
     browser = await chromium.launch()
     // The scenario asserts the shipped Chinese copy, so the browser asks for it.
     page = await browser.newPage({ viewport: { width: 1440, height: 960 }, locale: ZH_BROWSER_LOCALE })
@@ -44,6 +44,7 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
 
   it('starts provider rows collapsed and opens another provider without repeating onboarding', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-onboarding-setup-card-cancel'))
+    await page.getByRole('button', { name: '配置模型', exact: true }).click()
     const signIn = page.getByRole('dialog', { name: '开始使用', exact: true })
     await signIn.waitFor({ timeout: 15_000 })
     await signIn.getByRole('button', { name: '添加 API Key', exact: true }).click()

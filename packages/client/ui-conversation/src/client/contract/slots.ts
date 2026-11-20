@@ -297,11 +297,11 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     'conversation.hero.workspace': { kind: 'single'; scope: 'root'; owner: EmptyWorkspaceOwnerProps }
     /** Layers wrapping the Conversation scroll body; `hero` reports a blank, standalone home. */
     'conversation.hero.frame': { kind: 'hoc'; scope: 'root'; owner: HeroFrameOwnerProps }
-    /** Brand mark shown before the blank-session headline. */
+    /** Optional brand mark shown before the blank-session headline. */
     'conversation.hero.brand.mark': { kind: 'single'; scope: 'root'; owner: HeroBrandMarkOwnerProps }
     /** Agent-preset control staged for a New Session. */
     'conversation.hero.agentPreset': { kind: 'single'; scope: 'session-maybe'; owner: HeroAgentPresetOwnerProps }
-    /** Compact options right-aligned in the New Session row after the workspace and preset controls; rendered only with a Session. */
+    /** Compact options after the workspace and preset controls in the centered New Session row; rendered only with a Session. */
     'conversation.hero.options': { kind: 'list'; scope: 'session' }
     /**
      * Full-width entries above the composer card. An active entry marked

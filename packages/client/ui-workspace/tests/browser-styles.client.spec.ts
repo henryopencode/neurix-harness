@@ -61,9 +61,9 @@ describe('WorkspaceBrowser.module.css list', () => {
     expect(expandedListArea?.get('scrollbar-gutter')).toBe('stable')
     expect(expandedListArea?.get('margin-left')).toBe('-4px')
     expect(expandedListArea?.get('padding-left')).toBe('4px')
-    expect(expandedListArea?.get('margin-right')).toBe('calc(2px - var(--dsh-sidebar-inline-padding))')
+    expect(expandedListArea?.get('margin-right')).toBe('2px')
     expect(expandedListArea?.get('padding-right'))
-      .toBe('calc(var(--dsh-sidebar-inline-padding) - var(--dsh-scrollbar-width) - 2px)')
+      .toBe('max(var(--dsh-sidebar-paint-inset), calc(var(--dsh-sidebar-inline-padding) - var(--dsh-scrollbar-width) - 2px))')
     expect(root?.get('padding-right')).toBeUndefined()
     expect(declarations('.rail .listArea')).toBeUndefined()
     expect(declarations('.list::-webkit-scrollbar')).toBeUndefined()
@@ -146,7 +146,7 @@ describe('WorkspaceBrowser.module.css list', () => {
     expect(rowDeclarations('.iconButton')?.get('width')).toBe('24px')
     expect(rowDeclarations('.time')?.get('margin-inline-end')).toBe('-1px')
     expect(declarations('.sectionLabel')?.get('left')).toBe('-1px')
-    expect(declarations('.sectionHeader')?.get('padding-left')).toBe('var(--dsh-sidebar-row-padding)')
+    expect(declarations('.sectionHeader')?.get('padding-inline')).toBe('var(--dsh-sidebar-row-padding) var(--dsh-sidebar-inline-padding)')
   })
 
   it('extends native row action targets while retaining the compact layout footprint', () => {
@@ -164,17 +164,14 @@ describe('WorkspaceBrowser.module.css list', () => {
     const selector = '.root:not(.rail) .sectionHeader.searchSpacingMotion'
     const [ordinary = '', reduced = ''] = css.split('@media (prefers-reduced-motion: reduce)')
     expect(declarationsFrom(ordinary, selector)?.get('transition'))
-      .toBe('margin-right 180ms var(--ds-ease-in-out), padding-inline 180ms var(--ds-ease-in-out), gap 180ms var(--ds-ease-in-out)')
+      .toBe('padding-inline 180ms var(--ds-ease-in-out), gap 180ms var(--ds-ease-in-out)')
     expect(declarationsFrom(reduced, selector)?.get('transition')).toBe('none')
   })
 
   it('aligns the expanded search field without changing list scroll ownership', () => {
     const header = declarations('.root:not(.rail) .sectionHeader:has(.searchExpanded)')
-    expect(header?.get('margin-right')).toBe('0')
-    expect(header?.get('padding-inline')).toBe('calc(var(--dsh-sidebar-paint-inset) + 1px)')
+    expect(header?.get('padding-inline-start')).toBe('0')
     expect(header?.get('gap')).toBe('0')
-    expect(declarations('.root:not(.rail) .sectionHeader:not(:has(.searchExpanded))')?.get('padding-right')).toBe('1px')
-    expect(declarations('.root:not(.rail) .sectionHeader:not(:has(.searchExpanded))')?.get('margin-right')).toBe('-4px')
     expect(declarations('.searchExpanded')?.get('width')).toBe('100%')
     expect(declarations('.searchExpanded')?.get('margin-inline')).toBe('0')
     expect(declarations('.searchExpanded .searchButton')?.get('height')).toBe('32px')

@@ -11,7 +11,7 @@ Desktop product events use the optional [product analytics service](../product-a
 
 ## Summary
 
-Configure model providers, store API keys without reading them back, and edit model lists from Settings. Connect an OpenAI- or Anthropic-compatible service with its endpoint and model IDs. First-run setup defaults to a third-party service and offers installed API providers through one selector; any usable provider completes automatic setup.
+Configure model providers, store API keys without reading them back, and edit model lists from Settings. Connect an OpenAI- or Anthropic-compatible service with its endpoint and model IDs. First-run setup defaults to a third-party service and offers installed API providers through one selector; the setup entry is hidden once any provider is usable.
 
 ## Table of Contents
 
@@ -37,9 +37,9 @@ A provider with a stored catalog error remains visible with its diagnostic and e
 
 After Apply closes an editor, its saved status appears when the current provider, settings, and credential snapshot is ready. Opening any row's editor, adding a provider, and opening a removal confirmation wait for that refresh. A newly opened Models section, or one retrying after a page-load failure, waits for a ready snapshot before mounting editors. A background refresh preserves an open draft while its editor remains mounted; a failed page load or provider removal can close it.
 
-Host configuration `credentialOnboarding` defaults to `true`. The Electron preload marker suppresses automatic credential onboarding and the Web welcome notice; Models settings and explicit API-key editing remain available. The [account plugin](../ui-settings-account/README.md#desktop-onboarding) owns the Desktop introduction. Other native shells can disable only the credential step with `credentialOnboarding: false`. Host publishes this public boolean through `webserver/index-inject`, and Client validates it before registering dialogs. It is page initialization data, not a durable completion marker.
+Host configuration `credentialOnboarding` defaults to `true`. The Electron preload marker suppresses the Web composer’s setup entry and welcome notice; Models settings and explicit API-key editing remain available. The [account plugin](../ui-settings-account/README.md#desktop-onboarding) owns the Desktop introduction. Other native shells can hide the setup entry with `credentialOnboarding: false`. Host publishes this public boolean through `webserver/index-inject`, and Client validates it before registering the entry. It is page initialization data, not a durable completion marker.
 
-The first-run model dialog defaults to **Custom model API**. Enter its API URL, select the API protocol, supply a key when required, and add at least one model manually or with **Fetch available models**. The route ID is assigned automatically. The same provider selector offers installed API services without a featured vendor. Switching services preserves visited drafts; **Configure later** leaves setup available from Settings.
+The first-run model dialog defaults to **Custom model API**. Enter its API URL, select the API protocol, supply a key when required, and add at least one model manually or with **Fetch available models**. The route ID is assigned automatically. The same provider selector offers installed API services without a featured vendor. Switching services preserves visited drafts; **Configure later** leaves setup available from the composer and Settings.
 
 ### API keys
 
@@ -73,7 +73,7 @@ Empty pi-ai capacity fields display `1M` for the context window and `128K` for m
 
 ### First-run dialogs
 
-After the versioned notice, model setup derives readiness from the same joined snapshot. Any usable provider completes automatic setup without rendering. Otherwise the dialog offers writable API connections; Configure later completes only this coordinator pass. Missing or unusable adapters, failed joins, and read-only deployments do not block the application; Models retains their diagnostics.
+After the versioned notice, a new session without a usable provider shows **Configure models** above the composer when setup is writable. Open it to sign in or add an API key. Missing or unusable adapters, failed joins, and read-only deployments do not block the application; Models retains their diagnostics.
 
 ### Extension slots
 

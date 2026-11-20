@@ -13,7 +13,7 @@
  * is active. Visible dialog chrome belongs to the step, so a
  * mounted-but-deciding step paints nothing here.
  */
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import clsx from 'clsx'
 import {
@@ -123,10 +123,9 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
     wide, compact, reconnect, useConnectionState, useSections, useOnboardingSteps, useSessions, renderSlot, t,
     useDesktopUpdate, useStore, actions, useShortcuts,
   } = props
-  const { open, activeId } = useStore(state => state)
+  const { open, activeId, requestedOnboarding } = useStore(state => state)
   const shortcut = useShortcuts(rows => rows.find(row => row.id === 'settings.open'))
-  const { close, openSection } = actions
-  const [requestedOnboarding, setRequestedOnboarding] = useState<string | undefined>()
+  const { close, completeOnboarding, openSection } = actions
   const [completedOnboarding, setCompletedOnboarding] = useState<ReadonlySet<string>>(() => new Set())
   const [showRecovery, setShowRecovery] = useState(false)
   const [holdConnecting, setHoldConnecting] = useState(false)
@@ -146,7 +145,7 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
     return state.phase === 'ready' && (main === undefined || main.blank)
   })
   const onboardingStep = requestedOnboarding !== undefined
-    ? onboardingSteps.find(step => step.id === requestedOnboarding)
+    ? onboardingSteps.find(step => step.id === requestedOnboarding.id)
     : onboardingActive
       ? onboardingSteps.find(step => !completedOnboarding.has(step.id))
       : undefined
@@ -204,12 +203,12 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
   }, [connectionState])
 
   const completeOnboardingStep = useCallback((id: string) => {
-    setRequestedOnboarding(undefined)
+    completeOnboarding(id)
     setCompletedOnboarding((previous) => {
       if (previous.has(id)) return previous
       return new Set([...previous, id])
     })
-  }, [])
+  }, [completeOnboarding])
 
   let connectionIndicator: ConnectionIndicatorState | undefined
   if (connectionState === 'connecting' || holdConnecting) {
@@ -226,7 +225,7 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
         {renderSlot('settings.launcher', {
           wide: wide && !compact, settingsOpen: open, openSettings: actions.open,
           ...(shortcut?.keys.length ? { settingsShortcut: { keys: shortcut.keys, aria: shortcut.aria } } : {}),
-          openOnboarding: (id) => { close(); setRequestedOnboarding(id) },
+          openOnboarding: actions.openOnboarding,
         }, { fallback: <Tooltip disabled={open} label={t('trigger')} shortcutKeys={shortcut?.keys}>
           <button
             type="button"
@@ -264,12 +263,17 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
       {/* Dialog chrome and `#root` inert ownership live inside each step's
           visible branch. A step still deciding (private facts loading)
           renders null, so nothing paints or blocks while it decides. */}
-      {onboardingStep !== undefined && renderSlot('settings.onboarding', {
-        stepId: onboardingStep.id,
-        explicit: requestedOnboarding !== undefined,
-        complete: () => { completeOnboardingStep(onboardingStep.id) },
-        openSection,
-      }, { only: onboardingStep.id })}
+      {onboardingStep !== undefined && (
+        <Fragment key={`${onboardingStep.id}:${requestedOnboarding === undefined ? 'auto' : String(requestedOnboarding.chooseMethod)}`}>
+          {renderSlot('settings.onboarding', {
+            stepId: onboardingStep.id,
+            explicit: requestedOnboarding !== undefined,
+            chooseMethod: requestedOnboarding?.chooseMethod ?? false,
+            complete: () => { completeOnboardingStep(onboardingStep.id) },
+            openSection,
+          }, { only: onboardingStep.id })}
+        </Fragment>
+      )}
     </>
   )
 }

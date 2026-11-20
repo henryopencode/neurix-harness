@@ -19,11 +19,18 @@ export interface SettingsNavigation {
    * @throws When the section is not registered.
    */
   openSection(id: string): void
+  /**
+   * Open a registered onboarding step on request.
+   * @param id - Registration id of an available settings.onboarding contribution.
+   * @param chooseMethod - Begin with connection choices when the step offers them.
+   * @throws When the step is not registered.
+   */
+  openOnboarding(id: string, chooseMethod?: boolean): void
 }
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
-    /** Navigate to a contributed settings section without a second dialog or store. */
+    /** Navigate to a contributed settings section or onboarding step. */
     settingsNavigation: SettingsNavigation
   }
 }
@@ -165,8 +172,10 @@ export interface SettingsSectionIconOwnerProps {
 export interface SettingsOnboardingOwnerProps {
   /** Stable id of the step currently selected by the coordinator. */
   stepId: string
-  /** User explicitly reopened this step outside first-run onboarding. */
+  /** The user opened this step. */
   explicit?: boolean
+  /** Offer connection choices before opening the credential editor. */
+  chooseMethod?: boolean
   /** Complete or skip this step and transfer ownership to the next entry. */
   complete: () => void
   /** Open the settings panel directly on one registered section. */

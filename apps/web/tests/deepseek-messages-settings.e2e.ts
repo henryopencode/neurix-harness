@@ -21,8 +21,6 @@ it.each([{ name: 'Chromium', engine: chromium }, { name: 'WebKit', engine: webki
       const page = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
       const tripwire = watchConsole(page)
       await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
-      await page.getByRole('dialog', { name: '开始使用', exact: true }).getByRole('button', { name: '添加 API Key', exact: true }).click()
-      await page.getByRole('dialog', { name: '连接模型服务' }).getByRole('button', { name: '稍后配置' }).click()
       await openSettings(page, 'zh')
       const dialog = page.getByRole('dialog', { name: '设置', exact: true })
       await dialog.getByRole('button', { name: '模型', exact: true }).click()
@@ -61,7 +59,7 @@ describe.skipIf(webSnapshotMode() === 'record')('web e2e: DeepSeek Messages sett
   let tripwire: ReturnType<typeof watchConsole>
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({ deepSeekMissingCredential: true })
+    scaffold = await launchWebScaffold({ deepSeekMissingCredential: true, firstUse: true })
     browser = await chromium.launch()
     page = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
     tripwire = watchConsole(page)
@@ -81,6 +79,7 @@ describe.skipIf(webSnapshotMode() === 'record')('web e2e: DeepSeek Messages sett
     expect(scaffold.ctx.llm.listProviders()).toContainEqual({ id: 'deepseek-official', name: 'DeepSeek' })
     expect(scaffold.ctx.llm.listProviders().filter(provider => provider.id === 'deepseek-official')).toHaveLength(1)
     expect(scaffold.ctx.agentDefaultModel.currentSelection()).toEqual({ provider: 'deepseek-official', model: 'deepseek-flash' })
+    await page.getByRole('button', { name: '配置模型', exact: true }).click()
     await page.getByRole('dialog', { name: '开始使用', exact: true }).getByRole('button', { name: '添加 API Key', exact: true }).click()
     const onboarding = page.getByRole('dialog', { name: '连接模型服务' })
     await selectField(onboarding.getByRole('combobox', { name: '提供商', exact: true }), 'provider:deepseek-official')
@@ -161,7 +160,7 @@ describe.skipIf(webSnapshotMode() === 'record')('web e2e: DeepSeek Messages sett
 })
 
 it('deletes and re-adds DeepSeek through the ordinary provider controls', async () => {
-  const scaffold = await launchWebScaffold({ deepSeekMissingCredential: true })
+  const scaffold = await launchWebScaffold({ deepSeekMissingCredential: true, firstUse: true })
   let browser: Browser | undefined
   try {
     await scaffold.ctx.settings.update('llm-deepseek', {
@@ -172,6 +171,7 @@ it('deletes and re-adds DeepSeek through the ordinary provider controls', async 
     const tripwire = watchConsole(page)
     onTestFailed(() => saveFailureShot(page, 'web-e2e-deepseek-remove'))
     await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
+    await page.getByRole('button', { name: '配置模型', exact: true }).click()
     await page.getByRole('dialog', { name: '开始使用', exact: true }).getByRole('button', { name: '添加 API Key', exact: true }).click()
     const onboarding = page.getByRole('dialog', { name: '连接模型服务' })
     await selectField(onboarding.getByRole('combobox', { name: '提供商', exact: true }), 'provider:deepseek-official')

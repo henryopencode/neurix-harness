@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-This package gives an `official` client build the Neurix Harness mark and name in the sidebar. Other build profiles keep the shell's N symbol and Neurix Harness label, while the conversation hero uses the same N symbol. Choose it for deployments branded as Neurix Harness; deployments with another identity should provide a replacement brand package. It has no runtime state and does not affect model requests.
+This package gives an `official` client build the Neurix Harness mark and name in the sidebar. Other build profiles keep the shell's N symbol and Neurix Harness label. Choose it for deployments branded as Neurix Harness; deployments with another identity should provide a replacement brand package. It has no runtime state and does not affect model requests.
 
 ## Table of Contents
 
@@ -29,11 +29,11 @@ Mount this plugin in the browser roster of a deployment whose identity is Neurix
 
 ### Choosing the profile
 
-`DSH_CLIENT_BUILD_PROFILE` selects the sidebar branding. An `official` build registers the Neurix N symbol and wordmark; other builds use the shell's N fallback and localized name. The conversation hero uses the shared N symbol and gently tilts on hover. The plugin loads and validates in both cases; registration is profile-gated.
+`DSH_CLIENT_BUILD_PROFILE` selects the sidebar branding. An `official` build registers the Neurix N symbol and wordmark; other builds use the shell's N fallback and localized name. The plugin loads and validates in both cases; registration is profile-gated.
 
 ### Replacing the brand
 
-A deployment with its own identity leaves this package out and composes another package that occupies the sidebar slots — and the hero slot, which this package leaves on its fallback. Occupying a slot is the only composition route; there is no brand configuration surface here.
+A deployment with its own identity leaves this package out and composes another package that occupies the sidebar slots. It can also contribute an optional conversation hero mark. Occupying a slot is the only composition route; there is no brand configuration surface here.
 
 -----
 

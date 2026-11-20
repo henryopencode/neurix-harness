@@ -494,7 +494,7 @@ export const InputBar = memo(function InputBar({
         />
         <div ref={rowRef} className={css.row}>
           <div className={css.tools} hidden={activity}>
-            <Tooltip label={t('input.commands')} side="top" delayMs={500} portal>
+            <Tooltip label={t(variant === 'hero' ? 'input.commands.hint' : 'input.commands')} side="top" delayMs={500} portal>
               <button
                 type="button"
                 className={css.add}

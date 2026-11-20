@@ -1,8 +1,7 @@
 /**
- * First-run model connection over the Models page's shared provider join.
+ * Requested model connection over the Models page's shared provider join.
  * Custom API setup is the default when available. Every installed provider
- * appears in one selector without a featured vendor. Any usable provider ends
- * automatic onboarding.
+ * appears in one selector. The first connection finishes once a provider is usable.
  */
 import type { TrackProductEvent } from '@deepseek-ai/dsh-client-product-analytics/client'
 import { useEffect, useId, useState } from 'react'
@@ -26,8 +25,6 @@ import formStyles from './ModelsSection.module.css'
 export interface DeepSeekOnboardingInjected {
   /** Desktop-only event collection. */
   track?: TrackProductEvent
-  /** Whether first-run setup should show automatically. Explicit requests remain available. */
-  automatic: boolean
   hooks: {
     /** Shared Models-page join state, bound by the slot renderer. */
     models: SnapshotStore<ModelsSettingsState>
@@ -57,8 +54,8 @@ function assertNever(_value: never): never {
  * @returns the onboarding modal or null when onboarding needs no intervention.
  */
 export function DeepSeekOnboardingDialog(props: DeepSeekOnboardingDialogProps): ReactNode {
-  const { complete, controller, useModels, operations, schema, t, renderSlot, automatic, explicit = false } = props
-  const [apiKey, setApiKey] = useState(explicit)
+  const { complete, controller, useModels, operations, schema, t, renderSlot, explicit = false, chooseMethod = false } = props
+  const [apiKey, setApiKey] = useState(!chooseMethod)
   const [choice, setChoice] = useState('custom')
   const [visited, setVisited] = useState<ReadonlySet<string>>(() => new Set(['custom']))
   const [customBusy, setCustomBusy] = useState(false)
@@ -87,20 +84,20 @@ export function DeepSeekOnboardingDialog(props: DeepSeekOnboardingDialogProps): 
   const mode = options.some(option => option.value === choice) ? choice : options[0]?.value
 
   useEffect(() => {
-    if ((automatic || explicit) && state.status === 'idle') void controller.load()
-  }, [controller, state.status, automatic, explicit])
+    if (explicit && state.status === 'idle') void controller.load()
+  }, [controller, state.status, explicit])
 
   useEffect(() => {
     if (
-      (!automatic && !explicit)
+      !explicit
       || readiness.kind === 'adapter-absent'
-      || (!explicit && readiness.kind === 'provider-ready')
+      || (chooseMethod && readiness.kind === 'provider-ready')
       || readiness.kind === 'unavailable'
       || (readiness.kind !== 'loading' && options.length === 0)
     ) complete()
-  }, [complete, readiness.kind, explicit, automatic, options.length])
+  }, [complete, readiness.kind, explicit, chooseMethod, options.length])
 
-  if (!automatic && !explicit) return null
+  if (!explicit) return null
 
   switch (readiness.kind) {
     case 'loading':
@@ -108,7 +105,7 @@ export function DeepSeekOnboardingDialog(props: DeepSeekOnboardingDialogProps): 
     case 'unavailable':
       return null
     case 'provider-ready':
-      if (!explicit) return null
+      if (chooseMethod) return null
       break
     case 'credential-missing':
       break
@@ -129,7 +126,7 @@ export function DeepSeekOnboardingDialog(props: DeepSeekOnboardingDialogProps): 
       return
     }
     void controller.load().then(() => {
-      if (explicit && onboardingReadiness(controller.store.getSnapshot()).kind === 'provider-ready') complete()
+      if (!chooseMethod && onboardingReadiness(controller.store.getSnapshot()).kind === 'provider-ready') complete()
     })
   }
 

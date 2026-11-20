@@ -83,8 +83,8 @@ describe('ui-settings-models apply', () => {
       const plugin = ctx.plugin({ inject: [...inject], apply })
       await plugin.await()
       expect(slots.entries('settings.onboarding').map(entry => entry.options.id)).toEqual(['welcome-notice', 'deepseek-official'])
-      const onboarding = slots.entries('settings.onboarding').find(entry => entry.options.id === 'deepseek-official')!
-      expect((onboarding.inject as () => { automatic: boolean })().automatic).toBe(false)
+      expect(slots.entries('settings.onboarding').find(entry => entry.options.id === 'deepseek-official')?.component)
+        .toBe(DeepSeekOnboardingDialog)
       expect(slots.entries('settings.section').map(entry => entry.options.id)).toEqual(['models'])
       await plugin.dispose()
       expect(slots.entries('settings.onboarding')).toEqual([])

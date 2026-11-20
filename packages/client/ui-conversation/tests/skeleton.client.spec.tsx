@@ -427,7 +427,7 @@ describe('Hero chrome', () => {
     const view = render(<HeroShell t={makeTranslate(en, commonEn)} renderSlot={renderSlot as never} />)
     expect(view.queryByText('Into the Unknown')).toBeNull()
     expect(view.queryByText('Preview')).toBeNull()
-    expect(view.getByText(en['hero.headline'])).toBeTruthy()
+    expect(view.getByRole('heading', { name: en['hero.headline'] })).toBeTruthy()
     expect(renderSlot).toHaveBeenCalledOnce()
     expect(renderSlot.mock.calls[0]?.[0]).toBe('conversation.hero.brand.mark')
     const brandMarkOwner = renderSlot.mock.calls[0]?.[1]
@@ -436,7 +436,7 @@ describe('Hero chrome', () => {
     }
     expect(brandMarkOwner.size).toBe(34)
     expect(brandMarkOwner.className).toBeTypeOf('string')
-    expect(renderSlot.mock.calls[0]?.[2]?.fallback).toBeTruthy()
+    expect(renderSlot.mock.calls[0]?.[2]?.fallback).toBeUndefined()
   })
 })
 

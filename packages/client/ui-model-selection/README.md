@@ -27,6 +27,8 @@ The Web GUI lets users switch the model and reasoning effort for an existing ses
 <a id="use-this-package"></a>
 ## Use this package
 
+The composer model trigger shows its current selection and highlights on hover or while open.
+
 DeepSeek account and API-key routes appear as separate provider groups, each exposing the same configured model catalog.
 
 When no model is selected or the saved selection is absent from the catalog, the composer shows “Select model” in regular weight and hides the reasoning effort caption. Clicking it opens the model list directly; Escape and Shift+Tab close it. An empty catalog hides the model menu from display and the accessibility tree and displays “No models available.” in a status region.

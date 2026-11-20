@@ -3,7 +3,7 @@
 
 import type { ReactNode, RefObject } from 'react'
 import {
-  FishLogo, IconChevronDownOutlineRegular, IconFolderCloseRegular, IconFolderOpenRegular,
+  IconChevronDownOutlineRegular, IconFolderCloseRegular, IconFolderOpenRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { workspaceTitleOf } from '@deepseek-ai/dsh-util-workspace-path'
 import type { ConversationContentProps } from '../contract/slots.ts'
@@ -81,14 +81,9 @@ export function HeroShell({ t, renderSlot, children }: HeroShellProps) {
       <div className={css.stack}>
         <div className={css.headline}>
           <span className={css.fishHitbox}>
-            {renderSlot('conversation.hero.brand.mark', { size: 34, className: css.fish }, {
-              fallback: <FishLogo size={34} className={css.fish} />,
-            })}
+            {renderSlot('conversation.hero.brand.mark', { size: 34, className: css.fish })}
           </span>
-          <span className={css.title}>{t('hero.headline')}</span>
-        </div>
-        <div className={css.body}>
-          {/* The composer remains mounted outside this component. */}
+          <h1 className={css.title}>{t('hero.headline')}</h1>
         </div>
       </div>
       {children}

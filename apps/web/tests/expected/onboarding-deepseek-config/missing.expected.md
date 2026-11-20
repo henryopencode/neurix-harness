@@ -18,10 +18,10 @@
       - button "调整模型顺序 1"
       - textbox "模型 ID 1":
         - /placeholder: 模型 ID
-      - textbox "显示名称 1":
-        - /placeholder: 显示名称
       - button "模型选项 1"
       - button "删除模型 1"
+      - textbox "显示名称 1":
+        - /placeholder: 显示名称
       - button "添加模型"
     - button "稍后配置"
     - button "保存并继续" [disabled]

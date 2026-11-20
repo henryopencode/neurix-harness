@@ -49,7 +49,7 @@ kind: "package-reference"
 <a id="opening-a-settings-section"></a>
 ### 打开设置分区
 
-功能插件注入 `settingsNavigation`，调用 `ctx.settingsNavigation.openSection(id)`，在已有设置面板中选中已注册的 `settings.section`。id 不可用时会抛错，且不改变面板可见状态或分区选择。[通用设置外壳](../ui-settings-general/README.zh.md#use-this-package)提供该服务；消费方跟随其生命周期，而不创建另一个弹窗或导航 store。
+功能插件注入 `settingsNavigation`，调用 `ctx.settingsNavigation.openSection(id)`，在已有设置面板中选中已注册的 `settings.section`。使用 `openOnboarding(id, chooseMethod?)` 可请求打开已注册的引导步骤；`chooseMethod` 为真时，步骤可先提供连接方式。id 不可用时会抛错，且不改变面板可见状态或分区选择。[通用设置外壳](../ui-settings-general/README.zh.md#use-this-package)提供该服务；消费方跟随其生命周期，而不创建另一个弹窗或导航 store。
 
 ### 可观察的成功与失败
 

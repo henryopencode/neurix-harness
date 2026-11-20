@@ -70,7 +70,7 @@
   justify-content: flex-end;
   gap: 4px;
   height: var(--workspace-toolbar-height);
-  padding-left: var(--dsh-sidebar-row-padding);
+  padding-inline: var(--dsh-sidebar-row-padding) var(--dsh-sidebar-inline-padding);
   margin-bottom: var(--workspace-toolbar-gap);
   box-sizing: border-box;
   border-radius: var(--dsw-radius-md);
@@ -80,14 +80,8 @@
 
 .root:not(.rail) .sectionHeader.searchSpacingMotion {
   transition:
-    margin-right 180ms var(--ds-ease-in-out),
     padding-inline 180ms var(--ds-ease-in-out),
     gap 180ms var(--ds-ease-in-out);
-}
-
-.root:not(.rail) .sectionHeader:not(:has(.searchExpanded)) {
-  margin-right: -4px;
-  padding-right: 1px;
 }
 
 .sectionLabel {
@@ -190,8 +184,7 @@
 }
 
 .root:not(.rail) .sectionHeader:has(.searchExpanded) {
-  margin-right: 0;
-  padding-inline: calc(var(--dsh-sidebar-paint-inset) + 1px);
+  padding-inline-start: 0;
   gap: 0;
 }
 
@@ -352,9 +345,9 @@
 .root:not(.rail) .listArea {
   display: block;
   margin-left: -4px;
-  margin-right: calc(2px - var(--dsh-sidebar-inline-padding));
+  margin-right: 2px;
   padding-left: 4px;
-  padding-right: calc(var(--dsh-sidebar-inline-padding) - var(--dsh-scrollbar-width) - 2px);
+  padding-right: max(var(--dsh-sidebar-paint-inset), calc(var(--dsh-sidebar-inline-padding) - var(--dsh-scrollbar-width) - 2px));
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;

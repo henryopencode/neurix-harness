@@ -1,5 +1,5 @@
 // Keyless browser e2e: the shipped DeepSeek adapter stays mounted while its
-// credential is absent, both ordered steps share the shipped modal chrome,
+// credential is absent, setup opens on request after the preview notice,
 // and the inline key write lands in an isolated harness home without a reload
 // or model call.
 import { randomBytes } from 'node:crypto'
@@ -21,6 +21,7 @@ import { selectField, openSettings, ZH_BROWSER_LOCALE, connectFreshWorkspaceZh, 
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./expected/onboarding-deepseek-config', import.meta.url))
 const WELCOME_EXPECTED = join(SNAPSHOT_DIR, 'welcome.expected.md')
+const ACTION_EXPECTED = join(SNAPSHOT_DIR, 'setup-action.expected.md')
 const SIGN_IN_EXPECTED = join(SNAPSHOT_DIR, 'sign-in.expected.md')
 const MISSING_EXPECTED = join(SNAPSHOT_DIR, 'missing.expected.md')
 const MODELS_EXPECTED = join(SNAPSHOT_DIR, 'models.expected.md')
@@ -35,7 +36,7 @@ describe.skipIf(MODE === 'record')('web e2e: first-run DeepSeek credential setup
   const browserConsole: string[] = []
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({ deepSeekMissingCredential: true, welcomeNoticePending: true })
+    scaffold = await launchWebScaffold({ deepSeekMissingCredential: true, firstUse: true, welcomeNoticePending: true })
     browser = await chromium.launch()
     // The scenario asserts the shipped Chinese copy, so the browser asks for it.
     page = await browser.newPage({ viewport: { width: 1440, height: 960 }, locale: ZH_BROWSER_LOCALE })
@@ -74,7 +75,22 @@ describe.skipIf(MODE === 'record')('web e2e: first-run DeepSeek credential setup
     await welcome.getByRole('button', { name: WELCOME_NOTICE_COPY.zh.continueLabel }).click()
     await welcome.waitFor({ state: 'detached', timeout: 15_000 })
 
+    const setupAction = page.getByRole('button', { name: '配置模型', exact: true })
+    await setupAction.waitFor({ timeout: 15_000 })
+    expect(await page.getByRole('dialog').count()).toBe(0)
+    expect(await page.locator('#root').evaluate(root => (root as HTMLElement).inert)).toBe(false)
+    await compareOrRefreshGolden(ACTION_EXPECTED, await setupAction.ariaSnapshot(), MODE)
+    const draft = page.getByRole('textbox', { name: '描述你想做的事', exact: true })
+    const draftText = '保留首次配置时的草稿'
+    await draft.fill(draftText)
+
     const signIn = page.getByRole('dialog', { name: '开始使用', exact: true })
+    await setupAction.press('Enter')
+    await signIn.waitFor({ timeout: 15_000 })
+    await signIn.getByRole('button', { name: '关闭', exact: true }).click()
+    await signIn.waitFor({ state: 'detached' })
+    expect(await draft.textContent()).toBe(draftText)
+    await setupAction.click()
     await signIn.waitFor({ timeout: 15_000 })
     await compareOrRefreshGolden(SIGN_IN_EXPECTED,
       await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd), MODE)
@@ -93,6 +109,7 @@ describe.skipIf(MODE === 'record')('web e2e: first-run DeepSeek credential setup
     await keyInput.fill(secret)
     await credentialStep.getByRole('button', { name: '保存并继续' }).click()
     await credentialStep.waitFor({ state: 'detached', timeout: 15_000 })
+    await setupAction.waitFor({ state: 'detached', timeout: 15_000 })
     expect(await page.locator('#root').evaluate(root => (root as HTMLElement).inert)).toBe(false)
 
     const stored = await readFile(join(scaffold.harnessHome, '.credentials.yaml'), 'utf8')
@@ -318,7 +335,7 @@ describe.skipIf(MODE === 'record')('web e2e: first-run DeepSeek credential setup
   it('keeps the fixture inventory closed', async () => {
     await assertFixtureInventory(
       SNAPSHOT_DIR,
-      ['welcome.expected.md', 'sign-in.expected.md', 'missing.expected.md', 'models.expected.md', 'default-models.expected.md', 'empty.expected.md'],
+      ['welcome.expected.md', 'setup-action.expected.md', 'sign-in.expected.md', 'missing.expected.md', 'models.expected.md', 'default-models.expected.md', 'empty.expected.md'],
     )
   })
 })
@@ -328,7 +345,7 @@ describe.skipIf(MODE === 'record')('web e2e: third-party first-run connection', 
   let browser: Browser
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({ deepSeekMissingCredential: true })
+    scaffold = await launchWebScaffold({ deepSeekMissingCredential: true, firstUse: true })
     browser = await chromium.launch()
   }, 120_000)
 
@@ -342,6 +359,7 @@ describe.skipIf(MODE === 'record')('web e2e: third-party first-run connection', 
     const tripwire = watchConsole(page)
     onTestFailed(() => saveFailureShot(page, 'web-e2e-third-party-onboarding'))
     await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
+    await page.getByRole('button', { name: '配置模型', exact: true }).click()
     await page.getByRole('dialog', { name: '开始使用', exact: true }).getByRole('button', { name: '添加 API Key', exact: true }).click()
     const setup = page.getByRole('dialog', { name: '连接模型服务', exact: true })
     await setup.waitFor()
@@ -352,7 +370,7 @@ describe.skipIf(MODE === 'record')('web e2e: third-party first-run connection', 
     await setup.getByLabel('API 地址', { exact: true }).fill('https://gateway.example/v1')
     await setup.getByLabel('模型 ID 1', { exact: true }).fill('private-model')
     const modelBox = await setup.getByLabel('模型 ID 1', { exact: true }).boundingBox()
-    expect(modelBox !== null && modelBox.width >= 200).toBe(true)
+    expect(modelBox !== null && modelBox.x >= 0 && modelBox.x + modelBox.width <= 390).toBe(true)
     const secret = `dsh_third_party_${randomBytes(12).toString('hex')}`
     await setup.getByLabel('API 密钥', { exact: true }).fill(secret)
     const save = setup.getByRole('button', { name: '保存并继续', exact: true })

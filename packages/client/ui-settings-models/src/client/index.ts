@@ -1,7 +1,6 @@
 /**
  * Models settings and product-onboarding plugin, browser half. It registers
- * the Models page plus the ordered preview-notice and model-service
- * onboarding dialogs, whose UI shares this package's modal wrapper. The Host
+ * the Models page, the preview notice, and the on-demand model setup. The Host
  * settings and credential contracts stay behind their existing wire APIs.
  * Export discipline:
  * packages/client/AGENTS.md.
@@ -10,6 +9,7 @@ import type {} from '@deepseek-ai/dsh-client-product-analytics/client'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 // Type-only: pulls the shell's SlotMap merge (the 'settings.section' entry).
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
@@ -20,6 +20,7 @@ import { ModelsSection } from './ModelsSection.tsx'
 import type { ModelsSectionInjected } from './ModelsSection.tsx'
 import { DeepSeekOnboardingDialog } from './DeepSeekOnboardingDialog.tsx'
 import type { DeepSeekOnboardingInjected } from './DeepSeekOnboardingDialog.tsx'
+import { ModelSetupAction, type ModelSetupActionInjected } from './ModelSetupAction.tsx'
 import { WelcomeNotice } from './WelcomeNotice.tsx'
 import type { WelcomeNoticeInjected } from './WelcomeNotice.tsx'
 import { WelcomeNoticeStore } from './welcome-store.ts'
@@ -98,7 +99,6 @@ export function apply(ctx: ClientContext): void {
     t,
   })
   const deepSeekOnboardingInjected = (): DeepSeekOnboardingInjected => ({
-    automatic: credentialOnboarding,
     track: (name, attributes) => ctx.get('productAnalytics')?.track(name, attributes),
     controller,
     hooks: { models: controller.store },
@@ -157,4 +157,15 @@ export function apply(ctx: ClientContext): void {
     order: 0,
     inject: deepSeekOnboardingInjected,
   }, DeepSeekOnboardingDialog))
+  if (credentialOnboarding) ctx.inject(['settingsNavigation'], navCtx =>
+    navCtx.slots.inject('conversation.hero.options', () => navCtx.slots.register({
+      name: 'conversation.hero.options',
+      id: 'model-setup',
+      inject: (): ModelSetupActionInjected => ({
+        hooks: { models: controller.store },
+        load: () => { void controller.load() },
+        open: () => { navCtx.settingsNavigation.openOnboarding('deepseek-official', true) },
+        t,
+      }),
+    }, ModelSetupAction)))
 }
