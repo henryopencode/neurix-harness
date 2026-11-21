@@ -168,11 +168,16 @@ it('keeps one preview opening identity across actions and surviving tabs, then i
   await execute({ action: 'navigate', target: 'tab-1', url: 'https://fixture.test/navigated' })
   await execute({ action: 'observe', target: 'tab-2' })
   await execute({ action: 'click', target: 'tab-2', locator })
-  expect(await runtime.capturePreview(signal)).toMatchObject({ kind: 'frame', title: 'https://fixture.test/popup', openId: first.openId })
+  const selected = await runtime.capturePreview(signal)
+  expect(selected).toMatchObject({ kind: 'frame', title: 'https://fixture.test/popup', openId: first.openId })
+  if (selected.kind !== 'frame') throw new Error('Expected a capture of the selected popup')
+  expect(selected.documentId).toBeDefined()
+  expect(selected.documentId).not.toBe(first.documentId)
   expect(browserFixture.screenshotPages.at(-1)).toBe(popup)
 
   browserFixture.fail = 'screenshot'
-  expect(await runtime.capturePreview(signal)).toEqual({ kind: 'unavailable', code: 'CAPTURE_FAILED', title: 'https://fixture.test/popup', openId: first.openId })
+  expect(await runtime.capturePreview(signal)).toEqual({ kind: 'unavailable', code: 'CAPTURE_FAILED', title: 'https://fixture.test/popup',
+    openId: first.openId, documentId: selected.documentId })
   browserFixture.fail = undefined
   await execute({ action: 'new_tab', target: 'tab-2', url: 'https://fixture.test/second' })
   const second = await runtime.capturePreview(signal)
@@ -241,7 +246,28 @@ it('publishes a partial open only after viewport readiness and never publishes f
   expect(await runtime.capturePreview(signal)).toMatchObject({ kind: 'frame', openId: partial.openId, title: partial.title })
 })
 
-it.each(['open', 'switch', 'close', 'reset', 'disconnect'])('does not publish superseded Page pixels after %s during capture', async (change) => {
+it('finishes a preview capture already in flight when an observation starts on the same page', async () => {
+  await useBrowserPreview()
+  await execute({ action: 'open_browser', url: 'https://fixture.test/first' })
+  const entered = Promise.withResolvers<undefined>()
+  const blocked = Promise.withResolvers<undefined>()
+  browserFixture.entered = entered
+  browserFixture.blocked = blocked
+  browserFixture.blockedOperation = 'screenshot'
+  const capture = runtime.capturePreview(signal)
+  try {
+    expect(await Promise.race([entered.promise.then(() => true), capture.then(() => false)])).toBe(true)
+    await execute({ action: 'observe', target: 'tab-1' })
+  } finally {
+    browserFixture.blocked = undefined
+    blocked.resolve(undefined)
+    await Promise.allSettled([capture])
+  }
+  expect(await capture).toMatchObject({ kind: 'frame', title: 'https://fixture.test/first' })
+  expect(browserFixture.screenshotPages).toHaveLength(1)
+})
+
+it.each(['open', 'switch', 'navigate', 'close', 'reset', 'disconnect'])('does not publish superseded Page pixels after %s during capture', async (change) => {
   await useBrowserPreview()
   await execute({ action: 'open_browser', url: 'https://fixture.test/first' })
   if (change === 'switch' || change === 'close') await execute({ action: 'new_tab', target: 'tab-1', url: 'https://fixture.test/other' })
@@ -261,7 +287,11 @@ it.each(['open', 'switch', 'close', 'reset', 'disconnect'])('does not publish su
     browserFixture.blocked = undefined
     if (change === 'open') await execute({ action: 'new_tab', target: 'tab-1', url: 'https://fixture.test/other' })
     else if (change === 'switch') await execute({ action: 'observe', target: 'tab-1' })
-    else if (change === 'close') await execute({ action: 'close_tab', target: 'tab-2' })
+    else if (change === 'navigate') {
+      const page = browser.context.pages[0]
+      if (page === undefined) throw new Error('Expected the owned page')
+      page.emit('framenavigated', page.mainFrame())
+    } else if (change === 'close') await execute({ action: 'close_tab', target: 'tab-2' })
     else if (change === 'reset') await execute({ action: 'reset' })
     else browser.disconnect()
   } finally {
@@ -277,7 +307,9 @@ it.each(['open', 'switch', 'close', 'reset', 'disconnect'])('does not publish su
     if (next.kind !== 'frame') throw new Error('Expected a capture of the new current Page')
     const currentPage = browser.context.pages[change === 'open' ? 1 : 0]
     expect(browserFixture.screenshotPages.at(-1)).toBe(currentPage)
+    expect(browserFixture.screenshotPages).toHaveLength(3)
     expect(next.title).toBe(currentPage?.url())
+    expect(next.documentId).not.toBe(initial.documentId)
     if (change === 'open') expect(next.openId).not.toBe(initial.openId)
     else expect(next.openId).toBe(initial.openId)
   }

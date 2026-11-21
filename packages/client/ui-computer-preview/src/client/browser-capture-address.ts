@@ -13,6 +13,8 @@ export const BROWSER_CAPTURE_PREFIX = `dsh-resource://${BROWSER_CAPTURE}/session
 export interface BrowserCapture {
   readonly frame: ComputerPreviewFrame
   readonly aspect: number
+  /** A timed out refresh left this document's last decoded image visible. */
+  readonly failure?: 'CAPTURE_TIMEOUT'
 }
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {

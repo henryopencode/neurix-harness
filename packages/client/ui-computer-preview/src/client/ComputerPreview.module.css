@@ -48,7 +48,8 @@
   width: 100%;
   height: auto;
 }
-.picture[data-stale] img { opacity: 0.7; }
+.picture[data-stale] img,
+.browserViewport[data-stale] img { opacity: 0.7; }
 
 .browserViewport {
   position: relative;

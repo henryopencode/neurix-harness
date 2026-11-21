@@ -110,9 +110,9 @@ export function BrowserPictureInPicture({ sessionId, useResource, t, retry }: Br
   const { status, value } = useResource<'agent-browser'>(browserCaptureAddress(sessionId))
   const [collapsed, setCollapsed] = useState(false)
   const frame = value?.frame
+  const failure = value?.failure ?? (frame?.kind === 'unavailable' ? frame.code : undefined)
   return <PreviewPanel t={t} surface="browser" frame={frame} aspect={value?.aspect ?? 1.6}
-    failure={frame?.kind === 'unavailable' ? frame.code : undefined}
-    failed={status === 'failed' || frame?.kind === 'unavailable'}
+    failure={failure} failed={status === 'failed' || failure !== undefined}
     collapsed={collapsed} setCollapsed={setCollapsed} retry={() => { retry(sessionId) }} />
 }
 
@@ -134,6 +134,7 @@ function PreviewPanel({ t, surface, frame, failed, failure, aspect, collapsed, s
   const dragging = useRef<{ pointerId: number; element: HTMLElement; x: number; y: number; start: PreviewLayout; edge?: 'left' | 'right' }>()
   const visible = frame !== undefined && frame.kind !== 'idle'
   const hasImage = frame?.kind === 'frame'
+  const showFeedback = surface !== 'browser' || !failed
   const viewport = () => ({ width: window.innerWidth, height: window.innerHeight,
     top: 16 + (Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dsh-frame-top-clearance')) || 0) })
   const endDrag = (event?: PointerEvent<HTMLElement>) => {
@@ -210,7 +211,7 @@ function PreviewPanel({ t, surface, frame, failed, failure, aspect, collapsed, s
       <div className={css.picture} data-stale={failed || undefined}>
         {hasImage ? <>
           <img src={frame.imageUrl} alt={t('previewImage')} draggable={false} />
-          {frame.cursor === undefined ? null : <>
+          {!showFeedback || frame.cursor === undefined ? null : <>
             <svg className={css.cursor} viewBox="0 0 32 32" aria-hidden
               data-pressed={frame.cursor.pressed || undefined}
               data-clicked={frame.cursor.pressed
@@ -223,7 +224,7 @@ function PreviewPanel({ t, surface, frame, failed, failure, aspect, collapsed, s
                 style={{ left: `${frame.cursor.x * 100}%`, top: `${frame.cursor.y * 100}%`,
                   animationDelay: `${-Math.max(0, Date.now() - frame.cursor.clickAt)}ms` }} />}
           </>}
-          {frame.keyboard === undefined ? null : <span className={css.typing} aria-hidden>
+          {!showFeedback || frame.keyboard === undefined ? null : <span className={css.typing} aria-hidden>
             <svg className={css.keyboardIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <rect x="2" y="5" width="20" height="14" rx="3" />
               <path d="M5 9h2m2 0h2m2 0h2m2 0h2M5 12h2m2 0h2m2 0h2m2 0h2M7 15h10" />
@@ -233,7 +234,7 @@ function PreviewPanel({ t, surface, frame, failed, failure, aspect, collapsed, s
               : frame.keyboard.key === undefined ? null
                 : <kbd>{frame.keyboard.key}</kbd>}
           </span>}
-          {frame.scroll === undefined || frame.cursor === undefined ? null : <span className={css.scroll} aria-hidden
+          {!showFeedback || frame.scroll === undefined || frame.cursor === undefined ? null : <span className={css.scroll} aria-hidden
             style={{ left: `${Math.min(82, Math.max(4, frame.cursor.x * 100 + 6))}%`,
               top: `${Math.min(88, Math.max(5, frame.cursor.y * 100))}%` }}>
             <span className={css.wheel} /><span>{{ up: '↑', down: '↓', left: '←', right: '→' }[frame.scroll]}</span>

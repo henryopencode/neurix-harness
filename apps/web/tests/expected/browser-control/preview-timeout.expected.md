@@ -1,0 +1,12 @@
+- tablist:
+  - tab "代理浏览器 关闭" [selected]:
+    - text: 代理浏览器
+    - button "关闭"
+  - button "新标签页"
+  - button "分栏"
+  - button "全屏"
+  - button "收起右侧边栏"
+- img "Agent 当前操作窗口的实时预览"
+- status:
+  - text: 截图超时
+  - button "重试预览"

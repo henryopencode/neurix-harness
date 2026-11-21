@@ -9,7 +9,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import sharp from 'sharp'
 import { z } from 'zod'
-import type { Browser, Locator } from 'playwright'
+import type { Browser, Locator, Route } from 'playwright'
 import { chromium } from 'playwright'
 import { expect, it } from 'vitest'
 import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
@@ -259,6 +259,50 @@ it.skipIf(webSnapshotMode() === 'record')('shares the approved browser page betw
     ])
     expect(requests).toBe(1)
 
+    const sessionPreview = active.ctx.get('browserPreview')
+    if (sessionPreview === undefined) throw new Error('Browser preview Remote did not mount')
+    const { frame: liveFrame, refreshMs } = await sessionPreview.frame(sessionId, new AbortController().signal)
+    if (liveFrame.kind !== 'frame' || liveFrame.documentId === undefined) throw new Error('Expected a live browser document')
+    let documentId: string = liveFrame.documentId
+    const captureEndpoint = '**/api/browserPreview/frame'
+    const timeOutCapture = (route: Route) => {
+      const { rpcId } = z.object({ rpcId: z.string() }).parse(route.request().postDataJSON())
+      return route.fulfill({ json: { type: 'server-response', rpcId, result: { ok: true, value: { refreshMs, frame: {
+        kind: 'unavailable', code: 'CAPTURE_TIMEOUT', title: fixtureUrl, openId: liveFrame.openId, documentId,
+      } } } } })
+    }
+    const sidebarTimeout = viewportPanel.getByRole('status').filter({ hasText: '截图超时' })
+    const pipTimeout = preview.getByRole('status').filter({ hasText: '截图超时' })
+    await page.route(captureEndpoint, timeOutCapture)
+    try {
+      await sidebarTimeout.waitFor()
+      await pipTimeout.waitFor()
+      expect(await sampleMarkers(sidebarImage)).toMatchObject({ markers: changedMarkers })
+      expect(await sampleMarkers(image)).toMatchObject({ markers: changedMarkers })
+      await compareOrRefreshGolden(fileURLToPath(new URL('./expected/browser-control/preview-timeout.expected.md', import.meta.url)),
+        await captureStableAria(page, '[data-rightbar-col]', active.workspaceCwd), webSnapshotMode())
+      if (artifacts !== undefined) {
+        await mkdir(artifacts, { recursive: true })
+        await page.emulateMedia({ colorScheme: 'light' })
+        await page.locator('body[data-ds-dark-theme]').waitFor({ state: 'detached' })
+        await page.screenshot({ path: join(artifacts, 'browser-preview-timeout-light.png') })
+        await page.emulateMedia({ colorScheme: 'dark' })
+        await page.locator('body[data-ds-dark-theme]').waitFor()
+        await page.screenshot({ path: join(artifacts, 'browser-preview-timeout-dark.png') })
+        await page.emulateMedia({ colorScheme: null })
+      }
+      documentId = 'different-document-at-the-same-url'
+      await sidebarImage.waitFor({ state: 'detached' })
+      await image.waitFor({ state: 'detached' })
+    } finally {
+      await page.unroute(captureEndpoint, timeOutCapture)
+    }
+    await sidebarTimeout.waitFor({ state: 'hidden' })
+    await pipTimeout.waitFor({ state: 'hidden' })
+    await expect.poll(() => sampleMarkers(sidebarImage), { timeout: frameSettleMs }).toMatchObject({ markers: changedMarkers })
+    await expect.poll(() => sampleMarkers(image), { timeout: frameSettleMs }).toMatchObject({ markers: changedMarkers })
+    expect(requests).toBe(1)
+
     await compareOrRefreshGolden(fileURLToPath(new URL('./expected/browser-control/sidebar.expected.md', import.meta.url)),
       await captureStableAria(page, '[data-rightbar-col]', active.workspaceCwd), webSnapshotMode())
     if (artifacts !== undefined) {
@@ -278,8 +322,6 @@ it.skipIf(webSnapshotMode() === 'record')('shares the approved browser page betw
     if (artifacts !== undefined) await page.screenshot({ path: join(artifacts, 'browser-sidebar-phone.png'), animations: 'disabled' })
     await page.setViewportSize({ width: 1440, height: 1000 })
 
-    const sessionPreview = active.ctx.get('browserPreview')
-    if (sessionPreview === undefined) throw new Error('Browser preview Remote did not mount')
     for (let index = 0; index < 3; index++) {
       const current = await sessionPreview.frame(sessionId, new AbortController().signal)
       if (current.frame.kind !== 'frame') throw new Error('Repeated browser capture was unavailable')

@@ -6,6 +6,9 @@ import type { SessionId } from '@deepseek-ai/dsh-session'
 /** Identity of the latest successful or partial browser open in a live preview. */
 export type BrowserPreviewOpenId = Branded<'BrowserPreviewOpenId'>
 
+/** Identity of a tab's main-frame navigation, scoped to a browser preview opening. */
+export type BrowserPreviewDocumentId = Branded<'BrowserPreviewDocumentId'>
+
 /** Independent cursor position relative to the captured window. */
 export interface ComputerPreviewCursor {
   /** Horizontal fraction of the window width. */
@@ -26,11 +29,13 @@ export type ComputerPreviewFrame =
     title: string
     code: 'CAPTURE_FAILED' | 'IMAGE_TOO_LARGE' | 'PERMISSION_REQUIRED' | 'CAPTURE_TIMEOUT'
     openId?: BrowserPreviewOpenId
+    documentId?: BrowserPreviewDocumentId
   }
   | {
     kind: 'frame'
     title: string
     openId?: BrowserPreviewOpenId
+    documentId?: BrowserPreviewDocumentId
     imageUrl: string
     action: string
     active: boolean

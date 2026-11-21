@@ -20,11 +20,12 @@ type Props = PropsRuntime<'sidebar.right.pane.tab'> & PropsLocale<'computerPrevi
 export function BrowserViewport({ sessionId, useResource, retry, t }: Props) {
   const { status, value } = useResource<'agent-browser'>(browserCaptureAddress(sessionId))
   const frame = value?.frame
-  const failed = status === 'failed' || frame?.kind === 'unavailable' || frame?.kind === 'idle'
-  return <div className={css.browserViewport} data-agent-browser-viewport>
+  const timedOut = value?.failure === 'CAPTURE_TIMEOUT' || frame?.kind === 'unavailable' && frame.code === 'CAPTURE_TIMEOUT'
+  const failed = timedOut || status === 'failed' || frame?.kind === 'unavailable' || frame?.kind === 'idle'
+  return <div className={css.browserViewport} data-agent-browser-viewport data-stale={failed || undefined}>
     {frame?.kind === 'frame' ? <img src={frame.imageUrl} alt={t('previewImage')} draggable={false} /> : null}
     {failed ? <div className={css.browserStatus} role="status">
-      <span>{t('previewUnavailable')}</span>
+      <span>{t(timedOut ? 'previewTimeout' : 'previewUnavailable')}</span>
       <button className={css.retry} type="button" onClick={() => { retry(sessionId) }}>{t('previewRetry')}</button>
     </div> : null}
   </div>

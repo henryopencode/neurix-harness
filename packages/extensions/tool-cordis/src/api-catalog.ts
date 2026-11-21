@@ -6181,6 +6181,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type BrandedNumber<B extends string> = number & {\n    readonly [BRAND]: B;\n};',
   },
   {
+    name: 'BrowserPreviewDocumentId',
+    declaration: 'export type BrowserPreviewDocumentId = Branded<\'BrowserPreviewDocumentId\'>;',
+  },
+  {
     name: 'BrowserPreviewOpenId',
     declaration: 'export type BrowserPreviewOpenId = Branded<\'BrowserPreviewOpenId\'>;',
   },
@@ -6342,7 +6346,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ComputerPreviewFrame',
-    declaration: 'export type ComputerPreviewFrame = {\n    kind: \'idle\';\n} | {\n    kind: \'unavailable\';\n    title: string;\n    code: \'CAPTURE_FAILED\' | \'IMAGE_TOO_LARGE\' | \'PERMISSION_REQUIRED\' | \'CAPTURE_TIMEOUT\';\n    openId?: BrowserPreviewOpenId;\n} | {\n    kind: \'frame\';\n    title: string;\n    openId?: BrowserPreviewOpenId;\n    imageUrl: string;\n    action: string;\n    active: boolean;\n    capturedAt: number;\n    cursor?: ComputerPreviewCursor;\n    keyboard?: {\n        kind: \'typing\';\n        key?: string;\n    } | {\n        kind: \'shortcut\';\n        keys: readonly string[];\n    };\n    scroll?: \'up\' | \'down\' | \'left\' | \'right\';\n};',
+    declaration: 'export type ComputerPreviewFrame = {\n    kind: \'idle\';\n} | {\n    kind: \'unavailable\';\n    title: string;\n    code: \'CAPTURE_FAILED\' | \'IMAGE_TOO_LARGE\' | \'PERMISSION_REQUIRED\' | \'CAPTURE_TIMEOUT\';\n    openId?: BrowserPreviewOpenId;\n    documentId?: BrowserPreviewDocumentId;\n} | {\n    kind: \'frame\';\n    title: string;\n    openId?: BrowserPreviewOpenId;\n    documentId?: BrowserPreviewDocumentId;\n    imageUrl: string;\n    action: string;\n    active: boolean;\n    capturedAt: number;\n    cursor?: ComputerPreviewCursor;\n    keyboard?: {\n        kind: \'typing\';\n        key?: string;\n    } | {\n        kind: \'shortcut\';\n        keys: readonly string[];\n    };\n    scroll?: \'up\' | \'down\' | \'left\' | \'right\';\n};',
   },
   {
     name: 'ComputerUseProviderName',

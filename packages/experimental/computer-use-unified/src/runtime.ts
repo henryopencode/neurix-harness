@@ -7,7 +7,7 @@ import type { Browser, BrowserContext, CDPSession, Dialog, Locator, Page } from 
 import { scrubbedParentEnv } from '@deepseek-ai/dsh-subprocess'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 import type { Branded } from '@deepseek-ai/dsh-brand'
-import type { BrowserPreviewOpenId } from '@deepseek-ai/dsh-client-ui-computer-preview/types'
+import type { BrowserPreviewDocumentId, BrowserPreviewOpenId } from '@deepseek-ai/dsh-client-ui-computer-preview/types'
 import { z } from 'zod'
 import { ComputerError, nativeActionResult } from './native.ts'
 import type { NativeActionResult, NativeCalls, NativeResult } from './native.ts'
@@ -57,6 +57,7 @@ interface PendingInput { done: Promise<InputSettlement>; dialog: PromiseWithReso
 interface TabTarget {
   kind: 'tab'
   page: Page
+  navigation: number
   rendering?: Promise<{ error?: unknown }>
   dialog?: Dialog
   dialogWindow?: BrowserDialogWindow
@@ -319,8 +320,9 @@ export class ComputerRuntime {
   /**
    * Capture only the latest target for the preview UI. Native display-only reads
    * preserve action screenshots and accessibility tokens. Failure never closes
-   * a browser, activates a window, or changes model-visible observations. During
-   * native input, pixel-only reads bypass the reserved input workflow without changing action tokens.
+   * a browser, activates a window, or changes model-visible observations. Browser
+   * results identify the document whose last image can remain visible after a timeout.
+   * Native pixel reads bypass input reservation without changing action tokens.
    * @param signal - preview reader cancellation and contribution lifetime.
    * @returns a bounded PNG, an idle state, or a display-only capture failure.
    */
@@ -334,11 +336,14 @@ export class ComputerRuntime {
       if (current === undefined || openId === undefined || this.closing !== undefined) return { kind: 'idle' }
       const target = this.targets.get(current.target)
       if (target?.kind !== 'tab' || !this.isOwnedLiveTab(current.target, target)) return { kind: 'idle' }
-      if (active.aborted) return { kind: 'unavailable', title: target.page.url(), code: 'CAPTURE_TIMEOUT', openId }
+      const navigation = target.navigation
+      const documentId = `${current.target}:${navigation}` as BrowserPreviewDocumentId
+      if (active.aborted) return { kind: 'unavailable', title: target.page.url(), code: 'CAPTURE_TIMEOUT', openId, documentId }
       const frame = await this.readPreview(signal, false, active)
       signal.throwIfAborted()
-      if (this.preview === current && this.browserPreviewOpenId === openId
-        && this.isOwnedLiveTab(current.target, target) && frame.kind !== 'idle') return { ...frame, openId }
+      if (this.preview?.target === current.target && this.browserPreviewOpenId === openId
+        && target.navigation === navigation && this.isOwnedLiveTab(current.target, target)
+        && frame.kind !== 'idle') return { ...frame, openId, documentId }
     }
   }
 
@@ -485,13 +490,16 @@ export class ComputerRuntime {
   private addTab(page: Page): TargetId {
     for (const [id, target] of this.targets) if (target.kind === 'tab' && target.page === page) return id
     const id = `tab-${++this.nextId}` as TargetId
-    const target: TabTarget = { kind: 'tab', page }
+    const target: TabTarget = { kind: 'tab', page, navigation: 0 }
     if (this.config.headless) target.rendering = this.sizeHiddenBrowser(page).then(() => ({}), (error: unknown) => ({ error }))
     if (this.dialogCDP !== undefined) target.dialogConnection = this.dialogCDP.then(cdp => connectBrowserDialog(page, cdp))
       .then(connection => ({ connection }), (error: unknown) => ({ error }))
     this.targets.set(id, target)
     page.on('framenavigated', (frame) => {
-      if (frame === page.mainFrame()) delete target.observation
+      if (frame === page.mainFrame()) {
+        target.navigation++
+        delete target.observation
+      }
     })
     page.on('dialog', (dialog) => { delete target.dialogWindow; target.dialog = dialog; target.pending?.dialog.resolve(undefined) })
     page.on('close', () => { this.removeTab(id, target) })

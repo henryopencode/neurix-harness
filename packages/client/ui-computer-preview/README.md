@@ -31,6 +31,8 @@ Previews appear automatically when a target is available. Drag the picture to mo
 
 Capture pauses while disconnected and checks the target again after reconnection. The browser picture-in-picture hides during a disconnect; the application preview retains its last image with an unavailable notice. A response with no target hides picture-in-picture. Target-specific capture failures, including missing permissions, show a Retry action.
 
+If a browser capture times out, the sidebar and picture-in-picture dim the last image of that page while capture retries automatically. A different tab or a new navigation cannot reuse that image.
+
 -----
 
 <a id="understand-the-implementation"></a>

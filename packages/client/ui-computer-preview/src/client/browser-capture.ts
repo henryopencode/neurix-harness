@@ -91,15 +91,17 @@ export function registerBrowserPreview(ctx: Context,
       ]
       let delay: number | undefined
       let currentGeneration: number | undefined
+      let last = idle
       for (;;) {
         if (signal.aborted) return
         const generation = connection.getSnapshot()?.id
+        if (currentGeneration !== undefined && currentGeneration !== generation) {
+          currentGeneration = undefined
+          last = idle
+          yield { ok: true, value: idle }
+          continue
+        }
         if (mounted.getSnapshot() !== sessionId || generation === undefined) {
-          if (currentGeneration !== undefined && generation === undefined) {
-            currentGeneration = undefined
-            yield { ok: true, value: idle }
-            continue
-          }
           await waitForCapture(signal, watches)
           continue
         }
@@ -122,7 +124,10 @@ export function registerBrowserPreview(ctx: Context,
             await image.decode()
             aspect = image.naturalWidth / image.naturalHeight
           }
-          result = { ok: true, value: { frame, aspect } }
+          const retain = frame.kind === 'unavailable' && frame.code === 'CAPTURE_TIMEOUT'
+            && frame.openId !== undefined && frame.documentId !== undefined && last.frame.kind === 'frame'
+            && frame.openId === last.frame.openId && frame.documentId === last.frame.documentId
+          result = { ok: true, value: retain ? { ...last, failure: 'CAPTURE_TIMEOUT' } : { frame, aspect } }
         } catch (error) {
           if (request.aborted) continue
           console.error('Computer preview request failed:', error)
@@ -132,7 +137,10 @@ export function registerBrowserPreview(ctx: Context,
           unwatchSession()
         }
         if (request.aborted || !current()) continue
-        if (result.ok) updateTab(sessionId, result.value.frame)
+        if (result.ok) {
+          last = result.value
+          updateTab(sessionId, last.frame)
+        }
         yield result
         await waitForCapture(signal, watches, delay)
       }
