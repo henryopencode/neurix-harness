@@ -17,6 +17,8 @@ import { apply as hostApply } from '../src/index.ts'
 import { TerminalGuide, type TerminalGuideInjected } from '../src/client/TerminalGuide.tsx'
 import { LazyTerminalBody } from '../src/client/LazyTerminalBody.tsx'
 import { TerminalTitle } from '../src/client/TerminalTitle.tsx'
+import { HarnessToolsIcon, HarnessToolsSection } from '../src/client/HarnessToolsSection.tsx'
+import { harnessToolsCopy } from '../src/client/harness-tools-locales.ts'
 import type { TerminalBodyInjected } from '../src/client/face.ts'
 import { en, ja, zh, es, fr, de, ru, pt } from '../src/client/locales.ts'
 
@@ -36,7 +38,7 @@ async function mountPlugin() {
     name: string
     key?: string
     id?: string
-    locale: string
+    locale?: string
     component: unknown
     inject: (id: SessionId) => unknown
   }[] = []
@@ -85,7 +87,7 @@ async function mountPlugin() {
   }
 }
 
-it('registers terminal views without recovery or cleanup slots, then releases contributions on unload', async () => {
+it('registers terminal views and Harness tools settings, then releases contributions on unload', async () => {
   expect(hostApply).not.toThrow()
   const h = await mountPlugin()
   try {
@@ -98,19 +100,25 @@ it('registers terminal views without recovery or cleanup slots, then releases co
     expect(renderToStaticMarkup(createElement(Icon))).toContain('width="36"')
     expect(definition.multiple).toBe(true)
     expect(h.dictionaries.get('sidebarTerminal')).toEqual({ en, zh, ja, es, fr, de, ru, pt })
+    expect(h.dictionaries.get('harnessTools')).toEqual(harnessToolsCopy)
     expect(h.entries.map(entry => [entry.name, entry.component, entry.locale])).toEqual([
+      ['settings.section', HarnessToolsSection, 'harnessTools'],
+      ['settings.section.icon', HarnessToolsIcon, undefined],
       ['sidebar.right.tab.guide.entry', TerminalGuide, 'sidebarTerminal'],
       ['sidebar.right.pane.tab', LazyTerminalBody, 'sidebarTerminal'],
       ['sidebar.right.pane.tab.title', TerminalTitle, 'sidebarTerminal'],
     ])
+    const [settings, settingsIcon, guide, body] = h.entries
+    expect(settings?.id).toBe('harness-tools')
+    expect(settingsIcon?.id).toBe(settings?.id)
     const sessionId = 'session' as SessionId
-    const launcher = h.entries[0]!.inject(sessionId) as TerminalGuideInjected
+    const launcher = guide!.inject(sessionId) as TerminalGuideInjected
     const signal = new AbortController().signal
     await launcher.loadShells(signal)
     expect(h.terminals.launchShells).toHaveBeenCalledWith(sessionId, signal)
     launcher.selectShell('/bin/bash')
     expect(h.terminals.selectShell).toHaveBeenCalledWith('/bin/bash')
-    const face = h.entries[1]!.inject(sessionId) as TerminalBodyInjected
+    const face = body!.inject(sessionId) as TerminalBodyInjected
     expect(face.hooks.theme.getSnapshot()).toBe(h.theme)
     const changed = vi.fn()
     const unsubscribe = face.hooks.theme.subscribe(changed)
@@ -120,15 +128,15 @@ it('registers terminal views without recovery or cleanup slots, then releases co
     h.emitTheme()
     expect(changed).toHaveBeenCalledOnce()
     expect(face.view('tab')).toBe(h.model)
-    expect(h.terminals.view).toHaveBeenLastCalledWith(sessionId, 'tab', 'sidebar://terminal/content', undefined, undefined)
+    expect(h.terminals.view).toHaveBeenLastCalledWith(sessionId, 'tab', 'sidebar://terminal/content', undefined, undefined, undefined)
     const terminalId = 'retained' as WebTerminalId
     h.setParams({ terminalId })
     h.setParams({ shellPath: '/bin/bash' })
     face.view('tab')
-    expect(h.terminals.view).toHaveBeenLastCalledWith(sessionId, 'tab', 'sidebar://terminal/content', undefined, '/bin/bash')
+    expect(h.terminals.view).toHaveBeenLastCalledWith(sessionId, 'tab', 'sidebar://terminal/content', undefined, '/bin/bash', undefined)
     h.setParams({ terminalId })
     expect(face.keyedHooks.terminal('tab')).toBe(h.model.state)
-    expect(h.terminals.view).toHaveBeenLastCalledWith(sessionId, 'tab', 'sidebar://terminal/content', terminalId, undefined)
+    expect(h.terminals.view).toHaveBeenLastCalledWith(sessionId, 'tab', 'sidebar://terminal/content', terminalId, undefined, undefined)
     expect(h.occurrence).toHaveBeenLastCalledWith(sessionId, { id: 'tab' })
     if (h.closeHandler === undefined) throw new Error('Terminal close handler was not registered')
     h.closeHandler(sessionId, { id: 'tab', contentId: 'sidebar://terminal/content' } as Parameters<SidebarRightCloseHandler>[1])
