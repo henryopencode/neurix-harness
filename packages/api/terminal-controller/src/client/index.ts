@@ -7,7 +7,7 @@ import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client
 import { TerminalView, type TerminalRemote } from './model.ts'
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
-import type { TerminalShell, WebTerminalId, WebTerminalInfo } from '../types.ts'
+import type { TerminalProgramLaunch, TerminalProgramStatus, TerminalShell, WebTerminalId, WebTerminalInfo } from '../types.ts'
 import { preferredShell, rememberShell } from './shell-preference.ts'
 import { TerminalCloseRequests, type TerminalCloseRequest } from './close-requests.ts'
 import { TerminalWindowHold } from './retention.ts'
@@ -89,10 +89,14 @@ export class ClientTerminals extends Service {
    * @param key - sidebar occurrence key.
    * @param contentId - globally unique content identity; layout-local tab ids are not persistence keys.
    * @param terminalId - existing Host identity when restoring a listed terminal; otherwise reuse the saved content identity.
-   * @param shellPath - explicit shell for a new terminal; restored terminals retain their own shell.
+   * @param shellPath - explicit shell for a new terminal; restored terminals retain their own executable.
+   * @param program - configured program to launch instead of a shell for a new terminal.
    * @returns its observable state and terminal commands.
    */
-  view(sessionId: SessionId, key: string, contentId: string, terminalId?: WebTerminalId, shellPath?: string): TerminalView {
+  view(
+    sessionId: SessionId, key: string, contentId: string,
+    terminalId?: WebTerminalId, shellPath?: string, program?: TerminalProgramLaunch,
+  ): TerminalView {
     let views = this.views.get(sessionId)
     if (views === undefined) { views = new Map(); this.views.set(sessionId, views) }
     let view = views.get(key)
@@ -101,7 +105,7 @@ export class ClientTerminals extends Service {
       const id = saved ?? randomUUID() as WebTerminalId
       this.bindings.set(sessionId, contentId, id)
       view = new TerminalView(sessionId, this.remote, this.ctx.remote, this.inventory(sessionId), id, saved === undefined, shellPath,
-        signal => this.hold(sessionId, id).ready(signal))
+        signal => this.hold(sessionId, id).ready(signal), program)
       views.set(key, view)
       this.reconcileHolds()
       void view.refresh()
@@ -129,6 +133,18 @@ export class ClientTerminals extends Service {
     if (!result.ok) throw new Error(result.error.message)
     const previous = preferredShell()
     return { shells: result.value, selectedShell: result.value.find(shell => shell.path === previous)?.path ?? result.value[0]?.path }
+  }
+
+  /**
+   * Check programs in a selected Session or on the Host without opening a terminal.
+   * @param sessionId - displayed Session, or undefined for Host availability.
+   * @param signal - settings query lifetime.
+   * @returns the configured choices and their installed status.
+   */
+  async programs(sessionId: SessionId | undefined, signal: AbortSignal): Promise<TerminalProgramStatus[]> {
+    const result = await (sessionId === undefined ? this.remote.hostPrograms(signal) : this.remote.programs(sessionId, signal))
+    if (!result.ok) throw result.error
+    return result.value
   }
 
   /**

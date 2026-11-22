@@ -118,7 +118,9 @@ export const VIEWER_ENDPOINT_CLASSES = {
   'terminal/close': 'owner-only', // owner terminals
   'terminal/create': 'owner-only', // owner terminals
   'terminal/environment': 'owner-only', // owner terminals
+  'terminal/hostPrograms': 'owner-only', // owner terminals
   'terminal/list': 'owner-only', // owner terminals
+  'terminal/programs': 'owner-only', // owner terminals
   'terminal/rename': 'owner-only', // owner terminals
   'terminal/retain': 'owner-only', // owner terminals
   'terminal/shells': 'owner-only', // owner terminals

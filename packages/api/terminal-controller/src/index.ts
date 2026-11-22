@@ -7,11 +7,12 @@ import type {} from '@deepseek-ai/dsh-sandbox-policy'
 import type {} from '@deepseek-ai/dsh-working-directory'
 import { Remote, RemoteError, TypertRemoteService, type RemoteStream } from '@deepseek-ai/dsh-typert-protocol'
 import { discoverShells, resolveShell } from './shells.ts'
+import { discoverPrograms, resolveProgram, type TerminalProgram } from './programs.ts'
 import { BrowserTerminal } from './terminal.ts'
 import { TerminalRetention } from './retention.ts'
 import type {
   TerminalShell, TerminalInput, TerminalCreateRequest, TerminalEnvironment, TerminalFrame, TerminalRetentionFrame,
-  WebTerminalId, WebTerminalInfo,
+  TerminalProgramId, TerminalProgramStatus, WebTerminalId, WebTerminalInfo,
 } from './types.ts'
 
 export type * from './types.ts'
@@ -36,6 +37,8 @@ export interface Config {
   } | undefined
   /** Executable names or paths checked for the new-terminal shell selector. */
   readonly shellCandidates: string[]
+  /** Host-configured interactive programs offered alongside shell terminals. */
+  readonly programs?: TerminalProgram[] | undefined
   /** Maximum retained terminals and pending allocations per Session. */
   readonly maxTerminals: number
   /** Maximum terminal width in columns. */
@@ -75,11 +78,19 @@ interface OwnedSession {
 /** Typed Remote control of transient Session-owned terminal processes. */
 export class TerminalController extends TypertRemoteService {
   static inject = ['subprocess', 'sandboxPolicy', 'workingDirectory', 'typert']
-  static Config: z<Config> = z.object({
+  static Config = z.object({
     shell: z.union([z.object({
       path: z.string().required(), name: z.string().required(), args: z.array(z.string()).default([]),
     }), z.const(undefined)]),
     shellCandidates: z.array(z.string().min(1)).default(['zsh', 'bash', 'fish', 'pwsh', 'powershell', 'cmd']),
+    programs: z.array(z.object({
+      id: z.transform(z.string().pattern(/^[a-z][a-z0-9-]*$/u), id => id as TerminalProgramId).required(),
+      name: z.string().min(1).required(),
+      command: z.string().min(1).required(),
+      args: z.array(z.string().required()).default([]),
+      resumeArgs: z.union([z.array(z.string().required()), z.const(undefined)]),
+      guideUrl: z.string().pattern(/^https:\/\/[^\s]+$/u),
+    }).required()).default([]),
     maxTerminals: z.number().step(1).min(1).default(8),
     maxCols: z.number().step(1).min(2).default(500),
     maxRows: z.number().step(1).min(1).default(200),
@@ -100,6 +111,8 @@ export class TerminalController extends TypertRemoteService {
    * @param config - validated terminal limits and optional shell profile.
    */
   constructor(ctx: Context, private readonly config: Config) {
+    const programs = config.programs ?? []
+    if (new Set(programs.map(program => program.id)).size !== programs.length) throw new Error('Terminal program ids must be unique')
     super(ctx, 'terminalController', { namespace: 'terminal' })
     ctx.effect(() => async () => {
       this.lifetime.abort(new Error('Terminal controller disposed'))
@@ -137,6 +150,29 @@ export class TerminalController extends TypertRemoteService {
   }
 
   /**
+   * Check configured programs in the Host environment when no Session is selected.
+   * @param signal - request cancellation.
+   * @returns installed status without launching any process.
+   */
+  @Remote
+  hostPrograms(signal: AbortSignal): Promise<TerminalProgramStatus[]> {
+    signal.throwIfAborted()
+    return discoverPrograms(this.ctx.subprocess, this.config.programs ?? [], signal)
+  }
+
+  /**
+   * Check configured programs in the selected Session's execution environment.
+   * @param agent - Session owner supplied by the Gateway.
+   * @param signal - request cancellation.
+   * @returns installed status without launching any process.
+   */
+  @Remote
+  programs(agent: Agent, signal: AbortSignal): Promise<TerminalProgramStatus[]> {
+    signal.throwIfAborted()
+    return discoverPrograms(this.execution(agent).subprocess, this.config.programs ?? [], signal)
+  }
+
+  /**
    * List retained terminals without resolving or activating an Agent.
    * @param sessionId - displayed Session identity, including offline history.
    * @returns terminals retained for this Host lifetime.
@@ -149,7 +185,7 @@ export class TerminalController extends TypertRemoteService {
   }
 
   /**
-   * Allocate a user shell once for a caller-generated identity, without Agent sandbox or approval restrictions.
+   * Allocate a user terminal once for a caller-generated identity, without Agent sandbox or approval restrictions.
    * @param agent - Session owner supplied by the Gateway.
    * @param request - initial dimensions and idempotency identity.
    * @param signal - allocation cancellation; committed terminals survive disconnection.
@@ -160,6 +196,7 @@ export class TerminalController extends TypertRemoteService {
     this.lifetime.signal.throwIfAborted()
     if (!/^[\w-]{1,128}$/u.test(request.id)) throw new Error('Invalid terminal identity')
     this.dimensions(request.cols, request.rows)
+    if (request.program !== undefined && request.shellPath !== undefined) throw new Error('Choose either a terminal program or a shell')
     const owner = this.owner(agent)
     owner.lifetime.signal.throwIfAborted()
     this.requireOpen(owner, request.id)
@@ -313,14 +350,19 @@ export class TerminalController extends TypertRemoteService {
   private async spawn(agent: Agent, owner: OwnedSession, request: TerminalCreateRequest, signal: AbortSignal): Promise<BrowserTerminal> {
     const { subprocess, workingDirectory } = this.execution(agent)
     const cwd = await workingDirectory.ensure(agent, signal)
-    const shell = request.shellPath === undefined
-      ? await resolveShell(subprocess, this.config.shell, signal)
-      : (await this.shells(agent, signal)).find(candidate => candidate.path === request.shellPath)
-    if (shell === undefined) throw new Error('Selected shell is not available in this execution environment')
+    const shell = request.program !== undefined
+      ? await resolveProgram(subprocess, this.config.programs ?? [], request.program, signal)
+      : request.shellPath === undefined
+        ? await resolveShell(subprocess, this.config.shell, signal)
+        : (await this.shells(agent, signal)).find(candidate => candidate.path === request.shellPath)
+    if (shell === undefined) {
+      if (request.program !== undefined) throw new RemoteError('terminal/program-unavailable', 'Selected terminal program is unavailable', {})
+      throw new Error('Selected shell is not available in this execution environment')
+    }
     const handle = await subprocess.spawnTerminal({
       argv: [shell.path, ...shell.args], cwd, cols: request.cols, rows: request.rows,
       terminalType: 'xterm-256color', env: { DSH_SESSION_ID: agent.id },
-      shellActivity: true,
+      shellActivity: request.program === undefined,
       graceMs: this.config.disposeGraceMs, signal,
     })
     const info: WebTerminalInfo = {

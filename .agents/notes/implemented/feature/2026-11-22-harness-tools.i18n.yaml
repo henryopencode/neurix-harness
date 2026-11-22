@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-11-22-harness-tools.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-11-22-harness-tools.md
+/agent-note-interactive-harness-tools:
+  en: 2f3bf6c17e033ef7
+  zh: e7c25d55214f0029
+/agent-note-interactive-harness-tools/problem:
+  en: 38542c26b4f21372
+  zh: 2975a8f17a203bb1
+/agent-note-interactive-harness-tools/decision:
+  en: d703a1640f6b3af4
+  zh: 79f751a55f3b2256
+/agent-note-interactive-harness-tools/alternatives-considered:
+  en: b4041691f5f3b80f
+  zh: e9598d9aca45c2f7
+/agent-note-interactive-harness-tools/consequences:
+  en: 899c34cd8069e701
+  zh: 3add22f170ec1b7f

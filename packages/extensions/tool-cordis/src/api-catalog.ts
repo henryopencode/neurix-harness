@@ -4165,6 +4165,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'verified profiles, with the configured or system default first.',
       },
       {
+        signature: '@Remote hostPrograms(signal: AbortSignal): Promise<TerminalProgramStatus[]>',
+        description: 'Check configured programs in the Host environment when no Session is selected.',
+        parameters: [{ name: 'signal', description: 'request cancellation.' }],
+        returns: 'installed status without launching any process.',
+      },
+      {
+        signature: '@Remote programs(agent: Agent, signal: AbortSignal): Promise<TerminalProgramStatus[]>',
+        description: 'Check configured programs in the selected Session\'s execution environment.',
+        parameters: [{ name: 'agent', description: 'Session owner supplied by the Gateway.' }, { name: 'signal', description: 'request cancellation.' }],
+        returns: 'installed status without launching any process.',
+      },
+      {
         signature: '@Remote list(sessionId: SessionId): WebTerminalInfo[]',
         description: 'List retained terminals without resolving or activating an Agent.',
         parameters: [{ name: 'sessionId', description: 'displayed Session identity, including offline history.' }],
@@ -4172,7 +4184,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: '@Remote async create(agent: Agent, request: TerminalCreateRequest, signal: AbortSignal): Promise<WebTerminalInfo>',
-        description: 'Allocate a user shell once for a caller-generated identity, without Agent sandbox or approval restrictions.',
+        description: 'Allocate a user terminal once for a caller-generated identity, without Agent sandbox or approval restrictions.',
         parameters: [{ name: 'agent', description: 'Session owner supplied by the Gateway.' }, { name: 'request', description: 'initial dimensions and idempotency identity.' }, { name: 'signal', description: 'allocation cancellation; committed terminals survive disconnection.' }],
         returns: 'the existing or newly committed terminal.',
       },
@@ -9986,7 +9998,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TerminalCreateRequest',
-    declaration: 'export interface TerminalCreateRequest {\n    readonly shellPath?: string;\n    readonly id: WebTerminalId;\n    readonly cols: number;\n    readonly rows: number;\n}',
+    declaration: 'export interface TerminalCreateRequest {\n    readonly shellPath?: string;\n    readonly program?: TerminalProgramLaunch;\n    readonly id: WebTerminalId;\n    readonly cols: number;\n    readonly rows: number;\n}',
   },
   {
     name: 'TerminalEnvironment',
@@ -9999,6 +10011,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TerminalInput',
     declaration: 'export type TerminalInput = {\n    readonly type: \'write\';\n    readonly sequence: number;\n    readonly data: string;\n} | {\n    readonly type: \'resize\';\n    readonly sequence: number;\n    readonly cols: number;\n    readonly rows: number;\n};',
+  },
+  {
+    name: 'TerminalProgramId',
+    declaration: 'export type TerminalProgramId = Branded<\'TerminalProgramId\'>;',
+  },
+  {
+    name: 'TerminalProgramLaunch',
+    declaration: 'export interface TerminalProgramLaunch {\n    readonly id: TerminalProgramId;\n    readonly mode: \'start\' | \'resume\';\n}',
+  },
+  {
+    name: 'TerminalProgramStatus',
+    declaration: 'export interface TerminalProgramStatus {\n    readonly id: TerminalProgramId;\n    readonly name: string;\n    readonly installed: boolean;\n    readonly canResume: boolean;\n    readonly guideUrl?: string;\n}',
   },
   {
     name: 'TerminalReadRequest',

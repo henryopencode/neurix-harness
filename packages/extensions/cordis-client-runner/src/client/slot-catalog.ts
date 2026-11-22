@@ -3971,6 +3971,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       'client-ui-settings-general AboutSection id \'about\'',
       'client-ui-settings-models ModelsSection id \'models\'',
       'client-ui-settings-plugins PluginsSettingsSection id \'plugins\'',
+      'client-ui-sidebar-terminal HarnessToolsSection id \'harness-tools\'',
       'session-diagnostics DiagnosticsPage id \'session-diagnostics\'',
     ],
     replaceRisk: 'none',
@@ -4023,7 +4024,9 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     hookContext: '',
     slotInject: '',
     declaredBy: 'an entry in \'sidebar.settings\' (client-ui-settings-general), so it exists while that entry is mounted',
-    occupants: [],
+    occupants: [
+      'client-ui-sidebar-terminal HarnessToolsIcon id \'harness-tools\'',
+    ],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'settings.section.icon\', () => ctx.slots.register(\n      { name: \'settings.section.icon\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
     source: 'packages/client/ui-settings/src/client/contract/slots.ts:89',

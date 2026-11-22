@@ -29,6 +29,8 @@ The `terminal.new` command creates a separate terminal in the focused dock pane,
 
 Open the right sidebar and click **New terminal** to open the remembered available shell immediately. The separate arrow beside the title opens the installed-shell menu; selecting an item remembers it and opens that shell directly. Discovery runs when the menu opens and does not allocate a terminal. A failed lookup offers Retry in the menu. Use **New tab** to return to the guide and open another terminal.
 
+Open **Settings → Harness tools** to check whether Codex and Claude Code are installed in the execution environment. With a workspace conversation open, **Start** opens the tool in a terminal tab and **Resume** opens its own session picker from the current directory. Sign in, approve actions and manage history inside the tool. The page links to the vendor’s setup guide when it cannot find the executable; **Refresh** checks again after installation.
+
 Double-click the terminal's tab title to rename it. **Take control** makes the current attachment writable when another page owns input. A temporary disconnect preserves the screen and offers **Reconnect**, without exposing transport diagnostics. An exited shell remains visible with its exit code and offers **New terminal**; it never restarts automatically. Exited terminals count toward the Session limit; close unused tabs when the limit is reached.
 
 Closing or replacing a terminal tab removes it immediately and ends its process in the background. Cleanup failures have no notification or manual retry action; saved unfinished close requests are retried when the Client plugin starts. Collapsing, switching tabs or Sessions, floating and fullscreen presentation preserve the process.

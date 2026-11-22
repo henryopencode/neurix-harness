@@ -257,6 +257,21 @@ Typed Remote control of transient Session-owned terminal processes.
 @Remote shells(agent: Agent, signal: AbortSignal): Promise<TerminalShell[]>
 
 /**
+ * Check configured programs in the Host environment when no Session is selected.
+ * @param signal - request cancellation.
+ * @returns installed status without launching any process.
+ */
+@Remote hostPrograms(signal: AbortSignal): Promise<TerminalProgramStatus[]>
+
+/**
+ * Check configured programs in the selected Session's execution environment.
+ * @param agent - Session owner supplied by the Gateway.
+ * @param signal - request cancellation.
+ * @returns installed status without launching any process.
+ */
+@Remote programs(agent: Agent, signal: AbortSignal): Promise<TerminalProgramStatus[]>
+
+/**
  * List retained terminals without resolving or activating an Agent.
  * @param sessionId - displayed Session identity, including offline history.
  * @returns terminals retained for this Host lifetime.
@@ -264,7 +279,7 @@ Typed Remote control of transient Session-owned terminal processes.
 @Remote list(sessionId: SessionId): WebTerminalInfo[]
 
 /**
- * Allocate a user shell once for a caller-generated identity, without Agent sandbox or approval restrictions.
+ * Allocate a user terminal once for a caller-generated identity, without Agent sandbox or approval restrictions.
  * @param agent - Session owner supplied by the Gateway.
  * @param request - initial dimensions and idempotency identity.
  * @param signal - allocation cancellation; committed terminals survive disconnection.

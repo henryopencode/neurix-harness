@@ -1,0 +1,15 @@
+- region "Harness tools":
+  - heading "Harness tools" [level=2]
+  - button "Refresh"
+  - list:
+    - listitem:
+      - heading "Codex" [level=3]
+      - text: Installed
+      - button "Start Codex": Start
+      - button "Resume a Codex session": Resume
+    - listitem:
+      - heading "Claude Code" [level=3]
+      - text: Not detected
+      - link "Claude Code install guide":
+        - /url: https://code.claude.com/docs/en/setup
+        - text: Install guide

@@ -1,12 +1,12 @@
 /** Shipped sidebar terminal over the real Loader, Remote mux, Chromium and local PTY. */
-import { mkdir } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium, type Browser, type Page } from 'playwright'
-import { afterEach, beforeEach, describe, expect, it, onTestFailed, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFailed, onTestFinished, vi } from 'vitest'
 import { createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-api-terminal-controller'
-import type { SubprocessTerminalHandle } from '@deepseek-ai/dsh-subprocess'
+import { SubprocessExecutableNotFoundError, type SubprocessTerminalHandle } from '@deepseek-ai/dsh-subprocess'
 import { createProcessInspector, type ProcessIdentity } from '@deepseek-ai/dsh-subprocess-local/src/process-inspector.ts'
 import { compareOrRefreshGolden, launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold } from './scaffold.ts'
 import { openSettings, connectFreshWorkspace, saveFailureShot } from './support.ts'
@@ -711,3 +711,63 @@ function contrastRatio(first: string, second: string): number {
   const a = luminance(first), b = luminance(second)
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
 }
+
+it.skipIf(process.platform === 'win32')('detects installed tools and opens their native launch actions from Settings', async () => {
+  const scaffold = await launchWebScaffold()
+  onTestFinished(() => scaffold.close())
+  const browser = await chromium.launch()
+  onTestFinished(() => browser.close())
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: 'en-US' })
+  onTestFailed(() => saveFailureShot(page, 'web-e2e-harness-tools'))
+  const tripwire = watchConsole(page)
+  await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
+  await connectFreshWorkspace(page, scaffold.workspaceCwd)
+  const [agent] = scaffold.ctx.agents.list()
+  if (agent === undefined) throw new Error('Workspace did not create a Session')
+  const subprocess = agent.ctx.get('subprocess')
+  if (subprocess === undefined) throw new Error('Session subprocess provider is missing')
+  const terminals = () => scaffold.ctx.terminalController.list(agent.id)
+  const codex = join(scaffold.workspaceCwd, 'fixture-codex')
+  const claude = join(scaffold.workspaceCwd, 'fixture-claude')
+  await Promise.all([
+    writeFile(codex, '#!/bin/sh\nprintf "native-codex: %s\\n" "$*"\nread -r keep_open\n', { mode: 0o700 }),
+    writeFile(claude, '#!/bin/sh\nprintf "native-claude: %s\\n" "$*"\nread -r keep_open\n', { mode: 0o700 }),
+  ])
+  let haveClaude = false
+  const resolve = subprocess.resolveExecutable.bind(subprocess)
+  vi.spyOn(subprocess, 'resolveExecutable').mockImplementation(async (command, env, signal) => {
+    if (command === 'codex') return codex
+    if (command !== 'claude') return resolve(command, env, signal)
+    if (!haveClaude) throw new SubprocessExecutableNotFoundError(command)
+    return claude
+  })
+
+  const dialog = page.getByRole('dialog', { name: 'Settings' })
+  const tools = dialog.getByRole('region', { name: 'Harness tools' })
+  const showTools = async () => {
+    await openSettings(page, 'en')
+    await dialog.getByRole('button', { name: 'Harness tools', exact: true }).click()
+  }
+
+  await showTools()
+  await tools.getByRole('link', { name: 'Claude Code install guide' }).waitFor()
+  const golden = fileURLToPath(new URL('./expected/sidebar-terminal/harness-tools.expected.md', import.meta.url))
+  await compareOrRefreshGolden(golden, await tools.ariaSnapshot(), webSnapshotMode())
+  expect(terminals()).toHaveLength(0)
+
+  haveClaude = true
+  await tools.getByRole('button', { name: 'Refresh', exact: true }).click()
+  await tools.getByRole('button', { name: 'Resume a Claude Code session' }).waitFor()
+  await tools.getByRole('button', { name: 'Start Codex' }).click()
+  await dialog.waitFor({ state: 'hidden' })
+  const screen = page.locator('.xterm-rows:visible')
+  await screen.getByText('native-codex:', { exact: false }).waitFor()
+  expect(terminals()).toHaveLength(1)
+
+  await showTools()
+  await tools.getByRole('button', { name: 'Resume a Claude Code session' }).click()
+  await dialog.waitFor({ state: 'hidden' })
+  await screen.getByText('native-claude: --resume', { exact: false }).waitFor()
+  expect(terminals()).toHaveLength(2)
+  expect(tripwire.pageErrors).toEqual([])
+}, 180_000)

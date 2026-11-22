@@ -41,6 +41,7 @@ function fixture(prepareStream?: <Item>(stream: RemoteStream<Item>) => void, inp
     for await (const command of stream.uplink) commands.push(command as TerminalInput)
   })
   const remote: TerminalRemote = {
+    hostPrograms: async () => success([]), programs: async () => success([]),
     retain: vi.fn<TerminalRemote['retain']>(streamMethod<TerminalRemote['retain']>(async function* (_session, _id, signal) {
       yield { type: 'retained' }
       await new Promise<void>((resolve) => {
