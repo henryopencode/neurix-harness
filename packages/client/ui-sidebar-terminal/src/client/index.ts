@@ -9,6 +9,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
 import { PluginArtworkTerminal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { TerminalGuide, type TerminalGuideInjected } from './TerminalGuide.tsx'
@@ -18,8 +19,10 @@ import { TerminalTitle } from './TerminalTitle.tsx'
 // import { TerminalCleanup, type TerminalCleanupInjected } from './TerminalCleanup.tsx'
 import type { TerminalBodyInjected, TerminalInjected } from './face.ts'
 import { en, ja, es, fr, de, ru, pt, zh } from './locales.ts'
+import { HarnessToolsIcon, HarnessToolsSection, type HarnessToolsInjected } from './HarnessToolsSection.tsx'
+import { harnessToolsCopy } from './harness-tools-locales.ts'
 
-/** Services needed by the terminal's two sidebar seats. */
+/** Services used by the sidebar terminal and its settings. */
 export const inject = ['slots', 'locale', 'sidebarRight', 'sidebarRightTabs', 'webTerminals', 'theme', 'shortcuts']
 
 /**
@@ -46,7 +49,8 @@ export function apply(ctx: Context): void {
     const params = target(sessionId, key)
     const contentId = ctx.sidebarRight.tabDomain.occurrence(sessionId, { id: key as TabId }).navigation.getSnapshot().address
     return ctx.webTerminals.view(sessionId, key, contentId, terminalId(sessionId, key),
-      params !== undefined && 'shellPath' in params ? params.shellPath : undefined)
+      params !== undefined && 'shellPath' in params ? params.shellPath : undefined,
+      params !== undefined && 'program' in params ? params.program : undefined)
   }
   const namespace = 'sidebarTerminal'
   const id = '@deepseek-ai/dsh-client-ui-sidebar-terminal'
@@ -68,6 +72,24 @@ export function apply(ctx: Context): void {
     },
   }), 'ui-sidebar-terminal: shortcut')
   ctx.effect(() => ctx.locale.register(namespace, { zh, en, ja, es, fr, de, ru, pt }), 'ui-sidebar-terminal.copy')
+  ctx.effect(() => ctx.locale.register('harnessTools', harnessToolsCopy), 'ui-sidebar-terminal.harness-copy')
+  const harnessTools: HarnessToolsInjected = {
+    hooks: { terminalSession: ctx.sidebarRight.mounted },
+    load: (session, signal) => ctx.webTerminals.programs(session, signal),
+    launch: (session, program) => {
+      if (ctx.sidebarRight.mounted.getSnapshot() !== session) return false
+      ctx.sidebarRight.openTab('terminal', { params: { program } })
+      return true
+    },
+  }
+  const harnessTitle = ctx.locale.bind('harnessTools')
+  ctx.effect(() => ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section', id: 'harness-tools', order: 40,
+    label: () => harnessTitle('title'), locale: 'harnessTools', inject: () => harnessTools,
+  }, HarnessToolsSection)), 'ui-sidebar-terminal.harness-settings')
+  ctx.effect(() => ctx.slots.inject('settings.section.icon', () => ctx.slots.register({
+    name: 'settings.section.icon', id: 'harness-tools',
+  }, HarnessToolsIcon)), 'ui-sidebar-terminal.harness-settings-icon')
   ctx.effect(() => ctx.sidebarRightTabs.register({
     id, kind: 'terminal', multiple: true, priority: 'builtin', title: () => t('title'),
     guide: [{ id: 'new', order: 20, title: () => t('new'), description: () => t('description'), icon: PluginArtworkTerminal }],

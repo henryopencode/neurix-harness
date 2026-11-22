@@ -8,6 +8,8 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'terminal/unavailable': Record<string, never>
     /** Input or resize was refused without invalidating the output attachment. */
     'terminal/control-unavailable': { readonly reason: 'read-only' | 'not-running' }
+    /** The selected program or launch action is unavailable in the Session environment. */
+    'terminal/program-unavailable': Record<string, never>
     /** Retained screens and pending allocations consume the Session's terminal quota. */
     'terminal/limit-reached': { readonly limit: number }
   }
@@ -21,7 +23,25 @@ export interface TerminalRetentionFrame {
   readonly type: 'retained'
 }
 
-/** An executable shell verified in the subprocess provider's execution environment. */
+/** Identity of a Host-configured terminal program. */
+export type TerminalProgramId = Branded<'TerminalProgramId'>
+
+/** Installed status as seen by the target subprocess provider. */
+export interface TerminalProgramStatus {
+  readonly id: TerminalProgramId
+  readonly name: string
+  readonly installed: boolean
+  readonly canResume: boolean
+  readonly guideUrl?: string
+}
+
+/** Select a Host-configured program and launch action without supplying argv. */
+export interface TerminalProgramLaunch {
+  readonly id: TerminalProgramId
+  readonly mode: 'start' | 'resume'
+}
+
+/** An interactive executable verified in the subprocess provider's execution environment. */
 export interface TerminalShell {
   readonly path: string
   readonly args: readonly string[]
@@ -56,8 +76,10 @@ export interface WebTerminalInfo {
 
 /** Create is idempotent for an open identity; closed identities cannot be recreated. */
 export interface TerminalCreateRequest {
-  /** A path returned by shell discovery; absent selects the execution default. */
+  /** A path returned by shell discovery; absent selects the execution default when no program is requested. */
   readonly shellPath?: string
+  /** A configured program in place of a shell; mutually exclusive with shellPath. */
+  readonly program?: TerminalProgramLaunch
   readonly id: WebTerminalId
   readonly cols: number
   readonly rows: number

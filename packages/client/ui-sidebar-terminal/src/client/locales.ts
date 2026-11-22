@@ -9,6 +9,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
 /** Simplified Chinese terminal copy. */
 export const zh = {
+  programUnavailable: '这个工具已不可用，请在设置中刷新 Harness 工具',
   'shortcut.noSession': '请先选择会话',
   recoveryFailed: '恢复终端失败：{message}', retryRecovery: '重试恢复终端',
   shell: '选择 Shell', shellLoading: '正在读取 Shell…', shellEmpty: '没有可用的 Shell', description: '在会话工作区运行命令',
@@ -27,6 +28,7 @@ export const zh = {
 
 /** English terminal copy. */
 export const en = {
+  programUnavailable: 'This tool is unavailable. Refresh Harness tools in Settings.',
   'shortcut.noSession': 'Select a session first',
   recoveryFailed: 'Terminal recovery failed: {message}', retryRecovery: 'Retry terminal recovery',
   shell: 'Choose shell', shellLoading: 'Loading shells…', shellEmpty: 'No shells available', description: 'Run commands in the Session workspace',
@@ -45,6 +47,7 @@ export const en = {
 
 /** Japanese copy, checked against the English keys. */
 export const ja = {
+  programUnavailable: 'このツールは利用できません。設定の Harness ツールを更新してください。',
   'shortcut.noSession': '先にセッションを選択してください',
   'recoveryFailed': 'ターミナルの復元に失敗しました: {message}',
   'retryRecovery': 'ターミナルの復元を再試行',
@@ -77,6 +80,7 @@ export const ja = {
 
 /** Spanish dictionary, checked against the English keys. */
 export const es = {
+  programUnavailable: 'Esta herramienta no está disponible. Actualiza las herramientas de Harness en Configuración.',
   'shortcut.noSession': 'Seleccione una sesión primero',
   recoveryFailed: 'Falló la recuperación del terminal: {message}', retryRecovery: 'Reintentar la recuperación del terminal',
   shell: 'Elige concha', shellLoading: 'Cargando proyectiles…', shellEmpty: 'No hay conchas disponibles', description: 'Ejecutar comandos en el espacio de trabajo de sesión',
@@ -95,6 +99,7 @@ export const es = {
 
 /** French dictionary, checked against the English keys. */
 export const fr = {
+  programUnavailable: 'Cet outil est indisponible. Actualisez les outils Harness dans les paramètres.',
   'shortcut.noSession': "Sélectionnez d'abord une session",
   recoveryFailed: 'Échec de la récupération du terminal : {message}', retryRecovery: 'Réessayez la récupération du terminal',
   shell: 'Choisissez la coque', shellLoading: 'Chargement des obus…', shellEmpty: 'Aucune coquille disponible', description: 'Exécuter des commandes dans l’espace de travail de la session',
@@ -113,6 +118,7 @@ export const fr = {
 
 /** German dictionary, checked against the English keys. */
 export const de = {
+  programUnavailable: 'Dieses Werkzeug ist nicht verfügbar. Aktualisiere die Harness-Werkzeuge in den Einstellungen.',
   'shortcut.noSession': 'Wählen Sie zunächst eine Sitzung aus',
   recoveryFailed: 'Terminalwiederherstellung fehlgeschlagen: {message}', retryRecovery: 'Versuchen Sie die Terminalwiederherstellung erneut',
   shell: 'Wählen Sie Shell', shellLoading: 'Granaten werden geladen…', shellEmpty: 'Keine Muscheln verfügbar', description: 'Führen Sie Befehle im Sitzungsarbeitsbereich aus',
@@ -131,6 +137,7 @@ export const de = {
 
 /** Russian dictionary, checked against the English keys. */
 export const ru = {
+  programUnavailable: 'Инструмент недоступен. Обновите список инструментов Harness в настройках.',
   'shortcut.noSession': 'Сначала выберите сеанс',
   recoveryFailed: 'Восстановление терминала не удалось: {message}', retryRecovery: 'Повторить попытку восстановления терминала',
   shell: 'Выбрать оболочку', shellLoading: 'Загрузка снарядов…', shellEmpty: 'Нет доступных ракушек', description: 'Запуск команд в рабочей области сеанса',
@@ -149,6 +156,7 @@ export const ru = {
 
 /** Portuguese dictionary, checked against the English keys. */
 export const pt = {
+  programUnavailable: 'Esta ferramenta não está disponível. Atualize as ferramentas do Harness nas definições.',
   'shortcut.noSession': 'Selecione uma sessão primeiro',
   recoveryFailed: 'Falha na recuperação do terminal: {message}', retryRecovery: 'Tentar novamente a recuperação do terminal',
   shell: 'Escolha a concha', shellLoading: 'Carregando conchas…', shellEmpty: 'Não há conchas disponíveis', description: 'Execute comandos no espaço de trabalho Sessão',

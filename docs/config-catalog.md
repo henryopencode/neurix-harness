@@ -297,7 +297,8 @@ export interface SettingsControllerInternals {
 ## `@deepseek-ai/dsh-api-terminal-controller`
 
 - `inject`: `subprocess` · `sandboxPolicy` · `workingDirectory` · `typert`
-- `source`: [`packages/api/terminal-controller/src/index.ts:27`](../packages/api/terminal-controller/src/index.ts)
+- `refs`: [`Branded`](../packages/util/brand/src/index.ts)
+- `source`: [`packages/api/terminal-controller/src/index.ts:28`](../packages/api/terminal-controller/src/index.ts)
 
 ```ts config-catalog
 /** Deployment limits and an optional shell profile. */
@@ -313,6 +314,8 @@ export interface Config {
   } | undefined
   /** Executable names or paths checked for the new-terminal shell selector. */
   readonly shellCandidates: string[]
+  /** Host-configured interactive programs offered alongside shell terminals. */
+  readonly programs?: TerminalProgram[] | undefined
   /** Maximum retained terminals and pending allocations per Session. */
   readonly maxTerminals: number
   /** Maximum terminal width in columns. */
@@ -334,6 +337,25 @@ export interface Config {
   /** Delay before retrying failed owned terminal cleanup. */
   readonly cleanupRetryMs: number
 }
+
+/** Trusted launch choices from a Host profile. */
+export interface TerminalProgram {
+  /** Unique program identifier used in launch requests. */
+  readonly id: TerminalProgramId
+  /** Tool name displayed in settings and terminal tabs. */
+  readonly name: string
+  /** Executable name or path resolved in the terminal's execution environment. */
+  readonly command: string
+  /** Arguments for starting a new tool session. */
+  readonly args: readonly string[]
+  /** Arguments for choosing a previous tool session; omission disables resume. */
+  readonly resumeArgs?: readonly string[] | null | undefined
+  /** HTTPS installation guide offered if the executable is missing. */
+  readonly guideUrl?: string | null | undefined
+}
+
+/** Identity of a Host-configured terminal program. */
+export type TerminalProgramId = Branded<'TerminalProgramId'>
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-api-terminal-controller -->
 

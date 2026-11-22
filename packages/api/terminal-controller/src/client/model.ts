@@ -8,7 +8,7 @@ import { RemoteError, remoteErrorOf, type RemoteResult, type RemoteStreamHandle,
 import type {} from '@deepseek-ai/dsh-api-terminal-controller/remote'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {
-  TerminalInput, TerminalEnvironment, TerminalFrame,
+  TerminalInput, TerminalEnvironment, TerminalFrame, TerminalProgramLaunch,
   WebTerminalId, WebTerminalInfo,
 } from '../types.ts'
 
@@ -16,7 +16,7 @@ import type {
 export type TerminalRemote = ClientRemote['terminal']
 
 /** Product error identifiers translated by the terminal UI. */
-export type TerminalViewIssue = 'missingTerminal' | 'inputFull' | 'attachmentEnded' | 'invalidOutput' | 'terminalLimit'
+export type TerminalViewIssue = 'missingTerminal' | 'inputFull' | 'attachmentEnded' | 'invalidOutput' | 'terminalLimit' | 'programUnavailable'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
@@ -89,6 +89,7 @@ export class TerminalView {
    * @param createWhenMissing - allow allocation only for a new tab, never a listed terminal.
    * @param shellPath - explicit shell chosen at the guide; omission uses the remembered available shell.
    * @param retain - window hold acknowledgement required before output attachment.
+   * @param program - configured program selected for a new terminal in place of a shell.
    */
   constructor(
     private readonly sessionId: SessionId,
@@ -99,10 +100,11 @@ export class TerminalView {
     private createWhenMissing = true,
     private readonly shellPath?: string,
     private readonly retain?: (signal: AbortSignal) => Promise<void>,
+    private readonly program?: TerminalProgramLaunch,
   ) {}
 
   /**
-   * Attach the DOM lifetime, starting the chosen shell or reconnecting the saved process.
+   * Attach the DOM lifetime, starting the chosen executable or reconnecting the saved process.
    * @returns a detach callback that leaves the terminal process alive.
    */
   mount(): () => void {
@@ -138,7 +140,7 @@ export class TerminalView {
       if (info !== undefined) this.adopt(info)
       else if (this.createWhenMissing) {
         let path = this.shellPath
-        if (path === undefined) {
+        if (path === undefined && this.program === undefined) {
           const shells = valueOf(await this.remote.shells(this.sessionId, this.lifetime.signal))
           const previous = preferredShell()
           path = shells.find(shell => shell.path === previous)?.path ?? shells[0]?.path
@@ -158,7 +160,8 @@ export class TerminalView {
     this.patch({ phase: 'creating', error: undefined, issue: undefined })
     this.creation = (async () => {
       const info = valueOf(await this.remote.create(this.sessionId, {
-        id: this.id, ...shellPath === undefined ? {} : { shellPath },
+        id: this.id,
+        ...this.program === undefined ? (shellPath === undefined ? {} : { shellPath }) : { program: this.program },
         cols: Math.min(80, environment.maxCols), rows: Math.min(24, environment.maxRows),
       }, this.lifetime.signal))
       if (!this.lifetime.signal.aborted) {
@@ -404,7 +407,10 @@ export class TerminalView {
 
   private fail(error: unknown): void {
     const failure = remoteErrorOf(error)
-    const issue = failure?.code === 'terminal/view' ? failure.details.issue : failure?.code === 'terminal/limit-reached' ? 'terminalLimit' : failure?.code === 'terminal/unavailable' ? 'missingTerminal' : undefined
+    const issue = failure?.code === 'terminal/view' ? failure.details.issue
+      : failure?.code === 'terminal/limit-reached' ? 'terminalLimit'
+        : failure?.code === 'terminal/unavailable' ? 'missingTerminal'
+          : failure?.code === 'terminal/program-unavailable' ? 'programUnavailable' : undefined
     if (!this.stopped() && issue === 'missingTerminal') this.inventory.remove(this.id)
     this.patch({ phase: error instanceof RemoteStreamCarrierError ? 'disconnected' : 'failed', writable: false, issue, error: error instanceof Error ? error.message : String(error) })
   }

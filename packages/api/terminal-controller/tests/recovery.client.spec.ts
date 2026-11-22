@@ -8,7 +8,7 @@ import { streamMethod } from '@deepseek-ai/dsh-remote-mock'
 import { RemoteStream, type ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
 import type {} from '@deepseek-ai/dsh-api-terminal-controller/remote'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { WebTerminalId, WebTerminalInfo, TerminalEnvironment } from '../src/types.ts'
+import type { WebTerminalId, WebTerminalInfo, TerminalEnvironment, TerminalProgramId } from '../src/types.ts'
 import { TerminalView, type TerminalRemote } from '../src/client/model.ts'
 import { TerminalInventory } from '../src/client/inventory.ts'
 import { TerminalCloseRequests } from '../src/client/close-requests.ts'
@@ -33,6 +33,7 @@ function storage() {
 
 function fixture() {
   const remote: TerminalRemote = {
+    hostPrograms: async () => success([]), programs: async () => success([]),
     retain: vi.fn<TerminalRemote['retain']>(streamMethod<TerminalRemote['retain']>(async function* (_session, _id, signal) {
       yield { type: 'retained' }
       await new Promise<void>((resolve) => {
@@ -100,6 +101,40 @@ it('creates new terminal identities without reading the Session list', async () 
   }
   expect(h.remote.create).toHaveBeenCalledTimes(8)
   expect(h.remote.list).not.toHaveBeenCalled()
+})
+
+it('uses Session tool discovery when selected and distinguishes provider failures from a missing tool', async () => {
+  const h = fixture()
+  const { service } = await h.service()
+  const tool = { id: 'codex' as TerminalProgramId, name: 'Codex', installed: false, canResume: true }
+  vi.spyOn(h.remote, 'hostPrograms').mockResolvedValue(success([tool]))
+  vi.spyOn(h.remote, 'programs').mockResolvedValueOnce(success([{ ...tool, installed: true }])).mockResolvedValueOnce(failure('Offline'))
+  const signal = new AbortController().signal
+  expect(await service.programs(undefined, signal)).toEqual([tool])
+  expect(await service.programs(sessionId, signal)).toEqual([{ ...tool, installed: true }])
+  await expect(service.programs(sessionId, signal)).rejects.toThrow('Offline')
+  expect(h.remote.programs).toHaveBeenLastCalledWith(sessionId, signal)
+})
+
+it('launches the chosen tool without shell discovery or replaying the saved launch on reload', async () => {
+  storage()
+  const h = fixture()
+  const first = await h.service()
+  const program = { id: 'codex' as TerminalProgramId, mode: 'resume' as const }
+  vi.mocked(h.remote.create).mockResolvedValueOnce({
+    ok: false, error: new RemoteError('terminal/program-unavailable', 'Tool was removed', {}),
+  })
+  const launched = first.service.view(sessionId, 'tab', 'content', undefined, undefined, program)
+  await launched.refresh()
+  expect(h.remote.create).toHaveBeenCalledWith(sessionId, expect.objectContaining({ program }), expect.any(AbortSignal))
+  expect(h.remote.shells).not.toHaveBeenCalled()
+  expect(launched.state.getSnapshot().issue).toBe('programUnavailable')
+  await first.dispose()
+  const next = await h.service()
+  const restored = next.service.view(sessionId, 'tab', 'content', undefined, undefined, program)
+  await restored.refresh()
+  expect(restored.state.getSnapshot().issue).toBe('missingTerminal')
+  expect(h.remote.create).toHaveBeenCalledOnce()
 })
 
 it('preserves a missing terminal failure across remounts without retrying discovery', async () => {

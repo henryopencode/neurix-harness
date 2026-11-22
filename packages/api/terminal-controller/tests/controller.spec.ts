@@ -14,7 +14,7 @@ import { TerminalController, type Config } from '../src/index.ts'
 import { inputChannel } from './input.ts'
 import type { RemoteInvocation, PeerId } from '@deepseek-ai/dsh-typert-protocol'
 import { resolveShell } from '../src/shells.ts'
-import type { TerminalInput, WebTerminalId } from '../src/types.ts'
+import type { TerminalInput, TerminalProgramId, WebTerminalId } from '../src/types.ts'
 
 const roots: Context[] = []
 afterEach(async () => { await Promise.all(roots.splice(0).map(ctx => ctx.fiber.dispose())) })
@@ -22,6 +22,13 @@ const config: Config = { shellCandidates: ['zsh', 'bash', 'sh'], shell: { path: 
 const id = 'test-terminal' as WebTerminalId
 const request = { id, cols: 80, rows: 24 }
 const signal = (): AbortSignal => new AbortController().signal
+
+const codex = 'codex' as TerminalProgramId
+const claude = 'claude-code' as TerminalProgramId
+const programs: Config['programs'] = [
+  { id: codex, name: 'Codex', command: 'codex', args: [], resumeArgs: ['resume'] },
+  { id: claude, name: 'Claude Code', command: 'claude', args: [], resumeArgs: ['--resume'] },
+]
 
 function owner(ctx: Context, id = 'session', cwd?: string): Agent {
   return { id: id as SessionId, ctx, session: { id: id as SessionId, header: { cwd } } } as unknown as Agent
@@ -486,8 +493,7 @@ describe('TerminalController', () => {
 
 describe('shell resolution', () => {
   it('accepts an omitted shell profile and defaults configured arguments to an empty list', () => {
-    // Loader input is unvalidated; the schema's declared type describes its normalized output.
-    const parse = (input: unknown): Config => TerminalController.Config(input as Config)
+    const parse = (input: unknown): Config => TerminalController.Config(input as Parameters<typeof TerminalController.Config>[0])
     expect(parse({}).shell).toBeUndefined()
     expect(parse({})).toMatchObject({ unattendedTimeoutMs: 7_200_000, activityPollIntervalMs: 30_000, cleanupRetryMs: 60_000 })
     expect(parse({ unattendedTimeoutMs: 0 }).unattendedTimeoutMs).toBe(0)
@@ -743,3 +749,96 @@ function attachController(
   }
   return agent.ctx.extend({ invocation }).terminalController.attach(agent, terminalId, signal)
 }
+
+describe('configured terminal programs', () => {
+  it('validates program identifiers and defaults launch arguments in an overlay', () => {
+    const entry = { id: 'custom-tool', name: 'Custom tool', command: 'tool' }
+    expect(TerminalController.Config({ programs: [entry] }).programs).toEqual([{ ...entry, args: [] }])
+    expect(() => TerminalController.Config({ programs: [{ ...entry, id: 'two words' }] })).toThrow()
+  })
+
+  it('rejects duplicate program identifiers when mounting the controller', () => {
+    const entry = { id: codex, name: 'Codex', command: 'codex', args: [] }
+    expect(() => fixture({ programs: [entry, { ...entry, command: 'other-codex' }] })).toThrow('Terminal program ids must be unique')
+  })
+
+  it('offers no tools or launch actions when the profile omits programs', async () => {
+    const h = fixture()
+    expect(await h.controller.hostPrograms(signal())).toEqual([])
+    expect(await h.controller.programs(h.agent, signal())).toEqual([])
+    await expect(h.controller.create(h.agent, { ...request, program: { id: codex, mode: 'start' } }, signal()))
+      .rejects.toMatchObject({ code: 'terminal/program-unavailable' })
+    expect(h.subprocess.resolveExecutable).not.toHaveBeenCalled()
+    expect(h.subprocess.spawnTerminal).not.toHaveBeenCalled()
+  })
+
+  it('checks the Host and Session executable lists without allocating terminals', async () => {
+    const h = fixture({ programs: [
+      programs[0]!,
+      { id: claude, name: 'Claude Code', command: 'claude', args: [], guideUrl: 'https://example.com/claude' },
+    ] })
+    h.subprocess.resolveExecutable.mockImplementation(async (command) => {
+      if (command === 'codex') return '/mock/codex'
+      throw new SubprocessExecutableNotFoundError(command)
+    })
+    const available = [
+      { id: codex, name: 'Codex', installed: true, canResume: true },
+      { id: claude, name: 'Claude Code', installed: false, canResume: false, guideUrl: 'https://example.com/claude' },
+    ]
+    expect(await h.controller.hostPrograms(signal())).toEqual(available)
+    expect(await h.controller.programs(owner(h.ctx), signal())).toEqual(available)
+    expect(h.subprocess.spawnTerminal).not.toHaveBeenCalled()
+  })
+
+  it('starts only the configured executable and resume arguments in the Session directory', async () => {
+    const h = fixture({ programs })
+    const agent = owner(h.ctx, 'session', '/workspace/subfolder')
+    h.subprocess.resolveExecutable.mockResolvedValue('/mock/claude')
+    const launch = { ...request, program: { id: claude, mode: 'resume' as const } }
+    const terminal = await h.controller.create(agent, launch, signal())
+    expect(terminal.title).toBe('Claude Code')
+    expect(h.subprocess.resolveExecutable).toHaveBeenCalledWith('claude', undefined, expect.any(AbortSignal))
+    expect(h.subprocess.spawnTerminal).toHaveBeenCalledWith(expect.objectContaining({
+      argv: ['/mock/claude', '--resume'], cwd: '/workspace/subfolder', shellActivity: false,
+    }))
+    expect(await h.controller.create(agent, launch, signal())).toEqual(terminal)
+    expect(h.subprocess.spawnTerminal).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects missing and unlisted programs without opening the default shell', async () => {
+    const h = fixture({ programs: [{ id: codex, name: 'Codex', command: 'codex', args: [] }] })
+    const agent = owner(h.ctx)
+    h.subprocess.resolveExecutable.mockRejectedValue(new SubprocessExecutableNotFoundError('codex'))
+    for (const programId of [codex, 'not-configured' as TerminalProgramId]) {
+      await expect(h.controller.create(agent, { ...request, program: { id: programId, mode: 'start' } }, signal()))
+        .rejects.toMatchObject({ code: 'terminal/program-unavailable' })
+    }
+    await expect(h.controller.create(agent, {
+      ...request, shellPath: '/bin/bash', program: { id: codex, mode: 'start' },
+    }, signal())).rejects.toThrow('Choose either a terminal program or a shell')
+    await expect(h.controller.create(agent, {
+      ...request, program: { id: codex, mode: 'resume' },
+    }, signal())).rejects.toMatchObject({ code: 'terminal/program-unavailable' })
+    expect(h.subprocess.resolveExecutable).toHaveBeenCalledTimes(1)
+    expect(h.subprocess.spawnTerminal).not.toHaveBeenCalled()
+  })
+
+  it('resolves a native Windows executable rather than a command script', async () => {
+    const h = fixture({ programs })
+    h.subprocess.terminalEnvironment.mockResolvedValue({ platform: 'windows', defaultShell: 'cmd.exe' })
+    h.subprocess.resolveExecutable.mockImplementation(async (command) => {
+      if (command === 'codex.exe') return 'C:/tools/codex.exe'
+      throw new SubprocessExecutableNotFoundError(command)
+    })
+    expect(await h.controller.hostPrograms(signal())).toMatchObject([{ installed: true }, { installed: false }])
+    const terminal = await h.controller.create(owner(h.ctx), { ...request, program: { id: codex, mode: 'start' } }, signal())
+    expect(terminal.shell.path).toBe('C:/tools/codex.exe')
+    expect(h.subprocess.spawnTerminal).toHaveBeenCalledWith(expect.objectContaining({ argv: ['C:/tools/codex.exe'] }))
+  })
+
+  it('propagates discovery errors instead of reporting tools as missing', async () => {
+    const h = fixture({ programs })
+    h.subprocess.resolveExecutable.mockRejectedValue(new Error('Lookup failed'))
+    await expect(h.controller.hostPrograms(signal())).rejects.toThrow('Lookup failed')
+  })
+})

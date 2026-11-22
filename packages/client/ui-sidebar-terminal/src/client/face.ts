@@ -1,5 +1,5 @@
 /** Injected terminal commands and keyed observable state. */
-import type { WebTerminalId } from '@deepseek-ai/dsh-api-terminal-controller/types'
+import type { TerminalProgramLaunch, WebTerminalId } from '@deepseek-ai/dsh-api-terminal-controller/types'
 import type { TerminalView, TerminalViewState } from '@deepseek-ai/dsh-api-terminal-controller/client'
 import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ThemeSnapshot } from '@deepseek-ai/dsh-client-ui-theme/client'
@@ -19,7 +19,7 @@ export interface TerminalBodyInjected extends TerminalInjected {
 
 declare module '@deepseek-ai/dsh-client-ui-sidebar-right/client' {
   interface SidebarRightTabParamsMap {
-    /** An existing Host terminal selected from the Session terminal list. */
-    terminal: { terminalId: WebTerminalId } | { shellPath: string }
+    /** An existing terminal, a selected shell, or a configured program to start. */
+    terminal: { terminalId: WebTerminalId } | { shellPath: string } | { program: TerminalProgramLaunch }
   }
 }

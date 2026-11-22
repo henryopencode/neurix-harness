@@ -141,6 +141,18 @@
     # agent-write change feed inside the session workspace root.
     - id: terminal-controller
       name: '@deepseek-ai/dsh-api-terminal-controller'
+      config:
+        programs:
+          - id: codex
+            name: Codex
+            command: codex
+            resumeArgs: [resume]
+            guideUrl: https://developers.openai.com/codex/cli/
+          - id: claude-code
+            name: Claude Code
+            command: claude
+            resumeArgs: [--resume]
+            guideUrl: https://code.claude.com/docs/en/setup
     - id: workspace-files
       name: '@deepseek-ai/dsh-api-workspace-files'
 
