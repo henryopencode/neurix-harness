@@ -808,7 +808,7 @@ describe('CodexAppServerWire', () => {
   it('reports public work for the active turn while retaining the selected final answer', async () => {
     const report = vi.fn<(item: SubagentActivity) => void>()
     const { child, wire } = await initializeWire(report)
-    onTestFinished(() => wire.close())
+    onTestFinished(() => { wire.close() })
     const result = wire.runTurn(['task'], new AbortController().signal)
     const turnStart = await child.peer.nextMethod('turn/start')
     const item = (value: JsonObject, turnId = 'turn-1', threadId = 'thread-1', method = 'item/started') => ({
@@ -820,10 +820,12 @@ describe('CodexAppServerWire', () => {
       agentMessage('Checking the workspace.', 'commentary'),
     )
     child.peer.respond(turnStart, { turn: { id: 'turn-1' } })
-    await vi.waitFor(() => expect(report.mock.calls).toEqual([
-      [{ kind: 'tool', name: 'shell' }],
-      [{ kind: 'message', text: 'Checking the workspace.' }],
-    ]))
+    await vi.waitFor(() => {
+      expect(report.mock.calls).toEqual([
+        [{ kind: 'tool', name: 'shell' }],
+        [{ kind: 'message', text: 'Checking the workspace.' }],
+      ])
+    })
     child.peer.send(
       item({ type: 'webSearch', query: 'private query' }, 'turn-1', 'other-thread'),
       item({ type: 'fileChange', changes: ['private changes'] }),

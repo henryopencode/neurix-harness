@@ -830,7 +830,7 @@ export class PluginManagerController {
       toggleInstallDetails: () => { this.patchInstall({ detailsOpen: !this.getSnapshot().install.detailsOpen }) },
       enableInstalled: () => { void this.enableInstalled() },
       clearHighlight: () => { if (this.getSnapshot().highlight !== null) this.patch({ highlight: null }) },
-      setEnabled: (packageName, enabled) => this.setBundleEnabled(packageName, enabled, 'dialog'),
+      setEnabled: (packageName, enabled) => { this.setBundleEnabled(packageName, enabled, 'dialog') },
       update: (packageName) => {
         const pkg = this.getSnapshot().packages.find(pkg => pkg.name === packageName)
         const target = pkg?.installTarget

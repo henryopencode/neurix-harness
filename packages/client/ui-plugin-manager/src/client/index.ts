@@ -112,7 +112,7 @@ export function apply(ctx: ClientContext): void {
     hooks: { pluginManager: face.hooks.pluginManager },
     ensure: face.ensure,
     reload: () => { void controller.load() },
-    setEnabled: (name, enabled) => controller.setBundleEnabled(name, enabled, 'background'),
+    setEnabled: (name, enabled) => { controller.setBundleEnabled(name, enabled, 'background') },
   }
   ctx.remoteAccess.whenAccess('pluginManager/listBundles', function* () {
     // The Host says when what is installed, enabled, or composed changed — from

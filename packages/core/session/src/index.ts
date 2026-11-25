@@ -829,7 +829,7 @@ export class Session {
       type,
       seq: SessionSeq(this.log.length),
       time: Date.now(),
-      data: dataSnapshot as SessionEventMap[T],
+      data: dataSnapshot,
       ...options?.ignorable === undefined ? {} : { ignorable: options.ignorable },
       ...surfaceMetadataSnapshot as Partial<SurfaceIntent>,
     } as SessionEvent<T>)
