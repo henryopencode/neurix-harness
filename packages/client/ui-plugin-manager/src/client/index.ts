@@ -16,6 +16,7 @@ import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
 import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 // Type-only: the ctx.remoteAccess Context merge.
 import type {} from '@deepseek-ai/dsh-api-remote-access/client'
 // Type-only: the ctx.remote Context merge and the forwarded-event key face.
@@ -32,6 +33,8 @@ import { tabLedgerSource } from './tab-ledger.ts'
 import { PluginManagerController } from './manager-store.ts'
 import { en, ja, es, fr, de, ru, pt, zh, type PluginManagerLocaleKey } from './locales.ts'
 import { createNavigationStore } from './navigation-store.ts'
+import { HarnessToolsIcon, HarnessToolsSection, type HarnessToolsFace } from './HarnessToolsSection.tsx'
+import { harnessToolsCopy } from './harness-tools-locales.ts'
 import type {} from './slot-contract.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -93,7 +96,9 @@ export const inject = ['slots', 'locale', 'remote', 'remote.pluginManager', 'rem
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'ui-plugin-manager: dictionaries')
+  ctx.effect(() => ctx.locale.register('harnessTools', harnessToolsCopy), 'ui-plugin-manager: harness tools dictionaries')
   const t = ctx.locale.bind(NS)
+  const harnessTitle = ctx.locale.bind('harnessTools')
   const controller = new PluginManagerController(ctx)
   ctx.effect(() => () => { controller.dispose() }, 'ui-plugin-manager: controller')
   ctx.provide('pluginChanges', { bundle: packageName => controller.observeChanges(packageName) })
@@ -103,6 +108,12 @@ export function apply(ctx: ClientContext): void {
   // page declares here, so the page never names a configurable plugin.
   const configLedger = configLedgerSource(ctx)
   const face = controller.inject(configLedger, tabLedgerSource(ctx), text => ctx.locale.resolveText(text))
+  const harnessTools: HarnessToolsFace = {
+    hooks: { pluginManager: face.hooks.pluginManager },
+    ensure: face.ensure,
+    reload: () => { void controller.load() },
+    setEnabled: (name, enabled) => { controller.setBundleEnabled(name, enabled, 'background') },
+  }
   ctx.remoteAccess.whenAccess('pluginManager/listBundles', function* () {
     // The Host says when what is installed, enabled, or composed changed — from
     // this page, the CLI, or another browser — and streams install output.
@@ -119,6 +130,13 @@ export function apply(ctx: ClientContext): void {
     yield ctx.remote.$on('plugin-manager/install-state', (progress) => { controller.installProgress(progress) })
     yield ctx.remote.$on('plugin-manager/update-state', (progress) => { controller.updateProgress(progress) })
     yield ctx.on('connection/reset', refresh)
+    yield ctx.slots.inject('settings.section', () => ctx.slots.register({
+      name: 'settings.section', id: 'harness-tools', order: 40,
+      label: () => harnessTitle('title'), locale: 'harnessTools', inject: () => harnessTools,
+    }, HarnessToolsSection))
+    yield ctx.slots.inject('settings.section.icon', () => ctx.slots.register({
+      name: 'settings.section.icon', id: 'harness-tools',
+    }, HarnessToolsIcon))
     yield ctx.slots.inject('shell.overlay', () => ctx.slots.register({
       name: 'shell.overlay', id: 'plugin-manager.refresh-toast', locale: NS,
       inject: (): PluginRefreshToastFace => ({

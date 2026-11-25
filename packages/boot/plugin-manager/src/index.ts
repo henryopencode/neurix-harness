@@ -506,14 +506,14 @@ export class PluginManager extends TypertRemoteService {
     for (const name of names) {
       if (RETIRED_BUNDLES.has(name)) continue
       const installed = dependencies.includes(name)
-      const optional = OPTIONAL_BUNDLES.includes(name)
       const enabled = selected.includes(name)
       const shipped = Object.hasOwn(installation.dependencies ?? {}, name)
       const offered = catalog.get(name)
+      const optional = OPTIONAL_BUNDLES.includes(name) || (shipped && offered !== undefined)
       const official = optional || offered !== undefined
       let target: Pick<BundleInfo, 'installTarget'> = {}
       let targetError: ManagementError | undefined
-      if (offered !== undefined) {
+      if (offered !== undefined && !shipped) {
         try { target = { installTarget: officialBundleInstallTarget(name, this.profile.installAnchor, runtimeVersion, apiVersion) } }
         catch (error) { targetError = managementError(error) }
       }

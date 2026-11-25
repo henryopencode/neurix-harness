@@ -47,6 +47,7 @@ import type { StructuredAttachment } from './structured.ts'
 import type { SubagentDelivery } from './control-types.ts'
 import { ActivationPool, ChildLock, activationAgent, captureLocalResult, observeLocalFailure, requireLocalActivation } from './activation.ts'
 import type { Activation, ActivationResource, LocalActivation } from './activation.ts'
+import { ExternalActivity } from './activity.ts'
 
 /** Inputs shared by model steering and human prompt delivery. */
 type ChildDeliveryOptions = {
@@ -108,7 +109,7 @@ type MaterializeInputs = MaterializeBase & (
     composition: ChildComposition
     outputSchema?: ObjectJsonSchema | undefined
   }
-  | { kind: 'external'; start: (signal: AbortSignal) => Promise<SubagentRun> }
+  | { kind: 'external'; start: (signal: AbortSignal) => Promise<SubagentRun>; activity: ExternalActivity | undefined }
 )
 
 /**
@@ -448,11 +449,13 @@ export class SubagentManager {
    * Start an external backend under activation ownership.
    * @param spec - task, provider, cancellation, and delivery policy.
    * @param start - execution bound to the checked provider.
+   * @param activityProduct - native product name to show if this execution is cataloged.
    * @returns the accepted activation and its result/disposal capabilities.
    */
   async startExternal(
     spec: SubagentActivationSpec,
     start: (request: ResolvedSubagentStartRequest) => Promise<SubagentRun>,
+    activityProduct?: string,
   ): Promise<SubagentActivation> {
     const { delivery, name: requestedName, parent } = spec
     this.assertAdmitting(parent)
@@ -464,7 +467,7 @@ export class SubagentManager {
     const reservation = delivery === 'parent' ? this.reserveName(parent, requestedName) : undefined
     const path = joinAgentPath(this.pathOf(parent, ancestry.root), reservation?.name)
     try {
-      return await this.startExternalNamed(spec, start, ancestry, reservation, path)
+      return await this.startExternalNamed(spec, start, ancestry, reservation, path, activityProduct)
     } finally {
       reservation?.release()
     }
@@ -477,6 +480,7 @@ export class SubagentManager {
     ancestry: Pick<MaterializeBase, 'root' | 'ancestors'>,
     reservation: SiblingNameReservation | undefined,
     path: string | undefined,
+    activityProduct: string | undefined,
   ): Promise<SubagentActivation> {
     const { provider, delivery, childId: _childId, name: _name, ...request } = spec
     const parent = request.parent
@@ -484,6 +488,11 @@ export class SubagentManager {
       let activation: Activation | undefined
       try {
         const cwd = await this.resolveDirectory(spec, signal)
+        const activity = reservation === undefined || activityProduct === undefined ? undefined : new ExternalActivity(
+          parent.session, activityProduct, spec.label,
+          spec.prompt.flatMap(block => block.type === 'text' ? [block.text] : []).join(''), cwd,
+          (error) => { this.ctx.logger.warn('subagent: could not record native activity: %s', failureMessage(error)) },
+        )
         activation = await this.materialize({
           kind: 'external',
           provider,
@@ -491,8 +500,10 @@ export class SubagentManager {
           path,
           signal,
           delivery,
+          activity,
           start: signal => start({
             ...request, cwd, signal,
+            ...activity === undefined ? {} : { reportActivity: activity.report },
           }),
         })
         this.assertAdmitting(parent)
@@ -500,6 +511,7 @@ export class SubagentManager {
         if (reservation !== undefined) {
           establishExternalCatalogChild(parent.session, activation.childId, spec.label, reservation.name)
         }
+        activity?.start(activation.childId)
         this.accept(activation)
         return this.receipt(activation)
       } catch (error: unknown) {
@@ -861,7 +873,7 @@ export class SubagentManager {
       inputs.signal.addEventListener('abort', cancelStartup, { once: true })
       try {
         const run = await inputs.start(controller.signal)
-        resource = { kind: 'external', run, controller }
+        resource = { kind: 'external', run, controller, activity: inputs.activity }
         void run.result.catch(() => undefined)
         try { this.assertChildIdAvailable(run.id) } catch (error: unknown) {
           await run.dispose()
@@ -1148,6 +1160,7 @@ export class SubagentManager {
     this.resident.delete(childId)
     activation.releaseSlot()
     const terminal: SubagentResult = failure === undefined ? result : { output: [], stopReason: 'error' }
+    if (activation.kind === 'external') activation.activity?.finish(terminal)
     this.notifySettlement(activation, result)
     // The sole end publication follows resource release and parent notification,
     // before result delivery. Cleanup failure changes the event, not the captured result.

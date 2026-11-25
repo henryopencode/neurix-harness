@@ -17,8 +17,6 @@ import { apply as hostApply } from '../src/index.ts'
 import { TerminalGuide, type TerminalGuideInjected } from '../src/client/TerminalGuide.tsx'
 import { LazyTerminalBody } from '../src/client/LazyTerminalBody.tsx'
 import { TerminalTitle } from '../src/client/TerminalTitle.tsx'
-import { HarnessToolsIcon, HarnessToolsSection } from '../src/client/HarnessToolsSection.tsx'
-import { harnessToolsCopy } from '../src/client/harness-tools-locales.ts'
 import type { TerminalBodyInjected } from '../src/client/face.ts'
 import { en, ja, zh, es, fr, de, ru, pt } from '../src/client/locales.ts'
 
@@ -87,7 +85,7 @@ async function mountPlugin() {
   }
 }
 
-it('registers terminal views and Harness tools settings, then releases contributions on unload', async () => {
+it('registers terminal views and releases their contributions on unload', async () => {
   expect(hostApply).not.toThrow()
   const h = await mountPlugin()
   try {
@@ -100,17 +98,12 @@ it('registers terminal views and Harness tools settings, then releases contribut
     expect(renderToStaticMarkup(createElement(Icon))).toContain('width="36"')
     expect(definition.multiple).toBe(true)
     expect(h.dictionaries.get('sidebarTerminal')).toEqual({ en, zh, ja, es, fr, de, ru, pt })
-    expect(h.dictionaries.get('harnessTools')).toEqual(harnessToolsCopy)
     expect(h.entries.map(entry => [entry.name, entry.component, entry.locale])).toEqual([
-      ['settings.section', HarnessToolsSection, 'harnessTools'],
-      ['settings.section.icon', HarnessToolsIcon, undefined],
       ['sidebar.right.tab.guide.entry', TerminalGuide, 'sidebarTerminal'],
       ['sidebar.right.pane.tab', LazyTerminalBody, 'sidebarTerminal'],
       ['sidebar.right.pane.tab.title', TerminalTitle, 'sidebarTerminal'],
     ])
-    const [settings, settingsIcon, guide, body] = h.entries
-    expect(settings?.id).toBe('harness-tools')
-    expect(settingsIcon?.id).toBe(settings?.id)
+    const [guide, body] = h.entries
     const sessionId = 'session' as SessionId
     const launcher = guide!.inject(sessionId) as TerminalGuideInjected
     const signal = new AbortController().signal

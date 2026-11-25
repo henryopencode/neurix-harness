@@ -35,7 +35,7 @@ import {
 import { desktopTargetPlatform, resolveDesktopBuildTarget, resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 import { desktopRuntimeFileExclusion } from './runtime-file-policy.ts'
 import { selectOfficeEngine } from '../../../scripts/libreoffice-packages.mjs'
-import { OPTIONAL_BUNDLES } from '../../../packages/util/official-bundles/src/bundles.ts'
+import { ON_DEMAND_BUNDLES, OPTIONAL_BUNDLES } from '../../../packages/util/official-bundles/src/bundles.ts'
 import { verifyInstalledProductIsolation } from '../../../scripts/release/installed-product-isolation.ts'
 
 const APP_ROOT = resolve(import.meta.dirname, '..')
@@ -154,12 +154,19 @@ async function main(): Promise<void> {
       })
     })
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:optional-bundles', async () => {
-      for (const name of OPTIONAL_BUNDLES) {
-        if (!existsSync(join(DSH_OUTPUT_ROOT, 'node_modules', name, 'package.json'))) {
-          throw new Error(`desktop runtime: missing offered bundle ${name}`)
+      const modules = join(DSH_OUTPUT_ROOT, 'node_modules')
+      const cli = join(modules, '@deepseek-ai/dsh')
+      const anchor = join(cli, 'package.json')
+      const manifest = JSON.parse(readFileSync(anchor, 'utf8')) as { dependencies: Record<string, string> }
+      for (const name of ON_DEMAND_BUNDLES) {
+        const pinned = manifestVersion(join(modules, name, 'package.json'), name)
+        if (pinned !== release.version) {
+          throw new Error(`desktop runtime: ${name}@${pinned} does not match ${release.version}`)
         }
+        manifest.dependencies[name] = pinned
       }
-      verifyInstalledProductIsolation(join(DSH_OUTPUT_ROOT, 'node_modules', '@deepseek-ai/dsh'))
+      writeFileSync(anchor, `${JSON.stringify(manifest, undefined, 2)}\n`)
+      verifyInstalledProductIsolation(cli, [...OPTIONAL_BUNDLES, ...ON_DEMAND_BUNDLES])
     })
     writeFileSync(join(DSH_OUTPUT_ROOT, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh-desktop-runtime', private: true, version: release.version, type: 'module',

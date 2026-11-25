@@ -5,6 +5,15 @@ export const NS = 'subagent'
 
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
+  'native.title': '{product} · {label}',
+  'native.started': '已启动',
+  'native.completed': '已完成',
+  'native.aborted': '已取消',
+  'native.failed': '运行失败',
+  'native.task': '委派任务',
+  'native.tool': '调用 {name}',
+  'native.truncated': '其余运行记录已省略',
+  'native.result': '结果',
   'section.title': '子智能体',
   'section.empty': '暂无子智能体',
   'progress.completed': '{count} 已完成',
@@ -56,6 +65,15 @@ export const zh = {
 
 /** English dictionary, key-identical to the Chinese source of truth. */
 export const en: Record<SubagentKey, string> = {
+  'native.title': '{product} · {label}',
+  'native.started': 'Started',
+  'native.completed': 'Completed',
+  'native.aborted': 'Cancelled',
+  'native.failed': 'Failed',
+  'native.task': 'Delegated task',
+  'native.tool': 'Called {name}',
+  'native.truncated': 'Further activity was omitted',
+  'native.result': 'Result',
   'section.title': 'Subagents',
   'section.empty': 'No subagents',
   'progress.completed': '{count} completed',
@@ -110,6 +128,15 @@ export type SubagentKey = keyof typeof zh
 
 /** Japanese copy, checked against the English keys. */
 export const ja = {
+  'native.title': '{product} · {label}',
+  'native.started': '開始済み',
+  'native.completed': '完了',
+  'native.aborted': 'キャンセル済み',
+  'native.failed': '失敗',
+  'native.task': '委任タスク',
+  'native.tool': '{name} を呼び出し',
+  'native.truncated': '以降のアクティビティは省略されました',
+  'native.result': '結果',
   'section.title': 'サブエージェント',
   'section.empty': 'サブエージェントはありません',
   'progress.completed': '{count}件完了',
@@ -161,6 +188,15 @@ export const ja = {
 
 /** Spanish dictionary, checked against the English keys. */
 export const es = {
+  'native.title': '{product} · {label}',
+  'native.started': 'Iniciado',
+  'native.completed': 'Completado',
+  'native.aborted': 'Cancelado',
+  'native.failed': 'Fallido',
+  'native.task': 'Tarea delegada',
+  'native.tool': 'Se llamó a {name}',
+  'native.truncated': 'Se omitió el resto de la actividad',
+  'native.result': 'Resultado',
   'section.title': 'Subagentes',
   'section.empty': 'No hay subagentes',
   'progress.completed': '{count} completado',
@@ -212,6 +248,15 @@ export const es = {
 
 /** French dictionary, checked against the English keys. */
 export const fr = {
+  'native.title': '{product} · {label}',
+  'native.started': 'Démarré',
+  'native.completed': 'Terminé',
+  'native.aborted': 'Annulé',
+  'native.failed': 'Échec',
+  'native.task': 'Tâche déléguée',
+  'native.tool': 'Appel de {name}',
+  'native.truncated': 'Le reste de l’activité a été omis',
+  'native.result': 'Résultat',
   'section.title': 'Sous-agents',
   'section.empty': 'Aucun sous-agent',
   'progress.completed': '{count} terminé',
@@ -263,6 +308,15 @@ export const fr = {
 
 /** German dictionary, checked against the English keys. */
 export const de = {
+  'native.title': '{product} · {label}',
+  'native.started': 'Gestartet',
+  'native.completed': 'Abgeschlossen',
+  'native.aborted': 'Abgebrochen',
+  'native.failed': 'Fehlgeschlagen',
+  'native.task': 'Delegierte Aufgabe',
+  'native.tool': '{name} aufgerufen',
+  'native.truncated': 'Weitere Aktivitäten wurden ausgelassen',
+  'native.result': 'Ergebnis',
   'section.title': 'Subagenten',
   'section.empty': 'Keine Subagenten',
   'progress.completed': '{count} abgeschlossen',
@@ -314,6 +368,15 @@ export const de = {
 
 /** Russian dictionary, checked against the English keys. */
 export const ru = {
+  'native.title': '{product} · {label}',
+  'native.started': 'Запущено',
+  'native.completed': 'Завершено',
+  'native.aborted': 'Отменено',
+  'native.failed': 'Ошибка',
+  'native.task': 'Делегированная задача',
+  'native.tool': 'Вызов {name}',
+  'native.truncated': 'Остальные действия опущены',
+  'native.result': 'Результат',
   'section.title': 'Субагенты',
   'section.empty': 'Нет субагентов',
   'progress.completed': '{count} завершено',
@@ -365,6 +428,15 @@ export const ru = {
 
 /** Portuguese dictionary, checked against the English keys. */
 export const pt = {
+  'native.title': '{product} · {label}',
+  'native.started': 'Iniciado',
+  'native.completed': 'Concluído',
+  'native.aborted': 'Cancelado',
+  'native.failed': 'Falhou',
+  'native.task': 'Tarefa delegada',
+  'native.tool': 'Chamada de {name}',
+  'native.truncated': 'O restante da atividade foi omitido',
+  'native.result': 'Resultado',
   'section.title': 'Subagentes',
   'section.empty': 'Nenhum subagente',
   'progress.completed': '{count} concluído',

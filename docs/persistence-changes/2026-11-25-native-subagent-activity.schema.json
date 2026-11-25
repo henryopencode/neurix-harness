@@ -1,0 +1,29 @@
+{
+  "formatVersion": 2,
+  "roots": [
+    {"key":"event:subagent/activity","kind":"event","event":"subagent/activity","surface":false,"digest":"c655b31b2fa0ea1fae76e3b256eb2f83b1e74e51c32ad8f0010010cfe8f732ea"}
+  ],
+  "types": [],
+  "nodes": {
+    "0657d3ca5ac4e7bf": {"kind":"primitive","type":"number"},
+    "0a9e6371ee95ea90": {"kind":"union","types":["1e0b0b66b6f0c53f","1ebc6f9ff3aa9e3a","b57a2889408de36e"]},
+    "1e0b0b66b6f0c53f": {"kind":"literal","value":"aborted"},
+    "1ebc6f9ff3aa9e3a": {"kind":"literal","value":"completed"},
+    "469feb9e28c3ef26": {"kind":"object","properties":[{"name":"childId","type":"4cd48f3e5108bd6e","optional":false},{"name":"cwd","type":"4cd48f3e5108bd6e","optional":false},{"name":"kind","type":"c1e1622166f57c10","optional":false},{"name":"label","type":"4cd48f3e5108bd6e","optional":false},{"name":"product","type":"4cd48f3e5108bd6e","optional":false},{"name":"prompt","type":"4cd48f3e5108bd6e","optional":false}],"indices":[]},
+    "4ae7e51ab2db1203": {"kind":"literal","value":"message"},
+    "4cd48f3e5108bd6e": {"kind":"primitive","type":"string"},
+    "56cd0a36099553fe": {"kind":"literal","value":"truncated"},
+    "697d4cd49516e873": {"kind":"union","types":["469feb9e28c3ef26","7cead7cff59a5de4","ae5bd3c1c6ef81ab","affe5451cd90033b","f5df3b3a29657a37"]},
+    "7cead7cff59a5de4": {"kind":"object","properties":[{"name":"childId","type":"4cd48f3e5108bd6e","optional":false},{"name":"diagnostic","type":"4cd48f3e5108bd6e","optional":true},{"name":"kind","type":"82ce317bbb7e868a","optional":false},{"name":"status","type":"0a9e6371ee95ea90","optional":false},{"name":"text","type":"4cd48f3e5108bd6e","optional":false}],"indices":[]},
+    "82ce317bbb7e868a": {"kind":"literal","value":"finished"},
+    "a13d8f379222ece8": {"kind":"literal","value":"tool"},
+    "ae5bd3c1c6ef81ab": {"kind":"object","properties":[{"name":"childId","type":"4cd48f3e5108bd6e","optional":false},{"name":"kind","type":"4ae7e51ab2db1203","optional":false},{"name":"text","type":"4cd48f3e5108bd6e","optional":false}],"indices":[]},
+    "affe5451cd90033b": {"kind":"object","properties":[{"name":"childId","type":"4cd48f3e5108bd6e","optional":false},{"name":"kind","type":"56cd0a36099553fe","optional":false}],"indices":[]},
+    "b57a2889408de36e": {"kind":"literal","value":"failed"},
+    "c1e1622166f57c10": {"kind":"literal","value":"started"},
+    "c655b31b2fa0ea1f": {"kind":"object","properties":[{"name":"data","type":"697d4cd49516e873","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"d43b8178b9b06099","optional":false}],"indices":[]},
+    "d43b8178b9b06099": {"kind":"literal","value":"subagent/activity"},
+    "dacf3d5f3e4ff619": {"kind":"literal","value":true},
+    "f5df3b3a29657a37": {"kind":"object","properties":[{"name":"childId","type":"4cd48f3e5108bd6e","optional":false},{"name":"kind","type":"a13d8f379222ece8","optional":false},{"name":"name","type":"4cd48f3e5108bd6e","optional":false}],"indices":[]}
+  }
+}

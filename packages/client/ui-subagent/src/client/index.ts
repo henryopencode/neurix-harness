@@ -15,6 +15,8 @@ import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import { en, ja, es, fr, de, ru, pt, NS, zh, type SubagentKey } from './locales.ts'
+import { externalActivityDefinition } from './external-activity.ts'
+import { ExternalActivityRow } from './ExternalActivityRow.tsx'
 export type * from './slots.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -49,6 +51,14 @@ function selectReadOnlySubagent(owner: ComposerChainProps): SubagentReadOnlyMatc
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'ui-subagent: dictionaries')
+  ctx.inject(['uiConversation'], (scope) => {
+    scope.uiConversation.events.register(externalActivityDefinition)
+    scope.slots.inject('conversation.chat.node', () => scope.slots.register({
+      name: 'conversation.chat.node',
+      key: 'external-agent-activity',
+      locale: NS,
+    }, ExternalActivityRow))
+  })
   ctx.inject(['resources', 'sidebarRightTabs'], (scope) => {
     registerSidebarChat(scope, ctx.locale.bind(NS))
   })

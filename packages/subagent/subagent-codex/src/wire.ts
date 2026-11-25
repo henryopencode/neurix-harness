@@ -9,11 +9,24 @@
 
 import type { Readable, Writable } from 'node:stream'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import type { SubagentResult } from '@deepseek-ai/dsh-subagent'
+import type { SubagentActivity, SubagentResult } from '@deepseek-ai/dsh-subagent'
 import { JsonRpcLineTransport } from '@deepseek-ai/dsh-sdk-protocol'
 import type { CodexPermissionMode } from './run.ts'
 
 type JsonObject = Record<string, unknown>
+
+function toolName(value: unknown): string | undefined {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const item = value as JsonObject
+  switch (item.type) {
+    case 'commandExecution': return 'shell'
+    case 'fileChange': return 'apply_patch'
+    case 'webSearch': return 'web_search'
+    case 'mcpToolCall':
+    case 'dynamicToolCall': return typeof item.tool === 'string' ? item.tool : undefined
+    default: return undefined
+  }
+}
 
 /** Product facts owned by the Codex wire after publication. */
 export interface CodexWireFailureFacts {
@@ -226,6 +239,7 @@ export class CodexAppServerWire {
     output: Writable,
     private readonly permissionMode: CodexPermissionMode,
     private readonly model?: string,
+    private readonly reportActivity?: (item: SubagentActivity) => void,
   ) {
     this.transport = new JsonRpcLineTransport(input, output)
     // Fatal protocol state can arrive after the current guarded operation has
@@ -646,6 +660,17 @@ export class CodexAppServerWire {
       }
       return
     }
+    if (method === 'item/started' && this.reportActivity !== undefined) {
+      if (this.turnCompleted === undefined || params.threadId !== this.threadId || typeof params.turnId !== 'string') return
+      const name = toolName(params.item)
+      if (name === undefined) return
+      if (this.turnId === undefined) {
+        this.earlyTurnNotifications.push({ method, params, order: this.nextObservationOrder() })
+      } else if (params.turnId === this.turnId) {
+        this.reportActivity({ kind: 'tool', name })
+      }
+      return
+    }
     if (method === 'item/completed') {
       const threadId = string(params.threadId, 'item/completed thread id')
       if (threadId !== this.threadId) return
@@ -680,6 +705,7 @@ export class CodexAppServerWire {
       } else if (item.phase !== 'commentary') {
         throw new Error(`subagent-codex: app-server returned an unknown agent message phase ${JSON.stringify(item.phase)}`)
       }
+      if (item.phase !== 'final_answer' && text.trim().length > 0) this.reportActivity?.({ kind: 'message', text })
       return
     }
     if (method !== 'turn/completed') return

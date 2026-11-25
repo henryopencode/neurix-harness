@@ -101,6 +101,33 @@ export function apply(ctx) {
         response.end(inspect(error, { depth: 5 }))
       }
     } }))
+  ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/desktop-smoke-native-bundles',
+    async handler(_request, response) {
+      try {
+        for (const [provider, product] of [['codex', 'Codex'], ['claude-code', 'Claude Code']]) {
+          const name = '@deepseek-ai/dsh-subagent-' + provider
+          const tool = 'subagent_' + provider.replaceAll('-', '_')
+          const before = (await ctx.pluginManager.listBundles()).find(bundle => bundle.name === name)
+          if (before?.availability !== 'installation' || !before.optional || before.enabled || before.installTarget
+            || ctx.tools.schemas().some(schema => schema.name === tool)) {
+            throw new Error(product + ' must ship disabled with no registry installation target')
+          }
+          const enabled = await ctx.pluginManager.setBundleEnabled(name, true)
+          if (enabled.application !== 'applied' || ctx.subagents.getProvider(provider)?.activityProduct !== product
+            || !ctx.tools.schemas().some(schema => schema.name === tool)) {
+            throw new Error(product + ' activation failed: ' + inspect(enabled, { depth: 5 }))
+          }
+          const disabled = await ctx.pluginManager.setBundleEnabled(name, false)
+          if (disabled.application !== 'applied' || ctx.tools.schemas().some(schema => schema.name === tool)) {
+            throw new Error(product + ' deactivation failed: ' + inspect(disabled, { depth: 5 }))
+          }
+        }
+        response.end('native bundles ready')
+      } catch (error) {
+        response.statusCode = 500
+        response.end(inspect(error, { depth: 5 }))
+      }
+    } }))
   ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/desktop-smoke-office-cli',
     async handler(_request, response) {
       try {
@@ -135,7 +162,7 @@ export function apply(ctx) {
   }
 }
 `)
-    writeFileSync(join(plugin, 'bundle.yml'), '- insert:\n    - id: desktop-runtime-smoke-plugin\n      name: desktop-runtime-smoke-plugin\n      inject: [webServer, officeToPdf, skills, pluginManager]\n')
+    writeFileSync(join(plugin, 'bundle.yml'), '- insert:\n    - id: desktop-runtime-smoke-plugin\n      name: desktop-runtime-smoke-plugin\n      inject: [webServer, officeToPdf, skills, pluginManager, tools, subagents]\n')
     cpSync(plugin, join(profile, 'node_modules', pluginName), { recursive: true })
     const manifest = JSON.parse(readFileSync(join(profile, 'package.json'), 'utf8')) as {
       dependencies?: Record<string, string>
@@ -165,6 +192,14 @@ export function apply(ctx) {
     if (!installation.ok || !installed.ok || await installed.text() !== 'installed plugin ready') {
       throw new Error(`desktop runtime: bundled pnpm plugin installation failed: ${installationResult}`)
     }
+    const nativeBundles = await fetch(new URL('/desktop-smoke-native-bundles', ready.url), {
+      headers: { cookie }, signal: AbortSignal.timeout(120_000),
+    })
+    const nativeBundlesResult = await nativeBundles.text()
+    if (!nativeBundles.ok || nativeBundlesResult !== 'native bundles ready') {
+      throw new Error(`desktop runtime: ${nativeBundlesResult}`)
+    }
+    console.log('desktop runtime: offline native bundle activation and deactivation passed')
     for (const { extension } of inputs) {
       const converted = await fetch(new URL(`/desktop-smoke-office/${extension}`, ready.url), {
         headers: { cookie }, signal: AbortSignal.timeout(120_000),

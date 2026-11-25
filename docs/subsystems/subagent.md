@@ -130,6 +130,8 @@ interface SubagentStartRequest {
 interface ResolvedSubagentStartRequest extends SubagentStartRequest {
   /** Absolute child directory captured from the parent or explicit request. */
   readonly cwd: string
+  /** Optional user-facing observer for a parent-delivered run. Omission leaves activity unrecorded. */
+  readonly reportActivity?: (item: SubagentActivity) => void
 }
 ```
 
@@ -353,6 +355,8 @@ interface SubagentRun {
 interface SubagentProvider {
   /** Unique registry name (e.g. `spawn`, `fork`, `acp`). */
   readonly name: string
+  /** Product name for external-run activity. Omission disables the parent conversation's activity record. */
+  readonly activityProduct?: string
   /** The start-time features this provider supports (see {@link SubagentCapabilities}). */
   readonly capabilities: SubagentCapabilities
   /**

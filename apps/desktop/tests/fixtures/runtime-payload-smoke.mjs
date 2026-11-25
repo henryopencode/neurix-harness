@@ -92,6 +92,25 @@ async function checkSearch() {
   assert.equal(run(['--files', '--glob', name, '.']), `./${name}`)
 }
 
+/** Check both stock CLIs start from the immutable Desktop payload without model credentials. */
+function checkNativeAgents() {
+  const onDisk = path => path.replace(/([\\/])app\.asar(?=[\\/]dsh[\\/])/u, '$1app.asar.unpacked')
+  const env = {
+    ...Object.fromEntries(Object.entries(process.env).filter(([name]) => /^(?:path|systemroot|windir)$/iu.test(name))),
+    HOME: scratch, USERPROFILE: scratch, XDG_CONFIG_HOME: scratch, CODEX_HOME: scratch, CLAUDE_CONFIG_DIR: scratch,
+    ELECTRON_RUN_AS_NODE: '1',
+  }
+  const options = { cwd: scratch, env, encoding: 'utf8', timeout: 45_000, windowsHide: true }
+  const codex = requireRuntime.resolve('@openai/codex/package.json')
+  const wrapper = onDisk(resolve(dirname(codex), JSON.parse(readFileSync(codex, 'utf8')).bin.codex))
+  assert.match(execFileSync(process.execPath, [wrapper, '--version'], options), /^codex-cli \d/u)
+  const claude = requireRuntime.resolve('@anthropic-ai/claude-agent-sdk')
+  const platformPackage = '@anthropic-ai/claude-agent-sdk-' + process.platform + '-' + process.arch
+  const requireClaude = createRequire(claude)
+  const executable = process.platform === 'win32' ? 'claude.exe' : 'claude'
+  assert.match(execFileSync(onDisk(requireClaude.resolve(platformPackage + '/' + executable)), ['--version'], options), /\(Claude Code\)/u)
+}
+
 /** Resolve one system function through Koffi's packaged native module. */
 function checkKoffi() {
   const koffi = requireRuntime('koffi')
@@ -147,6 +166,8 @@ try {
   await checkPty()
   console.error('runtime payload: search')
   await checkSearch()
+  console.error('runtime payload: packaged Codex and Claude Code')
+  checkNativeAgents()
   console.error('runtime payload: checks complete; awaiting process exit')
 } finally {
   // This private tree contains only fixture files; Windows may release handles after terminal exit.

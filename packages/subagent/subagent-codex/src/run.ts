@@ -20,6 +20,7 @@ import {
   type SubagentResult,
   type SubagentRun,
   type SubagentStartRequest,
+  type SubagentActivity,
   type SubagentStopReason,
 } from '@deepseek-ai/dsh-subagent'
 import type {
@@ -133,7 +134,10 @@ export function codexStartupFailure(cause: unknown): Error {
  * @returns Node, the official wrapper, and the fixed app-server arguments.
  */
 export function codexAppServerArgv(): string[] {
-  return [process.execPath, CODEX_PACKAGE_BIN, 'app-server', '--stdio']
+  const wrapper = process.versions.electron === undefined
+    ? CODEX_PACKAGE_BIN
+    : CODEX_PACKAGE_BIN.replace(/([\\/])app\.asar(?=[\\/]dsh[\\/])/u, '$1app.asar.unpacked')
+  return [process.execPath, wrapper, 'app-server', '--stdio']
 }
 
 /** Fully resolved inputs for one Codex app-server run. */
@@ -148,6 +152,8 @@ export interface CodexRunSpec {
   readonly env: Record<string, string>
   /** Subprocess termination grace passed to the shared managed-range owner. */
   readonly disposeGraceMs: number
+  /** Observer for user-visible messages and tool names. Omitted in unobserved runs. */
+  readonly reportActivity?: (item: SubagentActivity) => void
   /** Shared subprocess service spawn operation. */
   readonly spawn: (spec: SubprocessSpawnSpec) => SubprocessHandle
   /** Diagnostic sink for a post-publication error flattened into a result. */
@@ -252,6 +258,7 @@ export async function startCodexRun(
     child.stdin as NonNullable<SubprocessHandle['stdin']>,
     spec.permissionMode,
     spec.model,
+    spec.reportActivity,
   )
   const onStderr = (chunk: Buffer | string): void => {
     const bytes = typeof chunk === 'string' ? Buffer.from(chunk) : chunk

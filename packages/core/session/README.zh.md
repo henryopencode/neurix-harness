@@ -41,6 +41,8 @@ ctx.sessions.list()              // every live session, in creation order
 
 ### 追加与派生
 
+仅写入日志的事件可在追加时传入 `{ ignorable: true }`，前提是旧读取器能安全地忽略该事件。
+
 `session.append(type, data, opts?)` 提交一个类型化事件。它在读取载荷字段前拒绝只读实例，为有效 JSON 创建快照并冻结，再次检查写入权限后提交并通知观察者。`session.deriveMessages()` 把日志投影为模型看到的 `Message[]`，采用增量且有缓存的方式：
 
 ```text
