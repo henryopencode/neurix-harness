@@ -10,6 +10,7 @@ import { epochStopReason } from './lifecycle.ts'
 import { SubagentError } from './error.ts'
 import type { StructuredAttachment } from './structured.ts'
 import type { SubagentResult, SubagentRun, SubagentRunId } from './types.ts'
+import type { ExternalActivity } from './activity.ts'
 
 /** Process-local capacity shared by every member of a subagent tree. */
 export class ActivationPool {
@@ -87,6 +88,7 @@ export type ActivationResource =
     readonly kind: 'external'
     readonly run: SubagentRun
     readonly controller: AbortController
+    readonly activity: ExternalActivity | undefined
   }
 
 /** One managed execution period with its provider-specific resources. */

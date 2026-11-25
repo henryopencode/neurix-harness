@@ -8,7 +8,7 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SubagentRuntime from '../src/index.ts'
 import { TestSessionQuery } from './test-session-query.ts'
-import type { SubagentStartRequest, SubagentCapabilities, SubagentResult, SubagentRun } from '../src/types.ts'
+import type { ResolvedSubagentStartRequest, SubagentCapabilities, SubagentResult, SubagentRun } from '../src/types.ts'
 import { externalTestParent } from './external-activation-helpers.ts'
 import { subagentManager } from './manager-internals.ts'
 
@@ -16,14 +16,17 @@ const capabilities: SubagentCapabilities = {
   agentOptions: false, agentPreset: false, outputSchema: false, depthLimit: false,
 }
 
-async function setup(start: (request: SubagentStartRequest) => Promise<SubagentRun>) {
+async function setup(start: (request: ResolvedSubagentStartRequest) => Promise<SubagentRun>, activityProduct?: string) {
   const ctx = new Context()
   await ctx.plugin(SessionProjectionRegistry)
   await mountWorkingDirectoryFixture(ctx)
   await ctx.plugin(SubagentRuntime)
   const parent = await externalTestParent(ctx)
   await ctx.plugin(TestSessionQuery)
-  ctx.subagents.registerProvider({ name: 'external', capabilities, inheritsParentContext: false, start })
+  ctx.subagents.registerProvider({
+    name: 'external', capabilities, inheritsParentContext: false, start,
+    ...activityProduct === undefined ? {} : { activityProduct },
+  })
   const controller = new AbortController()
   return {
     ctx, parent, controller,
@@ -52,6 +55,43 @@ const completed: SubagentResult = {
 }
 
 describe('external subagent activations', () => {
+  it('publishes bounded native progress only for an accepted, parent-delivered execution', async () => {
+    const backend = execution()
+    backend.cleanup.resolve(undefined)
+    const entered = Promise.withResolvers<NonNullable<ResolvedSubagentStartRequest['reportActivity']>>()
+    const started = Promise.withResolvers<SubagentRun>()
+    const fixture = await setup(async ({ reportActivity }) => {
+      if (reportActivity === undefined) throw new Error('Native progress is unavailable')
+      reportActivity({ kind: 'message', text: 'Opening the workspace.' })
+      entered.resolve(reportActivity)
+      return started.promise
+    }, 'Native fixture')
+    const session = fixture.parent.session
+    const activity = () => session.snapshotEvents().filter(event => event.type === 'subagent/activity')
+    const messages = session.deriveMessages()
+    const starting = fixture.start('parent')
+    const report = await entered.promise
+    expect(activity()).toEqual([])
+    started.resolve(backend.run)
+    const activation = await starting
+    report({ kind: 'message', text: 'a'.repeat(20_000) })
+    for (let i = 0; i < 70; i++) report({ kind: 'tool', name: 'ls' })
+    expect(activity().slice(0, 3)).toMatchObject([
+      { data: { childId: activation.childId, kind: 'started', label: 'External work', prompt: 'Work independently' } },
+      { data: { childId: activation.childId, kind: 'message', text: 'Opening the workspace.' } },
+      { data: { childId: activation.childId, kind: 'message', text: `${'a'.repeat(16_384)}…` } },
+    ])
+    expect(activity().filter(event => event.data.kind === 'tool')).toHaveLength(62)
+    expect(activity().at(-1)?.data.kind).toBe('truncated')
+    backend.result.resolve({ output: [], stopReason: 'error', diagnostic: 'Native execution failed.' })
+    await activation.result
+    expect(activity().at(-1)?.data).toEqual({
+      childId: activation.childId, kind: 'finished', status: 'failed', text: '', diagnostic: 'Native execution failed.',
+    })
+    expect(activity().every(event => event.ignorable === true)).toBe(true)
+    expect(session.deriveMessages()).toEqual(messages)
+  })
+
   it('keeps startup cancellation attached until unpublished resources finish cleanup', async () => {
     const entered = Promise.withResolvers<AbortSignal>()
     const cancelled = Promise.withResolvers<undefined>()
@@ -417,7 +457,7 @@ it('resolves a named external run but not a path below it', async () => {
 })
 
 it('rejects a name for a caller-delivered external run that never enters the catalog', async () => {
-  const start = vi.fn<(request: SubagentStartRequest) => Promise<SubagentRun>>()
+  const start = vi.fn<(request: ResolvedSubagentStartRequest) => Promise<SubagentRun>>()
   const fixture = await setup(start)
   await expect(fixture.start('caller', 'auditor')).rejects.toMatchObject({ code: 'UNSUPPORTED_CAPABILITY' })
   expect(start).not.toHaveBeenCalled()

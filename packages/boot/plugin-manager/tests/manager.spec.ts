@@ -1975,6 +1975,26 @@ it('reports and removes a saved Official selection whose dependency is absent', 
 })
 
 
+it('selects the packaged Official bundle even when the profile records an older copy', async () => {
+  const { manager, dir, profile, bundle, ctx } = await fixture()
+  const entry = OFFICIAL_ON_DEMAND_CATALOG[0]!
+  const name = entry.packageName
+  writeFileSync(profile.installAnchor, JSON.stringify({ name: 'installation', dependencies: { [name]: '1.0.0' } }))
+  bundle(name, [{ id: 'current-provider', name: './plugin.mjs', config: { service: 'currentProvider' } }], profile.home)
+  bundle(name, [{ id: 'old-provider', name: './plugin.mjs', config: { service: 'oldProvider' } }])
+  const manifest = readProfileManifest('test', dir)
+  manifest.dependencies = { ...manifest.dependencies, [name]: '0.2.2-rc.1' }
+  writeFileSync(join(dir, 'package.json'), JSON.stringify(manifest))
+  const prior = (await manager.listBundles()).find(item => item.name === name)
+  expect(prior).toMatchObject({ official: true, optional: true, availability: 'installation', enabled: false,
+    rows: [{ rowId: 'current-provider' }] })
+  expect(prior).not.toHaveProperty('installTarget')
+  expect((await manager.setBundleEnabled(name, true)).application).toBe('applied')
+  expect(ctx.get('currentProvider')).toBe(true)
+  expect(ctx.get('oldProvider')).toBeUndefined()
+  expect(readProfileManifest('test', dir).dependencies?.[name]).toBe('0.2.2-rc.1')
+})
+
 it('keeps a broken installation-carried catalog entry visible with offline metadata', async () => {
   const { manager, profile } = await fixture()
   const entry = OFFICIAL_ON_DEMAND_CATALOG[0]!
@@ -1983,8 +2003,8 @@ it('keeps a broken installation-carried catalog entry visible with offline metad
   mkdirSync(broken, { recursive: true })
   writeFileSync(join(broken, 'package.json'), '{')
   expect((await manager.listBundles()).find(bundle => bundle.name === entry.packageName)).toMatchObject({
-    official: true, availability: 'missing', enabled: false, installed: false, optional: false, removable: false,
-    meta: entry.meta, installTarget: { version: getDshApiVersion() }, error: { code: 'operation-error' },
+    official: true, availability: 'missing', enabled: false, installed: false, optional: true, removable: false,
+    meta: entry.meta, error: { code: 'operation-error' },
   })
 })
 

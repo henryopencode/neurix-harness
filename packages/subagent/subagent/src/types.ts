@@ -12,6 +12,9 @@ import type { Branded } from '@deepseek-ai/dsh-brand'
 import type { ContentBlock, MessageId } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
+import type { SubagentActivity } from './activity-types.ts'
+
+export type { SubagentActivity } from './activity-types.ts'
 
 /** Identifies one subagent residency epoch across its lifecycle event pair. */
 export type SubagentRunId = Branded<'SubagentRunId'>
@@ -194,6 +197,8 @@ export interface SubagentStartRequest {
 export interface ResolvedSubagentStartRequest extends SubagentStartRequest {
   /** Absolute child directory captured from the parent or explicit request. */
   readonly cwd: string
+  /** Optional user-facing observer for a parent-delivered run. Omission leaves activity unrecorded. */
+  readonly reportActivity?: (item: SubagentActivity) => void
 }
 
 /**
@@ -321,6 +326,8 @@ export interface SubagentRun {
 export interface SubagentProvider {
   /** Unique registry name (e.g. `spawn`, `fork`, `acp`). */
   readonly name: string
+  /** Product name for external-run activity. Omission disables the parent conversation's activity record. */
+  readonly activityProduct?: string
   /** The start-time features this provider supports (see {@link SubagentCapabilities}). */
   readonly capabilities: SubagentCapabilities
   /**

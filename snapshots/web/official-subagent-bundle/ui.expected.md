@@ -7,6 +7,12 @@
 - button "Context injection time-context"
 - button "Code Delegate through the official Claude bundle"
 - button "Tool call subagent_claude_code · Read the fixture response"
+- button "Claude Code · Read the fixture response" [expanded]:
+  - text: Claude Code · Read the fixture response
+  - status: Completed
+- text: Delegated task Reply with OFFICIAL_SUBAGENT_OK exactly.
+- code: {{cwd}}
+- text: Called Glob Result OFFICIAL_SUBAGENT_OK
 - paragraph: Waiting for the child result.
 - button "Copy"
 - button "Good response"

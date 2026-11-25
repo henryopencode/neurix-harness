@@ -8,10 +8,10 @@ import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import * as yaml from 'js-yaml'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import SubagentRuntime from '@deepseek-ai/dsh-subagent'
+import SubagentRuntime, { type SubagentActivity } from '@deepseek-ai/dsh-subagent'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
 import type {
@@ -258,12 +258,12 @@ function runSpec(
   }
 }
 
-async function initializeWire(): Promise<{
+async function initializeWire(reportActivity?: (item: SubagentActivity) => void): Promise<{
   readonly child: FakeChild
   readonly wire: CodexAppServerWire
 }> {
   const child = fakeChild()
-  const wire = defaultWire(child)
+  const wire = new CodexAppServerWire(child.handle.stdout!, child.handle.stdin!, DEFAULT_CODEX_PERMISSION_MODE, undefined, reportActivity)
   wire.start()
   const initializing = wire.initialize(new AbortController().signal)
   const initialize = await child.peer.nextMethod('initialize')
@@ -803,6 +803,46 @@ describe('CodexAppServerWire', () => {
     expect(wire.collectOutput()).toEqual([{ type: 'text', text: 'last final' }])
     wire.close()
     wire.close()
+  })
+
+  it('reports public work for the active turn while retaining the selected final answer', async () => {
+    const report = vi.fn<(item: SubagentActivity) => void>()
+    const { child, wire } = await initializeWire(report)
+    onTestFinished(() => wire.close())
+    const result = wire.runTurn(['task'], new AbortController().signal)
+    const turnStart = await child.peer.nextMethod('turn/start')
+    const item = (value: JsonObject, turnId = 'turn-1', threadId = 'thread-1', method = 'item/started') => ({
+      method, params: { threadId, turnId, item: value },
+    })
+    child.peer.send(
+      item({ type: 'commandExecution', command: 'private command' }, 'previous-turn'),
+      item({ type: 'commandExecution', command: 'private command' }),
+      agentMessage('Checking the workspace.', 'commentary'),
+    )
+    child.peer.respond(turnStart, { turn: { id: 'turn-1' } })
+    await vi.waitFor(() => expect(report.mock.calls).toEqual([
+      [{ kind: 'tool', name: 'shell' }],
+      [{ kind: 'message', text: 'Checking the workspace.' }],
+    ]))
+    child.peer.send(
+      item({ type: 'webSearch', query: 'private query' }, 'turn-1', 'other-thread'),
+      item({ type: 'fileChange', changes: ['private changes'] }),
+      item({ type: 'webSearch', query: 'private query' }),
+      item({ type: 'mcpToolCall', tool: 'list_files', arguments: { private: true } }),
+      item({ type: 'dynamicToolCall' }),
+      item({ type: 'reasoning', text: 'private reasoning' }, 'turn-1', 'thread-1', 'item/completed'),
+      agentMessage('The workspace is clean.', 'final_answer'),
+      turnCompleted('completed'),
+    )
+    await expect(result).resolves.toEqual({
+      output: [{ type: 'text', text: 'The workspace is clean.' }],
+      stopReason: 'completed',
+    })
+    expect(report.mock.calls.slice(2)).toEqual([
+      [{ kind: 'tool', name: 'apply_patch' }],
+      [{ kind: 'tool', name: 'web_search' }],
+      [{ kind: 'tool', name: 'list_files' }],
+    ])
   })
 
   it('uses the last nullable-phase answer when no explicit final exists', async () => {

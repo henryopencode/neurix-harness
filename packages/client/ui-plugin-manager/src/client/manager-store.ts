@@ -718,6 +718,26 @@ export class PluginManagerController {
     }
   }
 
+  /**
+   * Change the profile's bundle selection, installing an absent catalog bundle first.
+   * @param packageName Bundle package name from the Host inventory.
+   * @param enabled Desired profile selection.
+   * @param installSurface Whether installation opens the Plugins dialog or reports through shared notices.
+   */
+  setBundleEnabled(packageName: string, enabled: boolean, installSurface: 'dialog' | 'background'): void {
+    const state = this.getSnapshot()
+    const pkg = state.packages.find(pkg => pkg.name === packageName)
+    if (pkg !== undefined && enabled && pkg.availability === 'missing' && pkg.installTarget !== undefined) {
+      if (!state.busy.includes(packageName)) this.openCatalogInstall(pkg, pkg.installTarget, true, installSurface)
+      return
+    }
+    void this.run(packageName, { packageName, action: enabled ? 'enable' : 'disable' }, async () => {
+      const result = await this.ctx.remote.pluginManager.setBundleEnabled(packageName, enabled)
+      this.applied(result, packageName)
+      if (result.ok && (result.value.application === 'applied' || result.value.application === 'restart-required')) this.trackToggle(packageName, enabled)
+    })
+  }
+
   /** Stop publishing and drop every late settlement. */
   dispose(): void {
     this.disposed = true
@@ -810,18 +830,7 @@ export class PluginManagerController {
       toggleInstallDetails: () => { this.patchInstall({ detailsOpen: !this.getSnapshot().install.detailsOpen }) },
       enableInstalled: () => { void this.enableInstalled() },
       clearHighlight: () => { if (this.getSnapshot().highlight !== null) this.patch({ highlight: null }) },
-      setEnabled: (packageName, enabled) => {
-        const pkg = this.getSnapshot().packages.find(pkg => pkg.name === packageName)
-        if (enabled && pkg?.availability === 'missing' && pkg.installTarget !== undefined) {
-          this.openCatalogInstall(pkg, pkg.installTarget, true)
-          return
-        }
-        void this.run(packageName, { packageName, action: enabled ? 'enable' : 'disable' }, async () => {
-          const result = await this.ctx.remote.pluginManager.setBundleEnabled(packageName, enabled)
-          this.applied(result, packageName)
-          if (result.ok && (result.value.application === 'applied' || result.value.application === 'restart-required')) this.trackToggle(packageName, enabled)
-        })
-      },
+      setEnabled: (packageName, enabled) => this.setBundleEnabled(packageName, enabled, 'dialog'),
       update: (packageName) => {
         const pkg = this.getSnapshot().packages.find(pkg => pkg.name === packageName)
         const target = pkg?.installTarget
@@ -1120,6 +1129,8 @@ export class PluginManagerController {
         })
         this.dropStaleVersions()
       } while (this.shouldRerun())
+    } catch (_error) {
+      this.patch({ status: 'error' })
     } finally {
       this.inFlight = undefined
     }
@@ -1148,11 +1159,14 @@ export class PluginManagerController {
   }
 
   /** Reuse the install dialog with an exact catalog target and an explicit selection outcome. */
-  private openCatalogInstall(pkg: PackageView, target: NonNullable<BundleInfo['installTarget']>, enabled: boolean): void {
+  private openCatalogInstall(
+    pkg: PackageView, target: NonNullable<BundleInfo['installTarget']>, enabled: boolean,
+    surface: 'dialog' | 'background' = 'dialog',
+  ): void {
     if (this.disposed) return
     const { phase } = this.getSnapshot().install
     if (phase === 'checking' || isInstallPending(phase)) {
-      this.patchInstall({ open: true })
+      if (surface === 'dialog') this.patchInstall({ open: true })
       return
     }
     this.abortInspect()
@@ -1163,11 +1177,15 @@ export class PluginManagerController {
       spec: target.spec, registry: registry.kind === 'custom' ? registry.url : registry.registry,
       selection: enabled, ...local ? {} : { saveExact: true },
     }
-    this.patch({ install: { ...IDLE_INSTALL, open: true, spec: subject.spec, registry, subject } })
+    this.patch({ install: { ...IDLE_INSTALL, open: surface === 'dialog', spec: subject.spec, registry, subject } })
     const read: RegistryRead = { choice: registry }
     this.registryRead = read
     read.done = this.readRegistries(read).finally(() => { delete read.done })
-    void this.runInstall()
+    if (surface === 'background') {
+      void this.run(pkg.name, { packageName: pkg.name, action: 'enable' }, () => this.runInstall())
+    } else {
+      void this.runInstall()
+    }
   }
 
   /**
@@ -1343,13 +1361,12 @@ export class PluginManagerController {
       })
     }
     const completed = this.getSnapshot().install
+    if (completed.phase === 'done' || completed.phase === 'failed') this.notifyHiddenInstall(completed.phase)
     if (completed.phase === 'done' && completed.subject?.selection !== undefined && result.bundle !== undefined) {
       this.applied({ ok: true, value: result }, result.bundle)
       this.patch({ highlight: result.bundle })
       if (completed.subject.selection) this.trackToggle(result.bundle, true)
     }
-    const phase = this.getSnapshot().install.phase
-    if (phase === 'done' || phase === 'failed') this.notifyHiddenInstall(phase)
     void this.load()
   }
 
@@ -1489,9 +1506,9 @@ export class PluginManagerController {
       // `patch` drops the notice after disposal.
       this.patch({ notice: failedNotice(error, subject, ++this.noticeSeq) })
     } finally {
+      await this.load()
       this.patch({ busy: this.getSnapshot().busy.filter(entry => entry !== key) })
     }
-    await this.load()
   }
 
   /**

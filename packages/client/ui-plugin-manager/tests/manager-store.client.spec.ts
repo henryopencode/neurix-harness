@@ -2008,6 +2008,28 @@ it('installs an absent Official entry directly at the host target and enables it
   expect(state().install.subject).toMatchObject({ selection: true, saveExact: true, version: '2.0.0' })
 })
 
+it('keeps an install from Settings in the background and reports when the change needs a restart', async () => {
+  const installing = deferred<ReturnType<typeof ok<ChangeResult>>>()
+  const installed: BundleInfo = { ...CATALOG, availability: 'profile', installed: true, enabled: true }
+  const result = ok({ ...APPLIED, application: 'restart-required' as const, restartReason: 'no-hmr' as const, bundle: CATALOG.name })
+  onTestFinished(() => { installing.resolve(result) })
+  const listBundles = vi.fn().mockResolvedValue(ok([installed])).mockResolvedValueOnce(ok([CATALOG]))
+  const { controller, plugins, started, state } = bench({ listBundles, installBundle: vi.fn(() => installing.promise) })
+  await controller.load()
+  controller.setBundleEnabled(CATALOG.name, true, 'background')
+  const requestId = await started()
+  expect(plugins.installBundle).toHaveBeenCalledExactlyOnceWith(CATALOG.installTarget!.spec, {
+    enabled: true, requestId, registry: null, saveExact: true,
+  })
+  expect(state().install.open).toBe(false)
+  expect(state().busy).toContain(CATALOG.name)
+  installing.resolve(result)
+  await vi.waitFor(() => { expect(state().busy).toEqual([]) })
+  expect(state().packages).toMatchObject([{ name: CATALOG.name, enabled: true }])
+  expect(state().install).toMatchObject({ open: false, phase: 'done' })
+  expect(state().notice).toMatchObject({ kind: 'restart', packageName: CATALOG.name, reason: 'no-hmr' })
+})
+
 it.each(['before', 'after'] as const)('reports one Official toggle when inventory refresh finishes %s installation', async (order) => {
   const installing = deferred<ReturnType<typeof ok<ChangeResult>>>()
   const refreshing = deferred<ReturnType<typeof ok<BundleInfo[]>>>()

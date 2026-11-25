@@ -24,6 +24,7 @@ import {
   type SubagentResult,
   type SubagentRun,
   type SubagentStartRequest,
+  type SubagentActivity,
   type SubagentStopReason,
 } from '@deepseek-ai/dsh-subagent'
 import {
@@ -158,6 +159,8 @@ export interface ClaudeCodeRunSpec {
   readonly env: Record<string, string>
   /** Subprocess termination grace passed to the shared managed-range owner. */
   readonly disposeGraceMs: number
+  /** Observer for user-visible messages and tool names. Omitted in unobserved runs. */
+  readonly reportActivity?: (item: SubagentActivity) => void
   /** Shared subprocess service spawn operation. */
   readonly spawn: (spec: SubprocessSpawnSpec) => SubprocessHandle
   /** Host diagnostic sink for a product failure kept outside model-visible text. */
@@ -231,15 +234,24 @@ export function successfulResult(message: SDKResultMessage): string {
  * @param query - published official SDK query.
  * @param onPermissionDenied - records a safe fact when the SDK reports native denial.
  * @param onResult - records that the SDK supplied a terminal result message.
+ * @param reportActivity - optional observer for public assistant text and tool names.
  * @returns the completed shared result.
  */
 export async function consumeClaudeQuery(
   query: AsyncIterable<SDKMessage>,
   onPermissionDenied?: () => void,
   onResult?: () => void,
+  reportActivity?: (item: SubagentActivity) => void,
 ): Promise<SubagentResult> {
   let answer: string | undefined
   for await (const message of query) {
+    if (message.type === 'assistant' && reportActivity !== undefined) {
+      for (const block of message.message.content) {
+        if (block.type === 'text' && block.text.trim().length > 0) reportActivity({ kind: 'message', text: block.text })
+        if (block.type === 'tool_use') reportActivity({ kind: 'tool', name: block.name })
+      }
+      continue
+    }
     if (message.type === 'system' && message.subtype === 'permission_denied') {
       onPermissionDenied?.()
       continue
@@ -532,7 +544,7 @@ export async function startClaudeCodeRun(
             ))
           }, () => {
             receivedResult = true
-          }),
+          }, spec.reportActivity),
           publishedProcessFailure,
         ])
       } catch (error: unknown) {

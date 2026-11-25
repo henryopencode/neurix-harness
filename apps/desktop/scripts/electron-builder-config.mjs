@@ -79,7 +79,10 @@ export function createElectronBuilderConfig(
     `**/node_modules/@deepseek-ai/libreoffice-kit-${resolvedPlatform}-${resolvedArch}/**/*`,
     // LaunchServices opens the Computer Use helper as an application, so every file of its bundles stays on disk.
     // Both architectures ship: they form one notarized payload whose manifest staging verifies as a whole.
-    '**/node_modules/@deepseek-ai/dsh-experimental-cua-macos/native/bin/**/*']
+    '**/node_modules/@deepseek-ai/dsh-experimental-cua-macos/native/bin/**/*',
+    // These product CLIs spawn outside Electron and must resolve sibling native files from disk.
+    '**/node_modules/@openai/codex*/**/*',
+    '**/node_modules/@anthropic-ai/claude-agent-sdk-*/**/*']
   const windowsSigner = packagesWindows && !unsigned
     ? createWindowsTokenSigner({
         certificateFile: env.DSH_DESKTOP_WINDOWS_CER_FILE,

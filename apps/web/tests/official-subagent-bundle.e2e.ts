@@ -15,23 +15,34 @@ import {
   assertFinalWorkspaceSnapshot, assertFixtureInventory, captureExpandedTurnProcessAria, compareOrRefreshGolden,
   fixtureUserPrompts, launchWebScaffold, seedSession, selectedSessionFixture, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { connectFreshWorkspace, newEnglishPage, openSettings, saveFailureShot } from './support.ts'
 
 const DIR = fileURLToPath(new URL('../../../snapshots/web/official-subagent-bundle', import.meta.url))
 const FIXTURE = join(DIR, 'session.v4.jsonl')
 const PACKAGE = fileURLToPath(new URL('../../../packages/subagent/subagent-claude-code', import.meta.url))
 const BUNDLE = '@deepseek-ai/dsh-subagent-claude-code'
 const RESPONSE = 'OFFICIAL_SUBAGENT_OK'
+const ACTIVITY_TITLE = /Claude Code · Read the fixture response/
 const MODE = webSnapshotMode()
 
-/** Hold only the external model transport so its completion follows the parent's first turn. */
+/** Release the native tool call and final answer independently of the parent model. */
 async function heldNativeEndpoint(upstream: string) {
-  const released = Promise.withResolvers<undefined>()
+  const firstRequest = Promise.withResolvers<undefined>()
+  const finalRequest = Promise.withResolvers<undefined>()
+  let messageRequests = 0
+  const releaseAll = () => {
+    firstRequest.resolve(undefined)
+    finalRequest.resolve(undefined)
+  }
   const requests = new Map<ClientRequest, Promise<void>>()
   const proxy = createServer((incoming, outgoing) => {
-    void released.promise.then(() => {
+    const target = new URL(incoming.url ?? '/', upstream)
+    const gate = target.pathname === '/v1/messages'
+      ? (messageRequests++ === 0 ? firstRequest : finalRequest).promise
+      : Promise.resolve()
+    void gate.then(() => {
       if (outgoing.destroyed || incoming.destroyed) return
-      const request = forwardRequest(new URL(incoming.url ?? '/', upstream), {
+      const request = forwardRequest(target, {
         method: incoming.method, headers: incoming.headers,
       }, (response) => {
         outgoing.writeHead(response.statusCode ?? 502, response.headers)
@@ -53,12 +64,13 @@ async function heldNativeEndpoint(upstream: string) {
   if (address === null || typeof address === 'string') throw new Error('Native model proxy has no TCP address')
   return {
     baseURL: `http://127.0.0.1:${address.port}`,
-    release: () => { released.resolve(undefined) },
+    releaseToolCall: () => { firstRequest.resolve(undefined) },
+    releaseAll,
     close: async () => {
       const stopped = new Promise<void>((resolve, reject) => {
         proxy.close((error) => { if (error === undefined) resolve(); else reject(error) })
       })
-      released.resolve(undefined)
+      releaseAll()
       const completed = [...requests].map(([request, closed]) => { request.destroy(); return closed })
       proxy.closeAllConnections()
       await Promise.all([stopped, ...completed])
@@ -80,7 +92,11 @@ describe.skipIf(MODE === 'record')('web snapshot: Official native subagent bundl
     const config = join(root, 'claude-config')
     const xdg = join(root, 'xdg')
     await Promise.all([mkdir(config), mkdir(xdg)])
-    server = await startMockLlmServer({ sequence: ['success'], successText: RESPONSE, apiKey: 'snapshot-fake-key' })
+    server = await startMockLlmServer({
+      sequence: ['tool_call_success', 'success'],
+      toolName: 'Glob', toolArguments: '{"pattern":"*.md"}',
+      successText: RESPONSE, apiKey: 'snapshot-fake-key',
+    })
     nativeEndpoint = await heldNativeEndpoint(server.baseURL)
     const overlay = join(root, 'native-provider.patch.json')
     // This environment belongs only to the SDK-spawned product; host credentials and homes remain untouched.
@@ -102,22 +118,28 @@ describe.skipIf(MODE === 'record')('web snapshot: Official native subagent bundl
     expect((await scaffold.ctx.pluginManager.listBundles()).find(bundle => bundle.name === BUNDLE))
       .toMatchObject({ official: true, availability: 'profile', enabled: false })
     expect(scaffold.ctx.tools.schemas().some(tool => tool.name === 'subagent_claude_code')).toBe(false)
-    expect(await scaffold.ctx.pluginManager.setBundleEnabled(BUNDLE, true))
-      .toMatchObject({ application: 'applied', changed: true })
-    expect(scaffold.ctx.tools.schemas().some(tool => tool.name === 'subagent_claude_code')).toBe(true)
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
     await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    await openSettings(page, 'en')
+    const settings = page.getByRole('dialog', { name: 'Settings' })
+    await settings.getByRole('button', { name: 'Harness tools', exact: true }).click()
+    const claudeAccess = { name: 'Allow the agent to use Claude Code', exact: true }
+    await settings.getByRole('switch', claudeAccess).click()
+    await settings.getByRole('switch', { ...claudeAccess, checked: true }).waitFor()
+    expect(scaffold.ctx.tools.schemas().some(tool => tool.name === 'subagent_claude_code')).toBe(true)
+    await page.keyboard.press('Escape')
+    await settings.waitFor({ state: 'hidden' })
     await page.getByRole('button', { name: 'Standard mode', exact: true }).click()
     await page.getByRole('menuitem', { name: /^PTC mode/ }).click()
     await page.getByRole('button', { name: 'PTC mode', exact: true }).waitFor({ state: 'visible' })
   })
 
   afterAll(async () => {
-    nativeEndpoint?.release()
+    nativeEndpoint?.releaseAll()
     try { await browser?.close() } finally {
       try { await scaffold?.close() } finally {
         try { await nativeEndpoint?.close() } finally {
@@ -138,6 +160,8 @@ describe.skipIf(MODE === 'record')('web snapshot: Official native subagent bundl
     const sessionId = await settled
     const agent = scaffold.ctx.agents.get(sessionId)
     if (agent === undefined) throw new Error('Native delegation Session has no live Agent')
+    const cwd = agent.session.header.cwd
+    if (cwd === undefined) throw new Error('Native delegation Session has no working directory')
     const firstTurnEvents = agent.session.snapshotEvents()
     const toolResults = firstTurnEvents.filter(event => event.type === 'tool/result').map(event => event.data)
     expect(toolResults, `PTC execution must start the native child before waiting for its result: ${JSON.stringify(toolResults)}`)
@@ -146,9 +170,25 @@ describe.skipIf(MODE === 'record')('web snapshot: Official native subagent bundl
     expect(dispatches).toMatchObject([{ name: 'subagent_claude_code', isError: false }])
     const catalog = firstTurnEvents.filter(event => event.type === 'subagent/catalog').map(event => event.data)
     expect(catalog).toMatchObject([{ mode: 'external', label: 'Read the fixture response' }])
+    const activity = page.getByRole('button', { name: ACTIVITY_TITLE })
+    await activity.getByText('Started', { exact: true }).waitFor()
+    await activity.click()
+    const details = page.locator('[data-native-subagent-activity]')
+    await details.getByText('Delegated task', { exact: true }).waitFor()
+    await details.getByText(cwd, { exact: true }).waitFor()
+    await details.getByText(new RegExp(RESPONSE)).waitFor()
     expect(server.requests).toHaveLength(0)
+    nativeEndpoint.releaseToolCall()
+    await expect.poll(() => server.requests.map(request => request.behavior), { timeout: 10_000 }).toEqual(['tool_call_success'])
+    const progress = () => agent.session.snapshotEvents().filter(event => event.type === 'subagent/activity')
+    await expect.poll(progress, { timeout: 10_000 }).toMatchObject([
+      { ignorable: true, data: { childId: catalog[0]?.childId, kind: 'started' } },
+      { ignorable: true, data: { childId: catalog[0]?.childId, kind: 'tool', name: 'Glob' } },
+    ])
+    expect(server.requests).toHaveLength(1)
+    await details.getByText('Called Glob', { exact: true }).waitFor({ timeout: 10_000 })
     const completed = scaffold.whenTurnSettled(120_000)
-    nativeEndpoint.release()
+    nativeEndpoint.releaseAll()
     expect(await completed).toBe(sessionId)
     expect(scaffold.ctx.agentPresets.composedPreset(agent.ctx)).toBe('ptc')
     expect(agent.session.requestHeader()?.tools?.map(tool => tool.name)).toEqual(['run_code'])
@@ -163,16 +203,16 @@ describe.skipIf(MODE === 'record')('web snapshot: Official native subagent bundl
     expect(notice.data.content).toContainEqual({ type: 'text', text: RESPONSE })
     expect(dispatches[0]?.content).toEqual([{ type: 'text', text: 'started subagent agent-1' }])
     expect(events.filter(event => event.type === 'turn/end')).toHaveLength(2)
-    expect(server.requests).toHaveLength(1)
+    expect(server.requests).toHaveLength(2)
     expect(server.requests[0]?.body).toMatchObject({ model: 'fixture-model' })
     expect(JSON.stringify(server.requests[0]?.body)).toContain(RESPONSE)
     expect(server.requests[0]?.headers['x-api-key']).toBe('snapshot-fake-key')
-    const cwd = agent.session.header.cwd
-    if (cwd === undefined) throw new Error('Native delegation Session has no working directory')
     await assertFinalWorkspaceSnapshot(DIR, cwd)
     await expect.poll(() => page.getByText('DONE', { exact: true }).count()).toBeGreaterThanOrEqual(1)
+    await activity.getByText('Completed', { exact: true }).waitFor()
+    await details.getByText(RESPONSE, { exact: true }).waitFor()
     await compareOrRefreshGolden(join(DIR, 'ui.expected.md'),
-      await captureExpandedTurnProcessAria(page, '[data-chat-flow]', scaffold.workspaceCwd), MODE)
+      await captureExpandedTurnProcessAria(page, '[data-chat-flow]', cwd), MODE)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
   })
@@ -203,8 +243,18 @@ it.skipIf(MODE === 'record')('renders recorded official notice titles after reop
     await session.click()
     const heading = page.locator('[data-turn-trigger] > button > span').nth(1)
     await expect.poll(() => heading.textContent()).toBe('Subagent run completed')
+    const activity = page.getByRole('button', { name: ACTIVITY_TITLE })
+    await activity.getByText('Completed', { exact: true }).waitFor()
+    await activity.click()
+    const details = page.locator('[data-native-subagent-activity]')
+    await details.getByText('Called Glob', { exact: true }).waitFor()
+    await details.getByText(RESPONSE, { exact: true }).waitFor()
     await compareOrRefreshGolden(join(DIR, 'ui.expected.md'),
       await captureExpandedTurnProcessAria(page, '[data-chat-flow]', scaffold.workspaceCwd), MODE)
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.getByRole('button', { name: 'Open sidebar', exact: true }).waitFor()
+    await expect.poll(() => activity.evaluate(row => row.scrollWidth <= row.clientWidth)).toBe(true)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
   } finally {

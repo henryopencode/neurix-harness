@@ -50,8 +50,11 @@ export function claudeSpawnSpec(
   if (options.cwd === undefined || options.cwd.length === 0) {
     throw new Error('subagent-claude-code: SDK spawn request omitted its workspace')
   }
+  const command = process.versions.electron === undefined
+    ? options.command
+    : options.command.replace(/([\\/])app\.asar(?=[\\/]dsh[\\/])/u, '$1app.asar.unpacked')
   return {
-    argv: [options.command, ...options.args],
+    argv: [command, ...options.args],
     cwd: options.cwd,
     stdio: { stdin: 'pipe', stdout: 'pipe', stderr: 'inherit' },
     graceMs,

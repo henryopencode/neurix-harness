@@ -126,7 +126,7 @@ export type { ChildComposition, DelegatedPolicyOverrides } from './child-agent.t
 export type { AgentMessageSource, SubagentSettledMessageSource } from './continuation-messages.ts'
 export type * from './control-types.ts'
 export type { SubagentDescendantListEntry } from './list-children.ts'
-export type { SubagentRunEndInfo, SubagentRunInfo } from './types.ts'
+export type { SubagentRunEndInfo, SubagentRunInfo, SubagentActivity } from './types.ts'
 export type { SubagentCatalogEntry, SubagentIdentityProjection, SubagentTimingProjection } from './projection-types.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -289,7 +289,7 @@ export class SubagentRuntime extends TypertRemoteService {
     return manager.startExternal(spec, (request) => {
       this.assertProviderCurrent(provider)
       return start(request)
-    })
+    }, provider.activityProduct)
   }
 
   /**

@@ -97,8 +97,8 @@ export interface BundleInfo {
    */
   source?: string
   /**
-   * Whether the installation ships the bundle for the person to switch on: named by the launcher's `OPTIONAL_BUNDLES`,
-   * held by the installation's dependencies, selected by no shipped template, and never removable.
+   * Whether the installation ships the Official bundle for the person to switch on.
+   * No default profile selects these bundles, and they cannot be removed from the installation.
    */
   optional: boolean
   removable: boolean

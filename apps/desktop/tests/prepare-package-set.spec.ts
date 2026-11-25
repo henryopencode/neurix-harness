@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { ON_DEMAND_BUNDLES } from '../../../packages/util/official-bundles/src/bundles.ts'
 import { DESKTOP_HOST_RUNTIME_FILES, DESKTOP_PACKAGES_DIR } from '../src/core-package-set.ts'
 import {
   assertDesktopHostPackageFiles,
@@ -43,7 +44,7 @@ describe('desktop package-set selection', () => {
       ['@deepseek-ai/platform-package', packed('@deepseek-ai/platform-package')],
       ['@deepseek-ai/unused', packed('@deepseek-ai/unused')],
     ])
-    expect(selectDesktopPackageClosure(available, { platform: 'win32', arch: 'x64' }).map(entry => entry.manifest.name)).toEqual([
+    expect(selectDesktopPackageClosure(available, { platform: 'win32', arch: 'x64' }, []).map(entry => entry.manifest.name)).toEqual([
       '@deepseek-ai/cordis',
       '@deepseek-ai/dsh',
       '@deepseek-ai/dsh-base',
@@ -63,10 +64,10 @@ describe('desktop package-set selection', () => {
         dependencies: { '@deepseek-ai/dsh': '^1.0.0' },
       })],
     ])
-    expect(() => selectDesktopPackageClosure(available, { platform: 'win32', arch: 'x64' })).toThrow(/unpacked package/u)
+    expect(() => selectDesktopPackageClosure(available, { platform: 'win32', arch: 'x64' }, [])).toThrow(/unpacked package/u)
     expect(() => selectDesktopPackageClosure(new Map([
       ['@deepseek-ai/dsh', packed('@deepseek-ai/dsh')],
-    ]), { platform: 'win32', arch: 'x64' })).toThrow(/omit @deepseek-ai\/dsh-desktop-host/u)
+    ]), { platform: 'win32', arch: 'x64' }, [])).toThrow(/omit @deepseek-ai\/dsh-desktop-host/u)
   })
 
   it('leaves independently published Office packages to npm resolution', () => {
@@ -79,7 +80,7 @@ describe('desktop package-set selection', () => {
       })],
       ['@deepseek-ai/dsh-desktop-host', packed('@deepseek-ai/dsh-desktop-host')],
     ])
-    expect(selectDesktopPackageClosure(available, { platform: 'win32', arch: 'x64' }).map(entry => entry.manifest.name)).toEqual([
+    expect(selectDesktopPackageClosure(available, { platform: 'win32', arch: 'x64' }, []).map(entry => entry.manifest.name)).toEqual([
       '@deepseek-ai/dsh', '@deepseek-ai/dsh-desktop-host',
     ])
   })
@@ -109,12 +110,13 @@ const targetManifests = () => new Map<string, PackedDesktopPackage>([
   })],
   ['@deepseek-ai/dsh-cua', packed('@deepseek-ai/dsh-cua')],
   [macProvider, packed(macProvider, { os: ['darwin'] })],
+  ...ON_DEMAND_BUNDLES.map(name => [name, packed(name)] as const),
 ])
 
 it.each([
   ['darwin', 'arm64', true], ['darwin', 'x64', true], ['win32', 'x64', false],
 ] as const)('selects the CUA native tarball for target %s/%s independently of the host', (platform, arch, included) => {
-  const selected = selectDesktopPackageClosure(targetManifests(), { platform, arch }).map(entry => entry.manifest.name)
+  const selected = selectDesktopPackageClosure(targetManifests(), { platform, arch }, []).map(entry => entry.manifest.name)
   expect(selected.includes(macProvider)).toBe(included)
   expect(selected).toContain('@deepseek-ai/dsh-cua')
   expect(selected).toContain(cuaBundle)
@@ -127,14 +129,14 @@ it.each([
 ])('honors optional package platform constraints %j', (constraints, included) => {
   const packages = targetManifests()
   packages.set(macProvider, packed(macProvider, constraints))
-  expect(selectDesktopPackageClosure(packages, { platform: 'win32', arch: 'x64' })
+  expect(selectDesktopPackageClosure(packages, { platform: 'win32', arch: 'x64' }, [])
     .some(entry => entry.manifest.name === macProvider)).toBe(included)
 })
 
 it.each([{ os: 'darwin' }, { cpu: [42] }])('rejects malformed platform constraints %j', (constraints) => {
   const packages = targetManifests()
   packages.set(macProvider, packed(macProvider, constraints))
-  expect(() => selectDesktopPackageClosure(packages, { platform: 'win32', arch: 'x64' })).toThrow(/has invalid/u)
+  expect(() => selectDesktopPackageClosure(packages, { platform: 'win32', arch: 'x64' }, [])).toThrow(/has invalid/u)
 })
 
 it('copies no macOS tarball into the Windows package set', () => {
@@ -157,7 +159,9 @@ it('copies no macOS tarball into the Windows package set', () => {
   }
   const output = join(root, 'output')
   prepareDesktopPackageSet([inputs], output, { platform: 'win32', arch: 'x64' })
-  expect(readdirSync(join(output, DESKTOP_PACKAGES_DIR))).not.toContain('dsh-experimental-cua-macos.tgz')
+  const windows = readdirSync(join(output, DESKTOP_PACKAGES_DIR))
+  expect(windows).not.toContain('dsh-experimental-cua-macos.tgz')
+  for (const name of ON_DEMAND_BUNDLES) expect(windows).toContain(name.replace('@deepseek-ai/', '') + '.tgz')
   prepareDesktopPackageSet([inputs], output, { platform: 'darwin', arch: 'arm64' })
   expect(readFileSync(join(output, DESKTOP_PACKAGES_DIR, 'dsh-experimental-cua-macos.tgz')))
     .toEqual(readFileSync(join(inputs, 'dsh-experimental-cua-macos.tgz')))
